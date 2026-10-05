@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\Namh.Data.DynamicSql\Namh.Data.DynamicSql.csproj" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.31" Condition="'$(TargetFramework)' == 'net8.0'" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.20" Condition="'$(TargetFramework)' == 'net9.0'" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" Condition="'$(TargetFramework)' == 'net10.0'" />
+	</ItemGroup>
+
+</Project>

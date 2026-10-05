@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="../docker/docker-compose.sqlserver.yml" />
+    <File Path="../scripts/db-scripts.sql" />
+    <File Path="Directory.Build.props" />
+  </Folder>
+  <Project Path="Namh.Data.DynamicSql.ConsoleTest/Namh.Data.DynamicSql.ConsoleTest.csproj" Id="f56a7021-ae34-4d07-9136-230ca090c7ae" />
+  <Project Path="Namh.Data.DynamicSql.Model/Namh.Data.DynamicSql.Model.csproj" />
+  <Project Path="Namh.Data.DynamicSql.Test/Namh.Data.DynamicSql.Test.csproj" Id="f65d7da3-d0b0-49c3-b963-a0ee3519366c" />
+  <Project Path="Namh.Data.DynamicSql/Namh.Data.DynamicSql.csproj" />
+</Solution>
