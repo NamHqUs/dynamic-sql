@@ -37,6 +37,8 @@ public static class DbQueryableExtension
         => source.CreateOrderQueryable(MethodBase.GetCurrentMethod()!.Name, fields);
     public static IDbQueryable ThenBy(this IDbQueryable source, params string[] fields)
         => source.CreateOrderQueryable(MethodBase.GetCurrentMethod()!.Name, fields);
+    public static IDbQueryable ThenByDescending(this IDbQueryable source, params string[] fields)
+        => source.CreateOrderQueryable(MethodBase.GetCurrentMethod()!.Name, fields);
     public static IDbQueryable OrderByDescending(this IDbQueryable source, params string[] fields)
         => source.CreateOrderQueryable(MethodBase.GetCurrentMethod()!.Name, fields);
     public static IDbQueryable ThenByDescending<TSource>(this IDbQueryable source, params string[] fields) where TSource : DataRecord
@@ -44,8 +46,11 @@ public static class DbQueryableExtension
 
     public static IDbQueryable Skip(this IDbQueryable source, int count)
         => source.CreateQuery(MethodBase.GetCurrentMethod()!, Expression.Constant(count));
+    public static IDbQueryable TakeQuery(this IDbQueryable source, int count)
+        => source.CreateQuery(GetQueryMethod(nameof(Take), 2)!, Expression.Constant(count));
+
     public static List<DataRecord> Take(this IDbQueryable source, int count)
-        => source.CreateQuery(MethodBase.GetCurrentMethod()!, Expression.Constant(count)).ToList();
+        => source.TakeQuery(count).ToList();
 
     public static List<DataRecord> ToList(this IDbQueryable source)
         => [.. (IEnumerable<DataRecord>)source];

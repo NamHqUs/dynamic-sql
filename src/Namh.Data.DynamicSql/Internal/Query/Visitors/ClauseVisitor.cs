@@ -53,6 +53,12 @@ class ClauseVisitor(QueryContext queryContext)
             case nameof(DbQueryableExtension.Where):
                 return new WhereVisitor(tableContext, QueryContext).Eval((LambdaExpression)methodCall.Arguments[1].StripQuotes());
 
+            case nameof(DbQueryableExtension.OrderBy):
+            case nameof(DbQueryableExtension.OrderByDescending):
+            case nameof(DbQueryableExtension.ThenBy):
+            case nameof(DbQueryableExtension.ThenByDescending):
+                return ProcessOrdering(tableContext, methodCall);
+
             case nameof(DbQueryableExtension.Any):
                 tableContext = new WhereVisitor(tableContext, QueryContext).Eval((LambdaExpression)methodCall.Arguments[1].StripQuotes());
                 return new AnyExpression(tableContext);
@@ -77,5 +83,20 @@ class ClauseVisitor(QueryContext queryContext)
                     methodCall.Method.DeclaringType?.Name??"<UnknownType>",
                     methodCall.Method.Name));
         }
+    }
+
+    private TableExpression ProcessOrdering(TableExpression tableContext, MethodCallExpression methodCall)
+    {
+        var fields = (string[])((LambdaExpression)methodCall.Arguments[1].StripQuotes())
+            .Compile()
+            .DynamicInvoke(new object?[] { null })!;
+        var descending = methodCall.Method.Name.EndsWith("Descending", StringComparison.Ordinal);
+
+        foreach (var field in fields)
+            tableContext.Orders.Add(new OrderExpression(
+                QueryContext.ParseFieldPath(tableContext, field),
+                descending));
+
+        return tableContext;
     }
 }

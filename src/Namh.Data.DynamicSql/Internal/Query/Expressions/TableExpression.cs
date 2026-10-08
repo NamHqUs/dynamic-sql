@@ -9,11 +9,14 @@ internal sealed record JoinExpression(
     string JoinType,
     IReadOnlyList<SqlExpression> Conditions);
 
+internal sealed record OrderExpression(SqlExpression Expression, bool Descending);
+
 class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQueryable))
 {
     public IEnumerable<ProjectionItem> ProjectionItems = [];
     public List<SqlExpression> SqlWhere { get; } = [];
     public List<JoinExpression> Joins { get; } = [];
+    public List<OrderExpression> Orders { get; } = [];
     public StringBuilder? SqlSelect { get; protected set; }
     public StringBuilder? SqlOrder { get; set; }
     public readonly string Alias = alias;
@@ -30,6 +33,7 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQue
         ProjectionItems = source.ProjectionItems.ToList();
         SqlWhere.AddRange(source.SqlWhere);
         Joins.AddRange(source.Joins);
+        Orders.AddRange(source.Orders);
         SqlSelect = source.SqlSelect;
         SqlOrder = source.SqlOrder;
         TakeCount = source.TakeCount;

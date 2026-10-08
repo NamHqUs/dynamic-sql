@@ -36,8 +36,8 @@ internal sealed class SqlGenerator(ISqlDialect dialect)
         if (query.SqlWhere.Count != 0)
             text += "\nWHERE " + string.Join(" AND ", query.SqlWhere.Select(RenderExpression));
 
-        if (query.SqlOrder is not null)
-            text += "\nORDER BY " + query.SqlOrder;
+        if (query.Orders.Count != 0)
+            text += "\nORDER BY " + string.Join(", ", query.Orders.Select(RenderOrder));
 
         text += dialect.RenderPaging(query.Skip, query.IsTake ? null : query.Take);
 
@@ -56,6 +56,9 @@ internal sealed class SqlGenerator(ISqlDialect dialect)
 
     private string RenderTable(TableExpression table)
         => $"{dialect.RenderTable(table.Entity)} {table.Alias}";
+
+    private string RenderOrder(OrderExpression order)
+        => $"{RenderExpression(order.Expression)}{(order.Descending ? " DESC" : " ASC")}";
 
     private string RenderExpression(SqlExpression expression)
         => expression switch
