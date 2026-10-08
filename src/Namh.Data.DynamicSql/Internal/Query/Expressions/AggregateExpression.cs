@@ -1,25 +1,24 @@
 ﻿using System.Text;
 
-namespace Namh.Data.DynamicSql.Internal.Query.Expressions
+namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+
+class AggregateExpression : TableExpression
 {
-    class AggregateExpression : TableExpression
+    public override Type Type => typeof(double);
+
+    public AggregateExpression(TableExpression tableContext, string aggregation) : base(tableContext)
     {
-        public override Type Type => typeof(double);
+        aggregation = aggregation.Replace("@", $"{tableContext.Alias}.");
+        var i = aggregation.IndexOf('$');
+        SqlSelect = new StringBuilder(i < 0 ? aggregation : aggregation[..i]);
 
-        public AggregateExpression(TableExpression tableContext, string aggregation) : base(tableContext)
+        if (i > 0)
         {
-            aggregation = aggregation.Replace("@", $"{tableContext.Alias}.");
-            var i = aggregation.IndexOf('$');
-            SqlSelect = new StringBuilder(i < 0 ? aggregation : aggregation[..i]);
-
-            if (i > 0)
-            {
-                SqlWhere ??= new StringBuilder();
-                SqlWhere.Append(SqlWhere.Length == 0 ? "" : " And ").Append(aggregation.AsSpan(i + 1));
-            }
+            SqlWhere ??= new StringBuilder();
+            SqlWhere.Append(SqlWhere.Length == 0 ? "" : " And ").Append(aggregation.AsSpan(i + 1));
         }
-
-        protected override StringBuilder TranslateSelect()
-            => SqlSelect ?? base.TranslateSelect();
     }
+
+    protected override StringBuilder TranslateSelect()
+        => SqlSelect ?? base.TranslateSelect();
 }

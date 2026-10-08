@@ -1,6 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+
+		<PackageId>Namh.Data.DynamicSql</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Namh</Authors>
+		<Description>
+			Metadata-driven
+			Dynamic query
+			Dynamic projection
+			Runtime schema
+			SQL query engine
+			LINQ-like
+			ADO.NET
+			Relational metadata
+			Reporting
+			Query builder
+		</Description>
+		<PackageTags>dynamic-sql;query-builder;ado-net;metadata;linq</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/NamHqUs/dynamic-sql</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>

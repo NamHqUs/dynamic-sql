@@ -1,10 +1,9 @@
-﻿namespace Namh.Data.DynamicSql
+﻿namespace Namh.Data.DynamicSql;
+
+public class DataRecord : Dictionary<string, object?>, IEnumerable<KeyValuePair<string, object?>>
 {
-    public class DataRecord : Dictionary<string, object?>, IEnumerable<KeyValuePair<string, object?>>
+    public DataRecord()
+        : base(StringComparer.OrdinalIgnoreCase)
     {
-        public DataRecord()
-            : base(StringComparer.OrdinalIgnoreCase)
-        {
-        }
     }
 }

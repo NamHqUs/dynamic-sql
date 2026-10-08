@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path="../docker/docker-compose.sqlserver.yml" />
+    <File Path="../README.md" />
     <File Path="../scripts/db-scripts.sql" />
     <File Path="Directory.Build.props" />
   </Folder>

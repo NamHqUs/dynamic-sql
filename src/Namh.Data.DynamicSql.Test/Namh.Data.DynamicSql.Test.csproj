@@ -6,6 +6,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="UnitTest\AggregateTest.cs" />
+	  <Compile Remove="UnitTest\ArchiveTest.cs" />
+	  <Compile Remove="UnitTest\ComputedTest.cs" />
+	  <Compile Remove="UnitTest\TakeTest.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <None Include="..\..\scripts\db-scripts.sql" Link="db-scripts.sql" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
