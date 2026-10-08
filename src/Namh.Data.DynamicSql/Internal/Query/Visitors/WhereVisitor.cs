@@ -5,17 +5,13 @@ using System.Text;
 
 namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
 
-class WhereVisitor(TableExpression tableContext, QueryContext queryContext) : LambdaVisitor(tableContext, queryContext)
+class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
+    : LambdaVisitor(tableContext, queryContext)
 {
     protected override void OnProcessResult(Expression body)
     {
 
-        var sqlFilter = ((SqlExpression)body).RenderSql();
-
-        if (TableContext.SqlWhere == null || TableContext.SqlWhere.Length == 0)
-            TableContext.SqlWhere = new StringBuilder(sqlFilter);
-        else
-            TableContext.SqlWhere.Append($" AND {sqlFilter}");
+        TableContext.SqlWhere.Add((SqlExpression)body);
     }
 
     protected override Expression VisitBinary(BinaryExpression node)
@@ -23,17 +19,12 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext) : La
         var left = Visit(node.Left);
         var right = Visit(node.Right);
 
-        var sqlLeft = left is SqlExpression leftSql
-            ? left is AggregateExpression ? $"({leftSql.RenderSql()})" : leftSql.RenderSql()
-            : left.ToString();
-        var sqlRight = right is SqlExpression rightSql
-            ? right is AggregateExpression ? $"({rightSql.RenderSql()})" : rightSql.RenderSql()
-            : right.ToString();
-
-        var oper = sqlRight != "NULL" ? node.NodeType.ToSql() :
-            node.NodeType == ExpressionType.Equal ? "IS" : "IS NOT";
-
-        return new ValueExpression($"({sqlLeft} {oper} {sqlRight})", typeof(bool));
+        var leftSql = (SqlExpression)left;
+        var rightSql = (SqlExpression)right;
+        var oper = rightSql is ValueExpression { Value: null }
+            ? node.NodeType == ExpressionType.Equal ? "IS" : "IS NOT"
+            : node.NodeType.ToSql();
+        return new BinarySqlExpression(leftSql, oper, rightSql, typeof(bool));
     }
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -42,10 +33,7 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext) : La
         {
             var left = Visit(node.Object!);
             var right = ((ConstantExpression)node.Arguments[0]).Value;
-            var leftSql = left is SqlExpression sqlExpression
-                ? sqlExpression.RenderSql()
-                : left.ToString();
-            return new ValueExpression($"({leftSql} {right})", typeof(bool));
+            return new CompareSqlExpression((SqlExpression)left, right?.ToString() ?? string.Empty, typeof(bool));
         }
 
         return base.VisitMethodCall(node);

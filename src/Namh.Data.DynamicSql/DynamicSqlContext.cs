@@ -4,11 +4,11 @@ using System.Data;
 namespace Namh.Data.DynamicSql;
 
 public class DynamicSqlContext(
-        IDbConnection dbConnection,
-        IMetaProvider metaProvider,
-        ISqlDialect? sqlDialect = null) : IDisposable
+    IDbConnection dbConnection,
+    IMetaProvider metaProvider,
+    ISqlDialect? sqlDialect = null) : IDisposable
 {
-    private readonly ISqlDialect _sqlDialect =  sqlDialect ?? SqlDialect.ForConnection(dbConnection);
+    private readonly ISqlDialect _sqlDialect = sqlDialect ?? SqlDialect.ForConnection(dbConnection);
     private bool _disposed;
 
     public IDbQueryable Query(string entity, bool includeArchive = false)
@@ -36,14 +36,11 @@ public class DynamicSqlContext(
     }
 }
 
-public class DynamicSqlServerContext(IDbConnection dbConnection, IMetaProvider metaProvider) 
-    : DynamicSqlContext(dbConnection, metaProvider, new SqlServerDialect())
-{ }
+public class DynamicSqlServerContext(IDbConnection dbConnection, IMetaProvider metaProvider)
+    : DynamicSqlContext(dbConnection, metaProvider, new SqlServerDialect());
 
 public class DynamicSqliteContext(IDbConnection dbConnection, IMetaProvider metaProvider)
-    : DynamicSqlContext(dbConnection, metaProvider, new SqliteDialect())
-{ }
+    : DynamicSqlContext(dbConnection, metaProvider, new SqliteDialect());
 
 public class DynamicPostgresContext(IDbConnection dbConnection, IMetaProvider metaProvider)
-    : DynamicSqlContext(dbConnection, metaProvider, new PostgresDialect())
-{ }
+    : DynamicSqlContext(dbConnection, metaProvider, new PostgresDialect());

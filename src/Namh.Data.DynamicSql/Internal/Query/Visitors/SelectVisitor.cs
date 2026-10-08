@@ -5,10 +5,16 @@ using System.Linq.Expressions;
 
 namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
 
-class SelectVisitor : LambdaVisitor
+class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
+    : LambdaVisitor(tableContext, queryContext)
 {
-    public SelectVisitor(TableExpression tableContext, QueryContext queryContext)
-        : base(tableContext, queryContext) { }
+    protected override Expression VisitConstant(ConstantExpression node)
+    {
+        var value = node.Value;
+        if (value is null || value is string || value is bool || value is IConvertible)
+            return new ValueExpression(value, node.Type);
+        return base.VisitConstant(node);
+    }
 
     ///Dictionary Type .Select("Id", "Name") => .Select(DataRecord)
     protected override void OnProcessResult(Expression body)
@@ -31,11 +37,13 @@ class SelectVisitor : LambdaVisitor
         var dataRecord = new DataRecord();
         foreach (var e in node.Initializers)
         {
-            var key = (string)((ConstantExpression)Visit(e.Arguments[0])).Value!;
+            var key = (string)((ConstantExpression)e.Arguments[0]).Value!;
 
             var expression = e.Arguments[1].StripQuotes();
             expression = expression is UnaryExpression unary ? unary.Operand : expression;
-            object val = Visit(expression);
+            object val = expression is ConstantExpression constant
+                ? constant.Value!
+                : Visit(expression);
 
             dataRecord[key] = (val as ConstantExpression)?.Value
                 ?? ((val as UnaryExpression)?.Operand)
@@ -51,19 +59,14 @@ class SelectVisitor : LambdaVisitor
         var left = Visit(node.Left);
         var right = Visit(node.Right);
 
-        var leftVal = left is TableExpression leftTable
-            ? $"({leftTable.RenderSql()})"
-            : Format(left);
-        var rightVal = right is TableExpression rightTable
-            ? $"({rightTable.RenderSql()})"
-            : Format(right);
-
+        var leftVal = (SqlExpression)left;
+        var rightVal = (SqlExpression)right;
         var operation = node.NodeType == ExpressionType.Add &&
             (ContainsStringConstant(node.Left) || ContainsStringConstant(node.Right))
-                ? QueryContext.SqlDialect.RenderStringConcatenation(leftVal, rightVal)
-                : $"{leftVal} {node.NodeType.ToSql()} {rightVal}";
-
-        return new ValueExpression(operation, node.Type);
+                ? "+" : node.NodeType.ToSql();
+        return new BinarySqlExpression(leftVal, operation, rightVal, node.Type,
+            node.NodeType == ExpressionType.Add &&
+            (ContainsStringConstant(node.Left) || ContainsStringConstant(node.Right)));
     }
 
     private static bool ContainsStringConstant(Expression node)
@@ -84,18 +87,8 @@ class SelectVisitor : LambdaVisitor
                     ?? QueryContext.ParseFieldPath(tableContext, e.Value!.ToString()!);
 
                 var alias = parentKey == null ? e.Key : string.Format("{0}.{1}", parentKey, e.Key);
-                yield return new ProjectionItem(sql, alias, QueryContext.SqlDialect);
+                yield return new ProjectionItem(sql, alias);
             }
     }
 
-    private static string Format(Expression node)
-    { 
-        if (node is ConstantExpression @const && @const.Value is string text)
-            return $"'{text}'";
-
-        if (node is SqlExpression sqlExpression)
-            return sqlExpression.RenderSql();
-
-        return node.ToString();
-    }
 }

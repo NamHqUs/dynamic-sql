@@ -14,7 +14,10 @@ public enum DataType
     Boolean,
 }
 
-public record Field(string Name, DataType DataType = DataType.String, FieldType FieldType = FieldType.DbColumn)
+public record Field(
+    string Name,
+    DataType DataType = DataType.String,
+    FieldType FieldType = FieldType.DbColumn)
 {
     public string RawSql { get; set; } = Name;
 

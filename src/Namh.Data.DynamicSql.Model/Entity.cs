@@ -1,6 +1,10 @@
 ﻿namespace Namh.Data.DynamicSql.Model;
 
-public record Entity(string Name, List<Field> Fields, string? RawSql = null, List<Relation>? Relations = null)
+public record Entity(
+    string Name,
+    List<Field> Fields,
+    string? RawSql = null,
+    List<Relation>? Relations = null)
 {
     public Field GetField(string fieldName)
         => Fields?.FirstOrDefault(e => string.Equals(e.Name, fieldName, StringComparison.OrdinalIgnoreCase))

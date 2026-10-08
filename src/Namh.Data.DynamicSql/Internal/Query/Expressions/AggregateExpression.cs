@@ -1,5 +1,4 @@
 ﻿using System.Text;
-
 namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
 
 class AggregateExpression : TableExpression
@@ -8,17 +7,17 @@ class AggregateExpression : TableExpression
 
     public AggregateExpression(TableExpression tableContext, string aggregation) : base(tableContext)
     {
+        ProjectionItems = [];
         aggregation = aggregation.Replace("@", $"{tableContext.Alias}.");
         var i = aggregation.IndexOf('$');
         SqlSelect = new StringBuilder(i < 0 ? aggregation : aggregation[..i]);
 
         if (i > 0)
-        {
-            SqlWhere ??= new StringBuilder();
-            SqlWhere.Append(SqlWhere.Length == 0 ? "" : " And ").Append(aggregation.AsSpan(i + 1));
-        }
+            SqlWhere.Add(new RawSqlExpression(aggregation[(i + 1)..], typeof(bool)));
     }
 
     protected override StringBuilder TranslateSelect()
         => SqlSelect ?? base.TranslateSelect();
+
+    internal string SelectSql => SqlSelect!.ToString();
 }

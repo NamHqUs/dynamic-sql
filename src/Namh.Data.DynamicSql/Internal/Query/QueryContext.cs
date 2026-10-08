@@ -1,26 +1,24 @@
 ﻿using Namh.Data.DynamicSql.Internal.Query.Expressions;
 using Namh.Data.DynamicSql.Internal.Query.Models;
 using Namh.Data.DynamicSql.Model;
-using System.Text;
 
 namespace Namh.Data.DynamicSql.Internal.Query;
 
-class QueryContext(IMetaProvider metaProvider, ISqlDialect sqlDialect, bool includeArchive)
+class QueryContext(IMetaProvider metaProvider, bool includeArchive)
 {
     private const string ARCHIVE_COL = "DeletedOn";
     private int _aliasCount;
     public readonly Stack<(string ArgumentName, TableExpression TableContext)> Arguments = new();
-    public readonly ISqlDialect SqlDialect = sqlDialect;
     private readonly List<DbParameter> _dbParameters = [];
 
     public IEnumerable<DbParameter> DbParameters => _dbParameters;
 
     public TableExpression CreateTableContext(Entity entity)
     {
-        var table = new TableExpression(entity, GetNextAlias(), SqlDialect);
+        var table = new TableExpression(entity, GetNextAlias());
 
-        if (BuildEnforceFilter(table, out string filter))
-            table.SqlWhere = new StringBuilder(filter);
+        if (BuildEnforceFilter(table, out var filter))
+            table.SqlWhere.Add(filter);
 
         return table;
     }
@@ -49,7 +47,7 @@ class QueryContext(IMetaProvider metaProvider, ISqlDialect sqlDialect, bool incl
         else
         {
             var lastAlias = ApplyJoin(tableContext, joinedData).Alias;
-            return new FieldExpression(lastAlias, metaField, SqlDialect);
+            return new FieldExpression(lastAlias, metaField);
         }
     }
 
@@ -59,8 +57,8 @@ class QueryContext(IMetaProvider metaProvider, ISqlDialect sqlDialect, bool incl
         var lastTable = ApplyJoin(tableContext, joinedData.Take(joinedData.Count() - 1));
 
         var (relation, entity) = joinedData.Last();
-        var joinedTable = new TableExpression(entity, GetNextAlias(), SqlDialect);
-        joinedTable.SqlWhere = new StringBuilder(BuildJoinKeys(lastTable, joinedTable, relation));
+        var joinedTable = new TableExpression(entity, GetNextAlias());
+        joinedTable.SqlWhere.AddRange(BuildJoinKeys(lastTable, joinedTable, relation));
 
         return joinedTable;
     }
@@ -88,8 +86,8 @@ class QueryContext(IMetaProvider metaProvider, ISqlDialect sqlDialect, bool incl
         {
             if (!lastTable.JoinedTables.TryGetValue(relation.Name, out TableExpression? joinedTable))
             {
-                lastTable.JoinedTables[relation.Name] = joinedTable = new TableExpression(joinedEntity, GetNextAlias(), SqlDialect);
-                tableContext.SqlFrom.Append(BuildJoinPath(lastTable, joinedTable, relation));
+                lastTable.JoinedTables[relation.Name] = joinedTable = new TableExpression(joinedEntity, GetNextAlias());
+                tableContext.Joins.Add(BuildJoinPath(lastTable, joinedTable, relation));
             }
             lastTable = joinedTable;
         }
@@ -102,64 +100,64 @@ class QueryContext(IMetaProvider metaProvider, ISqlDialect sqlDialect, bool incl
         var lastTable = tableContext;
         if (joinedData.Any())
         {
-            var sqlFrom = new StringBuilder();
-            string sqlWhere = null!;
+            List<SqlExpression>? predicates = null;
             foreach (var (relation, joinedEntity) in joinedData)
             {
-                var joinedTable = new TableExpression(joinedEntity, GetNextAlias(), SqlDialect);
-                if (sqlWhere == null)
-                    sqlWhere = BuildJoinKeys(tableContext, joinedTable, relation);
+                var joinedTable = new TableExpression(joinedEntity, GetNextAlias());
+                if (predicates == null)
+                    predicates = BuildJoinKeys(tableContext, joinedTable, relation);
                 else
-                    sqlFrom.Append(BuildJoinPath(lastTable, joinedTable, relation, true));
+                    lastTable.Joins.Add(BuildJoinPath(lastTable, joinedTable, relation, true));
                 lastTable = joinedTable;
             }
 
-            lastTable.SqlFrom.Append(sqlFrom);
-            lastTable.SqlWhere = new StringBuilder(sqlWhere);
+            if (predicates is not null)
+                lastTable.SqlWhere.AddRange(predicates);
         }
 
         return lastTable;
     }
 
-    private string BuildJoinPath(TableExpression table, TableExpression joinedTable, Relation relation, bool reverse = false)
+    private JoinExpression BuildJoinPath(TableExpression table, TableExpression joinedTable, Relation relation, bool reverse = false)
     {
         var joinKeys = BuildJoinKeys(table, joinedTable, relation);
         //var joinOper = relation.Type == RelationType.Collection ? "INNER JOIN" : "LEFT JOIN";
         var joinOper = "LEFT JOIN";
 
         joinedTable = reverse ? table : joinedTable;
-
-        return $" {joinOper} {SqlDialect.RenderTable(joinedTable.Entity)} {joinedTable.Alias} ON {joinKeys}";
+        return new JoinExpression(reverse ? table : joinedTable, joinOper, joinKeys);
     }
 
-    private string BuildJoinKeys(TableExpression table, TableExpression joinedTable, Relation relation)
+    private List<SqlExpression> BuildJoinKeys(TableExpression table, TableExpression joinedTable, Relation relation)
     {
-        var sb = new StringBuilder();
+        var predicates = new List<SqlExpression>();
         foreach (var e in relation.RelatedKeys)
-        {
-            if (sb.Length > 0)
-                sb.Append(" AND ");
-            sb.AppendFormat("{0}.{1} = {2}.{3}",
-                joinedTable.Alias,
-                SqlDialect.QuoteIdentifier(e.ToDbColumn),
-                table.Alias,
-                SqlDialect.QuoteIdentifier(e.FromDbColumn));
-        }
+            predicates.Add(new BinarySqlExpression(
+                new FieldExpression(joinedTable.Alias, joinedTable.Entity.GetField(e.ToDbColumn)),
+                "=",
+                new FieldExpression(table.Alias, table.Entity.GetField(e.FromDbColumn)),
+                typeof(bool)));
 
-        if (BuildEnforceFilter(joinedTable, out string filter))
-            sb.Append(" AND ").Append(filter);
+        if (BuildEnforceFilter(joinedTable, out var filter))
+            predicates.Add(filter);
 
-        return sb.ToString();
+        return predicates;
     }
 
-    private bool BuildEnforceFilter(TableExpression table, out string filter)
+    private bool BuildEnforceFilter(TableExpression table, out SqlExpression filter)
     {
-        filter = !includeArchive
+        var enforced = !includeArchive
                 && table.Entity.Fields.Any(e => string.Equals(e.Name, ARCHIVE_COL, StringComparison.OrdinalIgnoreCase))
-            ? $"{table.Alias}.{SqlDialect.QuoteIdentifier(ARCHIVE_COL)} is null"
-            : string.Empty;
+            ;
+        filter = enforced
+            ? new BinarySqlExpression(
+                new FieldExpression(table.Alias, table.Entity.GetField(ARCHIVE_COL)),
+                "IS",
+                new ValueExpression(null, typeof(object)),
+                typeof(bool))
+            : null!;
 
-        return filter != string.Empty;
+        return enforced;
     }
 
     public string AddDbParameter(object? value)
@@ -168,7 +166,11 @@ class QueryContext(IMetaProvider metaProvider, ISqlDialect sqlDialect, bool incl
             return value.ToString()!;
 
         if (value is bool b)
-            return SqlDialect.RenderBoolean(b);
+        {
+            var boolName = string.Format("@p{0}", _dbParameters.Count);
+            _dbParameters.Add(new DbParameter(boolName, b));
+            return boolName;
+        }
 
         if (value is string st && !st.Contains('\''))
             return $"'{st}'";

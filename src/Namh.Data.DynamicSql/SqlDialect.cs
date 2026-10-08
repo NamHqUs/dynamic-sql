@@ -8,6 +8,7 @@ public interface ISqlDialect
     string QuoteIdentifier(string identifier);
     string RenderTable(Entity entity);
     string RenderBoolean(bool value);
+    string RenderStringLiteral(string value);
     string RenderStringConcatenation(string left, string right);
     string RenderTakePrefix(int count);
     string RenderPaging(int? skip, int? take);
@@ -24,6 +25,7 @@ public sealed class SqlServerDialect : ISqlDialect
             : entity.RawSql;
 
     public string RenderBoolean(bool value) => value ? "1" : "0";
+    public string RenderStringLiteral(string value) => $"N'{value.Replace("'", "''")}'";
 
     public string RenderStringConcatenation(string left, string right) => $"{left} + {right}";
 
@@ -49,6 +51,7 @@ public sealed class SqliteDialect(string? schema = null) : ISqlDialect
             : entity.RawSql;
 
     public string RenderBoolean(bool value) => value ? "1" : "0";
+    public string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";
 
     public string RenderStringConcatenation(string left, string right) => $"{left} || {right}";
 
@@ -75,6 +78,7 @@ public sealed class PostgresDialect(string schema = "public") : ISqlDialect
             : entity.RawSql;
 
     public string RenderBoolean(bool value) => value ? "TRUE" : "FALSE";
+    public string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";
 
     public string RenderStringConcatenation(string left, string right) => $"{left} || {right}";
 

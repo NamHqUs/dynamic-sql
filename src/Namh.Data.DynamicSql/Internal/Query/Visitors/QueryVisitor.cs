@@ -2,20 +2,14 @@
 
 namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
 
-class QueryVisitor : ExpressionVisitor
+class QueryVisitor(QueryContext queryContext) : ExpressionVisitor
 {
-    protected readonly QueryContext QueryContext;
+    protected readonly QueryContext QueryContext = queryContext;
 
-    private readonly Lazy<RecordParameterVisitor> _parameterVisitor;
-    private readonly Lazy<ClauseVisitor> _clauseVisitor;
-
-    public QueryVisitor(QueryContext queryContext)
-    {
-        QueryContext = queryContext;
-
-        _parameterVisitor = new Lazy<RecordParameterVisitor>(() => new RecordParameterVisitor(queryContext));
-        _clauseVisitor = new Lazy<ClauseVisitor>(() => new ClauseVisitor(queryContext));
-    }
+    private readonly Lazy<RecordParameterVisitor> _parameterVisitor =
+        new(() => new RecordParameterVisitor(queryContext));
+    private readonly Lazy<ClauseVisitor> _clauseVisitor =
+        new(() => new ClauseVisitor(queryContext));
 
     protected override Expression VisitMember(MemberExpression node)
     {

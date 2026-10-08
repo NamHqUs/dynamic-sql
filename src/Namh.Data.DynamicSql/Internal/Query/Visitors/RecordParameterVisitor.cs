@@ -4,12 +4,8 @@ using Namh.Data.DynamicSql.Model;
 
 namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
 
-class RecordParameterVisitor : QueryVisitor
+class RecordParameterVisitor(QueryContext queryContext) : QueryVisitor(queryContext)
 {
-    public RecordParameterVisitor(QueryContext queryContext) : base(queryContext)
-    {
-    }
-
     public SqlExpression Eval(MethodCallExpression node)
     {
         switch (node.Method.Name)
@@ -54,7 +50,7 @@ class RecordParameterVisitor : QueryVisitor
         var field = new Field(dbColumn) { RawSql = dbColumn };
 
         return isDbColumn
-            ? new FieldExpression(tableContext.Alias, field, QueryContext.SqlDialect)
-            : new RawSqlFieldExpression("RawSql", dbColumn, QueryContext.SqlDialect);
+            ? new FieldExpression(tableContext.Alias, field)
+            : new RawSqlFieldExpression("RawSql", dbColumn);
     }
 }

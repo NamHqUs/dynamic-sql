@@ -1,22 +1,10 @@
-﻿namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
 
-class AnyExpression : TableExpression
+class AnyExpression(TableExpression tableContext) : TableExpression(tableContext.Entity, tableContext.Alias)
 {
-    private readonly TableExpression _tableContext;
+    private readonly TableExpression _tableContext = tableContext;
 
     public override Type Type => typeof(bool);
 
-    internal AnyExpression(TableExpression tableContext): base(tableContext.Entity, tableContext.Alias, tableContext.SqlDialect)
-    {
-        _tableContext = tableContext;
-    }
-
-    internal override string RenderSql()
-    {
-        return $"(SELECT 1 WHERE EXISTS(" +
-            $"SELECT 1 " +
-            $"FROM {_tableContext.SqlFrom}" +
-            (_tableContext.SqlWhere == null ? "" : $" WHERE {_tableContext.SqlWhere}") +
-            $")) = 1";
-    }
+    internal TableExpression Query => _tableContext;
 }

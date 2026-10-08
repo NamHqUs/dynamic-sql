@@ -10,8 +10,7 @@ class DbReader(
     IEnumerable<ProjectionItem> projectionItems,
     bool isResultInHierarchy = false,
     Action<DataRecord>? onProcessDataRecord = null,
-    Func<string, object, object>? onProcessDataField = null
-    ) : IEnumerable<DataRecord>, IEnumerable
+    Func<string, object, object>? onProcessDataField = null) : IEnumerable<DataRecord>, IEnumerable
 {
     #region Inner Classes
 
@@ -22,15 +21,27 @@ class DbReader(
         public Dictionary<string, FieldMap>? Children;
     };
 
-    class Enumerator(IDataReader reader,
+    class Enumerator : IEnumerator<DataRecord>, IEnumerator, IDisposable
+    {
+        private readonly IDataReader reader;
+        private readonly Action<DataRecord>? onProcessDataRecord;
+        private readonly Func<string, object, object>? onProcessDataField;
+        private readonly Lazy<Dictionary<string, FieldMap>> _dbMapping;
+        public DataRecord Current { get; private set; } = default!;
+
+        public Enumerator(
+            IDataReader reader,
             IEnumerable<ProjectionItem> projectionItems,
             bool isResultInHierarchy = false,
             Action<DataRecord>? onProcessDataRecord = null,
-            Func<string, object, object>? onProcessDataField = null
-            ) : IEnumerator<DataRecord>, IEnumerator, IDisposable
-    {
-        private readonly Lazy<Dictionary<string, FieldMap>> _dbMapping = new(() => BuildMapping(projectionItems, isResultInHierarchy));
-        public DataRecord Current { get; private set; } = default!;
+            Func<string, object, object>? onProcessDataField = null)
+        {
+            this.reader = reader;
+            this.onProcessDataRecord = onProcessDataRecord;
+            this.onProcessDataField = onProcessDataField;
+            _dbMapping = new Lazy<Dictionary<string, FieldMap>>(
+                () => BuildMapping(projectionItems, isResultInHierarchy));
+        }
 
         object IEnumerator.Current => this.Current;
 
@@ -90,11 +101,11 @@ class DbReader(
                     {
                         var current = fieldMap == null ? mapRoot : (fieldMap.Children ??= []);
 
-                        current[propName] = fieldMap = current.TryGetValue(propName, out fieldMap) ? fieldMap : new FieldMap(colIndex, e.Item.RenderSql());
+                        current[propName] = fieldMap = current.TryGetValue(propName, out fieldMap) ? fieldMap : new FieldMap(colIndex, e.Alias);
                     }
                 }
                 else
-                    mapRoot[e.Alias] = new FieldMap(colIndex, e.Item.RenderSql());
+                    mapRoot[e.Alias] = new FieldMap(colIndex, e.Alias);
 
                 colIndex++;
             }

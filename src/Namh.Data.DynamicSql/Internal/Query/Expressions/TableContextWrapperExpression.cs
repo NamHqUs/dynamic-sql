@@ -3,7 +3,7 @@
 namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
 
 class TableContextWrapperExpression(TableExpression tableContext, string alias)
-    : TableExpression(CreateEntity(tableContext), alias, tableContext.SqlDialect)
+    : TableExpression(CreateEntity(tableContext), alias)
 {
     private static Entity CreateEntity(TableExpression tableContext)
         => new(

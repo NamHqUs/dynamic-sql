@@ -3,15 +3,10 @@ using System.Linq.Expressions;
 
 namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
 
-abstract class LambdaVisitor : QueryVisitor
+abstract class LambdaVisitor(TableExpression tableContext, QueryContext queryContext)
+    : QueryVisitor(queryContext)
 {
-    protected TableExpression TableContext;
-
-    public LambdaVisitor(TableExpression tableContext, QueryContext queryContext) 
-        : base(queryContext)
-    {
-        TableContext = tableContext;
-    }
+    protected TableExpression TableContext = tableContext;
 
     public TableExpression Eval(LambdaExpression lambda)
     {

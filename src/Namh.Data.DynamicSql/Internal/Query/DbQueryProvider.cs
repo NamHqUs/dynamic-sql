@@ -82,7 +82,7 @@ class DbQueryProvider(
     public string GetQueryText(Expression expression)
     {
         var query = GetQuery(expression);
-        var sb = new StringBuilder(query.CommandText);
+        var sb = new StringBuilder(SqlFormatter.Format(query.CommandText));
 
         foreach (var parameter in query.Parameters)
         {
@@ -102,10 +102,11 @@ class DbQueryProvider(
         IEnumerable<ProjectionItem> projectionItems) 
         Translate(Expression expression)
     {
-        var queryContext = new QueryContext(metaProvider, sqlDialect, includeArchive);
+        var queryContext = new QueryContext(metaProvider, includeArchive);
         var translator =  (TableExpression) new QueryVisitor(queryContext).Visit(expression);
 
-        return (translator.RenderSql(), queryContext.DbParameters, translator.ProjectionItems);
+        var rendered = new SqlGenerator(sqlDialect).Generate(translator, queryContext.DbParameters);
+        return (rendered.CommandText, rendered.Parameters, translator.ProjectionItems);
     }
 
     private IDbCommand CreateDbCommand(string sqlQuery, IEnumerable<DbParameter> parameters)
