@@ -11,7 +11,7 @@ class AnyExpression : TableExpression
         _tableContext = tableContext;
     }
 
-    protected override string ToSql()
+    internal override string RenderSql()
     {
         return $"(SELECT 1 WHERE EXISTS(" +
             $"SELECT 1 " +

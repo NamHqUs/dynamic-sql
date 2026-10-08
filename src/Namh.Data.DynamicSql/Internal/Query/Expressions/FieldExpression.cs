@@ -9,7 +9,10 @@ class FieldExpression(string tableAlias, Field field, ISqlDialect sqlDialect) : 
     public Field MetaField { get; } = field;
     public string TableAlias { get; } = tableAlias; 
 
-    protected override string ToSql() => MetaField.FieldType == FieldType.DbColumn
+    internal override string DebugView
+        => $"{GetType().Name}: {TableAlias}.{MetaField.Name}";
+
+    internal override string RenderSql() => MetaField.FieldType == FieldType.DbColumn
         ? $"{TableAlias}.{_sqlDialect.QuoteIdentifier(MetaField.RawSql)}"
         : $"({MetaField.RawSql})";
 }

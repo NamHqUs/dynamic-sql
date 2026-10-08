@@ -4,5 +4,8 @@ class ValueExpression(object? value, Type type) : SqlExpression(type)
 {
     public readonly object? Value =value;
 
-    protected override string ToSql() => Value?.ToString() ?? "NULL";
+    internal override string DebugView
+        => $"{GetType().Name}: {Value ?? "NULL"}";
+
+    internal override string RenderSql() => Value?.ToString() ?? "NULL";
 }

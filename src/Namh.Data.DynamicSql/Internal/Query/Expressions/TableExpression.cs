@@ -19,6 +19,9 @@ class TableExpression(Entity entity, string alias, ISqlDialect sqlDialect) : Sql
     public readonly List<FieldExpression> Fields = [];
     public readonly Dictionary<string, TableExpression> JoinedTables = [];
 
+    internal override string DebugView
+        => $"{GetType().Name}: {Entity.Name} ({Alias})";
+
     protected TableExpression(TableExpression source) : this(source.Entity, source.Alias, source.SqlDialect)
     {
         SqlSelect = source.SqlSelect == null ? null : new StringBuilder(source.SqlSelect.ToString());
@@ -29,7 +32,7 @@ class TableExpression(Entity entity, string alias, ISqlDialect sqlDialect) : Sql
         SkipCount = source.SkipCount;
     }
 
-    protected override string ToSql()
+    internal override string RenderSql()
     {
         var sqlSelect = TranslateSelect();
 

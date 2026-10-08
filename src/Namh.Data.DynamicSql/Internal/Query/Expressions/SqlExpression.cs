@@ -1,16 +1,16 @@
-﻿using System.Linq.Expressions;
+﻿using System.Diagnostics;
+using System.Linq.Expressions;
 
 namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
 
+[DebuggerDisplay("{DebugView,nq}")]
 abstract class SqlExpression(Type type) : Expression
 {
     public override ExpressionType NodeType => (ExpressionType)1000;
     public override Type Type { get; } = type;
 
-    protected abstract string ToSql();
+    internal abstract string RenderSql();
 
-    internal string RenderSql() => ToSql();
-
-    public override string ToString()
+    internal virtual string DebugView
         => $"{GetType().Name} ({Type.Name})";
 }
