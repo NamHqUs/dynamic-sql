@@ -118,6 +118,7 @@ public class _02_Filter_FieldTest : TestBase
     {
         var query = _db.Query("User")
             .Where(e => e.Query("Members").Any(x => x.Query("Members").Any(y => y["Name"] == "David")));
+
         Assert.That(query.Count(), Is.EqualTo(1));
     }
 

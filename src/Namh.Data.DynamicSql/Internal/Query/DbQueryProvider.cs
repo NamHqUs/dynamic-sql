@@ -26,7 +26,7 @@ class DbQueryProvider(
     {
         var (sqlQuery, parameters, _) = Translate(expression);
         return new SqlQuery(
-            sqlQuery,
+            SqlFormatter.Format(sqlQuery),
             parameters.Select(e => new SqlQueryParameter(e.Name, e.Value)).ToArray());
     }
 
@@ -105,7 +105,7 @@ class DbQueryProvider(
         var queryContext = new QueryContext(metaProvider, sqlDialect, includeArchive);
         var translator =  (TableExpression) new QueryVisitor(queryContext).Visit(expression);
 
-        return (translator.ToString(), queryContext.DbParameters, translator.ProjectionItems);
+        return (translator.RenderSql(), queryContext.DbParameters, translator.ProjectionItems);
     }
 
     private IDbCommand CreateDbCommand(string sqlQuery, IEnumerable<DbParameter> parameters)

@@ -90,11 +90,11 @@ class DbReader(
                     {
                         var current = fieldMap == null ? mapRoot : (fieldMap.Children ??= []);
 
-                        current[propName] = fieldMap = current.TryGetValue(propName, out fieldMap) ? fieldMap : new FieldMap(colIndex, e.Item.ToString());
+                        current[propName] = fieldMap = current.TryGetValue(propName, out fieldMap) ? fieldMap : new FieldMap(colIndex, e.Item.RenderSql());
                     }
                 }
                 else
-                    mapRoot[e.Alias] = new FieldMap(colIndex, e.Item.ToString());
+                    mapRoot[e.Alias] = new FieldMap(colIndex, e.Item.RenderSql());
 
                 colIndex++;
             }

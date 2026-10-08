@@ -51,8 +51,12 @@ class SelectVisitor : LambdaVisitor
         var left = Visit(node.Left);
         var right = Visit(node.Right);
 
-        var leftVal = left is TableExpression ? $"({left})" : Format(left);
-        var rightVal = right is TableExpression ? $"({right})" : Format(right);
+        var leftVal = left is TableExpression leftTable
+            ? $"({leftTable.RenderSql()})"
+            : Format(left);
+        var rightVal = right is TableExpression rightTable
+            ? $"({rightTable.RenderSql()})"
+            : Format(right);
 
         var operation = node.NodeType == ExpressionType.Add &&
             (ContainsStringConstant(node.Left) || ContainsStringConstant(node.Right))
@@ -88,6 +92,9 @@ class SelectVisitor : LambdaVisitor
     { 
         if (node is ConstantExpression @const && @const.Value is string text)
             return $"'{text}'";
+
+        if (node is SqlExpression sqlExpression)
+            return sqlExpression.RenderSql();
 
         return node.ToString();
     }

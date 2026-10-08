@@ -28,6 +28,6 @@ class ProjectionItem
 
     public override string ToString()
         => Item is FieldExpression
-            ? $"{Item} {_sqlDialect.QuoteIdentifier(Alias)}"
-            : $"({Item}) {_sqlDialect.QuoteIdentifier(Alias)}";
+            ? $"{Item.RenderSql()} {_sqlDialect.QuoteIdentifier(Alias)}"
+            : $"({Item.RenderSql()}) {_sqlDialect.QuoteIdentifier(Alias)}";
 }

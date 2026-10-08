@@ -10,7 +10,7 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext) : La
     protected override void OnProcessResult(Expression body)
     {
 
-        var sqlFilter = ((SqlExpression)body).ToString();
+        var sqlFilter = ((SqlExpression)body).RenderSql();
 
         if (TableContext.SqlWhere == null || TableContext.SqlWhere.Length == 0)
             TableContext.SqlWhere = new StringBuilder(sqlFilter);
@@ -23,8 +23,12 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext) : La
         var left = Visit(node.Left);
         var right = Visit(node.Right);
 
-        var sqlLeft = (left is AggregateExpression) ? $"({left})" : left.ToString();
-        var sqlRight = (right is AggregateExpression) ? $"({right})" : right.ToString();
+        var sqlLeft = left is SqlExpression leftSql
+            ? left is AggregateExpression ? $"({leftSql.RenderSql()})" : leftSql.RenderSql()
+            : left.ToString();
+        var sqlRight = right is SqlExpression rightSql
+            ? right is AggregateExpression ? $"({rightSql.RenderSql()})" : rightSql.RenderSql()
+            : right.ToString();
 
         var oper = sqlRight != "NULL" ? node.NodeType.ToSql() :
             node.NodeType == ExpressionType.Equal ? "IS" : "IS NOT";
@@ -36,9 +40,12 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext) : La
     {
         if (node.Method.DeclaringType == typeof(DataValue) && node.Method.Name == nameof(DataValue.RawCompare))
         {
-            var left = Visit(node.Object);
+            var left = Visit(node.Object!);
             var right = ((ConstantExpression)node.Arguments[0]).Value;
-            return new ValueExpression($"({left} {right})", typeof(bool));
+            var leftSql = left is SqlExpression sqlExpression
+                ? sqlExpression.RenderSql()
+                : left.ToString();
+            return new ValueExpression($"({leftSql} {right})", typeof(bool));
         }
 
         return base.VisitMethodCall(node);
