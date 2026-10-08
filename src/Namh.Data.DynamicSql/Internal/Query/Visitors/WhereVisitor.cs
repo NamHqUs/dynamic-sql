@@ -1,7 +1,6 @@
 ﻿using Namh.Data.DynamicSql.Internal.Query.Expressions;
 using Namh.Data.DynamicSql.Internal.Utilities;
 using System.Linq.Expressions;
-using System.Text;
 
 namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
 

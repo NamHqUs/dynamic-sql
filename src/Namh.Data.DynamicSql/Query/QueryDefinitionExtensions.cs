@@ -1,7 +1,8 @@
 using System.Linq.Expressions;
-using System.Reflection;
 
+#pragma warning disable IDE0130
 namespace Namh.Data.DynamicSql;
+#pragma warning restore IDE0130
 
 public static class QueryDefinitionExtensions
 {
