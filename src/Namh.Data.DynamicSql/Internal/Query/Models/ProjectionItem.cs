@@ -20,7 +20,8 @@ class ProjectionItem
         Alias = fieldExpression.MetaField.Name;
     }
 
-    public ProjectionItem(string tableAlias, Field field) : this(new FieldExpression(tableAlias, field))
+    public ProjectionItem(string tableAlias, Field field, ISqlDialect sqlDialect)
+        : this(new FieldExpression(tableAlias, field, sqlDialect))
     {
     }
 

@@ -54,7 +54,7 @@ class RecordParameterVisitor : QueryVisitor
         var field = new Field(dbColumn) { RawSql = dbColumn };
 
         return isDbColumn
-            ? new FieldExpression(tableContext.Alias, field)
-            : new RawSqlFieldExpression("RawSql", dbColumn);
+            ? new FieldExpression(tableContext.Alias, field, QueryContext.SqlDialect)
+            : new RawSqlFieldExpression("RawSql", dbColumn, QueryContext.SqlDialect);
     }
 }

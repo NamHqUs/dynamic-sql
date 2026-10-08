@@ -60,6 +60,9 @@ class ClauseVisitor(QueryContext queryContext)
             case nameof(DbQueryableExtension.Take):
                 return new TakeExpression(tableContext, (int)((ConstantExpression)methodCall.Arguments[1].StripQuotes()).Value!);
 
+            case nameof(DbQueryableExtension.Skip):
+                return new SkipExpression(tableContext, (int)((ConstantExpression)methodCall.Arguments[1].StripQuotes()).Value!);
+
             case nameof(DbQueryableExtension.Aggregate):
                 return (AggregateExpression)QueryContext.ParseFieldPath(tableContext, ((ConstantExpression)methodCall.Arguments[1].StripQuotes()).Value!.ToString()!);
 

@@ -16,7 +16,7 @@ public class TestBase
         _connection = DefinedData.GetDbConnection(DbServerType.SqlServer);
 
         IMetaProvider metaProvider = new MetaProvider(DefinedMetadata.Metadata);
-        _db = new DynamicSqlContext(_connection, metaProvider);
+        _db = new DynamicSqlContext(_connection, metaProvider, new SqlServerDialect());
     }
 
 

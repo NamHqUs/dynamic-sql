@@ -5,18 +5,19 @@ using System.Text;
 
 namespace Namh.Data.DynamicSql.Internal.Query;
 
-class QueryContext(IMetaProvider metaProvider, bool includeArchive)
+class QueryContext(IMetaProvider metaProvider, ISqlDialect sqlDialect, bool includeArchive)
 {
     private const string ARCHIVE_COL = "DeletedOn";
     private int _aliasCount;
     public readonly Stack<(string ArgumentName, TableExpression TableContext)> Arguments = new();
+    public readonly ISqlDialect SqlDialect = sqlDialect;
     private readonly List<DbParameter> _dbParameters = [];
 
     public IEnumerable<DbParameter> DbParameters => _dbParameters;
 
     public TableExpression CreateTableContext(Entity entity)
     {
-        var table = new TableExpression(entity, GetNextAlias());
+        var table = new TableExpression(entity, GetNextAlias(), SqlDialect);
 
         if (BuildEnforceFilter(table, out string filter))
             table.SqlWhere = new StringBuilder(filter);
@@ -48,7 +49,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         else
         {
             var lastAlias = ApplyJoin(tableContext, joinedData).Alias;
-            return new FieldExpression(lastAlias, metaField);
+            return new FieldExpression(lastAlias, metaField, SqlDialect);
         }
     }
 
@@ -58,7 +59,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         var lastTable = ApplyJoin(tableContext, joinedData.Take(joinedData.Count() - 1));
 
         var (relation, entity) = joinedData.Last();
-        var joinedTable = new TableExpression(entity, GetNextAlias());
+        var joinedTable = new TableExpression(entity, GetNextAlias(), SqlDialect);
         joinedTable.SqlWhere = new StringBuilder(BuildJoinKeys(lastTable, joinedTable, relation));
 
         return joinedTable;
@@ -87,7 +88,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         {
             if (!lastTable.JoinedTables.TryGetValue(relation.Name, out TableExpression? joinedTable))
             {
-                lastTable.JoinedTables[relation.Name] = joinedTable = new TableExpression(joinedEntity, GetNextAlias());
+                lastTable.JoinedTables[relation.Name] = joinedTable = new TableExpression(joinedEntity, GetNextAlias(), SqlDialect);
                 tableContext.SqlFrom.Append(BuildJoinPath(lastTable, joinedTable, relation));
             }
             lastTable = joinedTable;
@@ -105,7 +106,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
             string sqlWhere = null!;
             foreach (var (relation, joinedEntity) in joinedData)
             {
-                var joinedTable = new TableExpression(joinedEntity, GetNextAlias());
+                var joinedTable = new TableExpression(joinedEntity, GetNextAlias(), SqlDialect);
                 if (sqlWhere == null)
                     sqlWhere = BuildJoinKeys(tableContext, joinedTable, relation);
                 else
@@ -128,7 +129,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
 
         joinedTable = reverse ? table : joinedTable;
 
-        return $" {joinOper} {joinedTable.Entity} {joinedTable.Alias} ON {joinKeys}";
+        return $" {joinOper} {SqlDialect.RenderTable(joinedTable.Entity)} {joinedTable.Alias} ON {joinKeys}";
     }
 
     private string BuildJoinKeys(TableExpression table, TableExpression joinedTable, Relation relation)
@@ -138,7 +139,11 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         {
             if (sb.Length > 0)
                 sb.Append(" AND ");
-            sb.AppendFormat("{0}.[{1}] = {2}.[{3}]", joinedTable.Alias, e.ToDbColumn, table.Alias, e.FromDbColumn);
+            sb.AppendFormat("{0}.{1} = {2}.{3}",
+                joinedTable.Alias,
+                SqlDialect.QuoteIdentifier(e.ToDbColumn),
+                table.Alias,
+                SqlDialect.QuoteIdentifier(e.FromDbColumn));
         }
 
         if (BuildEnforceFilter(joinedTable, out string filter))
@@ -151,7 +156,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
     {
         filter = !includeArchive
                 && table.Entity.Fields.Any(e => string.Equals(e.Name, ARCHIVE_COL, StringComparison.OrdinalIgnoreCase))
-            ? $"{table.Alias}.[{ARCHIVE_COL}] is null"
+            ? $"{table.Alias}.{SqlDialect.QuoteIdentifier(ARCHIVE_COL)} is null"
             : string.Empty;
 
         return filter != string.Empty;
@@ -163,7 +168,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
             return value.ToString()!;
 
         if (value is bool b)
-            return b ? "1" : "0";
+            return SqlDialect.RenderBoolean(b);
 
         if (value is string st && !st.Contains('\''))
             return $"'{st}'";

@@ -173,7 +173,6 @@ public class _1_ProjectionTest : TestBase
     }
 
     [Test]
-    [Category("SqlServer")]
     public void _10_Alias_Compute()
     {
         var query = _db.Query("User")

@@ -2,7 +2,8 @@
 
 namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
 
-class TableContextWrapperExpression(TableExpression tableContext, string alias) : TableExpression(CreateEntity(tableContext), alias)
+class TableContextWrapperExpression(TableExpression tableContext, string alias)
+    : TableExpression(CreateEntity(tableContext), alias, tableContext.SqlDialect)
 {
     private static Entity CreateEntity(TableExpression tableContext)
         => new(

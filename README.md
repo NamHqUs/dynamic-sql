@@ -83,6 +83,21 @@ using var db = new DynamicSqlContext(
     metaProvider);
 ```
 
+The dialect is selected from the connection type. You can also provide one
+explicitly when using a custom ADO.NET provider or a SQLite attached schema:
+
+```csharp
+using var db = new DynamicSqlContext(
+    connection,
+    metaProvider,
+    new SqliteDialect(schema: "dbo"));
+```
+
+Built-in dialects currently include `SqlServerDialect` and `SqliteDialect`.
+They handle identifier quoting, boolean values, and paging syntax. Raw SQL
+fields and aggregate expressions remain provider-specific and should use the
+syntax supported by the configured database.
+
 ## Querying
 
 Results are returned as `DataRecord`, a case-insensitive dictionary of field

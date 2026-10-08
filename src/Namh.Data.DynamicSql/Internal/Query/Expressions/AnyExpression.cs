@@ -6,7 +6,7 @@ class AnyExpression : TableExpression
 
     public override Type Type => typeof(bool);
 
-    internal AnyExpression(TableExpression tableContext): base(tableContext.Entity, tableContext.Alias)
+    internal AnyExpression(TableExpression tableContext): base(tableContext.Entity, tableContext.Alias, tableContext.SqlDialect)
     {
         _tableContext = tableContext;
     }

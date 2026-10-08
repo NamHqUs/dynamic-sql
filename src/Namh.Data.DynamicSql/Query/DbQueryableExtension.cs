@@ -77,7 +77,7 @@ public static class DbQueryableExtension
     public static int Count(this IDbQueryable source)
     {
         var expression = source.CreateQuery(MethodBase.GetCurrentMethod()!).Expression;
-        return (int)source.Provider.ExecuteScalar(expression)!;
+        return Convert.ToInt32(source.Provider.ExecuteScalar(expression));
     }
     public static int Count(this IDbQueryable source, Expression<Func<IRecordParameter, bool>> predicate)
         => source.Where(predicate).Count();
@@ -94,7 +94,7 @@ public static class DbQueryableExtension
     public static bool Any(this IDbQueryable source, Expression<Func<IRecordParameter, bool>> predicate)
     {
         var expression = source.CreateQuery(MethodBase.GetCurrentMethod()!).Expression;
-        return (bool)source.Provider.ExecuteScalar(expression)!;
+        return Convert.ToBoolean(source.Provider.ExecuteScalar(expression));
     }
     public static Task<bool> AnyAsync(
         this IDbQueryable source,
@@ -128,7 +128,17 @@ public static class DbQueryableExtension
         IDbQueryable source,
         Expression expression,
         CancellationToken cancellationToken)
-        => (T)(await source.Provider.ExecuteScalarAsync(expression, cancellationToken))!;
+    {
+        var value = await source.Provider.ExecuteScalarAsync(expression, cancellationToken);
+
+        if (typeof(T) == typeof(int))
+            return (T)(object)Convert.ToInt32(value);
+
+        if (typeof(T) == typeof(bool))
+            return (T)(object)Convert.ToBoolean(value);
+
+        return (T)value!;
+    }
 
     private static Task<List<DataRecord>> TakeAsync(
         this IDbQueryable source,

@@ -6,7 +6,7 @@ public class _2_Filter_FieldTest : TestBase
 {
 
     [Test]
-    public void _01_Field_Primative()
+    public void _01_Field_Primitive()
     {
         var query = _db.Query("User").Where(e => e["Age"] > 30);
         Assert.That(query.Count(), Is.EqualTo(3));

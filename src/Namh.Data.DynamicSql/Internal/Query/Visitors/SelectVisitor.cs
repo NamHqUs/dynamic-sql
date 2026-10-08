@@ -54,8 +54,18 @@ class SelectVisitor : LambdaVisitor
         var leftVal = left is TableExpression ? $"({left})" : Format(left);
         var rightVal = right is TableExpression ? $"({right})" : Format(right);
 
-        return new ValueExpression($"{leftVal} {node.NodeType.ToSql()} {rightVal}", node.Type);
+        var operation = node.NodeType == ExpressionType.Add &&
+            (ContainsStringConstant(node.Left) || ContainsStringConstant(node.Right))
+                ? QueryContext.SqlDialect.RenderStringConcatenation(leftVal, rightVal)
+                : $"{leftVal} {node.NodeType.ToSql()} {rightVal}";
+
+        return new ValueExpression(operation, node.Type);
     }
+
+    private static bool ContainsStringConstant(Expression node)
+        => node is ConstantExpression { Value: string } ||
+            node is BinaryExpression binary &&
+            (ContainsStringConstant(binary.Left) || ContainsStringConstant(binary.Right));
 
     private IEnumerable<ProjectionItem> BuildProjection(
         TableExpression tableContext, IDictionary<string, object?> memebers, string? parentKey = null)

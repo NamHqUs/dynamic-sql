@@ -10,13 +10,17 @@ using System.Text;
 
 namespace Namh.Data.DynamicSql.Internal.Query;
 
-class DbQueryProvider(IMetaProvider metaProvider, IDbConnection dbConnection, string entityName, bool includeArchive) : IDbQueryProvider
+class DbQueryProvider(
+    IMetaProvider metaProvider,
+    IDbConnection dbConnection,
+    ISqlDialect sqlDialect,
+    string entityName,
+    bool includeArchive) : IDbQueryProvider
 {
     public readonly Entity Entity = metaProvider.Get(entityName);
 
     public IDbQueryable CreateQuery(Expression expression)
         => new DbQueryable(this, expression);
-
 
     public IEnumerable<DataRecord> Execute(Expression expression)
     {
@@ -91,7 +95,7 @@ class DbQueryProvider(IMetaProvider metaProvider, IDbConnection dbConnection, st
         IEnumerable<ProjectionItem> projectionItems) 
         Translate(Expression expression)
     {
-        var queryContext = new QueryContext(metaProvider, includeArchive);
+        var queryContext = new QueryContext(metaProvider, sqlDialect, includeArchive);
         var translator =  (TableExpression) new QueryVisitor(queryContext).Visit(expression);
 
         return (translator.ToString(), queryContext.DbParameters, translator.ProjectionItems);
