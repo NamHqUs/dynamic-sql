@@ -49,6 +49,10 @@ public static class DbQueryableExtension
 
     public static List<DataRecord> ToList(this IDbQueryable source)
         => [.. (IEnumerable<DataRecord>)source];
+
+    public static SqlQuery ToSql(this IDbQueryable source)
+        => source.Provider.GetQuery(source.Expression);
+
     public static Task<List<DataRecord>> ToListAsync(
         this IDbQueryable source,
         CancellationToken cancellationToken = default)

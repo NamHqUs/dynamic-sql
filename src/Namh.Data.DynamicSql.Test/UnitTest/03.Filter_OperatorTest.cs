@@ -2,7 +2,7 @@
 
 
 [TestFixture]
-public class _3_Filter_OperatorTest : TestBase
+public class _03_Filter_OperatorTest : TestBase
 {
     [Test]
     public void _01_String_In()

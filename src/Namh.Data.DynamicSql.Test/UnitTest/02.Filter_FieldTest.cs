@@ -2,7 +2,7 @@
 
 
 [TestFixture]
-public class _2_Filter_FieldTest : TestBase
+public class _02_Filter_FieldTest : TestBase
 {
 
     [Test]

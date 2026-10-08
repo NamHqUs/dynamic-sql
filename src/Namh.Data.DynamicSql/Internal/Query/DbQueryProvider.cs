@@ -22,6 +22,14 @@ class DbQueryProvider(
     public IDbQueryable CreateQuery(Expression expression)
         => new DbQueryable(this, expression);
 
+    public SqlQuery GetQuery(Expression expression)
+    {
+        var (sqlQuery, parameters, _) = Translate(expression);
+        return new SqlQuery(
+            sqlQuery,
+            parameters.Select(e => new SqlQueryParameter(e.Name, e.Value)).ToArray());
+    }
+
     public IEnumerable<DataRecord> Execute(Expression expression)
     {
         var (sqlQuery, parameters, projection) = Translate(expression);
@@ -73,17 +81,16 @@ class DbQueryProvider(
 
     public string GetQueryText(Expression expression)
     {
-        var (sqlQuery, parameters, _) = Translate(expression);
-        var sb = new StringBuilder(sqlQuery);
+        var query = GetQuery(expression);
+        var sb = new StringBuilder(query.CommandText);
 
-        if (parameters != null)
+        foreach (var parameter in query.Parameters)
         {
             sb.AppendLine();
-            foreach (var e in parameters)
-            {
-                sb.AppendLine();
-                sb.AppendFormat("{0} = {1} (Type:{2})", e.Name, e.Value ?? "[NULL]", e.Value?.GetType().Name ?? "UNKNOW");
-            }
+            sb.AppendFormat("{0} = {1} (Type:{2})",
+                parameter.Name,
+                parameter.Value ?? "[NULL]",
+                parameter.Value?.GetType().Name ?? "UNKNOWN");
         }
 
         return sb.ToString();

@@ -7,6 +7,7 @@ namespace Namh.Data.DynamicSql;
 public interface IDbQueryProvider
 {
     IDbQueryable CreateQuery(Expression expression);
+    SqlQuery GetQuery(Expression expression);
     IEnumerable<DataRecord> Execute(Expression expression);
     object? ExecuteScalar(Expression expression);
     Task<List<DataRecord>> ExecuteAsync(Expression expression, CancellationToken cancellationToken);

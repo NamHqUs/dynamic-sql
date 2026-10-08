@@ -124,6 +124,27 @@ foreach (var user in users)
     Console.WriteLine($"{user["Id"]}: {user["Name"]} ({user["Manager.Name"] ?? "none"})");
 ```
 
+### Generated SQL diagnostics
+
+Inspect the generated command text and parameters without executing the query:
+
+```csharp
+var sql = db.Query("User")
+    .Where(user => user["Birthday"] == birthday)
+    .Select("Id", "Name")
+    .ToSql();
+
+Console.WriteLine(sql.CommandText);
+
+foreach (var parameter in sql.Parameters)
+    Console.WriteLine($"{parameter.Name} = {parameter.Value}");
+```
+
+`SqlQuery.CommandText` contains the parameterized SQL, while
+`SqlQuery.Parameters` contains the parameter names and values. Do not write
+parameter values to logs without considering whether they contain sensitive
+information.
+
 ### Projections and aliases
 
 Use `Select` with field paths, a `DataRecord` alias map, or an expression that

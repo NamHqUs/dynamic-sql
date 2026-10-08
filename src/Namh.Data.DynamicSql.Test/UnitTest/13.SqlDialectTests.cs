@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
 [TestFixture]
-public class SqlDialectTests
+public class _13_SqlDialectTests
 {
     private static readonly IMetaProvider Metadata = new MetaProvider(
     [

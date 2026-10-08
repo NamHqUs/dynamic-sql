@@ -1,7 +1,7 @@
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
 [TestFixture]
-public class _1_ProjectionAsyncTest : TestBase
+public class _01_ProjectionAsyncTest : TestBase
 {
     [Test]
     public async Task _01_Field_Primitive()

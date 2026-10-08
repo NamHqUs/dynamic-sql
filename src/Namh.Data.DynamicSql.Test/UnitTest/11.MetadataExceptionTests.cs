@@ -1,7 +1,7 @@
-namespace Namh.Data.DynamicSql.Test;
+namespace Namh.Data.DynamicSql.Test.UnitTest;
 
 [TestFixture]
-public class MetadataExceptionTests
+public class _11_MetadataExceptionTests
 {
     [Test]
     public void GetUnknownEntityThrowsEntityNotFoundException()
