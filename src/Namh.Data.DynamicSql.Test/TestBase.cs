@@ -12,10 +12,10 @@ public class TestBase
     [OneTimeSetUp]
     public void SetupOnce()
     {
-        _connection = DefinedData.GetDbConnection(DbServerType.Postgres);
+        _connection = DefinedData.GetDbConnection(DbServerType.SqlServer);
+        _sqlDialect = new SqlServerDialect();
 
         IMetaProvider metaProvider = new MetaProvider(DefinedMetadata.Metadata);
-        _sqlDialect = new PostgresDialect();
         _db = new DynamicSqlContext(_connection, metaProvider, _sqlDialect);
     }
 

@@ -160,9 +160,11 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         return enforced;
     }
 
-    public string AddDbParameter(object? value)
+    public string AddDbParameter(object? value, bool forceParameter = false)
     {
-        if (value is byte || value is short || value is int || value is long || value is float || value is decimal || value is double)
+        if (!forceParameter &&
+            (value is byte || value is short || value is int || value is long ||
+             value is float || value is decimal || value is double))
             return value.ToString()!;
 
         if (value is bool b)
@@ -172,7 +174,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
             return boolName;
         }
 
-        if (value is string st && !st.Contains('\''))
+        if (!forceParameter && value is string st && !st.Contains('\''))
             return $"'{st}'";
 
         var name = string.Format("@p{0}", _dbParameters.Count);

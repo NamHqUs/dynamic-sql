@@ -30,7 +30,7 @@ public class _14_QueryDefinitionTests : TestBase
 
         Assert.That(sql.CommandText, Does.Contain("SELECT"));
         Assert.That(sql.CommandText, Does.Contain("ORDER BY"));
-        Assert.That(sql.CommandText, Does.Contain("LIMIT 10"));
+        Assert.That(sql.CommandText, Does.Contain("FETCH NEXT 10 ROWS ONLY"));
         Assert.That(sql.CommandText, Does.Contain("Age"));
     }
 
@@ -64,5 +64,39 @@ public class _14_QueryDefinitionTests : TestBase
         };
 
         Assert.Throws<ArgumentOutOfRangeException>(() => _db.Query(definition));
+    }
+
+    [Test]
+    public void JsonDefinitionSupportsAliasesLikeGroupingSortingAndPaging()
+    {
+        const string json = """
+            {
+              "entity": "User",
+              "columns": ["Name", "Manager.Name|Manager-Name"],
+              "filter": "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.TotalMembers] < (12 + [Age]))",
+              "sorts": ["-Manager.Name"],
+              "page": 1,
+              "pageSize": 50
+            }
+            """;
+
+        var sql = _db.QueryJson(json).ToSql();
+
+        Assert.That(sql.Parameters.Select(parameter => parameter.Value),
+            Is.EquivalentTo(new object?[] { "Dav%", "Alice", 12 }));
+
+        var data = _db.QueryJson(json).ToList();
+
+        string[] expectedValues = ["David - Bob"];
+        var actualValues = data.Select(e => $"{e["Name"]} - {e["Manager-Name"] ?? "NULL"}").ToArray();
+        Assert.That(actualValues, Is.EquivalentTo(expectedValues));
+    }
+
+    [Test]
+    public void JsonDefinitionRejectsInvalidFilter()
+    {
+        const string json = """{"entity":"User","filter":"Name like"}""";
+
+        Assert.Throws<FormatException>(() => QueryDefinition.FromJson(json));
     }
 }

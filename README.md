@@ -141,9 +141,11 @@ foreach (var parameter in sql.Parameters)
 ```
 
 `SqlQuery.CommandText` contains the parameterized SQL, while
-`SqlQuery.Parameters` contains the parameter names and values. Do not write
-parameter values to logs without considering whether they contain sensitive
-information.
+`SqlQuery.Parameters` contains the parameter names and values. For SQL Server,
+the command text starts with typed `DECLARE` statements, so it can be copied
+directly into a database tool for diagnostics. Other dialects include a
+trailing `-- Parameters:` comment. Do not write parameter values to logs
+without considering whether they contain sensitive information.
 
 ### Projections and aliases
 
@@ -353,3 +355,37 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+## JSON query definitions
+
+Dynamic grids and reports can build a validated `QueryDefinition` from JSON:
+
+```csharp
+var rows = context.QueryJson("""
+{
+  "entity": "User",
+  "columns": ["Name", "Manager.Name|Manager-Name"],
+  "filter": "Name like @'Dav%' && (Manager.Name == @'Alice' || Age < @12)",
+  "sorts": ["-Manager.Name"],
+  "page": 1,
+  "pageSize": 50
+}
+""");
+
+rows = rows.ToList();
+```
+
+`IRecordParameter` is the query expression surface for code-based queries:
+
+```csharp
+var rows = context.Query("User")
+    .Where(e => e["Name"].Like("Dav%"))
+    .ToList();
+```
+
+Both entry points use the same query pipeline. `QueryDefinition` is only the
+JSON transport model; application code normally uses `QueryJson` or
+`IRecordParameter` expressions directly. Column aliases use `field|alias`.
+Sort fields prefixed with `-` are descending.
+Filter values prefixed with `@` are parsed as typed values and handled safely by
+the normal query pipeline. Entity, field, relation, and filter names are
+validated against the configured metadata before SQL is generated.

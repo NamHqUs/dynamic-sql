@@ -35,6 +35,21 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
             return new CompareSqlExpression((SqlExpression)left, right?.ToString() ?? string.Empty, typeof(bool));
         }
 
+        if (node.Method.DeclaringType == typeof(DataValue) && node.Method.Name == nameof(DataValue.Like))
+        {
+            var left = (SqlExpression)Visit(node.Object!);
+            var value = ((ConstantExpression)node.Arguments[0]).Value;
+            var parameter = QueryContext.AddDbParameter(value, true);
+            return new PredicateExpression(left, "LIKE", new ValueExpression(parameter, typeof(object)));
+        }
+
+        if (node.Method.DeclaringType == typeof(DataValue) && node.Method.Name == nameof(DataValue.Parameter))
+        {
+            var value = ((ConstantExpression)node.Arguments[0]).Value;
+            var parameter = QueryContext.AddDbParameter(value, true);
+            return new ValueExpression(parameter, typeof(object));
+        }
+
         return base.VisitMethodCall(node);
     }
 

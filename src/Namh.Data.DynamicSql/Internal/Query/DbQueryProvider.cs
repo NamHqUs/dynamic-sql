@@ -3,6 +3,7 @@ using Namh.Data.DynamicSql.Internal.Query.Models;
 using Namh.Data.DynamicSql.Internal.Query.Visitors;
 using Namh.Data.DynamicSql.Model;
 using System.Data;
+using System.Globalization;
 using DbCommand = System.Data.Common.DbCommand;
 using DbConnection = System.Data.Common.DbConnection;
 using System.Linq.Expressions;
@@ -25,10 +26,64 @@ class DbQueryProvider(
     public SqlQuery GetQuery(Expression expression)
     {
         var (sqlQuery, parameters, _) = Translate(expression);
+        var parameterList = parameters.ToArray();
+        var commandText = SqlFormatter.Format(sqlQuery);
+
+        if (parameterList.Length != 0)
+        {
+            commandText = sqlDialect is SqlServerDialect
+                ? FormatParameterDeclarations(parameterList) + "\n" + commandText
+                : commandText + $"\n-- Parameters: {string.Join(", ", parameterList.Select(FormatParameter))}";
+        }
+
         return new SqlQuery(
-            SqlFormatter.Format(sqlQuery),
-            parameters.Select(e => new SqlQueryParameter(e.Name, e.Value)).ToArray());
+            commandText,
+            parameterList.Select(e => new SqlQueryParameter(e.Name, e.Value)).ToArray());
     }
+
+    private static string FormatParameter(DbParameter parameter)
+        => $"{parameter.Name} = {FormatParameterValue(parameter.Value)}";
+
+    private static string FormatParameterDeclarations(IReadOnlyList<DbParameter> parameters)
+    {
+        var declarations = parameters
+            .Select(FormatParameterAssignment)
+            .ToArray();
+
+        return declarations.Length == 1
+            ? "DECLARE " + declarations[0] + ";"
+            : "DECLARE " + declarations[0] + ",\n\t" +
+                string.Join(",\n\t", declarations.Skip(1)) + ";";
+    }
+
+    private static string FormatParameterAssignment(DbParameter parameter)
+        => $"{parameter.Name} {GetSqlServerType(parameter.Value)} = {FormatParameterValue(parameter.Value)}";
+
+    private static string GetSqlServerType(object? value)
+        => value switch
+        {
+            null => "nvarchar(4000)",
+            string => "nvarchar(4000)",
+            bool => "bit",
+            byte or short or int or long => "int",
+            float or double => "float",
+            decimal => "decimal(38, 18)",
+            DateTime or DateTimeOffset => "datetime2",
+            Guid => "uniqueidentifier",
+            _ => "nvarchar(4000)"
+        };
+
+    private static string FormatParameterValue(object? value)
+        => value switch
+        {
+            null => "NULL",
+            string text => $"'{text.Replace("'", "''", StringComparison.Ordinal)}'",
+            bool boolean => boolean ? "1" : "0",
+            DateTime dateTime => $"'{dateTime.ToString("O", CultureInfo.InvariantCulture)}'",
+            DateTimeOffset dateTimeOffset => $"'{dateTimeOffset.ToString("O", CultureInfo.InvariantCulture)}'",
+            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture) ?? "NULL",
+            _ => $"'{value}'"
+        };
 
     public IEnumerable<DataRecord> Execute(Expression expression)
     {

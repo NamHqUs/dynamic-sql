@@ -18,6 +18,9 @@ public class DynamicSqlContext(
         return new DbQueryable(queryProvider);
     }
 
+    public IDbQueryable QueryJson(string json)
+        => this.Query(QueryDefinition.FromJson(json));
+
     public void Dispose()
     {
         Dispose(true);

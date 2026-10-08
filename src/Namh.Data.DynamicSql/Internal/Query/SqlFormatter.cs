@@ -11,10 +11,21 @@ internal static class SqlFormatter
         "WHERE",
         "AND",
         "OR",
+        "ORDER",
+        "GROUP",
+        "HAVING",
         "GROUP BY",
         "ORDER BY",
         "HAVING",
         "UNION"
+    ];
+    private static readonly string[] JoinKeywords =
+    [
+        "LEFT",
+        "RIGHT",
+        "INNER",
+        "FULL",
+        "CROSS"
     ];
 
     public static string Format(string sql)
@@ -26,6 +37,7 @@ internal static class SqlFormatter
         var inDoubleQuote = false;
         var inBracketQuote = false;
         var lineHasContent = false;
+        var inJoin = false;
 
         void NewLine()
         {
@@ -45,7 +57,28 @@ internal static class SqlFormatter
                 return;
 
             var keyword = value.ToUpperInvariant();
-            if (LineBreakKeywords.Contains(keyword))
+            if (JoinKeywords.Contains(keyword))
+            {
+                NewLine();
+                result.Append('\t');
+                inJoin = true;
+            }
+            else if (keyword == "WHERE")
+            {
+                NewLine();
+                inJoin = false;
+            }
+            else if (keyword == "AND" && inJoin)
+            {
+                if (lineHasContent && result[^1] != ' ')
+                    result.Append(' ');
+            }
+            else if (keyword == "AND")
+            {
+                NewLine();
+                result.Append('\t');
+            }
+            else if (LineBreakKeywords.Contains(keyword))
                 NewLine();
             else if (lineHasContent && result[^1] != ' ' && result[^1] != '(')
                 result.Append(' ');

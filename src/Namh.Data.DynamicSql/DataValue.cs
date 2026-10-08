@@ -7,6 +7,8 @@ public abstract class DataValue
 
     public T As<T>() =>  throw new NotImplementedException();
     public bool RawCompare(string statement) => throw new NotImplementedException();
+    public bool Like(object value) => throw new NotImplementedException();
+    public static DataValue Parameter(object? value) => throw new NotImplementedException();
 
     public static bool operator ==(DataValue value1, object value2) => throw new NotImplementedException();
     public static bool operator !=(DataValue value1, object value2) => throw new NotImplementedException();

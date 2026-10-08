@@ -30,11 +30,16 @@ internal sealed class SqlGenerator(ISqlDialect dialect)
         var text = $"SELECT {select}\nFROM {RenderTable(query)}";
 
         foreach (var join in query.Joins)
-            text += $"\n{join.JoinType} {RenderTable(join.Table)} ON " +
+            text += $"\n\t{join.JoinType} {RenderTable(join.Table)} ON " +
                 string.Join(" AND ", join.Conditions.Select(RenderExpression));
 
         if (query.SqlWhere.Count != 0)
-            text += "\nWHERE " + string.Join(" AND ", query.SqlWhere.Select(RenderExpression));
+        {
+            text += "\nWHERE " + RenderExpression(query.SqlWhere[0]);
+
+            foreach (var where in query.SqlWhere.Skip(1))
+                text += "\n\tAND " + RenderExpression(where);
+        }
 
         if (query.Orders.Count != 0)
             text += "\nORDER BY " + string.Join(", ", query.Orders.Select(RenderOrder));
@@ -104,6 +109,8 @@ internal sealed class SqlGenerator(ISqlDialect dialect)
     private string RenderValue(object? value)
         => value is null ? "NULL" :
             value is string s && !s.StartsWith("@", StringComparison.Ordinal) &&
-                !(s.Length >= 2 && s[0] == '\'' && s[^1] == '\'')
+                !(s.Length >= 2 && s[0] == '\'' && s[^1] == '\'') &&
+                !decimal.TryParse(s, System.Globalization.NumberStyles.Number,
+                    System.Globalization.CultureInfo.InvariantCulture, out _)
                 ? dialect.RenderStringLiteral(s) : value.ToString()!;
 }

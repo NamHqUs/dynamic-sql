@@ -24,8 +24,11 @@ public static class QueryDefinitionExtensions
             query = query.Select(selection);
         }
 
+        if (definition.Filter is not null)
+            query = query.Where(CreateFilter(definition.Filter));
+
         foreach (var filter in definition.Filters)
-            query = query.Where(CreateFilter(filter));
+            query = query.Where(CreateFilter(new QueryFilterCondition(filter)));
 
         foreach (var sortGroup in definition.Sorts.Select((sort, index) => (sort, index)))
         {
@@ -57,16 +60,59 @@ public static class QueryDefinitionExtensions
         return query;
     }
 
-    private static Expression<Func<IRecordParameter, bool>> CreateFilter(QueryFilter filter)
+    private static Expression<Func<IRecordParameter, bool>> CreateFilter(QueryFilterExpression filter)
     {
         var parameter = Expression.Parameter(typeof(IRecordParameter), "record");
+        var body = CreateFilterBody(filter, parameter);
+
+        return Expression.Lambda<Func<IRecordParameter, bool>>(body, parameter);
+    }
+
+    private static Expression CreateFilterBody(
+        QueryFilterExpression filter,
+        ParameterExpression parameter)
+        => filter switch
+        {
+            QueryFilterCondition condition => CreateCondition(condition.Filter, parameter),
+            QueryFilterGroup group => CreateGroup(group, parameter),
+            _ => throw new ArgumentOutOfRangeException(nameof(filter))
+        };
+
+    private static Expression CreateGroup(
+        QueryFilterGroup group,
+        ParameterExpression parameter)
+    {
+        var expressions = group.Conditions
+            .Select(condition => CreateFilterBody(condition, parameter))
+            .ToList();
+        var result = expressions[0];
+
+        foreach (var expression in expressions.Skip(1))
+            result = group.Operator == QueryFilterLogicalOperator.And
+                ? Expression.AndAlso(result, expression)
+                : Expression.OrElse(result, expression);
+
+        return result;
+    }
+
+    private static Expression CreateCondition(
+        QueryFilter filter,
+        ParameterExpression parameter)
+    {
         var field = Expression.Call(
             parameter,
             typeof(IRecordParameter).GetProperty("Item")!.GetMethod!,
             Expression.Constant(filter.Field));
-        var value = Expression.Constant(filter.Value, typeof(object));
 
-        var body = filter.Operator switch
+        if (filter.Operator == QueryFilterOperator.Like)
+            return Expression.Call(
+                field,
+                typeof(DataValue).GetMethod(nameof(DataValue.Like))!,
+                Expression.Constant(filter.Value, typeof(object)));
+
+        var value = CreateFilterValue(filter, parameter);
+
+        return filter.Operator switch
         {
             QueryFilterOperator.Equals => Expression.Equal(field, value),
             QueryFilterOperator.NotEquals => Expression.NotEqual(field, value),
@@ -76,7 +122,37 @@ public static class QueryDefinitionExtensions
             QueryFilterOperator.LessThanOrEqual => Expression.LessThanOrEqual(field, value),
             _ => throw new ArgumentOutOfRangeException(nameof(filter.Operator))
         };
+    }
 
-        return Expression.Lambda<Func<IRecordParameter, bool>>(body, parameter);
+    private static Expression CreateFilterValue(
+        QueryFilter filter,
+        ParameterExpression parameter)
+    {
+        if (filter.Value is QueryFilterArithmetic arithmetic)
+        {
+            var left = Expression.Call(
+                typeof(DataValue).GetMethod(nameof(DataValue.Parameter))!,
+                Expression.Constant(arithmetic.Left, typeof(object)));
+            var right = Expression.Call(
+                parameter,
+                typeof(IRecordParameter).GetProperty("Item")!.GetMethod!,
+                Expression.Constant(arithmetic.Field));
+
+            return arithmetic.Operator switch
+            {
+                "+" => Expression.Add(left, right),
+                "-" => Expression.Subtract(left, right),
+                "*" => Expression.Multiply(left, right),
+                "/" => Expression.Divide(left, right),
+                _ => throw new FormatException(
+                    $"Unsupported arithmetic operator [{arithmetic.Operator}].")
+            };
+        }
+
+        return filter.Parameterized
+            ? Expression.Call(
+                typeof(DataValue).GetMethod(nameof(DataValue.Parameter))!,
+                Expression.Constant(filter.Value, typeof(object)))
+            : Expression.Constant(filter.Value, typeof(object));
     }
 }
