@@ -140,7 +140,8 @@ public class _2_Filter_FieldTest : TestBase
     [Test]
     public void _21_RawSql_Statement()
     {
-        var rawQuery = "Select Count(*) From [dbo].[User] Where [ManagerId] = t0.[Id]";
+        var rawQuery = $"Select Count(*) From {_sqlDialect.RenderTable(new Entity("User", []))} " +
+            $"Where {_sqlDialect.QuoteIdentifier("ManagerId")} = t0.{_sqlDialect.QuoteIdentifier("Id")}";
         var query = _db.Query("user")
            .Where(e => e.RawSql(rawQuery) >= 2 && e["IsMale"] == true);
         Assert.That(query.Count(), Is.EqualTo(1));

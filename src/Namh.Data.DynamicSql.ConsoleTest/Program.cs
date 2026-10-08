@@ -1,6 +1,5 @@
 ﻿
 using Microsoft.Data.SqlClient;
-using System.Reflection.Metadata;
 
 // Sqlite
 //using var connection = new SqliteConnection("Data Source=:memory:");

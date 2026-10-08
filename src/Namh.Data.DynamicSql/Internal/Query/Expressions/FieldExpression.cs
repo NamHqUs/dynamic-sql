@@ -5,6 +5,7 @@ namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
 class FieldExpression(string tableAlias, Field field, ISqlDialect sqlDialect) : SqlExpression(typeof(DataValue))
 {
     private readonly ISqlDialect _sqlDialect = sqlDialect;
+    internal ISqlDialect SqlDialect => _sqlDialect;
     public Field MetaField { get; } = field;
     public string TableAlias { get; } = tableAlias; 
 

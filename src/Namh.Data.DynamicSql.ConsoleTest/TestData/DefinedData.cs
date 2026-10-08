@@ -1,6 +1,4 @@
-﻿using System.Data;
-
-namespace Namh.Data.DynamicSql.ConsoleTest.TestData;
+﻿namespace Namh.Data.DynamicSql.ConsoleTest.TestData;
 
 internal sealed class DefinedData 
 {

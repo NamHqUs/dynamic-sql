@@ -2,7 +2,6 @@
   <Folder Name="/Solution Items/">
     <File Path="../docker/docker-compose.sqlserver.yml" />
     <File Path="../README.md" />
-    <File Path="../scripts/db-scripts.sql" />
     <File Path="Directory.Build.props" />
   </Folder>
   <Project Path="Namh.Data.DynamicSql.ConsoleTest/Namh.Data.DynamicSql.ConsoleTest.csproj" Id="f56a7021-ae34-4d07-9136-230ca090c7ae" />

@@ -80,7 +80,7 @@ class SelectVisitor : LambdaVisitor
                     ?? QueryContext.ParseFieldPath(tableContext, e.Value!.ToString()!);
 
                 var alias = parentKey == null ? e.Key : string.Format("{0}.{1}", parentKey, e.Key);
-                yield return new ProjectionItem(sql, alias);
+                yield return new ProjectionItem(sql, alias, QueryContext.SqlDialect);
             }
     }
 

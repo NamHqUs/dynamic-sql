@@ -1,22 +1,29 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
-using NUnit.Framework.Internal;
+using Npgsql;
 using System.Data;
 using System.Text;
-using System.Xml.Linq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Namh.Data.DynamicSql.Test.TestData;
 
 public enum DbServerType
 {
     Sqlite,
-    SqlServer
+    SqlServer,
+    Postgres
 }
 internal sealed class DefinedData 
 {
+    private static readonly object oLock = new();
+
     public static IDbConnection GetDbConnection(DbServerType dbServerType = DbServerType.Sqlite)
-        => dbServerType == DbServerType.Sqlite ? CreateSqliteDbConnection() : CreateSqlServerDbConnection();
+        => dbServerType switch
+        {
+            DbServerType.Sqlite => CreateSqliteDbConnection(),
+            DbServerType.SqlServer => CreateSqlServerDbConnection(),
+            DbServerType.Postgres => CreatePostgresDbConnection(),
+            _ => throw new ArgumentOutOfRangeException(nameof(dbServerType), dbServerType, null)
+        };
 
     private static IDbConnection CreateSqliteDbConnection()
     {
@@ -29,7 +36,7 @@ internal sealed class DefinedData
         if (isExisted != 1)
         {
             StringBuilder sb = new("ATTACH DATABASE ':memory:' AS dbo;");
-            sb.Append(LoadDdScripts());
+            sb.Append(LoadScript("db-scripts.sqlite.sql"));
             ExecuteNonQuery(cn, sb.ToString());
         }
 
@@ -43,12 +50,31 @@ internal sealed class DefinedData
 
         var isExisted = ExecuteScalar<int>(cn, "SELECT IIF(OBJECT_ID('dbo.[User]', 'U') IS NOT NULL, 1, 0);");
         if(isExisted != 1)
-            ExecuteNonQuery(cn, LoadDdScripts());
+            ExecuteNonQuery(cn, LoadScript("db-scripts.sql"));
         return cn;
     }
 
-    private static string LoadDdScripts()
-        => File.ReadAllText("db-scripts.sql");
+    private static IDbConnection CreatePostgresDbConnection()
+    {
+        var cn = new NpgsqlConnection(
+            "Host=localhost;Port=5432;Database=mydb;Username=postgres;Password=NoPassword123!");
+        cn.Open();
+
+        lock (oLock)
+        {
+            var isExisted = ExecuteScalar<bool>(cn,
+                "SELECT EXISTS (SELECT 1 FROM information_schema.tables " +
+                "WHERE table_schema = 'public' AND table_name = 'User');");
+
+            if (!isExisted)
+                ExecuteNonQuery(cn, LoadScript("db-scripts.postgres.sql"));
+        }
+
+        return cn;
+    }
+
+    private static string LoadScript(string fileName)
+        => File.ReadAllText(fileName);
     private static void ExecuteNonQuery(IDbConnection cn, string sql)
     {
         using var cmd = cn.CreateCommand();

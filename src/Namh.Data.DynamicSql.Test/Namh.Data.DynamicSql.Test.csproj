@@ -13,7 +13,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Include="..\..\scripts\db-scripts.sql" Link="db-scripts.sql" CopyToOutputDirectory="PreserveNewest" />
+	  <None Include="..\..\scripts\testdata-sqlserver.sql" Link="TestData\datatest-sqlserver.sql" CopyToOutputDirectory="PreserveNewest" />
+	  <None Include="..\..\scripts\testdata-sqlite.sql" Link="TestData\datatest-sqlite.sql" CopyToOutputDirectory="PreserveNewest" />
+	  <None Include="..\..\scripts\testdata-postgres.sql" Link="TestData\datatest-postgres.sql" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -32,6 +34,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\Namh.Data.DynamicSql\Namh.Data.DynamicSql.csproj" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+		<PackageReference Include="Npgsql" Version="9.0.4" />
 	</ItemGroup>
 
 

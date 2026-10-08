@@ -1,5 +1,4 @@
 using Microsoft.Data.Sqlite;
-using Namh.Data.DynamicSql.Model;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 

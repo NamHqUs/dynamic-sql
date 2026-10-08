@@ -1,5 +1,3 @@
-using Microsoft.Data.SqlClient;
-using Microsoft.Data.Sqlite;
 using System.Data;
 
 namespace Namh.Data.DynamicSql.Test;
@@ -8,15 +6,17 @@ namespace Namh.Data.DynamicSql.Test;
 public class TestBase 
 {
     protected DynamicSqlContext _db = null!;
+    protected ISqlDialect _sqlDialect = null!;
     private IDbConnection _connection = null!;
 
     [OneTimeSetUp]
     public void SetupOnce()
     {
-        _connection = DefinedData.GetDbConnection(DbServerType.SqlServer);
+        _connection = DefinedData.GetDbConnection(DbServerType.Postgres);
 
         IMetaProvider metaProvider = new MetaProvider(DefinedMetadata.Metadata);
-        _db = new DynamicSqlContext(_connection, metaProvider, new SqlServerDialect());
+        _sqlDialect = new PostgresDialect();
+        _db = new DynamicSqlContext(_connection, metaProvider, _sqlDialect);
     }
 
 

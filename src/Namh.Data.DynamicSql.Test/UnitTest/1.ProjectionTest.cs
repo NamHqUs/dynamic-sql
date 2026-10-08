@@ -1,7 +1,4 @@
-﻿using System.Reflection.Metadata;
-using System.Runtime.Intrinsics.Arm;
-
-namespace Namh.Data.DynamicSql.Test.UnitTest;
+﻿namespace Namh.Data.DynamicSql.Test.UnitTest;
 
 [TestFixture]
 public class _1_ProjectionTest : TestBase

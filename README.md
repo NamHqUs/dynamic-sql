@@ -93,10 +93,20 @@ using var db = new DynamicSqlContext(
     new SqliteDialect(schema: "dbo"));
 ```
 
-Built-in dialects currently include `SqlServerDialect` and `SqliteDialect`.
-They handle identifier quoting, boolean values, and paging syntax. Raw SQL
-fields and aggregate expressions remain provider-specific and should use the
-syntax supported by the configured database.
+Built-in dialects currently include `SqlServerDialect`, `SqliteDialect`, and
+`PostgresDialect`. `PostgresDialect` uses the `public` schema by default:
+
+```csharp
+using var db = new DynamicSqlContext(
+    connection,
+    metaProvider,
+    new PostgresDialect());
+```
+
+The dialects handle identifier quoting, boolean values, string concatenation,
+and paging syntax. Raw SQL fields and aggregate expressions remain
+provider-specific and should use the syntax supported by the configured
+database.
 
 ## Querying
 
@@ -294,7 +304,9 @@ and a connection configured by the test project.
 - `src/Namh.Data.DynamicSql.Model` - entity, field, and relationship metadata.
 - `src/Namh.Data.DynamicSql.Test` - NUnit tests and database fixtures.
 - `src/Namh.Data.DynamicSql.ConsoleTest` - console usage sample.
-- `scripts/db-scripts.sql` - sample schema and seed data.
+- `scripts/db-scripts.sql` - SQL Server schema and seed data.
+- `scripts/db-scripts.sqlite.sql` - SQLite schema and seed data.
+- `scripts/db-scripts.postgres.sql` - PostgreSQL schema and seed data.
 - `docker` - SQL Server container helpers.
 
 ## License

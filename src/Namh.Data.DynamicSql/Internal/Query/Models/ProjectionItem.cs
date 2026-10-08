@@ -7,17 +7,18 @@ class ProjectionItem
 {
     public readonly string Alias;
     public readonly SqlExpression Item;
+    private readonly ISqlDialect _sqlDialect;
 
-    public ProjectionItem(SqlExpression item, string alias)
+    public ProjectionItem(SqlExpression item, string alias, ISqlDialect sqlDialect)
     {
         Item = item;
         Alias = alias;
+        _sqlDialect = sqlDialect;
     }
 
     public ProjectionItem(FieldExpression fieldExpression)
+        : this(fieldExpression, fieldExpression.MetaField.Name, fieldExpression.SqlDialect)
     {
-        Item = fieldExpression;
-        Alias = fieldExpression.MetaField.Name;
     }
 
     public ProjectionItem(string tableAlias, Field field, ISqlDialect sqlDialect)
@@ -27,6 +28,6 @@ class ProjectionItem
 
     public override string ToString()
         => Item is FieldExpression
-            ? $"{Item} [{Alias}]"
-            : $"({Item}) [{Alias}]";
+            ? $"{Item} {_sqlDialect.QuoteIdentifier(Alias)}"
+            : $"({Item}) {_sqlDialect.QuoteIdentifier(Alias)}";
 }

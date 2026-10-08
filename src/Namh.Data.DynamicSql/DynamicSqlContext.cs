@@ -3,26 +3,17 @@ using System.Data;
 
 namespace Namh.Data.DynamicSql;
 
-public class DynamicSqlContext : IDisposable
-{
-    private readonly IDbConnection _dbConnection;
-    private readonly IMetaProvider _metaProvider;
-    private readonly ISqlDialect _sqlDialect;
-    private bool _disposed;
-
-    public DynamicSqlContext(
+public class DynamicSqlContext(
         IDbConnection dbConnection,
         IMetaProvider metaProvider,
-        ISqlDialect? sqlDialect = null)
-    {
-        _dbConnection = dbConnection;
-        _metaProvider = metaProvider;
-        _sqlDialect = sqlDialect ?? SqlDialect.ForConnection(dbConnection);
-    }
+        ISqlDialect? sqlDialect = null) : IDisposable
+{
+    private readonly ISqlDialect _sqlDialect =  sqlDialect ?? SqlDialect.ForConnection(dbConnection);
+    private bool _disposed;
 
     public IDbQueryable Query(string entity, bool includeArchive = false)
     {
-        var queryProvider = new DbQueryProvider(_metaProvider, _dbConnection, _sqlDialect, entity, includeArchive);
+        var queryProvider = new DbQueryProvider(metaProvider, dbConnection, _sqlDialect, entity, includeArchive);
 
         return new DbQueryable(queryProvider);
     }
@@ -40,7 +31,19 @@ public class DynamicSqlContext : IDisposable
             _disposed = true;
 
             if (disposing)
-                _dbConnection.Dispose();
+                dbConnection.Dispose();
         }
     }
 }
+
+public class DynamicSqlServerContext(IDbConnection dbConnection, IMetaProvider metaProvider) 
+    : DynamicSqlContext(dbConnection, metaProvider, new SqlServerDialect())
+{ }
+
+public class DynamicSqliteContext(IDbConnection dbConnection, IMetaProvider metaProvider)
+    : DynamicSqlContext(dbConnection, metaProvider, new SqliteDialect())
+{ }
+
+public class DynamicPostgresContext(IDbConnection dbConnection, IMetaProvider metaProvider)
+    : DynamicSqlContext(dbConnection, metaProvider, new PostgresDialect())
+{ }
