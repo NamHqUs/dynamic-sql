@@ -72,15 +72,14 @@ var metadata = new List<Entity>
 var metaProvider = new MetaProvider(metadata);
 ```
 
-Pass a lazy `IDbConnection` and the metadata provider to
-`DynamicSqlContext`. The context owns and disposes the connection if it was
-created by the lazy factory.
+Pass an `IDbConnection` and the metadata provider to `DynamicSqlContext`.
+The context owns and disposes the connection when it is disposed.
 
 ```csharp
 using Microsoft.Data.SqlClient;
 
 using var db = new DynamicSqlContext(
-    new Lazy<IDbConnection>(() => new SqlConnection(connectionString)),
+    new SqlConnection(connectionString),
     metaProvider);
 ```
 
@@ -163,6 +162,24 @@ var totalUsers = db.Query("User").Count();
 var adults = db.Query("User").Count(user => user["Age"] >= 18);
 var hasManagers = db.Query("User")
     .Any(user => user["ManagerId"] != null);
+```
+
+Async equivalents are available for list, first-row, count, and existence
+queries. They accept an optional `CancellationToken`:
+
+```csharp
+var users = await db.Query("User")
+    .Where(user => user["Age"] >= 18)
+    .ToListAsync(cancellationToken);
+
+var firstUser = await db.Query("User")
+    .FirstOrDefaultAsync(cancellationToken);
+
+var adultCount = await db.Query("User")
+    .CountAsync(user => user["Age"] >= 18, cancellationToken);
+
+var hasManagers = await db.Query("User")
+    .AnyAsync(user => user["ManagerId"] != null, cancellationToken);
 ```
 
 To execute an aggregate field defined in metadata, call `Aggregate` with its

@@ -49,10 +49,24 @@ public static class DbQueryableExtension
 
     public static List<DataRecord> ToList(this IDbQueryable source)
         => [.. (IEnumerable<DataRecord>)source];
+    public static Task<List<DataRecord>> ToListAsync(
+        this IDbQueryable source,
+        CancellationToken cancellationToken = default)
+        => source.Provider.ExecuteAsync(source.Expression, cancellationToken);
+
     public static DataRecord FirstOrDefault(this IDbQueryable source, Expression<Func<IRecordParameter, bool>> predicate)
         => source.Where(predicate).FirstOrDefault();
     public static DataRecord FirstOrDefault(this IDbQueryable source)
         => source.Take(1).FirstOrDefault()!;
+    public static Task<DataRecord?> FirstOrDefaultAsync(
+        this IDbQueryable source,
+        Expression<Func<IRecordParameter, bool>> predicate,
+        CancellationToken cancellationToken = default)
+        => source.Where(predicate).FirstOrDefaultAsync(cancellationToken);
+    public static async Task<DataRecord?> FirstOrDefaultAsync(
+        this IDbQueryable source,
+        CancellationToken cancellationToken = default)
+        => (await source.TakeAsync(1, cancellationToken)).FirstOrDefault();
 
     public static double Aggregate(this IDbQueryable source, string aggregateFieldName)
     {
@@ -67,11 +81,28 @@ public static class DbQueryableExtension
     }
     public static int Count(this IDbQueryable source, Expression<Func<IRecordParameter, bool>> predicate)
         => source.Where(predicate).Count();
+    public static Task<int> CountAsync(
+        this IDbQueryable source,
+        CancellationToken cancellationToken = default)
+        => ExecuteScalarAsync<int>(source, cancellationToken);
+    public static Task<int> CountAsync(
+        this IDbQueryable source,
+        Expression<Func<IRecordParameter, bool>> predicate,
+        CancellationToken cancellationToken = default)
+        => source.Where(predicate).CountAsync(cancellationToken);
 
     public static bool Any(this IDbQueryable source, Expression<Func<IRecordParameter, bool>> predicate)
     {
         var expression = source.CreateQuery(MethodBase.GetCurrentMethod()!).Expression;
         return (bool)source.Provider.ExecuteScalar(expression)!;
+    }
+    public static Task<bool> AnyAsync(
+        this IDbQueryable source,
+        Expression<Func<IRecordParameter, bool>> predicate,
+        CancellationToken cancellationToken = default)
+    {
+        var expression = source.CreateQuery(GetQueryMethod(nameof(Any), 1)!).Expression;
+        return ExecuteScalarAsync<bool>(source, expression, cancellationToken);
     }
 
     private static IDbQueryable CreateQuery(this IDbQueryable source, MethodBase method, params Expression[] expressions)
@@ -87,4 +118,27 @@ public static class DbQueryableExtension
         return source.CreateQuery(typeof(DbQueryableDummy).GetMethod(methodName)!, Expression.Quote(lambda));
     }
 
+    private static Task<T> ExecuteScalarAsync<T>(IDbQueryable source, CancellationToken cancellationToken)
+        => ExecuteScalarAsync<T>(
+            source,
+            source.CreateQuery(GetQueryMethod(typeof(T) == typeof(int) ? nameof(Count) : nameof(Any), 1)!).Expression,
+            cancellationToken);
+
+    private static async Task<T> ExecuteScalarAsync<T>(
+        IDbQueryable source,
+        Expression expression,
+        CancellationToken cancellationToken)
+        => (T)(await source.Provider.ExecuteScalarAsync(expression, cancellationToken))!;
+
+    private static Task<List<DataRecord>> TakeAsync(
+        this IDbQueryable source,
+        int count,
+        CancellationToken cancellationToken)
+        => source.Provider.ExecuteAsync(
+            source.CreateQuery(GetQueryMethod(nameof(Take), 2)!, Expression.Constant(count)).Expression,
+            cancellationToken);
+
+    private static MethodInfo? GetQueryMethod(string name, int parameterCount)
+        => typeof(DbQueryableExtension).GetMethods()
+            .FirstOrDefault(method => method.Name == name && method.GetParameters().Length == parameterCount);
 }

@@ -5,11 +5,11 @@ namespace Namh.Data.DynamicSql;
 
 public class DynamicSqlContext : IDisposable
 {
-    private readonly Lazy<IDbConnection> _dbConnection;
+    private readonly IDbConnection _dbConnection;
     private readonly IMetaProvider _metaProvider;
     private bool _disposed;
 
-    public DynamicSqlContext(Lazy<IDbConnection> dbConnection, IMetaProvider metaProvider)
+    public DynamicSqlContext(IDbConnection dbConnection, IMetaProvider metaProvider)
     {
         _dbConnection = dbConnection;
         _metaProvider = metaProvider;
@@ -34,8 +34,8 @@ public class DynamicSqlContext : IDisposable
         {
             _disposed = true;
 
-            if (disposing && _dbConnection.IsValueCreated)
-                _dbConnection.Value.Dispose();
+            if (disposing)
+                _dbConnection.Dispose();
         }
     }
 }

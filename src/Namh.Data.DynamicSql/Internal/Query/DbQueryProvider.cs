@@ -3,12 +3,14 @@ using Namh.Data.DynamicSql.Internal.Query.Models;
 using Namh.Data.DynamicSql.Internal.Query.Visitors;
 using Namh.Data.DynamicSql.Model;
 using System.Data;
+using DbCommand = System.Data.Common.DbCommand;
+using DbConnection = System.Data.Common.DbConnection;
 using System.Linq.Expressions;
 using System.Text;
 
 namespace Namh.Data.DynamicSql.Internal.Query;
 
-class DbQueryProvider(IMetaProvider metaProvider, Lazy<IDbConnection> dbConnection, string entityName, bool includeArchive) : IDbQueryProvider
+class DbQueryProvider(IMetaProvider metaProvider, IDbConnection dbConnection, string entityName, bool includeArchive) : IDbQueryProvider
 {
     public readonly Entity Entity = metaProvider.Get(entityName);
 
@@ -30,6 +32,39 @@ class DbQueryProvider(IMetaProvider metaProvider, Lazy<IDbConnection> dbConnecti
 
         var cmd = CreateDbCommand(sqlQuery, parameters);
         return cmd.ExecuteScalar();
+    }
+
+    public async Task<List<DataRecord>> ExecuteAsync(Expression expression, CancellationToken cancellationToken)
+    {
+        var (sqlQuery, parameters, projection) = Translate(expression);
+        var connection = GetAsyncConnection();
+
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync(cancellationToken);
+
+        using var cmd = CreateDbCommand(sqlQuery, parameters);
+        if (cmd is not DbCommand dbCommand)
+            throw new InvalidOperationException(
+                $"The database command type [{cmd.GetType().FullName}] does not support asynchronous execution.");
+
+        await using var reader = await dbCommand.ExecuteReaderAsync(cancellationToken);
+        return await DbReader.ReadAllAsync(reader, projection, cancellationToken);
+    }
+
+    public async Task<object?> ExecuteScalarAsync(Expression expression, CancellationToken cancellationToken)
+    {
+        var (sqlQuery, parameters, _) = Translate(expression);
+        var connection = GetAsyncConnection();
+
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync(cancellationToken);
+
+        using var cmd = CreateDbCommand(sqlQuery, parameters);
+        if (cmd is not DbCommand dbCommand)
+            throw new InvalidOperationException(
+                $"The database command type [{cmd.GetType().FullName}] does not support asynchronous execution.");
+
+        return await dbCommand.ExecuteScalarAsync(cancellationToken);
     }
 
     public string GetQueryText(Expression expression)
@@ -64,10 +99,10 @@ class DbQueryProvider(IMetaProvider metaProvider, Lazy<IDbConnection> dbConnecti
 
     private IDbCommand CreateDbCommand(string sqlQuery, IEnumerable<DbParameter> parameters)
     {
-        if (dbConnection.Value.State != ConnectionState.Open)
-            dbConnection.Value.Open();
+        if (dbConnection.State != ConnectionState.Open)
+            dbConnection.Open();
 
-        var cmd = dbConnection.Value.CreateCommand();
+        var cmd = dbConnection.CreateCommand();
         cmd.CommandText = sqlQuery;
 
         foreach (var e in parameters)
@@ -80,4 +115,9 @@ class DbQueryProvider(IMetaProvider metaProvider, Lazy<IDbConnection> dbConnecti
 
         return cmd;
     }
+
+    private DbConnection GetAsyncConnection()
+        => dbConnection as DbConnection
+            ?? throw new InvalidOperationException(
+                $"The database connection type [{dbConnection.GetType().FullName}] does not support asynchronous execution.");
 }

@@ -13,7 +13,7 @@ using var connection = new SqlConnection("Server=localhost;Database=DynamicSqlTe
 //DefinedData.SeedData(connection);
 
 IMetaProvider metaProvider = new MetaProvider(DefinedMetadata.Metadata);
-using var db = new DynamicSqlContext(new Lazy<IDbConnection>(() => connection), metaProvider);
+using var db = new DynamicSqlContext(connection, metaProvider);
 
 var query = db.Query("User")
            .Select(e => new DataRecord

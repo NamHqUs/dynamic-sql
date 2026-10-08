@@ -1,6 +1,7 @@
 ﻿using Namh.Data.DynamicSql.Internal.Query.Models;
 using System.Collections;
 using System.Data;
+using System.Data.Common;
 
 namespace Namh.Data.DynamicSql.Internal.Query;
 
@@ -38,7 +39,7 @@ class DbReader(
             if (!reader.Read())
                 return false;
 
-            var record = ReadRecord(_dbMapping.Value);
+            var record = ReadRecord(reader, _dbMapping.Value);
 
             onProcessDataRecord?.Invoke(record);
 
@@ -51,7 +52,9 @@ class DbReader(
         public void Dispose()
             => reader.Dispose();
 
-        private DataRecord ReadRecord(Dictionary<string, FieldMap> map)
+        internal static DataRecord ReadRecord(IDataReader reader, Dictionary<string, FieldMap> map,
+            Action<DataRecord>? onProcessDataRecord = null,
+            Func<string, object, object>? onProcessDataField = null)
         {
             var record = new DataRecord();
             foreach (var e in map)
@@ -59,7 +62,7 @@ class DbReader(
                 var fieldMap = e.Value;
                 object val = fieldMap.Children == null 
                     ? reader.GetValue(fieldMap.DbColumnIndex) 
-                    : ReadRecord(fieldMap.Children);
+                    : ReadRecord(reader, fieldMap.Children);
 
                 record[e.Key] =
                     val == DBNull.Value 
@@ -71,7 +74,7 @@ class DbReader(
             return record;
         }
 
-        private static Dictionary<string, FieldMap> BuildMapping(IEnumerable<ProjectionItem> projectionItems, bool isResultInHierarchy)
+        internal static Dictionary<string, FieldMap> BuildMapping(IEnumerable<ProjectionItem> projectionItems, bool isResultInHierarchy)
         {
             var mapRoot = new Dictionary<string, FieldMap>();
             var colIndex = 0;
@@ -107,4 +110,18 @@ class DbReader(
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
+
+    internal static async Task<List<DataRecord>> ReadAllAsync(
+        DbDataReader reader,
+        IEnumerable<ProjectionItem> projectionItems,
+        CancellationToken cancellationToken)
+    {
+        var mapping = Enumerator.BuildMapping(projectionItems, false);
+        var records = new List<DataRecord>();
+
+        while (await reader.ReadAsync(cancellationToken))
+            records.Add(Enumerator.ReadRecord(reader, mapping));
+
+        return records;
+    }
 }

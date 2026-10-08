@@ -16,7 +16,7 @@ public class TestBase
         _connection = DefinedData.GetDbConnection(DbServerType.SqlServer);
 
         IMetaProvider metaProvider = new MetaProvider(DefinedMetadata.Metadata);
-        _db = new DynamicSqlContext(new Lazy<IDbConnection>(() => _connection), metaProvider);
+        _db = new DynamicSqlContext(_connection, metaProvider);
     }
 
 
@@ -30,6 +30,5 @@ public class TestBase
     public void TearDownOnce()
     {
         _db.Dispose();
-        _connection?.Dispose();
     }
 }
