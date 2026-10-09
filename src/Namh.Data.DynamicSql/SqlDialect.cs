@@ -1,4 +1,3 @@
-using Namh.Data.DynamicSql.Model;
 using System.Data;
 
 namespace Namh.Data.DynamicSql;

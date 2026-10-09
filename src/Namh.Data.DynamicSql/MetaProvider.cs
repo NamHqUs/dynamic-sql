@@ -1,6 +1,4 @@
-﻿using Namh.Data.DynamicSql.Model;
-
-namespace Namh.Data.DynamicSql;
+﻿namespace Namh.Data.DynamicSql;
 
 public interface IMetaProvider
 {

@@ -23,8 +23,4 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\Namh.Data.DynamicSql.Model\Namh.Data.DynamicSql.Model.csproj" />
-	</ItemGroup>
-
 </Project>

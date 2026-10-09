@@ -1,0 +1,57 @@
+.database-browser {
+  min-height: 480px;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  overflow: hidden;
+  background: linear-gradient(135deg, #11141c, #0f1218);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: 0 14px 40px #00000018;
+}
+
+.database-content {
+  min-width: 0;
+  padding: 25px 27px 30px;
+}
+
+.database-message,
+.database-empty {
+  margin: 0;
+  padding: 20px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.database-message.error {
+  color: #f0a6ae;
+}
+
+.database-empty {
+  padding: 26px;
+  text-align: center;
+}
+
+.database-placeholder {
+  min-height: 420px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  color: #6e788a;
+  text-align: center;
+}
+
+.database-placeholder p {
+  margin: 0;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .database-browser {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .database-content {
+    padding: 20px 16px;
+  }
+}

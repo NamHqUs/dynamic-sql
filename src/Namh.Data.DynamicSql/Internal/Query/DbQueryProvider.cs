@@ -1,7 +1,6 @@
 ﻿using Namh.Data.DynamicSql.Internal.Query.Expressions;
 using Namh.Data.DynamicSql.Internal.Query.Models;
 using Namh.Data.DynamicSql.Internal.Query.Visitors;
-using Namh.Data.DynamicSql.Model;
 using System.Data;
 using System.Globalization;
 using DbCommand = System.Data.Common.DbCommand;

@@ -1,6 +1,4 @@
-﻿using Namh.Data.DynamicSql.Model;
-
-namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+﻿namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
 
 class TableContextWrapperExpression(TableExpression tableContext, string alias)
     : TableExpression(CreateEntity(tableContext), alias)

@@ -1,0 +1,68 @@
+.database-sidebar {
+  padding: 20px 12px;
+  border-right: 1px solid var(--line);
+  background: #11141b;
+}
+
+.database-sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 13px;
+}
+
+.database-table-count {
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  color: #bbb0e4;
+  background: #28223d;
+  border-radius: 12px;
+  font: 11px "DM Mono", monospace;
+}
+
+.database-table-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 10px;
+  color: #aab2c0;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.database-table-item > span {
+  flex: 1;
+}
+
+.database-table-item > .icon:last-child {
+  opacity: 0;
+}
+
+.database-table-item:hover {
+  color: #e9edf4;
+  background: #181c26;
+}
+
+.database-table-item.active {
+  color: #e7dcff;
+  background: #242039;
+  border-color: #403660;
+}
+
+.database-table-item.active > .icon:last-child {
+  opacity: 1;
+  color: var(--purple);
+}
+
+@media (max-width: 760px) {
+  .database-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}

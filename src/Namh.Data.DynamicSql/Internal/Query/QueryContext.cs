@@ -1,6 +1,5 @@
 ﻿using Namh.Data.DynamicSql.Internal.Query.Expressions;
 using Namh.Data.DynamicSql.Internal.Query.Models;
-using Namh.Data.DynamicSql.Model;
 
 namespace Namh.Data.DynamicSql.Internal.Query;
 
