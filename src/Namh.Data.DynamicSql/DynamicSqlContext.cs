@@ -1,4 +1,5 @@
 ﻿using Namh.Data.DynamicSql.Internal.Query;
+using Namh.Data.DynamicSql.Model;
 using System.Data;
 
 namespace Namh.Data.DynamicSql;
@@ -10,6 +11,11 @@ public class DynamicSqlContext(
 {
     private readonly ISqlDialect _sqlDialect = sqlDialect ?? SqlDialect.ForConnection(dbConnection);
     private bool _disposed;
+
+    public DynamicSqlContext(IDbConnection dbConnection, IEnumerable<Entity> entities, ISqlDialect? sqlDialect = null):
+        this(dbConnection, new MetaProvider(entities), sqlDialect)
+    {
+    }
 
     public IDbQueryable Query(string entity, bool includeArchive = false)
     {

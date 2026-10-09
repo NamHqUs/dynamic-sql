@@ -7,7 +7,7 @@ public interface IMetaProvider
     Entity Get(string entityName);
 }
 
-public class MetaProvider(List<Entity> entities) : IMetaProvider
+public class MetaProvider(IEnumerable<Entity> entities) : IMetaProvider
 {
     private readonly Dictionary<string, Entity> _entities =
         entities.ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
