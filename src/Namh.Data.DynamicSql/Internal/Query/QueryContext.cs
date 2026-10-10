@@ -43,6 +43,17 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
             return new AggregateExpression(lastTable, "Count(*)");
         }
 
+        if (TryParseCollectionAggregate(fieldName, out var aggregate, out var aggregateField) &&
+            joinedData.Any() &&
+            joinedData.Last().relation.Type == RelationType.Collection)
+        {
+            var aggregateEntity = joinedData.Last().joinedEntity;
+            aggregateEntity.GetField(aggregateField);
+
+            var lastTable = ApplyJoinAggregate(tableContext, joinedData);
+            return new AggregateExpression(lastTable, $"{aggregate}(@{aggregateField})");
+        }
+
         var lastEntity = joinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
         var metaField = lastEntity.GetField(fieldName);
 
@@ -56,6 +67,33 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
             var lastAlias = ApplyJoin(tableContext, joinedData).Alias;
             return new FieldExpression(lastAlias, metaField);
         }
+    }
+
+    private static bool TryParseCollectionAggregate(
+        string fieldName,
+        out string aggregate,
+        out string aggregateField)
+    {
+        aggregate = string.Empty;
+        aggregateField = string.Empty;
+
+        var openParenthesis = fieldName.IndexOf('(');
+        if (openParenthesis <= 0 || !fieldName.EndsWith(')'))
+            return false;
+
+        var function = fieldName[..openParenthesis].Trim();
+        if (!string.Equals(function, "Sum", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(function, "Max", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(function, "Min", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(function, "Average", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        aggregateField = fieldName[(openParenthesis + 1)..^1].Trim();
+        if (aggregateField.Length == 0 || aggregateField.Contains('(') || aggregateField.Contains(')'))
+            return false;
+
+        aggregate = function;
+        return true;
     }
 
     public TableExpression JoinCollection(TableExpression tableContext, string? relationPath)
