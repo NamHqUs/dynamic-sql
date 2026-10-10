@@ -57,9 +57,6 @@ export default function QueryBuilder() {
           <h1>Build a query</h1>
           <p>Choose metadata fields, define filters, and preview the result from the connected API.</p>
         </div>
-        <button className="button primary" onClick={runQuery} disabled={queryStatus === "loading" || !definition.columns.length}>
-          <Icon name="play" size={14} /> {queryStatus === "loading" ? "Running…" : "Run query"}
-        </button>
       </section>
 
       <QueryDesign
@@ -70,6 +67,12 @@ export default function QueryBuilder() {
         entity={entity}
         onDefinitionChange={updateDefinition}
       />
+
+      <div className="query-builder-actions">
+        <button className="button primary" onClick={runQuery} disabled={queryStatus === "loading" || !definition.columns.length}>
+          <Icon name="play" size={14} /> {queryStatus === "loading" ? "Running…" : "Run query"}
+        </button>
+      </div>
 
       {queryError && <p className="query-message error" role="alert">{queryError}</p>}
       <QueryResult result={result} />
