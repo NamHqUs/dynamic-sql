@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { executeQuery, fetchQueryMetadata, MetadataEntity, QueryDefinition } from "./query-builder/query-builder-slice";
+import { executeQuery, fetchQueryMetadata, MetadataEntity, QueryDefinition } from "./query-design/query-builder-slice";
 import Icon from "../icon/icon";
-import QueryBuilderForm from "./query-builder/query-builder";
+import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import "./query-builder.css";
 
 function createDefinition(entity: string, metadata: MetadataEntity[]): QueryDefinition {
-  const fields = metadata.find((item) => item.name === entity)?.fields || [];
   return {
     entity,
-    columns: fields.slice(0, 5).map((field) => ({ field: field.name, alias: null })),
+    columns: [],
     filters: [],
     sorts: [],
     page: null,
@@ -52,7 +51,7 @@ export default function QueryBuilder() {
         </button>
       </section>
 
-      <QueryBuilderForm
+      <QueryDesign
         metadata={metadata}
         metadataStatus={metadataStatus}
         metadataError={metadataError}

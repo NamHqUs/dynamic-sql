@@ -1,0 +1,6 @@
+.field-box { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; min-width: 0; }
+.field-box-crumb { display: inline-flex; align-items: center; gap: 2px; }
+.field-box-segment { color: var(--purple); border: 0; background: transparent; padding: 2px 3px; font: 11px "DM Mono", monospace; cursor: pointer; }
+.field-box-segment:hover { text-decoration: underline; }
+.field-box-dot { color: #737e90; font: 11px "DM Mono", monospace; }
+.field-box select { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 7px 9px; font-size: 12px; outline: 0; min-width: 160px; }

@@ -1,4 +1,4 @@
-import { QueryResult as QueryResultData } from "../query-builder/query-builder-slice";
+import { QueryResult as QueryResultData } from "../query-design/query-builder-slice";
 import "./query-result.css";
 
 type QueryResultProps = {

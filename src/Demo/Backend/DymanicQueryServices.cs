@@ -88,7 +88,7 @@ public static class DynamicQueryServices
                     Type: RelationType.Lookup,
                     RelatedKeys: [new("CustomerId", "Id")]),
                 new(
-                    Name: "InvoiceItems",
+                    Name: "Items",
                     RelatedEntity: "InvoiceItems",
                     Type: RelationType.Collection,
                     RelatedKeys: [new("Id", "InvoiceId")])
