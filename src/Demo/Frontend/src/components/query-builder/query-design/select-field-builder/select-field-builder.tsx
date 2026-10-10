@@ -52,7 +52,6 @@ function FieldCards({
           setDraggedIndex(null);
         }}
       >
-        {column && <span className="field-card-drag-handle" aria-hidden="true">⋮⋮</span>}
         <button type="button" className="field-card-remove" onClick={() => removeColumn(field.name)} aria-label={`Remove ${field.name}`} title={`Remove ${field.name}`}>
           <Icon name="close" size={12} />
         </button>
