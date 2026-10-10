@@ -14,11 +14,17 @@
 .relation-toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--purple); border: 0; background: transparent; padding: 3px 0; font: 11px "DM Mono", monospace; }
 .relation-target { color: var(--muted); font: 10px "Manrope", sans-serif; }
 .relation-browser > .field-browser { margin: 4px 0 2px 20px; padding-left: 10px; border-left: 1px solid #323947; }
-.field-card { display: flex; align-items: center; gap: 5px; color: #a9b1bf; background: #191e28; border: 1px solid #2d3441; border-radius: 5px; padding: 4px 6px; width: max-content; }
+.field-card { position: relative; display: flex; align-items: center; gap: 5px; color: #a9b1bf; background: #191e28; border: 1px solid #2d3441; border-radius: 5px; padding: 5px 46px 5px 8px; width: max-content; min-height: 38px; box-sizing: border-box; }
+.field-card[draggable="true"] { cursor: grab; }
+.field-card[draggable="true"]:active { cursor: grabbing; }
+.field-card.dragging { opacity: .45; }
+.field-card-drag-handle { color: #737e90; font: 13px "DM Mono", monospace; letter-spacing: -3px; user-select: none; }
 .field-card.selected { color: #ded5ff; border-color: #654f9f; background: #29223e; }
-.field-card-toggle { color: #aab3c2; border: 1px solid #2b3340; background: #151923; border-radius: 4px; width: 22px; height: 22px; padding: 0; display: grid; place-items: center; flex: 0 0 22px; }
-.field-card.selected .field-card-toggle { color: #fff; background: #7054d4; border-color: #8064e8; }
-.field-card-details { display: flex; align-items: baseline; gap: 4px; min-width: 0; white-space: nowrap; }
+.field-card-remove { position: absolute; top: 2px; right: 2px; color: #8993a5; border: 1px solid transparent; background: transparent; border-radius: 4px; width: 18px; height: 18px; padding: 0; display: grid; place-items: center; cursor: pointer; z-index: 1; transition: color .15s ease, background-color .15s ease, border-color .15s ease; }
+.field-card-remove:hover { color: #ff9b9b; background: #43252c; border-color: #71333d; }
+.field-card-remove:focus-visible { color: #ffb0b0; background: #43252c; border-color: #d26a78; outline: 2px solid rgba(210, 106, 120, .35); outline-offset: 1px; }
+.field-card-details { display: flex; align-items: center; min-width: 0; white-space: nowrap; }
+.field-card-primary { display: flex; align-items: baseline; gap: 4px; min-width: 0; }
 .field-alias-input { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 4px; padding: 3px 6px; width: 105px; font: 11px "Manrope", sans-serif; outline: 0; }
 .field-alias-input:focus { border-color: #654f9f; }
 .field-name, .field-alias-value { color: #c5cad4; font: 11px "Manrope", sans-serif; }
@@ -26,7 +32,11 @@
 .field-alias-value.editable { cursor: pointer; }
 .field-name.editable { cursor: pointer; }
 .field-name.editable:hover, .field-name.editable:focus, .field-alias-value.editable:hover, .field-alias-value.editable:focus { color: #fff; text-decoration: underline; }
-.field-card-type { color: #737e90; font: 9px "DM Mono", monospace; }
+.field-card-type { position: absolute; right: 8px; bottom: 2px; color: #737e90; font: 9px "DM Mono", monospace; }
+.field-card-order { position: absolute; right: 22px; top: 2px; display: flex; gap: 1px; }
+.field-card-order button { color: #8993a5; border: 0; background: transparent; padding: 0 2px; font-size: 11px; line-height: 16px; cursor: pointer; }
+.field-card-order button:hover:not(:disabled), .field-card-order button:focus-visible { color: #ded5ff; }
+.field-card-order button:disabled { color: #3d4553; cursor: default; }
 .section-header { display: flex; align-items: center; justify-content: space-between; }
 .text-button { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; font-size: 11px; }
 .filter-row { display: flex; gap: 8px; margin-top: 10px; max-width: 700px; }
@@ -34,6 +44,7 @@
 .filter-row > select { width: 120px; }
 .select-fields-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .select-fields-row .field-cards { display: contents; }
+.select-fields-row > .field-box select { height: 38px; box-sizing: border-box; }
 .filter-row input { flex: 1; }
 .filter-row .icon-button { flex: 0 0 35px; }
 .empty-builder { color: var(--muted); font-size: 12px; }

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { executeQuery, fetchQueryMetadata, MetadataEntity, QueryDefinition } from "./query-design/query-builder-slice";
+import { executeQuery, fetchQueryMetadata, QueryDefinition } from "./query-design/query-builder-slice";
 import Icon from "../icon/icon";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import "./query-builder.css";
 
-const DEFINITION_STORAGE_KEY = "dynamic-sql.query-definition";
+let cachedDefinition: QueryDefinition | null = null;
 
 function createDefinition(entity: string): QueryDefinition {
   return {
@@ -21,25 +21,7 @@ function createDefinition(entity: string): QueryDefinition {
 }
 
 function loadDefinition(): QueryDefinition {
-  const stored = localStorage.getItem(DEFINITION_STORAGE_KEY);
-  if (!stored) return createDefinition("");
-
-  try {
-    const definition = JSON.parse(stored) as Partial<QueryDefinition>;
-    if (typeof definition.entity !== "string" ||
-      !Array.isArray(definition.columns) ||
-      !Array.isArray(definition.filters) ||
-      !Array.isArray(definition.sorts) ||
-      (definition.page !== null && typeof definition.page !== "number") ||
-      (definition.pageSize !== null && typeof definition.pageSize !== "number") ||
-      typeof definition.includeArchive !== "boolean") {
-      return createDefinition("");
-    }
-    return definition as QueryDefinition;
-  } catch (error) {
-    if (error instanceof SyntaxError) return createDefinition("");
-    throw error;
-  }
+  return cachedDefinition ?? createDefinition("");
 }
 
 export default function QueryBuilder() {
@@ -49,8 +31,8 @@ export default function QueryBuilder() {
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
 
   const updateDefinition = (nextDefinition: QueryDefinition) => {
+    cachedDefinition = nextDefinition;
     setDefinition(nextDefinition);
-    localStorage.setItem(DEFINITION_STORAGE_KEY, JSON.stringify(nextDefinition));
   };
 
   useEffect(() => {
