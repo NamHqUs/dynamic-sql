@@ -6,7 +6,9 @@ import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import "./query-builder.css";
 
-function createDefinition(entity: string, metadata: MetadataEntity[]): QueryDefinition {
+const DEFINITION_STORAGE_KEY = "dynamic-sql.query-definition";
+
+function createDefinition(entity: string): QueryDefinition {
   return {
     entity,
     columns: [],
@@ -18,19 +20,46 @@ function createDefinition(entity: string, metadata: MetadataEntity[]): QueryDefi
   };
 }
 
+function loadDefinition(): QueryDefinition {
+  const stored = localStorage.getItem(DEFINITION_STORAGE_KEY);
+  if (!stored) return createDefinition("");
+
+  try {
+    const definition = JSON.parse(stored) as Partial<QueryDefinition>;
+    if (typeof definition.entity !== "string" ||
+      !Array.isArray(definition.columns) ||
+      !Array.isArray(definition.filters) ||
+      !Array.isArray(definition.sorts) ||
+      (definition.page !== null && typeof definition.page !== "number") ||
+      (definition.pageSize !== null && typeof definition.pageSize !== "number") ||
+      typeof definition.includeArchive !== "boolean") {
+      return createDefinition("");
+    }
+    return definition as QueryDefinition;
+  } catch (error) {
+    if (error instanceof SyntaxError) return createDefinition("");
+    throw error;
+  }
+}
+
 export default function QueryBuilder() {
   const dispatch = useDispatch();
   const { metadata, metadataStatus, metadataError, result, queryStatus, queryError } = useSelector((state) => state.queryBuilder);
-  const [definition, setDefinition] = useState<QueryDefinition>(createDefinition("", []));
+  const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
+
+  const updateDefinition = (nextDefinition: QueryDefinition) => {
+    setDefinition(nextDefinition);
+    localStorage.setItem(DEFINITION_STORAGE_KEY, JSON.stringify(nextDefinition));
+  };
 
   useEffect(() => {
     dispatch(fetchQueryMetadata());
   }, [dispatch]);
 
   useEffect(() => {
-    if (!definition.entity && metadata.length) {
-      setDefinition(createDefinition(metadata[0].name, metadata));
+    if (metadata.length && !metadata.some((item) => item.name === definition.entity)) {
+      updateDefinition(createDefinition(metadata[0].name));
     }
   }, [metadata, definition.entity]);
 
@@ -57,7 +86,7 @@ export default function QueryBuilder() {
         metadataError={metadataError}
         definition={definition}
         entity={entity}
-        onDefinitionChange={setDefinition}
+        onDefinitionChange={updateDefinition}
       />
 
       {queryError && <p className="query-message error" role="alert">{queryError}</p>}
