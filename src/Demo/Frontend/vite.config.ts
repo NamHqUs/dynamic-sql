@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/db": "http://localhost:21210",
+      "/dynamic-query": "http://localhost:21210",
     },
   },
 });

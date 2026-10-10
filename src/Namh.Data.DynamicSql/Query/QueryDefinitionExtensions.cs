@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Text.Json;
 
 #pragma warning disable IDE0130
 namespace Namh.Data.DynamicSql;
@@ -104,11 +105,13 @@ public static class QueryDefinitionExtensions
             typeof(IRecordParameter).GetProperty("Item")!.GetMethod!,
             Expression.Constant(filter.Field));
 
+        var filterValue = NormalizeFilterValue(filter.Value);
+
         if (filter.Operator == QueryFilterOperator.Like)
             return Expression.Call(
                 field,
                 typeof(DataValue).GetMethod(nameof(DataValue.Like))!,
-                Expression.Constant(filter.Value, typeof(object)));
+                Expression.Constant(filterValue, typeof(object)));
 
         var value = CreateFilterValue(filter, parameter);
 
@@ -149,10 +152,29 @@ public static class QueryDefinitionExtensions
             };
         }
 
+        var value = NormalizeFilterValue(filter.Value);
+
         return filter.Parameterized
             ? Expression.Call(
                 typeof(DataValue).GetMethod(nameof(DataValue.Parameter))!,
-                Expression.Constant(filter.Value, typeof(object)))
-            : Expression.Constant(filter.Value, typeof(object));
+                Expression.Constant(value, typeof(object)))
+            : Expression.Constant(value, typeof(object));
+    }
+
+    private static object? NormalizeFilterValue(object? value)
+    {
+        if (value is not JsonElement element)
+            return value;
+
+        return element.ValueKind switch
+        {
+            JsonValueKind.Null => null,
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number when element.TryGetInt64(out var integer) => integer,
+            JsonValueKind.Number => element.GetDouble(),
+            JsonValueKind.String => element.GetString(),
+            _ => throw new FormatException($"Unsupported JSON filter value [{element.ValueKind}].")
+        };
     }
 }

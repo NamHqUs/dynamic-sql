@@ -3,6 +3,7 @@
 #:include Shared.cs
 
 using System.Data;
+using System.Text.Json;
 using Namh.Data.DynamicSql;
 
 
@@ -14,13 +15,17 @@ public static class DynamicQueryServices
 
     public static async Task<TableDataDto> ExecuteQueryAsync(QueryDefinition query)
     {
+        Console.WriteLine("Executing query: " + JsonSerializer.Serialize(query,  new JsonSerializerOptions { WriteIndented = true }));
         var context = new DynamicSqlContext(_cn, _metadata);
         var result = await new DynamicSqlContext(_cn, _metadata).Query(query).ToListAsync();
 
+        var rows = result.Select(row => string.Join(",", row.Select(v => v.Value))).ToArray();
+        Console.WriteLine(string.Join("\n", rows));
+
         return new TableDataDto(
             Name: query.Entity,
-            Columns: string.Join(",",  query.Columns.Select(c => c.Alias)),
-            Rows: result.Select(row => string.Join(",", row.Select(v => v.Value))).ToArray());
+            Columns: string.Join(",", query.Columns.Select(c => c.Alias ?? c.Field)),
+            Rows: rows);
     }
     private static List<Entity> LoadMetadata() => 
     [
@@ -115,4 +120,3 @@ public static class DynamicQueryServices
             ])
     ];
 }
-
