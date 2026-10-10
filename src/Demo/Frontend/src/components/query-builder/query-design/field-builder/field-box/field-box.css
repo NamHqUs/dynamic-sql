@@ -1,0 +1,9 @@
+.field-box { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; min-width: 0; }
+.field-box-crumb { display: inline-flex; align-items: center; gap: 2px; }
+.field-box-segment { color: var(--purple); border: 0; background: transparent; padding: 2px 3px; font: 11px "DM Mono", monospace; cursor: pointer; }
+.field-box-segment:hover { text-decoration: underline; }
+.field-box-dot { color: #737e90; font: 11px "DM Mono", monospace; }
+.field-box-aggregate-label { color: var(--purple); padding: 2px 3px; font: 11px "DM Mono", monospace; }
+.field-box-completed { display: inline-flex; align-items: baseline; gap: 7px; height: var(--field-box-height, 34px); box-sizing: border-box; color: #ded5ff; background: #29223e; border: 1px solid #654f9f; border-radius: 5px; padding: 7px 9px; font: 11px "DM Mono", monospace; }
+.field-box-completed-type { color: #737e90; font-size: 9px; }
+.field-box select { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 7px 9px; font-size: 12px; outline: 0; min-width: 160px; height: var(--field-box-height, 34px); box-sizing: border-box; }

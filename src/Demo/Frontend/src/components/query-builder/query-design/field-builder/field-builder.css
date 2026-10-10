@@ -1,0 +1,6 @@
+.field-builder-selected { display: inline-flex; align-items: center; gap: 7px; height: var(--field-box-height, 34px); box-sizing: border-box; color: #ded5ff; background: #29223e; border: 1px solid #654f9f; border-radius: 5px; padding: 7px 9px; font: 11px "DM Mono", monospace; }
+.field-builder-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.field-builder-type { color: #737e90; font-size: 9px; }
+.field-builder-remove { display: grid; place-items: center; color: #8993a5; border: 1px solid transparent; background: transparent; border-radius: 4px; width: 18px; height: 18px; padding: 0; cursor: pointer; }
+.field-builder-remove:hover, .field-builder-remove:focus-visible { color: #ffb0b0; background: #43252c; border-color: #71333d; }
+.field-builder-remove:focus-visible { outline: 2px solid rgba(210, 106, 120, .35); outline-offset: 1px; }

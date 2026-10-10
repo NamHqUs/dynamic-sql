@@ -8,6 +8,8 @@ type FieldBoxProps = {
   value: string;
   onChange: (path: string) => void;
   clearOnSelect?: boolean;
+  completeOnSelect?: boolean;
+  showDataType?: boolean;
   placeholder?: string;
   ariaLabel?: string;
   excludedPaths?: string[];
@@ -33,7 +35,7 @@ export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], 
   return current;
 }
 
-export default function FieldBox({ entity, metadata, value, onChange, clearOnSelect = false, placeholder = "Select field…", ariaLabel = "Field", excludedPaths = [] }: FieldBoxProps) {
+export default function FieldBox({ entity, metadata, value, onChange, clearOnSelect = false, completeOnSelect = false, showDataType = false, placeholder = "Select field…", ariaLabel = "Field", excludedPaths = [] }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
   const [pendingAggregate, setPendingAggregate] = useState<string | null>(null);
@@ -87,6 +89,10 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
     !excludedPaths.includes([...path, field.name].join(".")));
   const aggregateField = pendingAggregateField || selectedField;
   const activeAggregate = pendingAggregate ?? selectedAggregate;
+  const isComplete = completeOnSelect && Boolean(value);
+  const selectedDataType = aggregateMatch || selectedAggregate
+    ? "Number"
+    : current.fields.find((field) => field.name === selectedField)?.dataType;
   const selectAggregateField = (field: string) => {
     setPendingAggregateField(field);
     if (activeAggregate && activeAggregate !== COUNT_AGGREGATE && field)
@@ -94,11 +100,11 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
   };
 
   return <div className="field-box">
-    {!(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && path.map((segment, index) => <span className="field-box-crumb" key={`${index}-${segment}`}>
+    {!isComplete && !(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && path.map((segment, index) => <span className="field-box-crumb" key={`${index}-${segment}`}>
       <button type="button" className="field-box-segment" title={`Back to ${index ? path[index - 1] : entity.name}`} onClick={() => setPendingPath(path.slice(0, index))}>{segment}</button>
       <span className="field-box-dot">.</span>
     </span>)}
-    {!(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && <select aria-label={ariaLabel} value={selectValue} onChange={(event) => handleSelect(event.target.value)}>
+    {!isComplete && !(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && <select aria-label={ariaLabel} value={selectValue} onChange={(event) => handleSelect(event.target.value)}>
       <option value="" disabled>{placeholder}</option>
       {relations.length > 0 && <optgroup label="Relations">
         {relations.map((relation) => <option value={`${RELATION_PREFIX}${relation.name}`} key={relation.name}>{relation.name}</option>)}
@@ -114,7 +120,11 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
         </option>)}
       </optgroup>}
     </select>}
-    {isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE && <>
+    {completeOnSelect && value && <span className="field-box-completed" aria-label={`Selected ${ariaLabel.toLowerCase()}: ${value}`}>
+      <span>{value}</span>
+      {showDataType && selectedDataType && <span className="field-box-completed-type">{selectedDataType}</span>}
+    </span>}
+    {!isComplete && isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE && <>
       <span className="field-box-aggregate-label">{[...path, activeAggregate].join(".")}</span>
       <select
         aria-label={`${activeAggregate} field`}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Icon from "../../../icon/icon";
-import { MetadataEntity, MetadataField, QueryDefinition } from "../query-builder-slice";
-import FieldBox, { resolveEntity } from "../field-box/field-box";
+import { MetadataEntity, QueryDefinition } from "../query-builder-slice";
+import FieldBuilder from "../field-builder/field-builder";
 
 type SelectFieldBuilderProps = {
   metadata: MetadataEntity[];
@@ -20,7 +20,7 @@ function FieldCards({
   commitColumnAlias,
   moveColumn,
 }: {
-  fields: MetadataField[];
+  fields: { name: string }[];
   definition: QueryDefinition;
   editingAliasField: string | null;
   setEditingAliasField: (field: string | null) => void;
@@ -94,12 +94,7 @@ function FieldCards({
                   }}
                 >{field.name}</span>}
           </div>
-          <span className="field-card-type">{field.dataType}</span>
         </div>
-        {column && <div className="field-card-order">
-          <button type="button" onClick={() => moveColumn(index, index - 1)} disabled={index === 0} aria-label={`Move ${field.name} up`} title="Move up">↑</button>
-          <button type="button" onClick={() => moveColumn(index, index + 1)} disabled={index === fields.length - 1} aria-label={`Move ${field.name} down`} title="Move down">↓</button>
-        </div>}
       </div>
     );
   })}</div>;
@@ -107,13 +102,7 @@ function FieldCards({
 
 export default function SelectFieldBuilder({ metadata, definition, entity, onDefinitionChange }: SelectFieldBuilderProps) {
   const [editingAliasField, setEditingAliasField] = useState<string | null>(null);
-  const selectedFields = definition.columns.map((column) => {
-    const segments = column.field.split(".");
-    const owner = resolveEntity(entity, metadata, segments.slice(0, -1));
-    const field = owner?.fields.find((item) => item.name === segments[segments.length - 1]);
-    const isAggregate = segments.some((segment) => segment === "Count()" || /^(Sum|Max|Min|Average)\([^)]*\)$/.test(segment));
-    return { name: column.field, dataType: isAggregate ? "Number" : field?.dataType ?? "" };
-  });
+  const selectedFields = definition.columns.map((column) => ({ name: column.field }));
 
   const addColumn = (field: string) => {
     if (definition.columns.some((column) => column.field === field)) return;
@@ -162,7 +151,16 @@ export default function SelectFieldBuilder({ metadata, definition, entity, onDef
           commitColumnAlias={commitColumnAlias}
           moveColumn={moveColumn}
         />
-        <FieldBox key={`${entity.name}-${definition.columns.length}`} entity={entity} metadata={metadata} value="" clearOnSelect excludedPaths={definition.columns.map((column) => column.field)} placeholder="Add Field" ariaLabel="Add column" onChange={addColumn} />
+        <FieldBuilder
+          key={`${entity.name}-${definition.columns.length}`}
+          entity={entity}
+          metadata={metadata}
+          value=""
+          excludedPaths={definition.columns.map((column) => column.field)}
+          placeholder="Add Field"
+          ariaLabel="Add column"
+          onChange={addColumn}
+        />
       </div>
     </div>
   );
