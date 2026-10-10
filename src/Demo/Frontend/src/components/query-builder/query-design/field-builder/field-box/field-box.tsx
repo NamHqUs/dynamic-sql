@@ -13,6 +13,7 @@ type FieldBoxProps = {
   placeholder?: string;
   ariaLabel?: string;
   excludedPaths?: string[];
+  autoFocus?: boolean;
 };
 
 const RELATION_PREFIX = "relation:";
@@ -35,7 +36,7 @@ export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], 
   return current;
 }
 
-export default function FieldBox({ entity, metadata, value, onChange, clearOnSelect = false, completeOnSelect = false, showDataType = false, placeholder = "Select field…", ariaLabel = "Field", excludedPaths = [] }: FieldBoxProps) {
+export default function FieldBox({ entity, metadata, value, onChange, clearOnSelect = false, completeOnSelect = false, showDataType = false, placeholder = "Select field…", ariaLabel = "Field", excludedPaths = [], autoFocus = false }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
   const [pendingAggregate, setPendingAggregate] = useState<string | null>(null);
@@ -104,7 +105,7 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
       <button type="button" className="field-box-segment" title={`Back to ${index ? path[index - 1] : entity.name}`} onClick={() => setPendingPath(path.slice(0, index))}>{segment}</button>
       <span className="field-box-dot">.</span>
     </span>)}
-    {!isComplete && !(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && <select aria-label={ariaLabel} value={selectValue} onChange={(event) => handleSelect(event.target.value)}>
+    {!isComplete && !(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && <select autoFocus={autoFocus} aria-label={ariaLabel} value={selectValue} onChange={(event) => handleSelect(event.target.value)}>
       <option value="" disabled>{placeholder}</option>
       {relations.length > 0 && <optgroup label="Relations">
         {relations.map((relation) => <option value={`${RELATION_PREFIX}${relation.name}`} key={relation.name}>{relation.name}</option>)}

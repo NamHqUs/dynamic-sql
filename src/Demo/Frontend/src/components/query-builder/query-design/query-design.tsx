@@ -1,5 +1,5 @@
 import { MetadataEntity, QueryDefinition } from "./query-builder-slice";
-import SelectFieldBuilder from "./select-field-builder/select-field-builder";
+import ProjectionBuilder from "./projection-builder/projection-builder";
 import FilterBuilder from "./filter-builder/filter-builder";
 import "./query-design.css";
 
@@ -46,7 +46,7 @@ export default function QueryDesign({
       {metadataStatus === "loading" && <p className="query-message">Loading metadata…</p>}
       {metadataStatus === "failed" && <p className="query-message error" role="alert">{metadataError}</p>}
       {entity && <div className="query-builder-body">
-        <SelectFieldBuilder metadata={metadata} definition={definition} entity={entity} onDefinitionChange={onDefinitionChange} />
+        <ProjectionBuilder metadata={metadata} definition={definition} entity={entity} onDefinitionChange={onDefinitionChange} />
         <FilterBuilder metadata={metadata} definition={definition} entity={entity} onDefinitionChange={onDefinitionChange} />
       </div>}
     </section>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import FieldBox, { resolveEntity } from "./field-box/field-box";
 import { MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../icon/icon";
@@ -16,6 +17,8 @@ type FieldBuilderProps = {
   placeholder?: string;
   ariaLabel?: string;
   excludedPaths?: string[];
+  editMode?: boolean;
+  onCancel?: () => void;
 };
 
 function getFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {
@@ -39,19 +42,49 @@ export default function FieldBuilder({
   placeholder = "Select field…",
   ariaLabel = "Field",
   excludedPaths = [],
+  editMode = false,
+  onCancel,
 }: FieldBuilderProps) {
-  if (!value) {
+  const [isEditing, setIsEditing] = useState(editMode);
+  const cancelEdit = () => {
+    setIsEditing(false);
+    onCancel?.();
+  };
+
+  if (!value || editMode || isEditing) {
     return (
-      <FieldBox
-        entity={entity}
-        metadata={metadata}
-        value=""
-        clearOnSelect
-        placeholder={placeholder}
-        ariaLabel={ariaLabel}
-        excludedPaths={excludedPaths}
-        onChange={onChange}
-      />
+      <div
+        autoFocus
+        tabIndex={-1}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            cancelEdit();
+          }
+        }}
+        onBlurCapture={(event) => {
+          const nextTarget = event.relatedTarget;
+          if (!nextTarget || !(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+            cancelEdit();
+          }
+        }
+      }
+      >
+        <FieldBox
+          entity={entity}
+          metadata={metadata}
+          value={value}
+          clearOnSelect
+          autoFocus={Boolean(value)}
+          placeholder={placeholder}
+          ariaLabel={ariaLabel}
+          excludedPaths={excludedPaths}
+          onChange={(path) => {
+            setIsEditing(false);
+            onChange(path);
+          }}
+        />
+      </div>
     );
   }
 
@@ -60,7 +93,16 @@ export default function FieldBuilder({
 
   return (
     <div className="field-builder-selected" style={{ height: FIELD_BOX_HEIGHT }}>
-      <span className="field-builder-value" aria-label={`Selected ${ariaLabel.toLowerCase()}: ${value}`}>
+      <span
+        className="field-builder-value"
+        aria-label={`Selected ${ariaLabel.toLowerCase()}: ${value}`}
+        onClick={() => setIsEditing(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") setIsEditing(true);
+        }}
+      >
         {displayValue}
       </span>
       {dataType && <span className="field-builder-type">{dataType}</span>}
