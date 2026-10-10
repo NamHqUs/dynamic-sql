@@ -54,6 +54,28 @@ public class _14_QueryDefinitionTests : TestBase
     }
 
     [Test]
+    public void DefinitionConnectsStructuredFiltersWithLogicalOperators()
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Filters =
+            [
+                new QueryFilter("Name", QueryFilterOperator.Equals, "Alice"),
+                new QueryFilter("Age", QueryFilterOperator.GreaterThan, 18, LogicalOperator: QueryFilterLogicalOperator.Or),
+                new QueryFilter("Name", QueryFilterOperator.Equals, "Bob", LogicalOperator: QueryFilterLogicalOperator.And),
+                new QueryFilter("SchoolId", QueryFilterOperator.Equals, 12, Enabled: false)
+            ]
+        };
+
+        var sql = _db.Query(definition).ToSql();
+
+        Assert.That(sql.CommandText, Does.Contain("OR"));
+        Assert.That(sql.CommandText, Does.Contain("AND"));
+        Assert.That(sql.CommandText, Does.Not.Contain("= 12"));
+    }
+
+    [Test]
     public void DefinitionRejectsInvalidPaging()
     {
         var definition = new QueryDefinition

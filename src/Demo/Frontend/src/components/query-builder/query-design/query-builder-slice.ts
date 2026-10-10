@@ -22,7 +22,14 @@ export type MetadataEntity = {
 export type QueryDefinition = {
   entity: string;
   columns: { field: string; alias: string | null }[];
-  filters: { field: string; operator: number; value: string; parameterized: boolean }[];
+  filters: {
+    field: string;
+    operator: number;
+    value: string;
+    parameterized: boolean;
+    logicalOperator: number | null;
+    enabled: boolean;
+  }[];
   sorts: { field: string; direction: string }[];
   page: number | null;
   pageSize: number | null;

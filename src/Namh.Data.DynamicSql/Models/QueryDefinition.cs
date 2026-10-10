@@ -22,7 +22,9 @@ public sealed record QueryFilter(
     string Field,
     QueryFilterOperator Operator,
     object? Value = null,
-    bool Parameterized = false);
+    bool Parameterized = false,
+    QueryFilterLogicalOperator? LogicalOperator = null,
+    bool Enabled = true);
 
 public sealed record QueryFilterArithmetic(
     object? Left,

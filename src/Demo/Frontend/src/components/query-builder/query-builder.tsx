@@ -20,7 +20,15 @@ function createDefinition(entity: string): QueryDefinition {
 }
 
 function loadDefinition(): QueryDefinition {
-  return cachedDefinition ?? createDefinition("");
+  if (!cachedDefinition) return createDefinition("");
+
+  return {
+    ...cachedDefinition,
+    filters: cachedDefinition.filters.map((filter) => ({
+      ...filter,
+      enabled: filter.enabled !== false,
+    })),
+  };
 }
 
 export default function QueryBuilder() {
@@ -45,7 +53,12 @@ export default function QueryBuilder() {
   }, [metadata, definition.entity]);
 
   const runQuery = () => {
-    if (definition.entity && definition.columns.length) dispatch(executeQuery(definition));
+    if (definition.entity && definition.columns.length) {
+      dispatch(executeQuery({
+        ...definition,
+        filters: definition.filters.filter((filter) => filter.enabled !== false),
+      }));
+    }
   };
 
   return (

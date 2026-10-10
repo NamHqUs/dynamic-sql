@@ -40,10 +40,16 @@
 .filter-row { display: flex; gap: 8px; margin-top: 10px; max-width: 700px; }
 .filter-row .field-box { flex: 1.5; }
 .filter-row > select { width: 120px; }
+.filter-row > .logical-operator { flex: 0 0 72px; width: 72px; }
+.filter-row > .logical-operator-spacer { flex: 0 0 72px; width: 72px; height: var(--field-box-height); }
 .select-fields-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .select-fields-row .field-cards { display: contents; }
 .select-fields-row > .field-box select { height: var(--field-box-height); }
 .filter-row input { flex: 1; }
+.filter-row-disabled { opacity: .48; }
+.filter-toggle { flex: 0 0 35px; height: var(--field-box-height); color: var(--purple); background: #191e28; border: 1px solid #323947; border-radius: 5px; font: 10px "DM Mono", monospace; cursor: pointer; }
+.filter-toggle[aria-pressed="false"] { color: #aab3c2; }
+.filter-toggle:hover, .filter-toggle:focus-visible { border-color: var(--purple); color: #fff; outline: 0; }
 .filter-row .icon-button { flex: 0 0 35px; }
 .empty-builder { color: var(--muted); font-size: 12px; }
 @media (max-width: 760px) { .query-builder-toolbar { flex-wrap: wrap; } .filter-row { flex-wrap: wrap; } .filter-row select, .filter-row input { min-width: 130px; } }

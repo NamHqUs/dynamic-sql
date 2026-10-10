@@ -28,8 +28,9 @@ public static class QueryDefinitionExtensions
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));
 
-        foreach (var filter in definition.Filters)
-            query = query.Where(CreateFilter(new QueryFilterCondition(filter)));
+        var enabledFilters = definition.Filters.Where(filter => filter.Enabled).ToList();
+        if (enabledFilters.Count > 0)
+            query = query.Where(CreateFilter(CreateFilterExpression(enabledFilters)));
 
         foreach (var sortGroup in definition.Sorts.Select((sort, index) => (sort, index)))
         {
@@ -60,6 +61,36 @@ public static class QueryDefinitionExtensions
 
         return query;
     }
+
+    private static QueryFilterExpression CreateFilterExpression(IReadOnlyList<QueryFilter> filters)
+    {
+        if (filters.Count == 1)
+            return new QueryFilterCondition(filters[0]);
+
+        var orGroups = new List<QueryFilterExpression>();
+        var andConditions = new List<QueryFilterExpression>();
+
+        foreach (var filter in filters)
+        {
+            if (andConditions.Count > 0 && filter.LogicalOperator == QueryFilterLogicalOperator.Or)
+            {
+                orGroups.Add(CreateGroup(QueryFilterLogicalOperator.And, andConditions));
+                andConditions = [];
+            }
+
+            andConditions.Add(new QueryFilterCondition(filter));
+        }
+
+        orGroups.Add(CreateGroup(QueryFilterLogicalOperator.And, andConditions));
+        return CreateGroup(QueryFilterLogicalOperator.Or, orGroups);
+    }
+
+    private static QueryFilterExpression CreateGroup(
+        QueryFilterLogicalOperator logicalOperator,
+        IReadOnlyList<QueryFilterExpression> conditions)
+        => conditions.Count == 1
+            ? conditions[0]
+            : new QueryFilterGroup(logicalOperator, conditions);
 
     private static Expression<Func<IRecordParameter, bool>> CreateFilter(QueryFilterExpression filter)
     {
