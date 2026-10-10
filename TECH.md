@@ -79,6 +79,10 @@ The JSON transport model contains entity, columns, filters, sorting, and
 paging. `QueryDefinitionExtensions` converts it into the same query pipeline
 used by C# expressions.
 
+Filters are represented recursively: `BinaryFilter` contains a field
+comparison, while `LogicalFilter` combines two `QueryFilter` instances with
+`And` or `Or`.
+
 `QueryDefinitionJsonParser` is responsible for:
 
 - JSON property parsing

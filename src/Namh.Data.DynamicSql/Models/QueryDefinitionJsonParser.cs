@@ -64,7 +64,7 @@ internal sealed class QueryFilterParser
     public QueryFilterParser(string text)
         => _tokens = Tokenize(text);
 
-    public QueryFilterExpression Parse()
+    public QueryFilter Parse()
     {
         if (_tokens.Count == 1)
             throw new FormatException("The filter cannot be empty.");
@@ -74,28 +74,26 @@ internal sealed class QueryFilterParser
         return expression;
     }
 
-    private QueryFilterExpression ParseOr()
+    private QueryFilter ParseOr()
         => ParseGroup(ParseAnd, "||", QueryFilterLogicalOperator.Or);
 
-    private QueryFilterExpression ParseAnd()
+    private QueryFilter ParseAnd()
         => ParseGroup(ParsePrimary, "&&", QueryFilterLogicalOperator.And);
 
-    private QueryFilterExpression ParseGroup(
-        Func<QueryFilterExpression> operand,
+    private QueryFilter ParseGroup(
+        Func<QueryFilter> operand,
         string separator,
         QueryFilterLogicalOperator logicalOperator)
     {
-        var expressions = new List<QueryFilterExpression> { operand() };
+        var expression = operand();
 
         while (Match(separator))
-            expressions.Add(operand());
+            expression = new LogicalFilter(expression, logicalOperator, operand());
 
-        return expressions.Count == 1
-            ? expressions[0]
-            : new QueryFilterGroup(logicalOperator, expressions);
+        return expression;
     }
 
-    private QueryFilterExpression ParsePrimary()
+    private QueryFilter ParsePrimary()
     {
         if (Match("("))
         {
@@ -120,7 +118,7 @@ internal sealed class QueryFilterParser
             _ => throw new FormatException($"Unsupported filter operator [{operation}].")
         };
 
-        return new QueryFilterCondition(new QueryFilter(field, filterOperator, value, true));
+        return new BinaryFilter(field, filterOperator, value) { Parameterized = true };
     }
 
     private object? ParseFilterValue()

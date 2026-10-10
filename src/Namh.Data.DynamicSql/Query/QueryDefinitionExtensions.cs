@@ -28,10 +28,6 @@ public static class QueryDefinitionExtensions
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));
 
-        var enabledFilters = definition.Filters.Where(filter => filter.Enabled).ToList();
-        if (enabledFilters.Count > 0)
-            query = query.Where(CreateFilter(CreateFilterExpression(enabledFilters)));
-
         foreach (var sortGroup in definition.Sorts.Select((sort, index) => (sort, index)))
         {
             var fields = new[] { sortGroup.sort.Field };
@@ -62,37 +58,7 @@ public static class QueryDefinitionExtensions
         return query;
     }
 
-    private static QueryFilterExpression CreateFilterExpression(IReadOnlyList<QueryFilter> filters)
-    {
-        if (filters.Count == 1)
-            return new QueryFilterCondition(filters[0]);
-
-        var orGroups = new List<QueryFilterExpression>();
-        var andConditions = new List<QueryFilterExpression>();
-
-        foreach (var filter in filters)
-        {
-            if (andConditions.Count > 0 && filter.LogicalOperator == QueryFilterLogicalOperator.Or)
-            {
-                orGroups.Add(CreateGroup(QueryFilterLogicalOperator.And, andConditions));
-                andConditions = [];
-            }
-
-            andConditions.Add(new QueryFilterCondition(filter));
-        }
-
-        orGroups.Add(CreateGroup(QueryFilterLogicalOperator.And, andConditions));
-        return CreateGroup(QueryFilterLogicalOperator.Or, orGroups);
-    }
-
-    private static QueryFilterExpression CreateGroup(
-        QueryFilterLogicalOperator logicalOperator,
-        IReadOnlyList<QueryFilterExpression> conditions)
-        => conditions.Count == 1
-            ? conditions[0]
-            : new QueryFilterGroup(logicalOperator, conditions);
-
-    private static Expression<Func<IRecordParameter, bool>> CreateFilter(QueryFilterExpression filter)
+    private static Expression<Func<IRecordParameter, bool>> CreateFilter(QueryFilter filter)
     {
         var parameter = Expression.Parameter(typeof(IRecordParameter), "record");
         var body = CreateFilterBody(filter, parameter);
@@ -101,34 +67,34 @@ public static class QueryDefinitionExtensions
     }
 
     private static Expression CreateFilterBody(
-        QueryFilterExpression filter,
-        ParameterExpression parameter)
-        => filter switch
-        {
-            QueryFilterCondition condition => CreateCondition(condition.Filter, parameter),
-            QueryFilterGroup group => CreateGroup(group, parameter),
-            _ => throw new ArgumentOutOfRangeException(nameof(filter))
-        };
-
-    private static Expression CreateGroup(
-        QueryFilterGroup group,
+        QueryFilter filter,
         ParameterExpression parameter)
     {
-        var expressions = group.Conditions
-            .Select(condition => CreateFilterBody(condition, parameter))
-            .ToList();
-        var result = expressions[0];
+        if (!filter.Enabled)
+            return Expression.Constant(true);
 
-        foreach (var expression in expressions.Skip(1))
-            result = group.Operator == QueryFilterLogicalOperator.And
-                ? Expression.AndAlso(result, expression)
-                : Expression.OrElse(result, expression);
+        return filter switch
+        {
+            LogicalFilter logical => CreateLogicalFilter(logical, parameter),
+            BinaryFilter binary => CreateCondition(binary, parameter),
+            _ => throw new ArgumentOutOfRangeException(nameof(filter))
+        };
+    }
 
-        return result;
+    private static Expression CreateLogicalFilter(
+        LogicalFilter group,
+        ParameterExpression parameter)
+    {
+        var left = CreateFilterBody(group.Left, parameter);
+        var right = CreateFilterBody(group.Right, parameter);
+
+        return group.Operator == QueryFilterLogicalOperator.And
+            ? Expression.AndAlso(left, right)
+            : Expression.OrElse(left, right);
     }
 
     private static Expression CreateCondition(
-        QueryFilter filter,
+        BinaryFilter filter,
         ParameterExpression parameter)
     {
         var field = Expression.Call(
@@ -159,7 +125,7 @@ public static class QueryDefinitionExtensions
     }
 
     private static Expression CreateFilterValue(
-        QueryFilter filter,
+        BinaryFilter filter,
         ParameterExpression parameter)
     {
         if (filter.Value is QueryFilterArithmetic arithmetic)

@@ -15,7 +15,7 @@ public static class DynamicQueryServices
 
     public static async Task<TableDataDto> ExecuteQueryAsync(QueryDefinition query)
     {
-        Console.WriteLine("Executing query: " + JsonSerializer.Serialize(query,  new JsonSerializerOptions { WriteIndented = true }));
+        Console.WriteLine($"\n{query}\n");
         var context = new DynamicSqlContext(_cn, _metadata);
         var result = await new DynamicSqlContext(_cn, _metadata).Query(query).ToListAsync();
 

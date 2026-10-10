@@ -14,10 +14,7 @@ public class _14_QueryDefinitionTests : TestBase
                 new QueryColumn("Name"),
                 new QueryColumn("Manager.Name", "ManagerName")
             ],
-            Filters =
-            [
-                new QueryFilter("Age", QueryFilterOperator.GreaterThan, 18)
-            ],
+            Filter = new BinaryFilter("Age", QueryFilterOperator.GreaterThan, 18),
             Sorts =
             [
                 new QuerySort("Name")
@@ -41,10 +38,7 @@ public class _14_QueryDefinitionTests : TestBase
         {
             Entity = "User",
             Columns = [new QueryColumn("Name")],
-            Filters =
-            [
-                new QueryFilter("Name", QueryFilterOperator.Equals, "Alice")
-            ]
+            Filter = new BinaryFilter("Name", QueryFilterOperator.Equals, "Alice")
         };
 
         var records = _db.Query(definition).ToList();
@@ -59,13 +53,13 @@ public class _14_QueryDefinitionTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Filters =
-            [
-                new QueryFilter("Name", QueryFilterOperator.Equals, "Alice"),
-                new QueryFilter("Age", QueryFilterOperator.GreaterThan, 18, LogicalOperator: QueryFilterLogicalOperator.Or),
-                new QueryFilter("Name", QueryFilterOperator.Equals, "Bob", LogicalOperator: QueryFilterLogicalOperator.And),
-                new QueryFilter("SchoolId", QueryFilterOperator.Equals, 12, Enabled: false)
-            ]
+            Filter = new LogicalFilter(
+                new LogicalFilter(
+                    new BinaryFilter("Name", QueryFilterOperator.Equals, "Alice"),
+                    QueryFilterLogicalOperator.Or,
+                    new BinaryFilter("Age", QueryFilterOperator.GreaterThan, 18)),
+                QueryFilterLogicalOperator.And,
+                new BinaryFilter("Name", QueryFilterOperator.Equals, "Bob"))
         };
 
         var sql = _db.Query(definition).ToSql();
@@ -86,6 +80,65 @@ public class _14_QueryDefinitionTests : TestBase
         };
 
         Assert.Throws<ArgumentOutOfRangeException>(() => _db.Query(definition));
+    }
+
+    [Test]
+    public void DefinitionFormatsAsReadableText()
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Columns = [new QueryColumn("Id"), new QueryColumn("Name")],
+            Filter = new LogicalFilter(
+                new LogicalFilter(
+                    new BinaryFilter("Id", QueryFilterOperator.GreaterThan, 3),
+                    QueryFilterLogicalOperator.And,
+                    new BinaryFilter("Invoices.Id", QueryFilterOperator.LessThan, 3)),
+                QueryFilterLogicalOperator.And,
+                new LogicalFilter(
+                    new BinaryFilter("Name", QueryFilterOperator.Equals, "abc"),
+                    QueryFilterLogicalOperator.Or,
+                    new BinaryFilter("Age", QueryFilterOperator.GreaterThan, 18))),
+            Sorts = [new QuerySort("Name")],
+            Page = 1,
+            PageSize = 25,
+            IncludeArchive = true
+        };
+
+        var expected = string.Join(Environment.NewLine,
+            "Entity: User",
+            "Columns: Id, Name",
+            "Filters: (Id > 3 AND Invoices.Id < 3) AND (Name = \"abc\" OR Age > 18)",
+            "Sorts: Name ASC",
+            "Page: 1",
+            "PageSize: 25",
+            "IncludeArchive: True");
+
+        Assert.That(definition.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void DefinitionJsonDeserializesRecursiveFilterValues()
+    {
+        const string json = """
+            {
+              "entity": "User",
+              "filter": {
+                "field": "Name",
+                "operator": 0,
+                "value": "Alice",
+                "parameterized": false,
+                "enabled": true
+              }
+            }
+            """;
+
+        var definition = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(
+            json,
+            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        Assert.That(definition.Filter, Is.TypeOf<BinaryFilter>());
+        Assert.That(definition.Filter!.ToString(), Does.Contain("Alice"));
     }
 
     [Test]

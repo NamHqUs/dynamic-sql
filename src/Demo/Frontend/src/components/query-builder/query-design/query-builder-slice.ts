@@ -36,6 +36,64 @@ export type QueryDefinition = {
   includeArchive: boolean;
 };
 
+type QueryFilterDefinition = QueryDefinition["filters"][number];
+
+type ApiFilter =
+  | {
+      field: string;
+      operator: number;
+      value: string;
+      parameterized: boolean;
+      enabled: boolean;
+    }
+  | {
+      left: ApiFilter;
+      operator: number;
+      right: ApiFilter;
+      enabled: boolean;
+      parameterized: boolean;
+    };
+
+function createApiFilter(filters: QueryFilterDefinition[]): ApiFilter | null {
+  if (!filters.length) return null;
+
+  const groups: ApiFilter[][] = [];
+  let andGroup: ApiFilter[] = [];
+
+  for (const filter of filters) {
+    const binaryFilter: ApiFilter = {
+      field: filter.field,
+      operator: filter.operator,
+      value: filter.value,
+      parameterized: filter.parameterized,
+      enabled: filter.enabled,
+    };
+
+    if (andGroup.length && filter.logicalOperator === 1) {
+      groups.push(andGroup);
+      andGroup = [];
+    }
+
+    andGroup.push(binaryFilter);
+  }
+
+  groups.push(andGroup);
+
+  const createGroup = (items: ApiFilter[], operator: number): ApiFilter =>
+    items.slice(1).reduce<ApiFilter>(
+      (left, right) => ({
+        left,
+        operator,
+        right,
+        enabled: true,
+        parameterized: false,
+      }),
+      items[0],
+    );
+
+  return createGroup(groups.map((group) => createGroup(group, 0)), 1);
+}
+
 export type QueryResult = {
   name: string;
   columns: string[];
@@ -82,10 +140,14 @@ export const executeQuery = createAsyncThunk(
   "queryBuilder/execute",
   async (definition: QueryDefinition, { rejectWithValue }) => {
     try {
+      const { filters, ...query } = definition;
       const payload = await requestJson("/dynamic-query/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(definition),
+        body: JSON.stringify({
+          ...query,
+          filter: createApiFilter(filters),
+        }),
       });
       if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string")) {
         return rejectWithValue("Query API must return a name and an array of row strings.");
