@@ -32,10 +32,11 @@
 .field-name, .field-alias-value { color: #c5cad4; font: 11px "Manrope", sans-serif; }
 .field-alias-separator { display: inline-flex; align-items: center; color: #737e90; font: 11px "DM Mono", monospace; line-height: 1; }
 .field-alias-value.editable { cursor: pointer; }
-.field-name.editable { cursor: pointer; }
+.field-name.editable, .field-alias-value.editable { color: var(--purple); cursor: pointer; }
 .field-name.editable:hover, .field-name.editable:focus, .field-alias-value.editable:hover, .field-alias-value.editable:focus { color: #fff; text-decoration: underline; }
 .section-header { display: flex; align-items: center; justify-content: space-between; }
 .text-button { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; font-size: 11px; }
+.text-button:hover { color: #c5b5ff; }
 .filter-row { display: flex; gap: 8px; margin-top: 10px; max-width: 700px; }
 .filter-row .field-box { flex: 1.5; }
 .filter-row > select { width: 120px; }

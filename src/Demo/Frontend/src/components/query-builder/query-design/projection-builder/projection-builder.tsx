@@ -240,7 +240,7 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
         <span className="section-kicker">SELECT FIELDS</span>
         <button
           type="button"
-          className="text-button"
+          className="button primary"
           onClick={selectAllFields}
           disabled={entity.fields.every((field) => definition.columns.some((column) => column.field === field.name))}
         >
