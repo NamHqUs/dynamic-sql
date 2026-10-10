@@ -35,6 +35,14 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
 
         var joinedData = ParseRelationPath(tableContext, relationPath);
 
+        if (string.Equals(fieldName, "Count()", StringComparison.OrdinalIgnoreCase) &&
+            joinedData.Any() &&
+            joinedData.Last().relation.Type == RelationType.Collection)
+        {
+            var lastTable = ApplyJoinAggregate(tableContext, joinedData);
+            return new AggregateExpression(lastTable, "Count(*)");
+        }
+
         var lastEntity = joinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
         var metaField = lastEntity.GetField(fieldName);
 
@@ -106,7 +114,10 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
                 if (predicates == null)
                     predicates = BuildJoinKeys(tableContext, joinedTable, relation);
                 else
-                    lastTable.Joins.Add(BuildJoinPath(lastTable, joinedTable, relation, true));
+                {
+                    joinedTable.Joins.Add(BuildJoinPath(lastTable, joinedTable, relation, true));
+                    joinedTable.Joins.AddRange(lastTable.Joins);
+                }
                 lastTable = joinedTable;
             }
 

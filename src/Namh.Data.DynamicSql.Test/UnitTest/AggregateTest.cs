@@ -3,15 +3,47 @@
 [TestFixture]
 public class AggregateTest : TestBase
 {
-    //[Test]
-    //public void Count_Projection()
-    //{
-    //    var query = _db.Query("User").Select("Name", "Members.*Count");
-    //    var queryString = query.ToString();
-    //    var data = query.ToList();
-    //    foreach (var e in data)
-    //        Assert.AreEqual(e["Total0"], e["Total1"]);
-    //}
+    [Test]
+    public void Count_Projection()
+    {
+        var query = _db.Query("User").Select("Name", "Members.Count()", "Members.Members.Count()");
+        var data = query.ToList();
+
+        var actualValues = data.ToDictionary(
+            e => (string)e["Name"]!,
+            e => Convert.ToInt32(e["Members.Count()"]));
+
+        Assert.That(actualValues, Is.EqualTo(new Dictionary<string, int>
+        {
+            ["Alice"] = 2,
+            ["Bob"] = 1,
+            ["Charlie"] = 0,
+            ["David"] = 2,
+            ["Eve"] = 0,
+            ["Frank"] = 0,
+        }));
+    }
+
+    [Test]
+    public void Count_Projection_Nested()
+    {
+        var query = _db.Query("User").Select("Name", "Members.Members.Count()");
+        var data = query.ToList();
+
+        var actualValues = data.ToDictionary(
+            e => (string)e["Name"]!,
+            e => Convert.ToInt32(e["Members.Count()"]));
+
+        Assert.That(actualValues, Is.EqualTo(new Dictionary<string, int>
+        {
+            ["Alice"] = 2,
+            ["Bob"] = 1,
+            ["Charlie"] = 0,
+            ["David"] = 2,
+            ["Eve"] = 0,
+            ["Frank"] = 0,
+        }));
+    }
 
     //[Test]
     //public void Count()

@@ -10,6 +10,7 @@ export type MetadataField = {
 export type MetadataRelation = {
   name: string;
   relatedEntity: string;
+  type?: number | string;
 };
 
 export type MetadataEntity = {

@@ -15,6 +15,8 @@ type FieldBoxProps = {
 
 const RELATION_PREFIX = "relation:";
 const FIELD_PREFIX = "field:";
+const AGGREGATE_PREFIX = "aggregate:";
+const COUNT_AGGREGATE = "Count()";
 
 // Follows relation names from the root entity; returns undefined when a segment cannot be resolved.
 export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], segments: string[]) {
@@ -37,11 +39,22 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
     : "";
   const selectValue = selectedField && current.fields.some((field) => field.name === selectedField)
     ? `${FIELD_PREFIX}${selectedField}`
-    : "";
+    : selectedField === COUNT_AGGREGATE
+      ? `${AGGREGATE_PREFIX}${COUNT_AGGREGATE}`
+      : "";
+
+  const parent = path.length > 0 ? resolveEntity(entity, metadata, path.slice(0, -1)) : undefined;
+  const selectedRelation = parent?.relations?.find((relation) => relation.name === path[path.length - 1]);
+  const isCollection = selectedRelation?.type === 1 || selectedRelation?.type === "Collection";
 
   const handleSelect = (selected: string) => {
     if (selected.startsWith(RELATION_PREFIX)) {
       setPendingPath([...path, selected.slice(RELATION_PREFIX.length)]);
+      return;
+    }
+    if (selected === `${AGGREGATE_PREFIX}${COUNT_AGGREGATE}`) {
+      onChange([...path, COUNT_AGGREGATE].join("."));
+      setPendingPath(clearOnSelect ? [] : path);
       return;
     }
     if (!selected.startsWith(FIELD_PREFIX)) return;
@@ -66,6 +79,9 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
           .filter((field) => !excludedPaths.includes([...path, field.name].join(".")))
           .map((field) => <option value={`${FIELD_PREFIX}${field.name}`} key={field.name}>{field.name}</option>)}
       </optgroup>
+      {isCollection && <optgroup label="Aggregate">
+        <option value={`${AGGREGATE_PREFIX}${COUNT_AGGREGATE}`}>{COUNT_AGGREGATE}</option>
+      </optgroup>}
     </select>
   </div>;
 }
