@@ -17,6 +17,10 @@ const RELATION_PREFIX = "relation:";
 const FIELD_PREFIX = "field:";
 const AGGREGATE_PREFIX = "aggregate:";
 const COUNT_AGGREGATE = "Count()";
+const AGGREGATES = ["Count()", "Sum", "Max", "Min", "Average"] as const;
+const NUMERIC_DATA_TYPES = new Set(["number", "byte", "short", "int", "integer", "long", "float", "double", "decimal"]);
+const aggregateSegment = (segment: string) =>
+  AGGREGATES.find((aggregate) => segment === aggregate || segment.startsWith(`${aggregate}(`));
 
 // Follows relation names from the root entity; returns undefined when a segment cannot be resolved.
 export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], segments: string[]) {
@@ -32,15 +36,23 @@ export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], 
 export default function FieldBox({ entity, metadata, value, onChange, clearOnSelect = false, placeholder = "Select field…", ariaLabel = "Field", excludedPaths = [] }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
-  const path = pendingPath ?? valueSegments.slice(0, -1);
+  const [pendingAggregate, setPendingAggregate] = useState<string | null>(null);
+  const [pendingAggregateField, setPendingAggregateField] = useState("");
+  const aggregateMatch = valueSegments[valueSegments.length - 1]?.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/);
+  const rawPath = pendingPath ?? (aggregateMatch ? valueSegments.slice(0, -1) : valueSegments.slice(0, -1));
+  const aggregatePathIndex = rawPath.findIndex((segment) => aggregateSegment(segment));
+  const path = aggregatePathIndex < 0 ? rawPath : rawPath.slice(0, aggregatePathIndex);
   const current = resolveEntity(entity, metadata, path) ?? entity;
-  const selectedField = path.join(".") === valueSegments.slice(0, -1).join(".")
-    ? valueSegments[valueSegments.length - 1] ?? ""
-    : "";
-  const selectValue = selectedField && current.fields.some((field) => field.name === selectedField)
-    ? `${FIELD_PREFIX}${selectedField}`
-    : selectedField === COUNT_AGGREGATE
-      ? `${AGGREGATE_PREFIX}${COUNT_AGGREGATE}`
+  const selectedField = aggregateMatch
+    ? aggregateMatch[2]
+    : path.join(".") === valueSegments.slice(0, -1).join(".")
+      ? valueSegments[valueSegments.length - 1] ?? ""
+      : "";
+  const selectedAggregate = aggregateMatch?.[1] ?? pendingAggregate;
+  const selectValue = selectedAggregate
+      ? `${AGGREGATE_PREFIX}${selectedAggregate}`
+      : selectedField && current.fields.some((field) => field.name === selectedField)
+        ? `${FIELD_PREFIX}${selectedField}`
       : "";
 
   const parent = path.length > 0 ? resolveEntity(entity, metadata, path.slice(0, -1)) : undefined;
@@ -54,7 +66,14 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
     }
     if (selected === `${AGGREGATE_PREFIX}${COUNT_AGGREGATE}`) {
       onChange([...path, COUNT_AGGREGATE].join("."));
+      setPendingAggregate(null);
+      setPendingAggregateField("");
       setPendingPath(clearOnSelect ? [] : path);
+      return;
+    }
+    if (selected.startsWith(AGGREGATE_PREFIX)) {
+      setPendingAggregate(selected.slice(AGGREGATE_PREFIX.length));
+      setPendingAggregateField("");
       return;
     }
     if (!selected.startsWith(FIELD_PREFIX)) return;
@@ -63,13 +82,23 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
   };
 
   const relations = (current.relations || []).filter((relation) => metadata.some((item) => item.name === relation.relatedEntity));
+  const numericFields = current.fields.filter((field) =>
+    NUMERIC_DATA_TYPES.has(field.dataType.toLowerCase()) &&
+    !excludedPaths.includes([...path, field.name].join(".")));
+  const aggregateField = pendingAggregateField || selectedField;
+  const activeAggregate = pendingAggregate ?? selectedAggregate;
+  const selectAggregateField = (field: string) => {
+    setPendingAggregateField(field);
+    if (activeAggregate && activeAggregate !== COUNT_AGGREGATE && field)
+      onChange([...path, `${activeAggregate}(${field})`].join("."));
+  };
 
   return <div className="field-box">
-    {path.map((segment, index) => <span className="field-box-crumb" key={`${index}-${segment}`}>
+    {!(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && path.map((segment, index) => <span className="field-box-crumb" key={`${index}-${segment}`}>
       <button type="button" className="field-box-segment" title={`Back to ${index ? path[index - 1] : entity.name}`} onClick={() => setPendingPath(path.slice(0, index))}>{segment}</button>
       <span className="field-box-dot">.</span>
     </span>)}
-    <select aria-label={ariaLabel} value={selectValue} onChange={(event) => handleSelect(event.target.value)}>
+    {!(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && <select aria-label={ariaLabel} value={selectValue} onChange={(event) => handleSelect(event.target.value)}>
       <option value="" disabled>{placeholder}</option>
       {relations.length > 0 && <optgroup label="Relations">
         {relations.map((relation) => <option value={`${RELATION_PREFIX}${relation.name}`} key={relation.name}>{relation.name}</option>)}
@@ -80,8 +109,21 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
           .map((field) => <option value={`${FIELD_PREFIX}${field.name}`} key={field.name}>{field.name}</option>)}
       </optgroup>
       {isCollection && <optgroup label="Aggregate">
-        <option value={`${AGGREGATE_PREFIX}${COUNT_AGGREGATE}`}>{COUNT_AGGREGATE}</option>
+        {AGGREGATES.map((aggregate) => <option value={`${AGGREGATE_PREFIX}${aggregate}`} key={aggregate}>
+          {aggregate === COUNT_AGGREGATE ? aggregate : `${aggregate}(…)`}
+        </option>)}
       </optgroup>}
-    </select>
+    </select>}
+    {isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE && <>
+      <span className="field-box-aggregate-label">{[...path, activeAggregate].join(".")}</span>
+      <select
+        aria-label={`${activeAggregate} field`}
+        value={aggregateField}
+        onChange={(event) => selectAggregateField(event.target.value)}
+      >
+        <option value="" disabled>Select numeric field…</option>
+        {numericFields.map((field) => <option value={field.name} key={field.name}>{field.name}</option>)}
+      </select>
+    </>}
   </div>;
 }
