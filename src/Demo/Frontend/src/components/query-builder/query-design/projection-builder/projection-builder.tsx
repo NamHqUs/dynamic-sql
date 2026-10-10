@@ -174,6 +174,17 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
     onDefinitionChange({ ...definition, columns: [...definition.columns, { field, alias: null }] });
   };
 
+  const selectAllFields = () => {
+    const selectedColumns = new Set(definition.columns.map((column) => column.field));
+    const columns = [
+      ...definition.columns,
+      ...entity.fields
+        .filter((field) => !selectedColumns.has(field.name))
+        .map((field) => ({ field: field.name, alias: null })),
+    ];
+    if (columns.length !== definition.columns.length) onDefinitionChange({ ...definition, columns });
+  };
+
   const removeColumn = (field: string) => {
     const columns = definition.columns.filter((column) => column.field !== field);
     onDefinitionChange({ ...definition, columns });
@@ -225,7 +236,17 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
 
   return (
     <div className="builder-section">
-      <span className="section-kicker">SELECT FIELDS</span>
+      <div className="section-header">
+        <span className="section-kicker">SELECT FIELDS</span>
+        <button
+          type="button"
+          className="text-button"
+          onClick={selectAllFields}
+          disabled={entity.fields.every((field) => definition.columns.some((column) => column.field === field.name))}
+        >
+          <Icon name="check" size={12} /> Select all fields
+        </button>
+      </div>
       <p className="helper">Pick a field, or a relation to continue into its entity.</p>
       <div className="select-fields-row">
         <FieldCards
