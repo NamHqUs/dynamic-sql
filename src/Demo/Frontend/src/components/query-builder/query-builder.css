@@ -1,5 +1,4 @@
 .query-page-heading { align-items: end; }
-.query-builder-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
 .query-message { color: var(--muted); font-size: 12px; }
 .query-message { margin: 18px 0 0; }
 .query-message.error { color: #f0a6ae; }

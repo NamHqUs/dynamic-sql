@@ -1,2 +1,4 @@
 .query-results { margin-top: 25px; }
 .query-results .results-head { padding-bottom: 20px; }
+.query-result-title { display: flex; align-items: end; gap: 18px; }
+.query-result-tools { display: flex; align-items: center; gap: 18px; }

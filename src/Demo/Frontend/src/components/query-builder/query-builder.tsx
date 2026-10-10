@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { executeQuery, fetchQueryMetadata, QueryDefinition } from "./query-design/query-builder-slice";
-import Icon from "../icon/icon";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import "./query-builder.css";
@@ -68,14 +67,13 @@ export default function QueryBuilder() {
         onDefinitionChange={updateDefinition}
       />
 
-      <div className="query-builder-actions">
-        <button className="button primary" onClick={runQuery} disabled={queryStatus === "loading" || !definition.columns.length}>
-          <Icon name="play" size={14} /> {queryStatus === "loading" ? "Running…" : "Run query"}
-        </button>
-      </div>
-
       {queryError && <p className="query-message error" role="alert">{queryError}</p>}
-      <QueryResult result={result} />
+      <QueryResult
+        result={result}
+        onRunQuery={runQuery}
+        queryLoading={queryStatus === "loading"}
+        queryDisabled={!definition.columns.length}
+      />
     </>
   );
 }

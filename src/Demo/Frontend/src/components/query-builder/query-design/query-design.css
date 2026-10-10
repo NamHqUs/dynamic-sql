@@ -7,7 +7,7 @@
 .checkbox-label { flex-direction: row !important; align-items: center; padding-bottom: 10px; text-transform: none !important; letter-spacing: 0 !important; font-family: inherit !important; font-size: 12px !important; }
 .query-builder-body { padding: 25px 27px 30px; }
 .builder-section + .builder-section { margin-top: 30px; }
-.builder-section .helper { margin-bottom: 13px; }
+.builder-section .helper { margin: 4px 0 13px; }
 .field-cards { display: flex; flex-wrap: wrap; gap: 8px; }
 .field-browser { display: grid; gap: 10px; }
 .relation-browser { margin-left: 8px; }
