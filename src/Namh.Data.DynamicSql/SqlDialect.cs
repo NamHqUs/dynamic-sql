@@ -19,7 +19,7 @@ public sealed class SqlServerDialect : ISqlDialect
         => $"[{identifier.Replace("]", "]]")}]";
 
     public string RenderTable(Entity entity)
-        => string.IsNullOrEmpty(entity.RawSql)
+        => string.IsNullOrEmpty(entity.RawSql) || string.Equals(entity.RawSql, entity.Name, StringComparison.Ordinal)
             ? $"dbo.{QuoteIdentifier(entity.Name)}"
             : entity.RawSql;
 
@@ -43,7 +43,7 @@ public sealed class SqliteDialect(string? schema = null) : ISqlDialect
         => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
     public string RenderTable(Entity entity)
-        => string.IsNullOrEmpty(entity.RawSql)
+        => string.IsNullOrEmpty(entity.RawSql) || string.Equals(entity.RawSql, entity.Name, StringComparison.Ordinal)
             ? string.IsNullOrEmpty(schema)
                 ? QuoteIdentifier(entity.Name)
                 : $"{QuoteIdentifier(schema)}.{QuoteIdentifier(entity.Name)}"
@@ -72,7 +72,7 @@ public sealed class PostgresDialect(string schema = "public") : ISqlDialect
         => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
     public string RenderTable(Entity entity)
-        => string.IsNullOrEmpty(entity.RawSql)
+        => string.IsNullOrEmpty(entity.RawSql) || string.Equals(entity.RawSql, entity.Name, StringComparison.Ordinal)
             ? $"{QuoteIdentifier(schema)}.{QuoteIdentifier(entity.Name)}"
             : entity.RawSql;
 

@@ -10,6 +10,8 @@ const paths = {
   search: <><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></>,
   download: <><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14" /></>,
   chevron: <path d="m9 18 6-6-6-6" />,
+  "chevron-down": <path d="m6 9 6 6 6-6" />,
+  "chevron-right": <path d="m9 6 6 6-6 6" />,
   close: <><path d="m6 6 12 12M18 6 6 18" /></>,
   check: <path d="m5 12 4 4L19 6" />,
   trash: <><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></>,

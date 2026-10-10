@@ -9,6 +9,11 @@
 .builder-section + .builder-section { margin-top: 30px; }
 .builder-section .helper { margin-bottom: 13px; }
 .field-cards { display: flex; flex-wrap: wrap; gap: 8px; }
+.field-browser { display: grid; gap: 10px; }
+.relation-browser { margin-left: 8px; }
+.relation-toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--purple); border: 0; background: transparent; padding: 3px 0; font: 11px "DM Mono", monospace; }
+.relation-target { color: var(--muted); font: 10px "Manrope", sans-serif; }
+.relation-browser > .field-browser { margin: 4px 0 2px 20px; padding-left: 10px; border-left: 1px solid #323947; }
 .field-card { display: flex; align-items: center; gap: 5px; color: #a9b1bf; background: #191e28; border: 1px solid #2d3441; border-radius: 5px; padding: 4px 6px; width: max-content; }
 .field-card.selected { color: #ded5ff; border-color: #654f9f; background: #29223e; }
 .field-card-toggle { color: #aab3c2; border: 1px solid #2b3340; background: #151923; border-radius: 4px; width: 22px; height: 22px; padding: 0; display: grid; place-items: center; flex: 0 0 22px; }

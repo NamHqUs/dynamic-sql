@@ -24,6 +24,33 @@ public class _13_SqlDialectTests
     }
 
     [Test]
+    public void EntityCopiesLogicalNameToPhysicalTableNameWhenRawSqlIsMissing()
+    {
+        var entity = new Entity("User", []);
+
+        Assert.That(entity.Name, Is.EqualTo("User"));
+        Assert.That(entity.RawSql, Is.EqualTo("User"));
+    }
+
+    [Test]
+    public void EntityCopiesPhysicalTableNameToLogicalNameWhenNameIsMissing()
+    {
+        var entity = new Entity(Name: null, Fields: [], RawSql: "Users");
+
+        Assert.That(entity.Name, Is.EqualTo("Users"));
+        Assert.That(entity.RawSql, Is.EqualTo("Users"));
+    }
+
+    [Test]
+    public void EntityKeepsLogicalAndPhysicalNamesIndependentWhenBothAreProvided()
+    {
+        var entity = new Entity(Name: "Student", Fields: [], RawSql: "[User]");
+
+        Assert.That(entity.Name, Is.EqualTo("Student"));
+        Assert.That(entity.RawSql, Is.EqualTo("[User]"));
+    }
+
+    [Test]
     public void SqliteDialectUsesLimitOffsetAndQuotedIdentifiers()
     {
         using var connection = new SqliteConnection();

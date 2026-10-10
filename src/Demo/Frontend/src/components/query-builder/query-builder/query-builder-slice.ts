@@ -7,9 +7,15 @@ export type MetadataField = {
   dataType: string;
 };
 
+export type MetadataRelation = {
+  name: string;
+  relatedEntity: string;
+};
+
 export type MetadataEntity = {
   name: string;
   fields: MetadataField[];
+  relations?: MetadataRelation[];
 };
 
 export type QueryDefinition = {
@@ -48,7 +54,10 @@ export const fetchQueryMetadata = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const payload = await requestJson("/dynamic-query/metadata");
-      if (!Array.isArray(payload) || payload.some((entity) => !entity || typeof entity.name !== "string" || !Array.isArray(entity.fields))) {
+      if (!Array.isArray(payload) || payload.some((entity) => !entity
+        || typeof entity.name !== "string"
+        || !Array.isArray(entity.fields)
+        || (entity.relations !== undefined && !Array.isArray(entity.relations)))) {
         return rejectWithValue("Metadata API must return entities with fields.");
       }
       return payload as MetadataEntity[];

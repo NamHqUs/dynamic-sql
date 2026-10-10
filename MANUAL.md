@@ -75,8 +75,10 @@ new Entity(
     ]);
 ```
 
-Without `RawSql`, an entity is rendered as `dbo.[EntityName]` by SQL Server.
-`RawSql` may refer to a table, view, or trusted derived query.
+`Name` is the logical entity name used by queries and relationships.
+`RawSql` is the physical database table expression used when generating SQL.
+If only one is provided, the missing value is copied from the provided value.
+When both are provided, they remain independent.
 
 ### Fields
 

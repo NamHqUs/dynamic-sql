@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { executeQuery, fetchQueryMetadata, QueryDefinition } from "./query-builder/query-builder-slice";
+import { executeQuery, fetchQueryMetadata, MetadataEntity, QueryDefinition } from "./query-builder/query-builder-slice";
 import Icon from "../icon/icon";
 import QueryBuilderForm from "./query-builder/query-builder";
 import QueryResult from "./query-result/query-result";
 import "./query-builder.css";
 
-function createDefinition(entity: string, fields: { name: string }[]): QueryDefinition {
+function createDefinition(entity: string, metadata: MetadataEntity[]): QueryDefinition {
+  const fields = metadata.find((item) => item.name === entity)?.fields || [];
   return {
     entity,
     columns: fields.slice(0, 5).map((field) => ({ field: field.name, alias: null })),
@@ -30,7 +31,7 @@ export default function QueryBuilder() {
 
   useEffect(() => {
     if (!definition.entity && metadata.length) {
-      setDefinition(createDefinition(metadata[0].name, metadata[0].fields));
+      setDefinition(createDefinition(metadata[0].name, metadata));
     }
   }, [metadata, definition.entity]);
 
