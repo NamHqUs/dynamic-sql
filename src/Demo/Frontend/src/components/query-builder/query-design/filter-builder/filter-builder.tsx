@@ -62,10 +62,15 @@ function getDropPosition(event: DragEvent<HTMLElement>): DragPosition {
   return event.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
 }
 
-function startFilterDrag(event: DragEvent<HTMLElement>, path: FilterPath) {
+function startFilterDrag(event: DragEvent<HTMLElement>, path: FilterPath, nodeType: "filter" | "group") {
   event.stopPropagation();
   event.dataTransfer.effectAllowed = "move";
   event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
+  event.dataTransfer.setData("application/x-filter-node-type", nodeType);
+}
+
+function isGroupDrag(event: DragEvent<HTMLElement>): boolean {
+  return event.dataTransfer.getData("application/x-filter-node-type") === "group";
 }
 
 function isPathPrefix(prefix: FilterPath, path: FilterPath): boolean {
@@ -74,6 +79,23 @@ function isPathPrefix(prefix: FilterPath, path: FilterPath): boolean {
 
 function isSamePath(first: FilterPath, second: FilterPath): boolean {
   return first.length === second.length && first.every((index, pathIndex) => index === second[pathIndex]);
+}
+
+function adjustPathAfterRemoval(sourcePath: FilterPath, targetPath: FilterPath): FilterPath {
+  const adjustedPath = [...targetPath];
+  const sharedDepth = Math.min(sourcePath.length, targetPath.length);
+  for (let depth = 0; depth < sharedDepth; depth++) {
+    const sourceIndex = sourcePath[depth];
+    const targetIndex = targetPath[depth];
+    if (sourceIndex === undefined || targetIndex === undefined) break;
+    if (depth > 0 && !sourcePath.slice(0, depth).every((index, pathIndex) => index === targetPath[pathIndex])) return adjustedPath;
+    if (sourceIndex < targetIndex) {
+      adjustedPath[depth]--;
+      return adjustedPath;
+    }
+    if (sourceIndex > targetIndex) return adjustedPath;
+  }
+  return adjustedPath;
 }
 
 function getNode(group: QueryFilterGroup, path: FilterPath): QueryFilterNode | undefined {
@@ -201,7 +223,7 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
           className="filter-group-drag-handle"
           draggable
           aria-hidden="true"
-          onDragStart={(event) => startFilterDrag(event, path)}
+          onDragStart={(event) => startFilterDrag(event, path, "group")}
           onDragEnd={onDragPreviewClear}
         />
       )}
@@ -211,14 +233,14 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
           onDragEnter={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            onDragPreview(path, "before");
+            onDragPreview(path, isGroupDrag(event) ? "inside" : "before");
           }}
           onDragOver={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            onDragPreview(path, "before");
+            onDragPreview(path, isGroupDrag(event) ? "inside" : "before");
           }}
-          onDrop={(event) => handleDrop(event, "before")}
+          onDrop={(event) => handleDrop(event, isGroupDrag(event) ? "inside" : "before")}
         />
       )}
       {depth === 0 && (
@@ -232,12 +254,12 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
         />
       )}
       <div
-        className={`filter-group-header${isPreview("before") ? " filter-drop-preview-before" : ""}`}
+        className={`filter-group-header${isPreview("inside") ? " filter-drop-preview-inside" : ""}`}
         onDragOver={(event) => {
           event.preventDefault();
-          onDragPreview(path, "before");
+          onDragPreview(path, "inside");
         }}
-        onDrop={(event) => handleDrop(event, "before")}
+        onDrop={(event) => handleDrop(event, "inside")}
       >
         {depth === 0 && <p className="helper">Build your filters here.</p>}
         {depth > 0 && showLogicalOperator && (
@@ -266,9 +288,9 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
             className={`filter-drop-zone filter-drop-zone-before${isSamePath(dragPreview?.path ?? [], [...path, index]) && dragPreview?.position === "before" ? " filter-drop-preview" : ""}`}
             onDragOver={(event) => {
               event.preventDefault();
-              onDragPreview([...path, index], "before");
+              onDragPreview([...path, index], isGroupDrag(event) ? "inside" : "before");
             }}
-            onDrop={(event) => handleDrop(event, "before", [...path, index])}
+            onDrop={(event) => handleDrop(event, isGroupDrag(event) ? "inside" : "before", [...path, index])}
           />
           <FilterGroupEditor
             group={filter}
@@ -431,7 +453,7 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
           className="filter-field-drag-handle"
           draggable
           aria-hidden="true"
-          onDragStart={(event) => startFilterDrag(event, path)}
+          onDragStart={(event) => startFilterDrag(event, path, "filter")}
           onDragEnd={() => {
             previewPosition.current = undefined;
             onDragPreviewClear();
@@ -506,8 +528,9 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
       return;
     }
     if (position === "after") {
-      const parentPath = targetPath.slice(0, -1);
-      const targetIndex = targetPath[targetPath.length - 1];
+      const adjustedTargetPath = adjustPathAfterRemoval(sourcePath, targetPath);
+      const parentPath = adjustedTargetPath.slice(0, -1);
+      const targetIndex = adjustedTargetPath[adjustedTargetPath.length - 1];
       if (targetIndex === undefined) return;
       const sourceParentPath = sourcePath.slice(0, -1);
       const sameParent = sourceParentPath.length === parentPath.length
@@ -575,16 +598,7 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
       });
       return;
     }
-    const sourceParentPath = sourcePath.slice(0, -1);
-    const targetParentPath = targetPath.slice(0, -1);
-    const sameParent = sourceParentPath.length === targetParentPath.length
-      && sourceParentPath.every((index, pathIndex) => index === targetParentPath[pathIndex]);
-    const targetIndex = targetPath[targetPath.length - 1];
-    const adjustedTargetPath = sameParent
-      && targetIndex !== undefined
-      && sourcePath[sourcePath.length - 1] < targetIndex
-      ? [...targetPath.slice(0, -1), targetIndex - 1]
-      : targetPath;
+    const adjustedTargetPath = adjustPathAfterRemoval(sourcePath, targetPath);
     onDefinitionChange({ ...definition, filters: appendToGroup(removed.group, adjustedTargetPath, removed.node) });
   };
 
