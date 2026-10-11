@@ -205,6 +205,22 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
           onDragEnd={onDragPreviewClear}
         />
       )}
+      {depth > 0 && (
+        <div
+          className={`filter-group-edge-drop filter-group-edge-drop-before${isPreview("before") ? " filter-drop-preview" : ""}`}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onDragPreview(path, "before");
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onDragPreview(path, "before");
+          }}
+          onDrop={(event) => handleDrop(event, "before")}
+        />
+      )}
       {depth === 0 && (
         <div
           className={`filter-drop-zone filter-drop-zone-before filter-drop-zone-first${isPreview("before") ? " filter-drop-preview" : ""}`}
@@ -310,6 +326,22 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
             onDrop={(event) => handleDrop(event, "after")}
           />
         </>
+      )}
+      {depth > 0 && (
+        <div
+          className={`filter-group-edge-drop filter-group-edge-drop-after${isPreview("after") ? " filter-drop-preview" : ""}`}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onDragPreview(path, "after");
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onDragPreview(path, "after");
+          }}
+          onDrop={(event) => handleDrop(event, "after")}
+        />
       )}
     </div>
   );
