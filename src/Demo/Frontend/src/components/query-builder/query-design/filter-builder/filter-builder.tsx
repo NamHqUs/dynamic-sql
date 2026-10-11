@@ -815,6 +815,15 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
     });
   };
 
+  const clearFilters = () => {
+    if (definition.filters.filters.length) {
+      onDefinitionChange({
+        ...definition,
+        filters: { logicalOperation: 0, filters: [] },
+      });
+    }
+  };
+
   return (
     <div
       ref={builderRef}
@@ -822,8 +831,18 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
       style={filterItemWidth ? { "--filter-item-width": `${filterItemWidth}px` } as CSSProperties : undefined}
     >
       <div className="section-header">
-        <span className="section-kicker">FILTERS</span>
-        <p className="filter-description">Drag a selected field here to create a filter, or drag from the left border of a FieldFilter or GroupFilter to reorder. Drop onto a GroupFilter to nest it, or use its top or bottom edge to place a filter before or after it.</p>
+        <div className="section-heading">
+          <span className="section-kicker">FILTERS</span>
+          <p className="filter-description">Drag a selected field here to create a filter, or drag from the left border of a FieldFilter or GroupFilter to reorder. Drop onto a GroupFilter to nest it, or use its top or bottom edge to place a filter before or after it.</p>
+        </div>
+        <button
+          type="button"
+          className="field-action field-action-clear"
+          onClick={clearFilters}
+          disabled={!definition.filters.filters.length}
+        >
+          - Clear filters
+        </button>
       </div>
       <FilterGroupEditor
         group={definition.filters}

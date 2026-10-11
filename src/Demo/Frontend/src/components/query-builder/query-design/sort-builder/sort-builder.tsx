@@ -112,6 +112,10 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
     });
   };
 
+  const clearSorts = () => {
+    if (definition.sorts.length) onDefinitionChange({ ...definition, sorts: [] });
+  };
+
   return (
     <div className="builder-section">
       <div className="section-header">
@@ -119,6 +123,14 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
           <span className="section-kicker">SORTS</span>
           <p className="filter-description">Select fields to sort the query results and choose the direction for each field.</p>
         </div>
+        <button
+          type="button"
+          className="field-action field-action-clear"
+          onClick={clearSorts}
+          disabled={!definition.sorts.length}
+        >
+          - Clear sorts
+        </button>
       </div>
       <div className="sort-list">
         {definition.sorts.map((sort) => (

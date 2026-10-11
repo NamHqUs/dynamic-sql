@@ -207,6 +207,10 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
     if (columns.length !== definition.columns.length) onDefinitionChange({ ...definition, columns });
   };
 
+  const clearProjection = () => {
+    if (definition.columns.length) onDefinitionChange({ ...definition, columns: [] });
+  };
+
   const removeColumn = (field: string) => {
     const columns = definition.columns.filter((column) => column.field !== field);
     onDefinitionChange({ ...definition, columns });
@@ -263,14 +267,24 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
           <span className="section-kicker">SELECT FIELDS</span>
           <p className="filter-description">Select a field to add it to the query, or select a relation to browse and choose fields from the related entity.</p>
         </div>
-        <button
-          type="button"
-          className="button primary"
-          onClick={selectAllFields}
-          disabled={entity.fields.every((field) => definition.columns.some((column) => column.field === field.name))}
-        >
-          <Icon name="check" size={12} /> Select all fields
-        </button>
+        <div className="field-action-buttons">
+          <button
+            type="button"
+            className="field-action field-action-clear"
+            onClick={selectAllFields}
+            disabled={entity.fields.every((field) => definition.columns.some((column) => column.field === field.name))}
+          >
+            + Select all fields
+          </button>
+          <button
+            type="button"
+            className="field-action field-action-clear"
+            onClick={clearProjection}
+            disabled={!definition.columns.length}
+          >
+            - Clear projection
+          </button>
+        </div>
       </div>
       <div className="select-fields-row">
         <FieldCards
@@ -296,7 +310,7 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
           metadata={metadata}
           value=""
           excludedPaths={definition.columns.map((column) => column.field)}
-          placeholder="+ Display Field"
+          placeholder="+ Display field"
           ariaLabel="Display field"
           onChange={addColumn}
         />
