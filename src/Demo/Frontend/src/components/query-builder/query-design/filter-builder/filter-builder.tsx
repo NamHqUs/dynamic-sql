@@ -261,7 +261,6 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
         }}
         onDrop={(event) => handleDrop(event, "inside")}
       >
-        {depth === 0 && <p className="helper">Build your filters here.</p>}
         {depth > 0 && showLogicalOperator && (
           <label className="filter-group-logic">
             <select
@@ -656,6 +655,7 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
     >
       <div className="section-header">
         <span className="section-kicker">FILTERS</span>
+        <p className="filter-description">Drag from the left border of a FieldFilter or GroupFilter. Drop above or below an item to reorder, or onto a GroupFilter to nest it. Use a GroupFilter&apos;s top or bottom edge to place an item before or after it.</p>
       </div>
       <FilterGroupEditor
         group={definition.filters}

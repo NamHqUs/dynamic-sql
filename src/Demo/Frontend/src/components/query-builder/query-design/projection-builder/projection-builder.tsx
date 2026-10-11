@@ -237,7 +237,10 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
   return (
     <div className="builder-section">
       <div className="section-header">
-        <span className="section-kicker">SELECT FIELDS</span>
+        <div className="section-heading">
+          <span className="section-kicker">SELECT FIELDS</span>
+          <p className="filter-description">Select a field to add it to the query, or select a relation to browse and choose fields from the related entity.</p>
+        </div>
         <button
           type="button"
           className="button primary"
@@ -247,7 +250,6 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
           <Icon name="check" size={12} /> Select all fields
         </button>
       </div>
-      <p className="helper">Pick a field, or a relation to continue into its entity.</p>
       <div className="select-fields-row">
         <FieldCards
           fields={selectedFields}
