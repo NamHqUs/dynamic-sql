@@ -46,12 +46,17 @@
 .filter-row .field-box { flex: 0 1 auto; }
 .filter-row .field-box select, .filter-row .field-builder-selected { border-left: 3px solid #654f9f; }
 .filter-row > select { width: 120px; }
-.filter-row > .logical-operator { appearance: none; -webkit-appearance: none; color: var(--purple); border: 0; background: transparent; padding: 0; width: 40px; cursor: pointer; text-align: center; }
-.filter-row > .logical-operator-hidden { visibility: hidden; pointer-events: none; }
-.filter-row > .filter-operator-select { appearance: none; -webkit-appearance: none; color: var(--purple); border: 0; background: transparent; padding: 2px 6px; width: max-content; min-width: 0; flex: 0 0 auto; cursor: pointer; text-align: center; font-size: 14px; }
-.filter-row > .filter-operator-select option { color: #f0e4ff; background: #29223e; padding: 8px 18px; }
-.filter-row > .logical-operator:hover, .filter-row > .filter-operator-select:hover, .filter-row > .logical-operator:focus, .filter-row > .filter-operator-select:focus { color: #c5b5ff; }
-.filter-row > .logical-operator-spacer { flex: 0 0 40px; width: 40px; height: var(--field-box-height); }
+.filter-row > .logical-operator-select { position: relative; flex: 0 0 40px; width: 40px; height: var(--field-box-height); }
+.logical-operator-select .operator-trigger { font-size: 12px; font-weight: 700; }
+.logical-operator-spacer { flex: 0 0 40px; width: 40px; height: var(--field-box-height); }
+.filter-row > .filter-operator-select { position: relative; flex: 0 0 auto; width: max-content; min-width: 42px; height: var(--field-box-height); }
+.filter-operator-select .operator-trigger { width: max-content; min-width: 42px; }
+.operator-trigger { appearance: none; -webkit-appearance: none; color: var(--purple); border: 0; background: transparent; padding: 2px 6px; width: 100%; height: var(--field-box-height); cursor: pointer; text-align: center; font: inherit; font-size: 14px; white-space: nowrap; }
+.operator-menu { position: absolute; top: calc(100% + 4px); left: 50%; z-index: 10; display: flex; flex-direction: column; width: 100px; transform: translateX(-50%); padding: 4px; border: 1px solid #4a4163; border-radius: 5px; background: #29223e; box-shadow: 0 8px 18px rgb(0 0 0 / 35%); }
+.logical-operator-select .operator-menu, .group-logical-operator-select .operator-menu { width: 80px; }
+.operator-option { color: #f0e4ff; border: 0; border-radius: 3px; background: transparent; padding: 8px 12px; cursor: pointer; text-align: left; font: inherit; font-size: 12px; }
+.operator-option:hover, .operator-option-selected { background: #40335f; }
+.filter-row > .logical-operator-select .operator-trigger:hover, .filter-row > .filter-operator-select .operator-trigger:hover, .filter-row > .logical-operator-select .operator-trigger:focus-visible, .filter-row > .filter-operator-select .operator-trigger:focus-visible { color: #c5b5ff; outline: 0; }
 .select-fields-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .select-fields-row .field-cards { display: contents; }
 .select-fields-row > .field-box select { height: var(--field-box-height); }
@@ -87,8 +92,8 @@
 .filter-group-depth-1 > .filter-group-header .filter-group-collapse, .filter-group-depth-2 > .filter-group-header .filter-group-collapse, .filter-group-depth-3 > .filter-group-header .filter-group-collapse { position: absolute; top: 3px; right: 76px; z-index: 1; }
 .filter-group-title { color: #cfc3fb; font: 11px "DM Mono", monospace; letter-spacing: .4px; margin-right: 4px; }
 .filter-group-logic { display: inline-flex; align-items: center; gap: 5px; color: #8993a5; font-size: 10px; }
-.filter-group-logic select { color: #8bd5ca; background: #151923; border: 0; border-radius: 0; padding: 0; font-size: 12px; font-weight: 700; outline: 0; width: 46px; height: var(--field-box-height); box-sizing: border-box; }
-.filter-group-logic-select { appearance: none; -webkit-appearance: none; cursor: pointer; text-align: center; }
+.group-logical-operator-select { position: relative; flex: 0 0 46px; width: 46px; height: var(--field-box-height); }
+.group-logical-operator-select .operator-trigger { color: #8bd5ca; background: #151923; padding: 0; font-size: 12px; font-weight: 700; }
 .filter-group-header .icon-button { margin-left: auto; }
 .filter-group-collapse { margin-left: 0 !important; }
 .filter-group-actions { position: absolute; top: 3px; right: 3px; z-index: 1; display: flex; gap: 4px; }

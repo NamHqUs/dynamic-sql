@@ -1,5 +1,5 @@
 import type { CSSProperties, DragEvent } from "react";
-import { Fragment, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Icon from "../../../icon/icon";
 import { MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
@@ -10,6 +10,10 @@ const operators = [
   [2, "contains"],
   [3, ">"],
   [4, "<"],
+] as const;
+const logicalOperators = [
+  [0, "AND"],
+  [1, "OR"],
 ] as const;
 
 type FilterBuilderProps = {
@@ -58,6 +62,74 @@ type DragPreview = {
 };
 
 const QUERY_FIELD_DRAG_TYPE = "application/x-query-field";
+
+type OperatorOption = readonly [number, string];
+
+type OperatorSelectProps = {
+  value: number;
+  onChange: (value: number) => void;
+  options: readonly OperatorOption[];
+  ariaLabel: string;
+  className: string;
+};
+
+function OperatorSelect({ value, onChange, options, ariaLabel, className }: OperatorSelectProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedOption = options.find(([optionValue]) => optionValue === value) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (event.target instanceof Node && !containerRef.current?.contains(event.target)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div className={className} ref={containerRef}>
+      <button
+        className="operator-trigger"
+        type="button"
+        aria-label={ariaLabel}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((isOpen) => !isOpen)}
+      >
+        {selectedOption[1]}
+      </button>
+      {open && (
+        <div className="operator-menu" role="listbox" aria-label={`${ariaLabel} options`}>
+          {options.map(([operatorValue, label]) => (
+            <button
+              className={`operator-option${operatorValue === value ? " operator-option-selected" : ""}`}
+              type="button"
+              role="option"
+              aria-selected={operatorValue === value}
+              key={operatorValue}
+              onClick={() => {
+                onChange(operatorValue);
+                setOpen(false);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function getDraggedField(event: DragEvent<HTMLElement>): string | undefined {
   const field = event.dataTransfer.getData(QUERY_FIELD_DRAG_TYPE).trim();
@@ -296,15 +368,13 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
         )}
         {depth > 0 && showLogicalOperator && (
           <label className="filter-group-logic">
-            <select
-              className="filter-group-logic-select"
-              aria-label="Group logical operator"
+            <OperatorSelect
               value={group.logicalOperation}
-              onChange={(event) => onChange({ ...group, logicalOperation: Number(event.target.value) })}
-            >
-              <option value={0}>AND</option>
-              <option value={1}>OR</option>
-            </select>
+              onChange={(logicalOperation) => onChange({ ...group, logicalOperation })}
+              options={logicalOperators}
+              ariaLabel="Group logical operator"
+              className="group-logical-operator-select"
+            />
           </label>
         )}
         {depth > 0 && (
@@ -488,26 +558,15 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
       }}
     >
       {first ? (
-        <select
-          className="logical-operator logical-operator-hidden"
-          aria-hidden="true"
-          tabIndex={-1}
-          value={filter.logicalOperator}
-          onChange={() => undefined}
-        >
-          <option value={0}>AND</option>
-          <option value={1}>OR</option>
-        </select>
+        <div className="logical-operator-spacer" aria-hidden="true" />
       ) : (
-        <select
-          className="logical-operator"
-          aria-label="Logical operator before condition"
+        <OperatorSelect
           value={filter.logicalOperator}
-          onChange={(event) => update({ logicalOperator: Number(event.target.value) })}
-        >
-          <option value={0}>AND</option>
-          <option value={1}>OR</option>
-        </select>
+          onChange={(logicalOperator) => update({ logicalOperator })}
+          options={logicalOperators}
+          ariaLabel="Logical operator before condition"
+          className="logical-operator-select"
+        />
       )}
       <div className="filter-field-drag-target">
         <span
@@ -531,9 +590,13 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
           onRemove={() => update({ field: "" })}
         />
       </div>
-      <select className="filter-operator-select" value={filter.operation} aria-label="Filter operation" onChange={(event) => update({ operation: Number(event.target.value) })}>
-        {operators.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-      </select>
+      <OperatorSelect
+        value={filter.operation}
+        onChange={(operation) => update({ operation })}
+        options={operators}
+        ariaLabel="Filter operation"
+        className="filter-operator-select"
+      />
       <input value={filter.value} placeholder="<NULL>" aria-label="Filter value" onChange={(event) => update({ value: event.target.value })} />
       <button
         className="filter-toggle"
