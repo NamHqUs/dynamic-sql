@@ -152,7 +152,7 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
   };
 
   return <div className="field-box">
-    {!isComplete && !(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && path.map((segment, index) => <span className="field-box-crumb" key={`${index}-${segment}`}>
+    {!isComplete && !showPath && !(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && path.map((segment, index) => <span className="field-box-crumb" key={`${index}-${segment}`}>
       <button type="button" className="field-box-segment" title={`Back to ${index ? path[index - 1] : entity.name}`} onClick={() => setPendingPath(path.slice(0, index))}>{segment}</button>
       <span className="field-box-dot">.</span>
     </span>)}
