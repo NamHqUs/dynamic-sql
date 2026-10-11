@@ -262,8 +262,7 @@ Supported properties:
 
 - `entity`: metadata entity name.
 - `columns`: field paths; use `field|alias` for aliases.
-- `filter`: field comparisons, `like`, `&&`, `||`, parentheses, and arithmetic
-  values.
+- `filter`: field comparisons, `like`, `&&`, `||`, and parentheses.
 - `sorts`: field paths; prefix with `-` for descending order.
 - `page`: one-based page number.
 - `pageSize`: number of rows per page.

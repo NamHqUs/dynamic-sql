@@ -148,7 +148,7 @@ public class _14_QueryRequestTests : TestBase
             {
               "entity": "User",
               "columns": ["Name", "Manager.Name|Manager-Name"],
-              "filter": "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.TotalMembers] < (12 + [Age]))",
+              "filter": "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.TotalMembers] < 12)",
               "sorts": ["-Manager.Name"],
               "page": 1,
               "pageSize": 50
@@ -173,5 +173,7 @@ public class _14_QueryRequestTests : TestBase
         const string json = """{"entity":"User","filter":"Name like"}""";
 
         Assert.Throws<FormatException>(() => QueryRequest.FromJson(json));
+        Assert.Throws<FormatException>(() =>
+            QueryRequest.FromJson("""{"entity":"User","filter":"Age > (12 + OtherAge)"}"""));
     }
 }

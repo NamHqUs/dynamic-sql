@@ -18,11 +18,6 @@ public record BinaryFilter(
     QueryFilterOperator Operator,
     object? Value = null) : QueryFilter;
 
-public sealed record QueryFilterArithmetic(
-    object? Left,
-    string Operator,
-    string Field);
-
 public enum QueryFilterOperator
 {
     Equals,
@@ -155,4 +150,3 @@ public sealed class QueryFilterJsonConverter : JsonConverter<QueryFilter>
             : Enum.Parse<TEnum>(value.GetString()!, true);
     }
 }
-

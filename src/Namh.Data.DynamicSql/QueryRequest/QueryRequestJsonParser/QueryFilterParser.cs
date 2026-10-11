@@ -68,18 +68,7 @@ internal sealed class QueryFilterParser
     }
 
     private object? ParseFilterValue()
-    {
-        if (!Match("("))
-        {
-            return Expect(TokenType.Value).Value;
-        }
-
-        var left = Expect(TokenType.Value).Value;
-        var operation = Next().Text;
-        var field = Expect(TokenType.Identifier).Text;
-        Expect(")");
-        return new QueryFilterArithmetic(left, operation, field);
-    }
+        => Expect(TokenType.Value).Value;
 
     private Token Next()
     {

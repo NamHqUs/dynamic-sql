@@ -136,7 +136,6 @@ comparison, while `LogicalFilter` combines two `QueryFilter` instances with
 - Bracketed field paths
 - Filter precedence
 - Typed literals
-- Arithmetic filter values
 - Sort directions
 
 JSON values are marked as parameterized before expression translation.

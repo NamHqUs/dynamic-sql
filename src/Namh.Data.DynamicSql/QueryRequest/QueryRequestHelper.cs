@@ -109,7 +109,7 @@ internal static class QueryRequestHelper
                 typeof(DataValue).GetMethod(nameof(DataValue.Like))!,
                 Expression.Constant(filterValue, typeof(object)));
 
-        var value = CreateFilterValue(filter, parameter);
+        var value = CreateFilterValue(filter);
 
         return filter.Operator switch
         {
@@ -123,31 +123,8 @@ internal static class QueryRequestHelper
         };
     }
 
-    private static Expression CreateFilterValue(
-        BinaryFilter filter,
-        ParameterExpression parameter)
+    private static Expression CreateFilterValue(BinaryFilter filter)
     {
-        if (filter.Value is QueryFilterArithmetic arithmetic)
-        {
-            var left = Expression.Call(
-                typeof(DataValue).GetMethod(nameof(DataValue.Parameter))!,
-                Expression.Constant(arithmetic.Left, typeof(object)));
-            var right = Expression.Call(
-                parameter,
-                typeof(IRecordParameter).GetProperty("Item")!.GetMethod!,
-                Expression.Constant(arithmetic.Field));
-
-            return arithmetic.Operator switch
-            {
-                "+" => Expression.Add(left, right),
-                "-" => Expression.Subtract(left, right),
-                "*" => Expression.Multiply(left, right),
-                "/" => Expression.Divide(left, right),
-                _ => throw new FormatException(
-                    $"Unsupported arithmetic operator [{arithmetic.Operator}].")
-            };
-        }
-
         var value = NormalizeFilterValue(filter.Value);
 
         return filter.Parameterized

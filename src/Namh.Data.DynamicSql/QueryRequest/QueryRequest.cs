@@ -79,8 +79,6 @@ public sealed class QueryRequest
         {
             null => "NULL",
             string text => $"\"{text.Replace("\"", "\"\"", StringComparison.Ordinal)}\"",
-            QueryFilterArithmetic arithmetic =>
-                $"({FormatValue(arithmetic.Left)} {arithmetic.Operator} {arithmetic.Field})",
             _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "NULL"
         };
 }
