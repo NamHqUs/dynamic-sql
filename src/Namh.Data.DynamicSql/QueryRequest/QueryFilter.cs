@@ -22,6 +22,7 @@ public record QueryFilterItem(
 public class QueryFilter(LogicalOperator logicalOperator = LogicalOperator.And, params IQueryFilter[] filter) : IQueryFilter
 {
     public LogicalOperator LogicalOperation { get; set; } = logicalOperator;
+    public string Note { get; set; } = string.Empty;
     public List<IQueryFilter> Filters { get; set; } = filter.ToList();
 
     private static QueryFilter BuildQueryFilterExample()
