@@ -81,4 +81,5 @@
 .filter-group-depth-1 > .filter-row-first, .filter-group-depth-2 > .filter-row-first, .filter-group-depth-3 > .filter-row-first { margin-top: 0; margin-left: 0; }
 .filter-group-depth-0 > .filter-group-header { padding-bottom: 3px; }
 .filter-add-condition { margin-top: 10px; }
+.filter-drop-zone { width: 100%; height: 10px; }
 @media (max-width: 760px) { .query-builder-toolbar { flex-wrap: wrap; } .filter-row { flex-wrap: wrap; } .filter-row select, .filter-row input { min-width: 130px; } }

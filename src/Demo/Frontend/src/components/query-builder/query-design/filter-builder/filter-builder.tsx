@@ -180,8 +180,22 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
       onDragOver={(event) => event.preventDefault()}
       onDrop={handleDrop}
     >
+      {depth === 0 && (
+        <div
+          className="filter-drop-zone filter-drop-zone-first"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => handleDrop(event, "before")}
+        />
+      )}
       <div
         className="filter-group-header"
+        draggable={depth > 0}
+        onDragStart={(event) => {
+          if (depth === 0) return;
+          event.stopPropagation();
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
+        }}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => handleDrop(event, "before")}
       >
@@ -237,7 +251,16 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
           onMoveBefore={(sourcePath) => onMoveFilter(sourcePath, [...path, index], "before")}
         />
       ))}
-      {depth === 0 && <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>}
+      {depth === 0 && (
+        <>
+          <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>
+          <div
+            className="filter-drop-zone filter-drop-zone-last"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => handleDrop(event)}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -262,6 +285,10 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
     <div
       className={`filter-row${first ? " filter-row-first" : ""}${filter.enabled ? "" : " filter-row-disabled"}`}
       draggable
+      onDragEnter={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }}
       onDragOver={(event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -365,16 +392,30 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
     const removed = removeNode(definition.filters, sourcePath);
     if (!removed.node) return;
     if (position === "before") {
-      const target = getNode(removed.group, targetPath);
-      if (!target || !targetPath.length) return;
+      if (!targetPath.length) {
+        onDefinitionChange({
+          ...definition,
+          filters: {
+            ...removed.group,
+            filters: [...removed.group.filters, removed.node],
+          },
+        });
+        return;
+      }
       const parentPath = targetPath.slice(0, -1);
       const targetIndex = targetPath[targetPath.length - 1];
+      if (targetIndex === undefined) return;
       const sourceParentPath = sourcePath.slice(0, -1);
       const sameParent = sourceParentPath.length === parentPath.length
         && sourceParentPath.every((index, pathIndex) => index === parentPath[pathIndex]);
-      const adjustedTargetIndex = sameParent && sourcePath[sourcePath.length - 1] < targetIndex
-        ? targetIndex - 1
-        : targetIndex;
+      const sourceIndex = sourcePath[sourcePath.length - 1];
+      const movingDown = sameParent && sourceIndex < targetIndex;
+      const adjustedTargetIndex = targetIndex;
+      const adjustedTargetPath = movingDown
+        ? [...targetPath.slice(0, -1), targetIndex - 1]
+        : targetPath;
+      const target = getNode(removed.group, adjustedTargetPath);
+      if (!target || !targetPath.length) return;
       onDefinitionChange({
         ...definition,
         filters: updateGroup(removed.group, parentPath, (parent) => ({
@@ -385,6 +426,16 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
             ...parent.filters.slice(adjustedTargetIndex),
           ],
         })),
+      });
+      return;
+    }
+    if (!targetPath.length) {
+      onDefinitionChange({
+        ...definition,
+        filters: {
+          ...removed.group,
+          filters: [removed.node, ...removed.group.filters],
+        },
       });
       return;
     }
