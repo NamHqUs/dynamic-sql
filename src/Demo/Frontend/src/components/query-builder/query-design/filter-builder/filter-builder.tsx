@@ -399,7 +399,6 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
 
       {!collapsed && (
         <>
-          {!group.filters.length && <p className="empty-builder">Add a condition or drag one here.</p>}
           {group.filters.map((filter, index) => isGroup(filter) ? (
         <Fragment key={`group-${index}`}>
           <div
@@ -460,7 +459,9 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
       )}
       {depth === 0 && (
         <>
-          <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>
+          {!group.filters.length && (
+            <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>
+          )}
           <div
               className={`filter-drop-zone filter-drop-zone-last${isPreview("after") ? " filter-drop-preview" : ""}`}
               onDragOver={(event) => {
