@@ -139,24 +139,27 @@ function FieldCards({
                 />
               </>
               : editingField === field.name
-                ? <FieldBuilder
-                  entity={entity}
-                  metadata={metadata}
-                  value={field.name}
-                  editMode
-                  excludedPaths={definition.columns.filter((item) => item.field !== field.name).map((item) => item.field)}
-                  onChange={(replacement) => {
-                    replaceColumn(field.name, replacement);
-                    setEditingField(null);
-                  }}
-                  onCancel={() => {
-                    const snapshot = columnBeforeEditRef.current ?? columnBeforeEdit;
-                    if (snapshot) restoreColumn(field.name, snapshot);
-                    setEditingField(null);
-                    setColumnBeforeEdit(null);
-                    columnBeforeEditRef.current = null;
-                  }}
-                />
+                ? <>
+                  <FieldBuilder
+                    entity={entity}
+                    metadata={metadata}
+                    value={field.name}
+                    editMode
+                    excludedPaths={definition.columns.filter((item) => item.field !== field.name).map((item) => item.field)}
+                    onChange={(replacement) => {
+                      replaceColumn(field.name, replacement);
+                      setEditingField(null);
+                    }}
+                    onCancel={() => {
+                      const snapshot = columnBeforeEditRef.current ?? columnBeforeEdit;
+                      if (snapshot) restoreColumn(field.name, snapshot);
+                      setEditingField(null);
+                      setColumnBeforeEdit(null);
+                      columnBeforeEditRef.current = null;
+                    }}
+                  />
+                  {column?.alias && <><span className="field-alias-separator" aria-hidden="true">|</span><span className="field-alias-value">{column.alias}</span></>}
+                </>
                 : column?.alias
                   ? <><span
                     className="field-name editable"

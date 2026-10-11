@@ -1,3 +1,4 @@
+.field-builder-editing { display: inline-flex; align-items: center; height: var(--field-box-height, 34px); min-height: var(--field-box-height, 34px); }
 .field-builder-selected { display: inline-flex; align-items: center; gap: 7px; height: var(--field-box-height, 34px); box-sizing: border-box; color: #ded5ff; background: #29223e; border: 1px solid #654f9f; border-radius: 5px; padding: 7px 9px; font: 11px "DM Mono", monospace; }
 .field-builder-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .field-builder-value:hover, .field-builder-value:focus-visible { color: #fff; text-decoration: underline; }

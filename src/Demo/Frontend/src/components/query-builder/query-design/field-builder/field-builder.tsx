@@ -54,6 +54,7 @@ export default function FieldBuilder({
   if (!value || editMode || isEditing) {
     return (
       <div
+        className="field-builder-editing"
         autoFocus
         tabIndex={-1}
         onKeyDown={(event) => {
@@ -64,6 +65,7 @@ export default function FieldBuilder({
         }}
         onBlurCapture={(event) => {
           const nextTarget = event.relatedTarget;
+          if (nextTarget instanceof Element && nextTarget.closest(".field-box-menu-popup")) return;
           if (!nextTarget || !(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
             cancelEdit();
           }

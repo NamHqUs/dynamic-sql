@@ -34,6 +34,9 @@
 .field-alias-value.editable { cursor: pointer; }
 .field-name.editable, .field-alias-value.editable { color: var(--purple); cursor: pointer; }
 .field-name.editable:hover, .field-name.editable:focus, .field-alias-value.editable:hover, .field-alias-value.editable:focus { color: #fff; text-decoration: underline; }
+.field-card .field-builder-editing { height: auto; min-height: 0; }
+.field-card .field-box-menu-selected { height: auto; max-height: none; }
+.field-card, .field-card-details, .field-card-primary, .field-card .field-box, .field-card .field-box-menu { overflow: visible; }
 .section-header { display: flex; align-items: center; justify-content: space-between; }
 .filters-section .section-header { display: block; }
 .filter-description { max-width: 760px; margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; text-align: left; }
@@ -60,6 +63,13 @@
 .select-fields-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .select-fields-row .field-cards { display: contents; }
 .select-fields-row > .field-box select { height: var(--field-box-height); }
+.sort-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.sort-list .field-card-primary { gap: 4px; }
+.sort-direction-select { position: relative; }
+.sort-direction-select .operator-trigger { width: auto; height: auto; padding: 0; color: #c5cad4; font: 11px "Manrope", sans-serif; }
+.sort-direction-select .operator-trigger:hover, .sort-direction-select .operator-trigger:focus-visible { color: #fff; outline: 0; }
+.sort-direction-select .operator-menu { left: 0; transform: none; }
+.sort-row-add { flex: 0 0 auto; }
 .filter-row input { flex: 1 1 160px; width: 160px; min-width: 55px; border: 0; background: transparent; padding: 0; color: #dce1eb; }
 .filter-row-disabled { opacity: .48; }
 .filter-toggle { flex: 0 0 35px; height: var(--field-box-height); color: var(--purple); background: #191e28; border: 1px solid #323947; border-radius: 5px; font: 10px "DM Mono", monospace; cursor: pointer; }
