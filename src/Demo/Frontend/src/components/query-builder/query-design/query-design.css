@@ -4,7 +4,7 @@
 .query-builder-toolbar select, .query-builder-toolbar input, .filter-row select, .filter-row input { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 9px; font-size: 12px; outline: 0; height: var(--field-box-height); box-sizing: border-box; }
 .query-builder-toolbar select { min-width: 220px; }
 .small-input { width: 75px; }
-.checkbox-label { flex-direction: row !important; align-items: center; padding-bottom: 10px; text-transform: none !important; letter-spacing: 0 !important; font-family: inherit !important; font-size: 12px !important; }
+.checkbox-label { align-self: flex-end; flex-direction: row !important; align-items: center; height: var(--field-box-height); box-sizing: border-box; text-transform: none !important; letter-spacing: 0 !important; font-family: inherit !important; font-size: 12px !important; }
 .query-builder-body { padding: 25px 27px 30px; }
 .builder-section + .builder-section { margin-top: 30px; }
 .builder-section .helper { margin: 4px 0 13px; }

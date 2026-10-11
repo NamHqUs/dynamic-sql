@@ -39,8 +39,8 @@ export default function QueryDesign({
             {metadata.map((item) => <option value={item.name} key={item.name}>{item.name}</option>)}
           </select>
         </label>
-        <label className="checkbox-label"><input type="checkbox" checked={definition.includeArchive} onChange={(event) => onDefinitionChange({ ...definition, includeArchive: event.target.checked })} /> Include archived</label>
         <label>Page size <input className="small-input" type="number" min="1" max="1000" value={definition.pageSize || ""} onChange={(event) => onDefinitionChange({ ...definition, pageSize: event.target.value ? Number(event.target.value) : null })} /></label>
+        <label className="checkbox-label"><input type="checkbox" checked={definition.includeArchive} onChange={(event) => onDefinitionChange({ ...definition, includeArchive: event.target.checked })} /> Include archived</label>
       </div>
 
       {metadataStatus === "loading" && <p className="query-message">Loading metadata…</p>}
