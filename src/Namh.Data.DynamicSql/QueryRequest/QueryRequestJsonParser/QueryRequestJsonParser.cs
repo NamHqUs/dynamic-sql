@@ -5,12 +5,12 @@ namespace Namh.Data.DynamicSql.QueryRequestParsing;
 
 internal static class QueryRequestJsonParser
 {
-    public static QueryRequest Parse(string json)
+    public static QueryRequestDto Parse(string json)
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
 
-        return new QueryRequest
+        return new QueryRequestDto
         {
             Entity = root.GetProperty("entity").GetString()
                 ?? throw new JsonException("The entity value cannot be null."),
@@ -18,7 +18,9 @@ internal static class QueryRequestJsonParser
                 ? columns.EnumerateArray().Select(ParseColumn).ToList()
                 : [],
             Filter = root.TryGetProperty("filter", out var filter)
-                ? new QueryFilterParser(filter.GetString() ?? string.Empty).Parse()
+                ? filter.ValueKind == JsonValueKind.String
+                    ? new QueryFilterParser(filter.GetString() ?? string.Empty).Parse()
+                    : JsonSerializer.Deserialize<QueryFilter>(filter)
                 : null,
             Sorts = root.TryGetProperty("sorts", out var sorts)
                 ? sorts.EnumerateArray().Select(ParseSort).ToList()

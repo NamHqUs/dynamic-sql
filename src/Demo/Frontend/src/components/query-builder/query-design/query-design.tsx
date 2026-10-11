@@ -28,7 +28,7 @@ export default function QueryDesign({
             onDefinitionChange({
               entity: event.target.value,
               columns: [],
-              filters: [],
+              filters: { logicalOperation: 0, filters: [] },
               sorts: [],
               page: null,
               pageSize: 50,

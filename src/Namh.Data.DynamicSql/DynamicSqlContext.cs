@@ -26,7 +26,7 @@ public class DynamicSqlContext(
     public IDbQueryable QueryJson(string json)
         => QueryRequestHelper.BuildQueryable(this, json);
 
-    public IDbQueryable Query(QueryRequest queryRequest)
+    public IDbQueryable Query(QueryRequestDto queryRequest)
         => QueryRequestHelper.BuildQueryable(this, queryRequest);
 
 

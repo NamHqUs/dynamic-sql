@@ -23,11 +23,8 @@ public class QueryFilter(LogicalOperator logicalOperator = LogicalOperator.And, 
 {
     public LogicalOperator LogicalOperation { get; set; } = logicalOperator;
     public List<IQueryFilter> Filters { get; set; } = filter.ToList();
-}
 
-public static class ExampleQueryFilter
-{
-    public static QueryFilter Build()
+    private static QueryFilter BuildQueryFilterExample()
     {
         // Example: Id > 100 AND Name = 'John Doe' AND (Age < 30 OR Age > 60) OR (Id > 100 AND (Name = 'John Doe' AND Age < 30) OR Age > 60)
         return new QueryFilter(LogicalOperator.And,
@@ -47,7 +44,10 @@ public static class ExampleQueryFilter
                 )
              );
     }
+}
 
+public static class ExampleQueryFilter
+{
 }
 public enum BinaryOperator
 {

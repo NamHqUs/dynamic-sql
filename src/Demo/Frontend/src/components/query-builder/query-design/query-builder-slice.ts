@@ -19,51 +19,48 @@ export type MetadataEntity = {
   relations?: MetadataRelation[];
 };
 
+export type QueryFilterItem = {
+  field: string;
+  operation: number;
+  value: string;
+  parameterized: boolean;
+  logicalOperator: number;
+  enabled: boolean;
+};
+
+export type QueryFilterNode = QueryFilterItem | QueryFilterGroup;
+
+export type QueryFilterGroup = {
+  logicalOperation: number;
+  filters: QueryFilterNode[];
+};
+
 export type QueryDefinition = {
   entity: string;
   columns: { field: string; alias: string | null }[];
-  filters: {
-    field: string;
-    operator: number;
-    value: string;
-    parameterized: boolean;
-    logicalOperator: number | null;
-    enabled: boolean;
-  }[];
+  filters: QueryFilterGroup;
   sorts: { field: string; direction: string }[];
   page: number | null;
   pageSize: number | null;
   includeArchive: boolean;
 };
 
-type QueryFilterDefinition = QueryDefinition["filters"][number];
-
-type ApiFilter =
-  | {
-      logicalOperator: number;
-      field: string;
-      operation: number;
-      value: string;
-      parameterized: boolean;
+function createApiFilter(group: QueryFilterGroup): QueryFilterGroup | null {
+  const filters = group.filters.flatMap((filter) => {
+    if ("filters" in filter) {
+      const nested = createApiFilter(filter);
+      return nested ? [nested] : [];
     }
-  | {
-      logicalOperation: number;
-      filters: ApiFilter[];
-    };
-
-function createApiFilter(filters: QueryFilterDefinition[]): ApiFilter | null {
-  if (!filters.length) return null;
-
-  return {
-    logicalOperation: 0,
-    filters: filters.map((filter) => ({
-      logicalOperator: filter.logicalOperator ?? 0,
+    return filter.enabled && filter.field ? [{
+      logicalOperator: filter.logicalOperator,
       field: filter.field,
-      operation: filter.operator,
+      operation: filter.operation,
       value: filter.value,
       parameterized: filter.parameterized,
-    })),
-  };
+    }] : [];
+  });
+
+  return filters.length ? { logicalOperation: group.logicalOperation, filters } : null;
 }
 
 export type QueryResult = {

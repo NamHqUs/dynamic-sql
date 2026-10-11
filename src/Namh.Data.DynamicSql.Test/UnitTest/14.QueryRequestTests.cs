@@ -6,7 +6,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionBuildsParameterizedSql()
     {
-        var definition = new QueryRequest
+        var definition = new QueryRequestDto
         {
             Entity = "User",
             Columns =
@@ -36,7 +36,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionExecutesWithProjectionAndFilter()
     {
-        var definition = new QueryRequest
+        var definition = new QueryRequestDto
         {
             Entity = "User",
             Columns = [new QueryColumn("Name")],
@@ -54,7 +54,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionConnectsStructuredFiltersWithLogicalOperators()
     {
-        var definition = new QueryRequest
+        var definition = new QueryRequestDto
         {
             Entity = "User",
             Filter = new QueryFilter(
@@ -76,7 +76,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionRejectsInvalidPaging()
     {
-        var definition = new QueryRequest
+        var definition = new QueryRequestDto
         {
             Entity = "User",
             Page = 0,
@@ -89,7 +89,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionFormatsAsReadableText()
     {
-        var definition = new QueryRequest
+        var definition = new QueryRequestDto
         {
             Entity = "User",
             Columns = [new QueryColumn("Id"), new QueryColumn("Name")],
@@ -140,7 +140,7 @@ public class _14_QueryRequestTests : TestBase
             }
             """;
 
-        var definition = System.Text.Json.JsonSerializer.Deserialize<QueryRequest>(
+        var definition = System.Text.Json.JsonSerializer.Deserialize<QueryRequestDto>(
             json,
             new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
@@ -182,8 +182,8 @@ public class _14_QueryRequestTests : TestBase
     {
         const string json = """{"entity":"User","filter":"Name like"}""";
 
-        Assert.Throws<FormatException>(() => QueryRequest.FromJson(json));
+        Assert.Throws<FormatException>(() => QueryRequestDto.FromJson(json));
         Assert.Throws<FormatException>(() =>
-            QueryRequest.FromJson("""{"entity":"User","filter":"Age > (12 + OtherAge)"}"""));
+            QueryRequestDto.FromJson("""{"entity":"User","filter":"Age > (12 + OtherAge)"}"""));
     }
 }

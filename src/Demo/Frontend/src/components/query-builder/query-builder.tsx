@@ -11,7 +11,7 @@ function createDefinition(entity: string): QueryDefinition {
   return {
     entity,
     columns: [],
-    filters: [],
+    filters: { logicalOperation: 0, filters: [] },
     sorts: [],
     page: null,
     pageSize: 50,
@@ -24,10 +24,7 @@ function loadDefinition(): QueryDefinition {
 
   return {
     ...cachedDefinition,
-    filters: cachedDefinition.filters.map((filter) => ({
-      ...filter,
-      enabled: filter.enabled !== false,
-    })),
+    filters: cachedDefinition.filters,
   };
 }
 
@@ -56,7 +53,7 @@ export default function QueryBuilder() {
     if (definition.entity && definition.columns.length) {
       dispatch(executeQuery({
         ...definition,
-        filters: definition.filters.filter((filter) => filter.enabled !== false),
+        filters: definition.filters,
       }));
     }
   };
