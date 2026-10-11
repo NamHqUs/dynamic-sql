@@ -1,4 +1,4 @@
-﻿namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+﻿namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
 internal sealed class ProjectionExpression(SqlExpression expression, string alias, bool parenthesize = false)
     : SqlExpression(expression.Type)

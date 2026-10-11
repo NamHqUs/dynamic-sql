@@ -1,6 +1,5 @@
-﻿using Namh.Data.DynamicSql.Internal.Query.Expressions;
-using Namh.Data.DynamicSql.Internal.Query.Models;
-using Namh.Data.DynamicSql.Internal.Query.Visitors;
+using Namh.Data.DynamicSql.Internal.Compilation;
+using Namh.Data.DynamicSql.Internal.Compilation.Models;
 using System.Data;
 using System.Globalization;
 using DbCommand = System.Data.Common.DbCommand;
@@ -8,7 +7,7 @@ using DbConnection = System.Data.Common.DbConnection;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace Namh.Data.DynamicSql.Internal.Query;
+namespace Namh.Data.DynamicSql.Internal.Execution;
 
 class DbQueryProvider(
     IMetaProvider metaProvider,
@@ -24,9 +23,9 @@ class DbQueryProvider(
 
     public SqlQuery GetQuery(Expression expression)
     {
-        var (sqlQuery, parameters, _) = Translate(expression);
-        var parameterList = parameters.ToArray();
-        var commandText = SqlFormatter.Format(sqlQuery);
+        var compiled = Translate(expression);
+        var parameterList = compiled.Parameters.ToArray();
+        var commandText = SqlFormatter.Format(compiled.CommandText);
 
         if (parameterList.Length != 0)
         {
@@ -86,46 +85,46 @@ class DbQueryProvider(
 
     public IEnumerable<DataRecord> Execute(Expression expression)
     {
-        var (sqlQuery, parameters, projection) = Translate(expression);
+        var compiled = Translate(expression);
 
-        var cmd = CreateDbCommand(sqlQuery, parameters);
-        return new DbReader(cmd.ExecuteReader(), projection);
+        var cmd = CreateDbCommand(compiled.CommandText, compiled.Parameters);
+        return new DbReader(cmd.ExecuteReader(), compiled.ProjectionItems);
     }
 
     public object? ExecuteScalar(Expression expression)
     {
-        var (sqlQuery, parameters, _) = Translate(expression);
+        var compiled = Translate(expression);
 
-        var cmd = CreateDbCommand(sqlQuery, parameters);
+        var cmd = CreateDbCommand(compiled.CommandText, compiled.Parameters);
         return cmd.ExecuteScalar();
     }
 
     public async Task<List<DataRecord>> ExecuteAsync(Expression expression, CancellationToken cancellationToken)
     {
-        var (sqlQuery, parameters, projection) = Translate(expression);
+        var compiled = Translate(expression);
         var connection = GetAsyncConnection();
 
         if (connection.State != ConnectionState.Open)
             await connection.OpenAsync(cancellationToken);
 
-        using var cmd = CreateDbCommand(sqlQuery, parameters);
+        using var cmd = CreateDbCommand(compiled.CommandText, compiled.Parameters);
         if (cmd is not DbCommand dbCommand)
             throw new InvalidOperationException(
                 $"The database command type [{cmd.GetType().FullName}] does not support asynchronous execution.");
 
         await using var reader = await dbCommand.ExecuteReaderAsync(cancellationToken);
-        return await DbReader.ReadAllAsync(reader, projection, cancellationToken);
+        return await DbReader.ReadAllAsync(reader, compiled.ProjectionItems, cancellationToken);
     }
 
     public async Task<object?> ExecuteScalarAsync(Expression expression, CancellationToken cancellationToken)
     {
-        var (sqlQuery, parameters, _) = Translate(expression);
+        var compiled = Translate(expression);
         var connection = GetAsyncConnection();
 
         if (connection.State != ConnectionState.Open)
             await connection.OpenAsync(cancellationToken);
 
-        using var cmd = CreateDbCommand(sqlQuery, parameters);
+        using var cmd = CreateDbCommand(compiled.CommandText, compiled.Parameters);
         if (cmd is not DbCommand dbCommand)
             throw new InvalidOperationException(
                 $"The database command type [{cmd.GetType().FullName}] does not support asynchronous execution.");
@@ -150,18 +149,8 @@ class DbQueryProvider(
         return sb.ToString();
     }
 
-    private (
-        string sqlQuery, 
-        IEnumerable<DbParameter> parameters, 
-        IEnumerable<ProjectionItem> projectionItems) 
-        Translate(Expression expression)
-    {
-        var queryContext = new QueryContext(metaProvider, includeArchive);
-        var translator =  (TableExpression) new QueryVisitor(queryContext).Visit(expression);
-
-        var rendered = new SqlGenerator(sqlDialect).Generate(translator, queryContext.DbParameters);
-        return (rendered.CommandText, rendered.Parameters, translator.ProjectionItems);
-    }
+    private CompiledQuery Translate(Expression expression)
+        => new SqlQueryCompiler(metaProvider, sqlDialect, includeArchive).Compile(expression);
 
     private IDbCommand CreateDbCommand(string sqlQuery, IEnumerable<DbParameter> parameters)
     {

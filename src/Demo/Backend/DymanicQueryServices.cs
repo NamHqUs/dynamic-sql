@@ -13,7 +13,7 @@ public static class DynamicQueryServices
     private static readonly Entity[] _metadata = LoadMetadata().ToArray();
     public static Entity[] GetMetadata() => _metadata;
 
-    public static async Task<TableDataDto> ExecuteQueryAsync(QueryDefinition query)
+    public static async Task<TableDataDto> ExecuteQueryAsync(QueryRequest query)
     {
         Console.WriteLine($"\n{query}\n");
         var context = new DynamicSqlContext(_cn, _metadata);

@@ -1,4 +1,4 @@
-﻿namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+﻿namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
 class FieldExpression(string tableAlias, Field field) : SqlExpression(typeof(DataValue))
 {

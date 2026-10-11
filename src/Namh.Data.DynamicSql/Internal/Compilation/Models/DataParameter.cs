@@ -1,3 +1,3 @@
-﻿namespace Namh.Data.DynamicSql.Internal.Query.Models;
+﻿namespace Namh.Data.DynamicSql.Internal.Compilation.Models;
 
 record DbParameter(string Name, object? Value);

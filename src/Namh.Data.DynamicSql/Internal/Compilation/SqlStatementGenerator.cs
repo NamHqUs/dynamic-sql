@@ -1,17 +1,17 @@
-using Namh.Data.DynamicSql.Internal.Query.Expressions;
-using Namh.Data.DynamicSql.Internal.Query.Models;
+using Namh.Data.DynamicSql.Internal.Compilation.Expressions;
+using Namh.Data.DynamicSql.Internal.Compilation.Models;
 
-namespace Namh.Data.DynamicSql.Internal.Query;
+namespace Namh.Data.DynamicSql.Internal.Compilation;
 
-internal sealed record GeneratedSql(string CommandText, IReadOnlyList<DbParameter> Parameters);
+internal sealed record SqlStatement(string CommandText, IReadOnlyList<DbParameter> Parameters);
 
-internal sealed class SqlGenerator(ISqlDialect dialect)
+internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 {
-    public GeneratedSql Generate(TableExpression query, IEnumerable<DbParameter> parameters)
+    public SqlStatement Generate(TableExpression query, IEnumerable<DbParameter> parameters)
     {
         var text = RenderQuery(query);
 
-        return new GeneratedSql(text, parameters.ToArray());
+        return new SqlStatement(text, parameters.ToArray());
     }
 
     private string RenderQuery(TableExpression query, bool exists = false)

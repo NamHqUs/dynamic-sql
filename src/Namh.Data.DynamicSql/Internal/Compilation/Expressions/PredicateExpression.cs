@@ -1,4 +1,4 @@
-﻿namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+﻿namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
 internal sealed class PredicateExpression(SqlExpression left, string @operator, SqlExpression? right = null)
     : SqlExpression(typeof(bool))

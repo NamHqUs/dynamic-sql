@@ -1,9 +1,9 @@
-﻿using Namh.Data.DynamicSql.Internal.Query.Models;
+﻿using Namh.Data.DynamicSql.Internal.Compilation.Models;
 using System.Collections;
 using System.Data;
 using System.Data.Common;
 
-namespace Namh.Data.DynamicSql.Internal.Query;
+namespace Namh.Data.DynamicSql.Internal.Execution;
 
 class DbReader(
     IDataReader reader,

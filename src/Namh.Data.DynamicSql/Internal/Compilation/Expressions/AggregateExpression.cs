@@ -1,5 +1,5 @@
 ﻿using System.Text;
-namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
 class AggregateExpression : TableExpression
 {

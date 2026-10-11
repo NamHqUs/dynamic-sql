@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Visitors;
 
 class QueryVisitor(QueryContext queryContext) : ExpressionVisitor
 {
@@ -22,7 +22,7 @@ class QueryVisitor(QueryContext queryContext) : ExpressionVisitor
     {
         var declaringType = node.Method.DeclaringType;
 
-        if (declaringType == typeof(DbQueryableExtension) || declaringType == typeof(DbQueryableExtension.DbQueryableDummy))
+        if (declaringType == typeof(IDbQueryableExtension) || declaringType == typeof(IDbQueryableExtension.DbQueryableDummy))
             return _clauseVisitor.Value.Eval(node);
 
         if (declaringType == typeof(IRecordParameter))

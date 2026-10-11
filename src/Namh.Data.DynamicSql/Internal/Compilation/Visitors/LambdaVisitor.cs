@@ -1,7 +1,7 @@
-﻿using Namh.Data.DynamicSql.Internal.Query.Expressions;
+﻿using Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 using System.Linq.Expressions;
 
-namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Visitors;
 
 abstract class LambdaVisitor(TableExpression tableContext, QueryContext queryContext)
     : QueryVisitor(queryContext)

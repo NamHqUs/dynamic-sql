@@ -1,8 +1,8 @@
-﻿using Namh.Data.DynamicSql.Internal.Query.Expressions;
-using Namh.Data.DynamicSql.Internal.Utilities;
+﻿using Namh.Data.DynamicSql.Internal.Compilation.Expressions;
+using Namh.Data.DynamicSql.Internal.Compilation.Utilities;
 using System.Linq.Expressions;
 
-namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Visitors;
 
 class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
     : LambdaVisitor(tableContext, queryContext)

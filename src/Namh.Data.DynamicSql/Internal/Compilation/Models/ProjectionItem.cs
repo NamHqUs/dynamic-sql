@@ -1,6 +1,6 @@
-﻿using Namh.Data.DynamicSql.Internal.Query.Expressions;
+﻿using Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
-namespace Namh.Data.DynamicSql.Internal.Query.Models;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Models;
 
 class ProjectionItem(SqlExpression item, string alias)
 {

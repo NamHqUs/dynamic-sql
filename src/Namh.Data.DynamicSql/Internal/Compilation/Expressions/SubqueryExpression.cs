@@ -1,4 +1,4 @@
-﻿namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+﻿namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
 internal sealed class SubqueryExpression(TableExpression query) : SqlExpression(query.Type)
 {

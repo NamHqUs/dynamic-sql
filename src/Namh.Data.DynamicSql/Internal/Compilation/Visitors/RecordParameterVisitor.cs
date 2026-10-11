@@ -1,7 +1,7 @@
 ﻿using System.Linq.Expressions;
-using Namh.Data.DynamicSql.Internal.Query.Expressions;
+using Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
-namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Visitors;
 
 class RecordParameterVisitor(QueryContext queryContext) : QueryVisitor(queryContext)
 {

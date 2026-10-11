@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Linq.Expressions;
 
-namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
 [DebuggerDisplay("{DebugView,nq}")]
 abstract class SqlExpression(Type type) : Expression

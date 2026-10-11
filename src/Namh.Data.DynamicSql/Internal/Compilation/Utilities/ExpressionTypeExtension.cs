@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace Namh.Data.DynamicSql.Internal.Utilities;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Utilities;
 
 static class  ExpressionTypeExtension
 {

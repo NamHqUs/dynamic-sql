@@ -1,15 +1,14 @@
+using Namh.Data.DynamicSql.QueryRequestParsing;
 using System.Linq.Expressions;
 using System.Text.Json;
 
-#pragma warning disable IDE0130
 namespace Namh.Data.DynamicSql;
-#pragma warning restore IDE0130
 
-public static class QueryDefinitionExtensions
+internal static class QueryRequestHelper
 {
-    public static IDbQueryable Query(
-        this DynamicSqlContext context,
-        QueryDefinition definition)
+    public static IDbQueryable BuildQueryable(DynamicSqlContext context, string json)
+        => BuildQueryable(context, QueryRequestJsonParser.Parse(json));
+    public static IDbQueryable BuildQueryable(DynamicSqlContext context, QueryRequest definition)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);

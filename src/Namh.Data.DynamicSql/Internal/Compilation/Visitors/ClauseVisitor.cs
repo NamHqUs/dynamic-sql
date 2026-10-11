@@ -1,9 +1,10 @@
-﻿using Namh.Data.DynamicSql.Internal.Query.Expressions;
-using Namh.Data.DynamicSql.Internal.Utilities;
+﻿using Namh.Data.DynamicSql.Internal.Compilation.Expressions;
+using Namh.Data.DynamicSql.Internal.Compilation.Utilities;
+using Namh.Data.DynamicSql.Internal.Execution;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Namh.Data.DynamicSql.Internal.Query.Visitors;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Visitors;
 
 class ClauseVisitor(QueryContext queryContext)
 {
@@ -47,35 +48,35 @@ class ClauseVisitor(QueryContext queryContext)
     {
         switch (methodCall.Method.Name)
         {
-            case nameof(DbQueryableExtension.Select):
+            case nameof(IDbQueryableExtension.Select):
                 return new SelectVisitor(tableContext, QueryContext).Eval((LambdaExpression)methodCall.Arguments[1].StripQuotes());
 
-            case nameof(DbQueryableExtension.Where):
+            case nameof(IDbQueryableExtension.Where):
                 return new WhereVisitor(tableContext, QueryContext).Eval((LambdaExpression)methodCall.Arguments[1].StripQuotes());
 
-            case nameof(DbQueryableExtension.OrderBy):
-            case nameof(DbQueryableExtension.OrderByDescending):
-            case nameof(DbQueryableExtension.ThenBy):
-            case nameof(DbQueryableExtension.ThenByDescending):
+            case nameof(IDbQueryableExtension.OrderBy):
+            case nameof(IDbQueryableExtension.OrderByDescending):
+            case nameof(IDbQueryableExtension.ThenBy):
+            case nameof(IDbQueryableExtension.ThenByDescending):
                 return ProcessOrdering(tableContext, methodCall);
 
-            case nameof(DbQueryableExtension.Any):
+            case nameof(IDbQueryableExtension.Any):
                 tableContext = new WhereVisitor(tableContext, QueryContext).Eval((LambdaExpression)methodCall.Arguments[1].StripQuotes());
                 return new AnyExpression(tableContext);
 
-            case nameof(DbQueryableExtension.Take):
+            case nameof(IDbQueryableExtension.Take):
                 return new TakeExpression(tableContext, (int)((ConstantExpression)methodCall.Arguments[1].StripQuotes()).Value!);
 
-            case nameof(DbQueryableExtension.Skip):
+            case nameof(IDbQueryableExtension.Skip):
                 return new SkipExpression(tableContext, (int)((ConstantExpression)methodCall.Arguments[1].StripQuotes()).Value!);
 
-            case nameof(DbQueryableExtension.Aggregate):
+            case nameof(IDbQueryableExtension.Aggregate):
                 return (AggregateExpression)QueryContext.ParseFieldPath(tableContext, ((ConstantExpression)methodCall.Arguments[1].StripQuotes()).Value!.ToString()!);
 
-            case nameof(DbQueryableExtension.Count):
+            case nameof(IDbQueryableExtension.Count):
                 return new AggregateExpression(tableContext, "Count(*)");
 
-            case nameof(DbQueryableExtension.ToList):
+            case nameof(IDbQueryableExtension.ToList):
                 return tableContext;
 
             default:

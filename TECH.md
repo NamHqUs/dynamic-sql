@@ -2,20 +2,62 @@
 
 ## Architecture
 
-The query compiler is intentionally split into provider-independent translation
-and provider-specific rendering:
+The library is a metadata-driven query compiler and lightweight ADO.NET
+materializer. Its public API is deliberately small; query compilation,
+intermediate representation (IR), SQL rendering, and row mapping remain
+internal implementation details.
 
-```text
-C# expression / JSON definition
-              ↓
-Expression visitors
-              ↓
-SqlExpression IR
-              ↓
-SqlGenerator(ISqlDialect)
-              ↓
-Generated SQL + parameters
+```mermaid
+flowchart LR
+    A[Input] --> A1[C# expression API]
+    A --> A2[JSON QueryRequest]
+    A --> A3[Runtime metadata]
+    A1 --> B[IDbQueryable expression tree]
+    A2 --> B2[QueryRequestExtensions]
+    B2 --> B
+    A3 --> C[QueryContext]
+    B --> C
+
+    subgraph Core[Internal query compiler]
+        C[QueryContext<br/>metadata, relations, aliases, parameters]
+        C --> D[QueryVisitor and clause visitors]
+        D --> E[SqlExpression IR]
+        E --> F[SqlQueryCompiler]
+        F --> G[SqlStatementGenerator]
+    end
+
+    H[ISqlDialect<br/>SQL Server / SQLite / PostgreSQL] --> G
+    G --> I[SQL command text + DbParameters]
+    I --> J[DbQueryProvider]
+    J --> K[ADO.NET IDbConnection / DbCommand]
+    K --> L[DbReader]
+    L --> M[DataRecord results]
+    J --> N[SqlQuery<br/>ToSql / diagnostics]
 ```
+
+### Pipeline responsibilities
+
+1. **Input** accepts C# expression trees over `IRecordParameter` and
+   `IDbQueryable`, JSON `QueryRequest` values, and runtime metadata
+   (`Entity`, `Field`, and `Relation`).
+2. **Process the interface input** uses public query extensions to build a
+   normal expression tree. JSON definitions are converted into the same
+   expression surface by `QueryRequestExtensions`.
+3. **Visit and expression (IR)** creates a dialect-independent
+   `SqlExpression` tree. `QueryContext` resolves metadata and relations,
+   assigns aliases, applies archive filters, and collects parameters.
+4. **Translate into the target SQL statement** is implemented internally by
+   `SqlQueryCompiler`, which visits the expression and passes the IR to
+   `SqlStatementGenerator`. `ISqlDialect` owns quoting, table rendering,
+   concatenation, booleans, and paging.
+5. **Read from the database and return to the client** is handled by
+   `DbQueryProvider` and `DbReader`. The provider creates synchronous or
+   asynchronous ADO.NET commands, while the reader maps columns and aliases
+   into `DataRecord` values.
+6. **Return result data and utilities** exposes records through `ToList`,
+   `FirstOrDefault`, aggregates, and async extensions. `ToSql` returns a
+   `SqlQuery` containing diagnostic SQL and parameter values; it does not
+   replace parameterized execution.
 
 The visitors never own a dialect. They create an intermediate representation
 that can be rendered for SQL Server, SQLite, PostgreSQL, or another dialect.
@@ -24,10 +66,14 @@ that can be rendered for SQL Server, SQLite, PostgreSQL, or another dialect.
 
 ```text
 src/Namh.Data.DynamicSql
-    Public query API, context, dialects, provider, visitors, IR, generator
+    Public query API, context, dialects, provider contracts, and result types
+
+src/Namh.Data.DynamicSql/Internal
+    QueryContext, visitors, SqlExpression IR, SqlQueryCompiler,
+    SqlStatementGenerator, ADO.NET execution, and result mapping
 
 src/Namh.Data.DynamicSql.Model
-    Entity, Field, Relation, QueryDefinition, and JSON filter models
+    Entity, Field, Relation, QueryRequest, and JSON filter models
 
 src/Namh.Data.DynamicSql.Test
     NUnit tests, metadata fixtures, provider tests, and SQL diagnostics tests
@@ -73,17 +119,17 @@ It provides:
 `DataValue` overloads make comparisons and expressions possible without
 materializing a CLR entity.
 
-### `QueryDefinition`
+### `QueryRequest`
 
 The JSON transport model contains entity, columns, filters, sorting, and
-paging. `QueryDefinitionExtensions` converts it into the same query pipeline
+paging. `QueryRequestExtensions` converts it into the same query pipeline
 used by C# expressions.
 
 Filters are represented recursively: `BinaryFilter` contains a field
 comparison, while `LogicalFilter` combines two `QueryFilter` instances with
 `And` or `Or`.
 
-`QueryDefinitionJsonParser` is responsible for:
+`QueryRequestJsonParser` is responsible for:
 
 - JSON property parsing
 - Column aliases
@@ -100,15 +146,21 @@ JSON values are marked as parameterized before expression translation.
 ### `DbQueryProvider`
 
 `DbQueryProvider` connects the public query object to translation and execution.
-It:
+It delegates compilation to the internal `SqlQueryCompiler`, then:
 
-1. Creates a `QueryContext`.
-2. Visits the expression tree with `QueryVisitor`.
-3. Generates SQL with `SqlGenerator`.
-4. Creates ADO.NET parameters.
-5. Executes synchronous or asynchronous commands.
+1. Creates ADO.NET parameters from the compiled parameter values.
+2. Executes synchronous or asynchronous commands.
+3. Uses `DbReader` to materialize `DataRecord` instances.
 
 `GetQuery` is used for diagnostics and returns `SqlQuery`.
+
+### `SqlQueryCompiler`
+
+`SqlQueryCompiler` is the internal boundary between translation and execution. It
+accepts an expression tree, creates a dialect-independent IR through the
+visitors, renders it using the selected dialect, and returns command text,
+parameters, and projection metadata. It has no database connection and does
+not execute queries.
 
 ### `QueryContext`
 
@@ -122,7 +174,7 @@ It:
 - Field-path resolution
 
 It must remain dialect-independent. Dialect decisions belong in
-`SqlGenerator` and `ISqlDialect`.
+`SqlStatementGenerator` and `ISqlDialect`.
 
 ### Visitors
 
@@ -141,7 +193,7 @@ Visitors produce IR nodes rather than SQL strings.
 
 ## SQL expression IR
 
-The IR is in `Internal/Query/Expressions`. Important types include:
+The IR is in `Internal/Compilation/Expressions`. Important types include:
 
 - `SqlExpression`: base type for dialect-independent SQL nodes.
 - `TableExpression`: query scope, joins, filters, projections, ordering, and
@@ -159,9 +211,26 @@ The IR is in `Internal/Query/Expressions`. Important types include:
 
 The IR must not depend on `ISqlDialect`.
 
-## `SqlGenerator`
+### Supported input and output types
 
-`SqlGenerator` consumes a `TableExpression` and an `ISqlDialect`. It renders:
+| Boundary | Supported types | Purpose |
+| --- | --- | --- |
+| Query root | `IDbQueryable` | Deferred query and expression-tree root |
+| C# field input | `IRecordParameter` / `DataValue` | Dynamic fields, parameters, trusted raw SQL, and related queries |
+| JSON input | `QueryRequest`, `QueryFilter`, `QuerySort` | Serializable query transport, including page and page size |
+| Metadata | `IMetaProvider`, `Entity`, `Field`, `Relation` | Runtime schema and relationship resolution |
+| Compiler IR | Internal `SqlExpression` hierarchy | Provider-independent query representation |
+| SQL target | `ISqlDialect` | SQL Server, SQLite, PostgreSQL, or a custom provider |
+| Diagnostic output | `SqlQuery`, `SqlQueryParameter` | SQL text plus parameter values for `ToSql` |
+| Client result | `DataRecord`, `List<DataRecord>` | Case-insensitive dynamic row values and async materialization |
+
+`DataValue` is an expression-building token, not a database value object. Its
+operators are consumed while translating expression trees; query values are
+parameterized unless the caller explicitly uses a trusted raw-SQL escape hatch.
+
+## `SqlStatementGenerator`
+
+`SqlStatementGenerator` consumes a `TableExpression` and an `ISqlDialect`. It renders:
 
 - `SELECT`
 - `FROM`
@@ -238,7 +307,7 @@ Follow this sequence:
 1. Add or reuse a public query method.
 2. Add the corresponding visitor translation.
 3. Represent the result with a dialect-independent IR node.
-4. Add rendering in `SqlGenerator`.
+4. Add rendering in `SqlStatementGenerator`.
 5. Add provider-independent and provider-specific tests.
 6. Add diagnostics assertions when output shape matters.
 7. Update [MANUAL.md](MANUAL.md) for user-facing behavior.

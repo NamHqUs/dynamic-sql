@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Linq.Expressions;
 
-namespace Namh.Data.DynamicSql.Internal.Query;
+namespace Namh.Data.DynamicSql.Internal.Execution;
 
 class DbQueryable : IDbQueryable, IEnumerable<DataRecord>, IEnumerable
 {

@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Namh.Data.DynamicSql.Internal.Query;
+namespace Namh.Data.DynamicSql.Internal.Compilation;
 
 internal static class SqlFormatter
 {

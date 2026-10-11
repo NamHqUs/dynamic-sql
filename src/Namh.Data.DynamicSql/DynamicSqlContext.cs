@@ -1,4 +1,4 @@
-﻿using Namh.Data.DynamicSql.Internal.Query;
+﻿using Namh.Data.DynamicSql.Internal.Execution;
 using System.Data;
 
 namespace Namh.Data.DynamicSql;
@@ -24,7 +24,11 @@ public class DynamicSqlContext(
     }
 
     public IDbQueryable QueryJson(string json)
-        => this.Query(QueryDefinition.FromJson(json));
+        => QueryRequestHelper.BuildQueryable(this, json);
+
+    public IDbQueryable Query(QueryRequest queryRequest)
+        => QueryRequestHelper.BuildQueryable(this, queryRequest);
+
 
     public void Dispose()
     {

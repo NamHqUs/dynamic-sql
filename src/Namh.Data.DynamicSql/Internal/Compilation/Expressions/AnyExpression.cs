@@ -1,4 +1,4 @@
-namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
 class AnyExpression(TableExpression tableContext) : TableExpression(tableContext.Entity, tableContext.Alias)
 {

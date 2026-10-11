@@ -4,7 +4,7 @@ using System.Reflection;
 #pragma warning disable IDE0130
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
-public static class DbQueryableExtension
+public static class IDbQueryableExtension
 {
     internal class DbQueryableDummy
     {
@@ -158,6 +158,6 @@ public static class DbQueryableExtension
             cancellationToken);
 
     private static MethodInfo? GetQueryMethod(string name, int parameterCount)
-        => typeof(DbQueryableExtension).GetMethods()
+        => typeof(IDbQueryableExtension).GetMethods()
             .FirstOrDefault(method => method.Name == name && method.GetParameters().Length == parameterCount);
 }

@@ -1,7 +1,7 @@
-﻿using Namh.Data.DynamicSql.Internal.Query.Models;
+﻿using Namh.Data.DynamicSql.Internal.Compilation.Models;
 using System.Text;
 
-namespace Namh.Data.DynamicSql.Internal.Query.Expressions;
+namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
 internal sealed record JoinExpression(
     TableExpression Table,
