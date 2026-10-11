@@ -110,12 +110,13 @@ export const executeQuery = createAsyncThunk(
   "queryBuilder/execute",
   async (definition: QueryDefinition, { rejectWithValue }) => {
     try {
-      const { filters, ...query } = definition;
+      const { filters, sorts, ...query } = definition;
       const payload = await requestJson("/dynamic-query/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...query,
+          sorts: sorts.map((sort) => ({ ...sort, direction: sort.direction === "desc" ? 1 : 0 })),
           filter: createApiFilter(filters),
         }),
       });
