@@ -57,6 +57,13 @@ type DragPreview = {
   position: DragPosition;
 };
 
+const QUERY_FIELD_DRAG_TYPE = "application/x-query-field";
+
+function getDraggedField(event: DragEvent<HTMLElement>): string | undefined {
+  const field = event.dataTransfer.getData(QUERY_FIELD_DRAG_TYPE).trim();
+  return field || undefined;
+}
+
 function getDropPosition(event: DragEvent<HTMLElement>): DragPosition {
   const bounds = event.currentTarget.getBoundingClientRect();
   return event.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
@@ -174,13 +181,14 @@ type FilterGroupEditorProps = {
   dragPreview?: DragPreview;
   onGroupFilter: (path: FilterPath) => void;
   onAddFilter: (path: FilterPath) => void;
+  onAddField: (path: FilterPath, field: string, position?: DragPosition) => void;
   onUngroupFilter: (path: FilterPath) => void;
   path: FilterPath;
   showLogicalOperator: boolean;
   depth: number;
 };
 
-function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMoveFilter, onDragPreview, onDragPreviewClear, dragPreview, onGroupFilter, onAddFilter, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
+function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMoveFilter, onDragPreview, onDragPreviewClear, dragPreview, onGroupFilter, onAddFilter, onAddField, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
   const updateNode = (index: number, node: QueryFilterNode) => {
     const filters = group.filters.map((filter, filterIndex) => filterIndex === index ? node : filter);
     onChange({ ...group, filters });
@@ -198,6 +206,11 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
     event.preventDefault();
     event.stopPropagation();
     onDragPreviewClear();
+    const field = getDraggedField(event);
+    if (field) {
+      onAddField(targetPath, field, position);
+      return;
+    }
     const serializedPath = event.dataTransfer.getData("application/x-filter-path");
     if (!serializedPath) return;
     try {
@@ -303,6 +316,7 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
             dragPreview={dragPreview}
             onGroupFilter={onGroupFilter}
             onAddFilter={onAddFilter}
+            onAddField={onAddField}
             onUngroupFilter={onUngroupFilter}
             showLogicalOperator={index !== 0}
             onChange={(nested) => updateNode(index, nested)}
@@ -329,6 +343,7 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
           onRemove={() => removeNode(index)}
           onGroup={() => onGroupFilter([...path, index])}
           onAdd={() => onAddFilter([...path, index])}
+          onAddField={(field, position) => onAddField([...path, index], field, position)}
           onMove={(sourcePath, position) => onMoveFilter(sourcePath, [...path, index], position)}
           onDragPreview={onDragPreview}
           onDragPreviewClear={onDragPreviewClear}
@@ -378,13 +393,14 @@ type FilterRowProps = {
   onRemove: () => void;
   onGroup: () => void;
   onAdd: () => void;
+  onAddField: (field: string, position: DragPosition) => void;
   onMove: (sourcePath: FilterPath, position: DragPosition) => void;
   onDragPreview: (path: FilterPath, position: DragPosition) => void;
   onDragPreviewClear: () => void;
   dragPreview?: DragPreview;
 };
 
-function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, onGroup, onAdd, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
+function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, onGroup, onAdd, onAddField, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
   const update = (changes: Partial<QueryFilterItem>) => onChange({ ...filter, ...changes });
   const isPreview = (position: DragPosition) => dragPreview?.position === position && isSamePath(dragPreview.path, path);
   const previewPosition = useRef<DragPosition>();
@@ -410,6 +426,14 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
       onDrop={(event) => {
         event.preventDefault();
         event.stopPropagation();
+        const field = getDraggedField(event);
+        if (field) {
+          const position = previewPosition.current ?? getDropPosition(event);
+          onDragPreviewClear();
+          previewPosition.current = undefined;
+          onAddField(field, position);
+          return;
+        }
         const serializedPath = event.dataTransfer.getData("application/x-filter-path");
         if (!serializedPath) return;
         try {
@@ -629,6 +653,48 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
     onDefinitionChange({ ...definition, filters: replaceParent(definition.filters, parentPath) });
   };
 
+  const addFilterField = (targetPath: FilterPath, field: string, position: DragPosition = "inside") => {
+    const createFieldFilter = (logicalOperator: number) => ({ ...createFilter(logicalOperator), field });
+    if (position === "inside") {
+      const target = getNode(definition.filters, targetPath);
+      if (!target || !isGroup(target)) return;
+      onDefinitionChange({
+        ...definition,
+        filters: updateGroup(definition.filters, targetPath, (group) => ({
+          ...group,
+          filters: [...group.filters, createFieldFilter(group.filters.length ? group.logicalOperation : 0)],
+        })),
+      });
+      return;
+    }
+
+    if (!targetPath.length) {
+      onDefinitionChange({
+        ...definition,
+        filters: {
+          ...definition.filters,
+          filters: position === "before"
+            ? [createFieldFilter(0), ...definition.filters.filters]
+            : [...definition.filters.filters, createFieldFilter(definition.filters.filters.length ? definition.filters.logicalOperation : 0)],
+        },
+      });
+      return;
+    }
+
+    const parentPath = targetPath.slice(0, -1);
+    const targetIndex = targetPath[targetPath.length - 1];
+    const parent = getNode(definition.filters, parentPath);
+    if (!parent || !isGroup(parent)) return;
+    if (targetIndex === undefined) return;
+    const insertIndex = position === "before" ? targetIndex : targetIndex + 1;
+    const filters = [...parent.filters];
+    filters.splice(insertIndex, 0, createFieldFilter(parent.filters.length ? parent.logicalOperation : 0));
+    onDefinitionChange({
+      ...definition,
+      filters: updateGroup(definition.filters, parentPath, (group) => ({ ...group, filters })),
+    });
+  };
+
   const ungroupFilter = (path: FilterPath) => {
     const nested = getNode(definition.filters, path);
     if (!nested || !isGroup(nested) || !path.length) return;
@@ -655,7 +721,7 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
     >
       <div className="section-header">
         <span className="section-kicker">FILTERS</span>
-        <p className="filter-description">Drag from the left border of a FieldFilter or GroupFilter. Drop above or below an item to reorder, or onto a GroupFilter to nest it. Use a GroupFilter&apos;s top or bottom edge to place an item before or after it.</p>
+        <p className="filter-description">Drag a selected field here to create a filter, or drag from the left border of a FieldFilter or GroupFilter to reorder. Drop onto a GroupFilter to nest it, or use its top or bottom edge to place a filter before or after it.</p>
       </div>
       <FilterGroupEditor
         group={definition.filters}
@@ -669,6 +735,7 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
         dragPreview={dragPreview}
         onGroupFilter={groupFilter}
         onAddFilter={addFilterAfter}
+        onAddField={addFilterField}
         onUngroupFilter={ungroupFilter}
         showLogicalOperator={false}
         onChange={(filters) => onDefinitionChange({ ...definition, filters })}

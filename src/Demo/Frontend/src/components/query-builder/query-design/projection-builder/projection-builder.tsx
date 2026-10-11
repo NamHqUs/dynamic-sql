@@ -44,6 +44,7 @@ function FieldCards({
   moveColumn: (fromIndex: number, toIndex: number) => void;
 }) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
   const [aliasBeforeEdit, setAliasBeforeEdit] = useState<string | null>(null);
   const [columnBeforeEdit, setColumnBeforeEdit] = useState<{ field: string; alias: string | null } | null>(null);
   const columnBeforeEditRef = useRef<{ field: string; alias: string | null } | null>(null);
@@ -54,27 +55,45 @@ function FieldCards({
     setEditingField(snapshot?.field ?? null);
   };
 
-  return <div className="field-cards" onDragEnd={() => setDraggedIndex(null)}>{fields.map((field, index) => {
+  return <div className="field-cards" onDragEnd={() => {
+    setDraggedIndex(null);
+    setDropTargetIndex(null);
+  }}>{fields.map((field, index) => {
     const column = definition.columns.find((item) => item.field === field.name);
     return (
       <div
-        className={`field-card${column ? " selected" : ""}${draggedIndex === index ? " dragging" : ""}`}
+        className={`field-card${column ? " selected" : ""}${draggedIndex === index ? " dragging" : ""}${dropTargetIndex === index && draggedIndex !== index ? " drop-target" : ""}`}
         key={field.name}
-        draggable={Boolean(column)}
-        onDragStart={(event) => {
-          setDraggedIndex(index);
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData("text/plain", field.name);
-        }}
         onDragOver={(event) => {
-          if (draggedIndex !== null && draggedIndex !== index) event.preventDefault();
+          if (draggedIndex !== null && draggedIndex !== index) {
+            event.preventDefault();
+            setDropTargetIndex(index);
+          }
         }}
         onDrop={(event) => {
           event.preventDefault();
-          if (draggedIndex !== null && draggedIndex !== index) moveColumn(draggedIndex, index);
+          const draggedField = event.dataTransfer.getData("application/x-query-field")
+            || event.dataTransfer.getData("text/plain");
+          const sourceIndex = fields.findIndex((item) => item.name === draggedField);
+          if (sourceIndex >= 0 && sourceIndex !== index) moveColumn(sourceIndex, index);
           setDraggedIndex(null);
+          setDropTargetIndex(null);
         }}
       >
+        {column && (
+          <span
+            className="filter-field-drag-handle field-card-drag-handle"
+            draggable
+            aria-hidden="true"
+            onDragStart={(event) => {
+              setDraggedIndex(index);
+              event.dataTransfer.effectAllowed = "move";
+              event.dataTransfer.setData("text/plain", field.name);
+              event.dataTransfer.setData("application/x-query-field", field.name);
+            }}
+          >
+          </span>
+        )}
         <button type="button" className="field-card-remove" onClick={() => removeColumn(field.name)} aria-label={`Remove ${field.name}`} title={`Remove ${field.name}`}>
           <Icon name="close" size={12} />
         </button>
