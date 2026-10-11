@@ -17,29 +17,36 @@ internal sealed class QueryFilterParser
 
         var expression = ParseOr();
         Expect(TokenType.End);
-        return expression;
+        return expression as QueryFilter
+            ?? new QueryFilter(LogicalOperator.And, expression);
     }
 
-    private QueryFilter ParseOr()
-        => ParseGroup(ParseAnd, "||", QueryFilterLogicalOperator.Or);
+    private IQueryFilter ParseOr()
+        => ParseGroup(ParseAnd, "||", LogicalOperator.Or);
 
-    private QueryFilter ParseAnd()
-        => ParseGroup(ParsePrimary, "&&", QueryFilterLogicalOperator.And);
+    private IQueryFilter ParseAnd()
+        => ParseGroup(ParsePrimary, "&&", LogicalOperator.And);
 
-    private QueryFilter ParseGroup(
-        Func<QueryFilter> operand,
+    private IQueryFilter ParseGroup(
+        Func<IQueryFilter> operand,
         string separator,
-        QueryFilterLogicalOperator logicalOperator)
+        LogicalOperator logicalOperator)
     {
         var expression = operand();
 
         while (Match(separator))
-            expression = new LogicalFilter(expression, logicalOperator, operand());
+        {
+            var next = operand();
+            if (next is QueryFilterItem filter)
+                next = filter with { LogicalOperator = logicalOperator };
+
+            expression = new QueryFilter(logicalOperator, expression, next);
+        }
 
         return expression;
     }
 
-    private QueryFilter ParsePrimary()
+    private IQueryFilter ParsePrimary()
     {
         if (Match("("))
         {
@@ -54,17 +61,20 @@ internal sealed class QueryFilterParser
 
         var filterOperator = operation switch
         {
-            "==" => QueryFilterOperator.Equals,
-            "!=" => QueryFilterOperator.NotEquals,
-            "like" => QueryFilterOperator.Like,
-            ">" => QueryFilterOperator.GreaterThan,
-            "<" => QueryFilterOperator.LessThan,
-            ">=" => QueryFilterOperator.GreaterThanOrEqual,
-            "<=" => QueryFilterOperator.LessThanOrEqual,
+            "==" => BinaryOperator.Equals,
+            "!=" => BinaryOperator.NotEquals,
+            "like" => BinaryOperator.Like,
+            ">" => BinaryOperator.GreaterThan,
+            "<" => BinaryOperator.LessThan,
+            ">=" => BinaryOperator.GreaterThanOrEqual,
+            "<=" => BinaryOperator.LessThanOrEqual,
             _ => throw new FormatException($"Unsupported filter operator [{operation}].")
         };
 
-        return new BinaryFilter(field, filterOperator, value) { Parameterized = true };
+        return new QueryFilterItem(LogicalOperator.And, field, filterOperator, value)
+        {
+            Parameterized = true
+        };
     }
 
     private object? ParseFilterValue()

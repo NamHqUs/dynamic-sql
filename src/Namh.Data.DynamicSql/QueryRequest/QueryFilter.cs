@@ -5,20 +5,51 @@ using System.Text.Json.Serialization;
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
-[JsonConverter(typeof(QueryFilterJsonConverter))]
-public record QueryFilter(bool Enabled = true, bool Parameterized = false);
-
-public record LogicalFilter(
-    QueryFilter Left,
-    QueryFilterLogicalOperator Operator,
-    QueryFilter Right) : QueryFilter;
-
-public record BinaryFilter(
+[JsonConverter(typeof(FilterDtoJsonConverter))]
+public interface IQueryFilter
+{
+}
+public record QueryFilterItem(
+    LogicalOperator LogicalOperator,
     string Field,
-    QueryFilterOperator Operator,
-    object? Value = null) : QueryFilter;
+    BinaryOperator Operation,
+    object? Value = null) : IQueryFilter
+{
+    public bool Parameterized { get; init; }
+}
 
-public enum QueryFilterOperator
+[JsonConverter(typeof(GroupFilterDtoJsonConverter))]
+public class QueryFilter(LogicalOperator logicalOperator = LogicalOperator.And, params IQueryFilter[] filter) : IQueryFilter
+{
+    public LogicalOperator LogicalOperation { get; set; } = logicalOperator;
+    public List<IQueryFilter> Filters { get; set; } = filter.ToList();
+}
+
+public static class ExampleQueryFilter
+{
+    public static QueryFilter Build()
+    {
+        // Example: Id > 100 AND Name = 'John Doe' AND (Age < 30 OR Age > 60) OR (Id > 100 AND (Name = 'John Doe' AND Age < 30) OR Age > 60)
+        return new QueryFilter(LogicalOperator.And,
+            new QueryFilterItem(LogicalOperator.And, "Id", BinaryOperator.GreaterThan, 100),
+            new QueryFilterItem(LogicalOperator.And, "Name", BinaryOperator.Equals, "John Doe"),
+            new QueryFilter(LogicalOperator.And,
+                new QueryFilterItem(LogicalOperator.And, "Age", BinaryOperator.LessThan, 30),
+                new QueryFilterItem(LogicalOperator.Or, "Age", BinaryOperator.GreaterThan, 60)
+                ),
+            new QueryFilter(LogicalOperator.And,
+                new QueryFilterItem(LogicalOperator.And, "Id", BinaryOperator.GreaterThan, 100),
+                new QueryFilter(LogicalOperator.And,
+                    new QueryFilterItem(LogicalOperator.And, "Name", BinaryOperator.Equals, "John Doe"),
+                    new QueryFilterItem(LogicalOperator.And, "Age", BinaryOperator.LessThan, 30)
+                    ),
+                new QueryFilterItem(LogicalOperator.Or, "Age", BinaryOperator.GreaterThan, 60)
+                )
+             );
+    }
+
+}
+public enum BinaryOperator
 {
     Equals,
     NotEquals,
@@ -29,13 +60,37 @@ public enum QueryFilterOperator
     LessThanOrEqual
 }
 
-public enum QueryFilterLogicalOperator
+public enum LogicalOperator
 {
     And,
     Or
 }
 
-public sealed class QueryFilterJsonConverter : JsonConverter<QueryFilter>
+internal sealed class FilterDtoJsonConverter : JsonConverter<IQueryFilter>
+{
+    public override IQueryFilter Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options)
+    {
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+
+        return root.TryGetProperty("filters", out _)
+            ? JsonSerializer.Deserialize<QueryFilter>(root, options)
+                ?? throw new JsonException("The filter group cannot be null.")
+            : JsonSerializer.Deserialize<QueryFilterItem>(root, options)
+                ?? throw new JsonException("The filter cannot be null.");
+    }
+
+    public override void Write(
+        Utf8JsonWriter writer,
+        IQueryFilter value,
+        JsonSerializerOptions options)
+        => JsonSerializer.Serialize(writer, value, value.GetType(), options);
+}
+
+internal sealed class GroupFilterDtoJsonConverter : JsonConverter<QueryFilter>
 {
     public override QueryFilter Read(
         ref Utf8JsonReader reader,
@@ -44,42 +99,14 @@ public sealed class QueryFilterJsonConverter : JsonConverter<QueryFilter>
     {
         using var document = JsonDocument.ParseValue(ref reader);
         var root = document.RootElement;
+        var logicalOperation = root.TryGetProperty("logicalOperation", out var operation)
+            ? operation.Deserialize<LogicalOperator>(options)
+            : LogicalOperator.And;
+        var filters = root.TryGetProperty("filters", out var filterElement)
+            ? filterElement.Deserialize<List<IQueryFilter>>(options) ?? []
+            : [];
 
-        var enabled = ReadBoolean(root, "enabled", true);
-        var parameterized = ReadBoolean(root, "parameterized", false);
-
-        if (TryGetProperty(root, "left", out var leftElement))
-        {
-            if (!TryGetProperty(root, "right", out var rightElement))
-                throw new JsonException("A logical filter must contain both left and right filters.");
-
-            var left = JsonSerializer.Deserialize<QueryFilter>(leftElement, options)
-                ?? throw new JsonException("The logical filter left value cannot be null.");
-            var right = JsonSerializer.Deserialize<QueryFilter>(rightElement, options)
-                ?? throw new JsonException("The logical filter right value cannot be null.");
-
-            return new LogicalFilter(
-                left,
-                ReadEnum<QueryFilterLogicalOperator>(root, "operator"),
-                right)
-            {
-                Enabled = enabled,
-                Parameterized = parameterized
-            };
-        }
-
-        if (!TryGetProperty(root, "field", out var fieldElement) ||
-            fieldElement.ValueKind != JsonValueKind.String)
-            throw new JsonException("A binary filter must contain a field.");
-
-        return new BinaryFilter(
-            fieldElement.GetString()!,
-            ReadEnum<QueryFilterOperator>(root, "operator"),
-            root.TryGetProperty("value", out var valueElement) ? valueElement.Clone() : null)
-        {
-            Enabled = enabled,
-            Parameterized = parameterized
-        };
+        return new QueryFilter(logicalOperation, filters.ToArray());
     }
 
     public override void Write(
@@ -88,65 +115,9 @@ public sealed class QueryFilterJsonConverter : JsonConverter<QueryFilter>
         JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        writer.WriteBoolean("enabled", value.Enabled);
-        writer.WriteBoolean("parameterized", value.Parameterized);
-
-        switch (value)
-        {
-            case LogicalFilter logical:
-                writer.WritePropertyName("left");
-                JsonSerializer.Serialize(writer, logical.Left, options);
-                writer.WriteNumber("operator", (int)logical.Operator);
-                writer.WritePropertyName("right");
-                JsonSerializer.Serialize(writer, logical.Right, options);
-                break;
-            case BinaryFilter binary:
-                writer.WriteString("field", binary.Field);
-                writer.WriteNumber("operator", (int)binary.Operator);
-                writer.WritePropertyName("value");
-                JsonSerializer.Serialize(writer, binary.Value, options);
-                break;
-            default:
-                throw new JsonException($"Unsupported query filter type [{value.GetType().Name}].");
-        }
-
+        writer.WriteNumber("logicalOperation", (int)value.LogicalOperation);
+        writer.WritePropertyName("filters");
+        JsonSerializer.Serialize(writer, value.Filters, options);
         writer.WriteEndObject();
-    }
-
-    private static bool TryGetProperty(
-        JsonElement element,
-        string name,
-        out JsonElement value)
-    {
-        if (element.TryGetProperty(name, out value))
-            return true;
-
-        foreach (var property in element.EnumerateObject())
-        {
-            if (property.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                value = property.Value;
-                return true;
-            }
-        }
-
-        value = default;
-        return false;
-    }
-
-    private static bool ReadBoolean(JsonElement element, string name, bool defaultValue)
-        => TryGetProperty(element, name, out var value)
-            ? value.GetBoolean()
-            : defaultValue;
-
-    private static TEnum ReadEnum<TEnum>(JsonElement element, string name)
-        where TEnum : struct, Enum
-    {
-        if (!TryGetProperty(element, name, out var value))
-            throw new JsonException($"A filter must contain [{name}].");
-
-        return value.ValueKind == JsonValueKind.Number
-            ? (TEnum)Enum.ToObject(typeof(TEnum), value.GetInt32())
-            : Enum.Parse<TEnum>(value.GetString()!, true);
     }
 }

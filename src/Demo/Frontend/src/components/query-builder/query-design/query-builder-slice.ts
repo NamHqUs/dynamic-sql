@@ -40,58 +40,30 @@ type QueryFilterDefinition = QueryDefinition["filters"][number];
 
 type ApiFilter =
   | {
+      logicalOperator: number;
       field: string;
-      operator: number;
+      operation: number;
       value: string;
       parameterized: boolean;
-      enabled: boolean;
     }
   | {
-      left: ApiFilter;
-      operator: number;
-      right: ApiFilter;
-      enabled: boolean;
-      parameterized: boolean;
+      logicalOperation: number;
+      filters: ApiFilter[];
     };
 
 function createApiFilter(filters: QueryFilterDefinition[]): ApiFilter | null {
   if (!filters.length) return null;
 
-  const groups: ApiFilter[][] = [];
-  let andGroup: ApiFilter[] = [];
-
-  for (const filter of filters) {
-    const binaryFilter: ApiFilter = {
+  return {
+    logicalOperation: 0,
+    filters: filters.map((filter) => ({
+      logicalOperator: filter.logicalOperator ?? 0,
       field: filter.field,
-      operator: filter.operator,
+      operation: filter.operator,
       value: filter.value,
       parameterized: filter.parameterized,
-      enabled: filter.enabled,
-    };
-
-    if (andGroup.length && filter.logicalOperator === 1) {
-      groups.push(andGroup);
-      andGroup = [];
-    }
-
-    andGroup.push(binaryFilter);
-  }
-
-  groups.push(andGroup);
-
-  const createGroup = (items: ApiFilter[], operator: number): ApiFilter =>
-    items.slice(1).reduce<ApiFilter>(
-      (left, right) => ({
-        left,
-        operator,
-        right,
-        enabled: true,
-        parameterized: false,
-      }),
-      items[0],
-    );
-
-  return createGroup(groups.map((group) => createGroup(group, 0)), 1);
+    })),
+  };
 }
 
 export type QueryResult = {

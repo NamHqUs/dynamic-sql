@@ -66,34 +66,39 @@ internal static class QueryRequestHelper
     }
 
     private static Expression CreateFilterBody(
-        QueryFilter filter,
+        IQueryFilter filter,
         ParameterExpression parameter)
-    {
-        if (!filter.Enabled)
-            return Expression.Constant(true);
-
-        return filter switch
+        => filter switch
         {
-            LogicalFilter logical => CreateLogicalFilter(logical, parameter),
-            BinaryFilter binary => CreateCondition(binary, parameter),
+            QueryFilter group => CreateLogicalFilter(group, parameter),
+            QueryFilterItem binary => CreateCondition(binary, parameter),
             _ => throw new ArgumentOutOfRangeException(nameof(filter))
         };
-    }
 
     private static Expression CreateLogicalFilter(
-        LogicalFilter group,
+        QueryFilter group,
         ParameterExpression parameter)
     {
-        var left = CreateFilterBody(group.Left, parameter);
-        var right = CreateFilterBody(group.Right, parameter);
+        if (group.Filters.Count == 0)
+            return Expression.Constant(true);
 
-        return group.Operator == QueryFilterLogicalOperator.And
-            ? Expression.AndAlso(left, right)
-            : Expression.OrElse(left, right);
+        var expression = CreateFilterBody(group.Filters[0], parameter);
+        foreach (var filter in group.Filters.Skip(1))
+        {
+            var next = CreateFilterBody(filter, parameter);
+            var logicalOperation = filter is QueryFilterItem binary
+                ? binary.LogicalOperator
+                : group.LogicalOperation;
+            expression = logicalOperation == LogicalOperator.And
+                ? Expression.AndAlso(expression, next)
+                : Expression.OrElse(expression, next);
+        }
+
+        return expression;
     }
 
     private static Expression CreateCondition(
-        BinaryFilter filter,
+        QueryFilterItem filter,
         ParameterExpression parameter)
     {
         var field = Expression.Call(
@@ -103,7 +108,7 @@ internal static class QueryRequestHelper
 
         var filterValue = NormalizeFilterValue(filter.Value);
 
-        if (filter.Operator == QueryFilterOperator.Like)
+        if (filter.Operation == BinaryOperator.Like)
             return Expression.Call(
                 field,
                 typeof(DataValue).GetMethod(nameof(DataValue.Like))!,
@@ -111,19 +116,19 @@ internal static class QueryRequestHelper
 
         var value = CreateFilterValue(filter);
 
-        return filter.Operator switch
+        return filter.Operation switch
         {
-            QueryFilterOperator.Equals => Expression.Equal(field, value),
-            QueryFilterOperator.NotEquals => Expression.NotEqual(field, value),
-            QueryFilterOperator.GreaterThan => Expression.GreaterThan(field, value),
-            QueryFilterOperator.LessThan => Expression.LessThan(field, value),
-            QueryFilterOperator.GreaterThanOrEqual => Expression.GreaterThanOrEqual(field, value),
-            QueryFilterOperator.LessThanOrEqual => Expression.LessThanOrEqual(field, value),
-            _ => throw new ArgumentOutOfRangeException(nameof(filter.Operator))
+            BinaryOperator.Equals => Expression.Equal(field, value),
+            BinaryOperator.NotEquals => Expression.NotEqual(field, value),
+            BinaryOperator.GreaterThan => Expression.GreaterThan(field, value),
+            BinaryOperator.LessThan => Expression.LessThan(field, value),
+            BinaryOperator.GreaterThanOrEqual => Expression.GreaterThanOrEqual(field, value),
+            BinaryOperator.LessThanOrEqual => Expression.LessThanOrEqual(field, value),
+            _ => throw new ArgumentOutOfRangeException(nameof(filter.Operation))
         };
     }
 
-    private static Expression CreateFilterValue(BinaryFilter filter)
+    private static Expression CreateFilterValue(QueryFilterItem filter)
     {
         var value = NormalizeFilterValue(filter.Value);
 

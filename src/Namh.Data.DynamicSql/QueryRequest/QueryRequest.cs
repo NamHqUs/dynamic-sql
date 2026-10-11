@@ -21,7 +21,7 @@ public sealed class QueryRequest
         => string.Join(Environment.NewLine,
             $"Entity: {Entity}",
             $"Columns: {(Columns.Count == 0 ? "Empty" : string.Join(", ", Columns.Select(FormatColumn)))}",
-            $"Filters: {(Filter is null || !Filter.Enabled ? "Empty" : FormatFilter(Filter, false))}",
+            $"Filters: {(Filter is null ? "Empty" : FormatFilter(Filter, false))}",
             $"Sorts: {(Sorts.Count == 0 ? "Empty" : string.Join(", ", Sorts.Select(FormatSort)))}",
             $"Page: {Page?.ToString() ?? "Empty"}",
             $"PageSize: {PageSize?.ToString() ?? "Empty"}",
@@ -38,39 +38,39 @@ public sealed class QueryRequest
             _ => throw new ArgumentOutOfRangeException(nameof(sort.Direction))
         }}";
 
-    private static string FormatFilter(QueryFilter filter, bool parenthesize)
+    private static string FormatFilter(IQueryFilter filter, bool parenthesize)
     {
         var text = filter switch
         {
-            LogicalFilter logical =>
-                $"{FormatFilter(logical.Left, true)} {FormatLogicalOperator(logical.Operator)} " +
-                $"{FormatFilter(logical.Right, true)}",
-            BinaryFilter binary =>
-                $"{binary.Field} {FormatFilterOperator(binary.Operator)} {FormatValue(binary.Value)}",
+            QueryFilter group => string.Join(
+                $" {FormatLogicalOperator(group.LogicalOperation)} ",
+                group.Filters.Select(item => FormatFilter(item, item is QueryFilter))),
+            QueryFilterItem binary =>
+                $"{binary.Field} {FormatFilterOperator(binary.Operation)} {FormatValue(binary.Value)}",
             _ => throw new ArgumentOutOfRangeException(nameof(filter))
         };
 
-        return parenthesize && filter is LogicalFilter ? $"({text})" : text;
+        return parenthesize && filter is QueryFilter ? $"({text})" : text;
     }
 
-    private static string FormatLogicalOperator(QueryFilterLogicalOperator @operator)
+    private static string FormatLogicalOperator(LogicalOperator @operator)
         => @operator switch
         {
-            QueryFilterLogicalOperator.And => "AND",
-            QueryFilterLogicalOperator.Or => "OR",
+            LogicalOperator.And => "AND",
+            LogicalOperator.Or => "OR",
             _ => throw new ArgumentOutOfRangeException(nameof(@operator))
         };
 
-    private static string FormatFilterOperator(QueryFilterOperator @operator)
+    private static string FormatFilterOperator(BinaryOperator @operator)
         => @operator switch
         {
-            QueryFilterOperator.Equals => "=",
-            QueryFilterOperator.NotEquals => "<>",
-            QueryFilterOperator.Like => "LIKE",
-            QueryFilterOperator.GreaterThan => ">",
-            QueryFilterOperator.LessThan => "<",
-            QueryFilterOperator.GreaterThanOrEqual => ">=",
-            QueryFilterOperator.LessThanOrEqual => "<=",
+            BinaryOperator.Equals => "=",
+            BinaryOperator.NotEquals => "<>",
+            BinaryOperator.Like => "LIKE",
+            BinaryOperator.GreaterThan => ">",
+            BinaryOperator.LessThan => "<",
+            BinaryOperator.GreaterThanOrEqual => ">=",
+            BinaryOperator.LessThanOrEqual => "<=",
             _ => throw new ArgumentOutOfRangeException(nameof(@operator))
         };
 

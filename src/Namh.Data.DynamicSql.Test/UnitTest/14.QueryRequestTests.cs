@@ -14,7 +14,9 @@ public class _14_QueryRequestTests : TestBase
                 new QueryColumn("Name"),
                 new QueryColumn("Manager.Name", "ManagerName")
             ],
-            Filter = new BinaryFilter("Age", QueryFilterOperator.GreaterThan, 18),
+            Filter = new QueryFilter(
+                LogicalOperator.And,
+                new QueryFilterItem(LogicalOperator.And, "Age", BinaryOperator.GreaterThan, 18)),
             Sorts =
             [
                 new QuerySort("Name")
@@ -38,7 +40,9 @@ public class _14_QueryRequestTests : TestBase
         {
             Entity = "User",
             Columns = [new QueryColumn("Name")],
-            Filter = new BinaryFilter("Name", QueryFilterOperator.Equals, "Alice")
+            Filter = new QueryFilter(
+                LogicalOperator.And,
+                new QueryFilterItem(LogicalOperator.And, "Name", BinaryOperator.Equals, "Alice"))
         };
 
         var records = _db.Query(definition).ToList();
@@ -53,13 +57,13 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryRequest
         {
             Entity = "User",
-            Filter = new LogicalFilter(
-                new LogicalFilter(
-                    new BinaryFilter("Name", QueryFilterOperator.Equals, "Alice"),
-                    QueryFilterLogicalOperator.Or,
-                    new BinaryFilter("Age", QueryFilterOperator.GreaterThan, 18)),
-                QueryFilterLogicalOperator.And,
-                new BinaryFilter("Name", QueryFilterOperator.Equals, "Bob"))
+            Filter = new QueryFilter(
+                LogicalOperator.And,
+                new QueryFilter(
+                    LogicalOperator.Or,
+                    new QueryFilterItem(LogicalOperator.Or, "Name", BinaryOperator.Equals, "Alice"),
+                    new QueryFilterItem(LogicalOperator.Or, "Age", BinaryOperator.GreaterThan, 18)),
+                new QueryFilterItem(LogicalOperator.And, "Name", BinaryOperator.Equals, "Bob"))
         };
 
         var sql = _db.Query(definition).ToSql();
@@ -89,16 +93,16 @@ public class _14_QueryRequestTests : TestBase
         {
             Entity = "User",
             Columns = [new QueryColumn("Id"), new QueryColumn("Name")],
-            Filter = new LogicalFilter(
-                new LogicalFilter(
-                    new BinaryFilter("Id", QueryFilterOperator.GreaterThan, 3),
-                    QueryFilterLogicalOperator.And,
-                    new BinaryFilter("Invoices.Id", QueryFilterOperator.LessThan, 3)),
-                QueryFilterLogicalOperator.And,
-                new LogicalFilter(
-                    new BinaryFilter("Name", QueryFilterOperator.Equals, "abc"),
-                    QueryFilterLogicalOperator.Or,
-                    new BinaryFilter("Age", QueryFilterOperator.GreaterThan, 18))),
+            Filter = new QueryFilter(
+                LogicalOperator.And,
+                new QueryFilter(
+                    LogicalOperator.And,
+                    new QueryFilterItem(LogicalOperator.And, "Id", BinaryOperator.GreaterThan, 3),
+                    new QueryFilterItem(LogicalOperator.And, "Invoices.Id", BinaryOperator.LessThan, 3)),
+                new QueryFilter(
+                    LogicalOperator.Or,
+                    new QueryFilterItem(LogicalOperator.Or, "Name", BinaryOperator.Equals, "abc"),
+                    new QueryFilterItem(LogicalOperator.Or, "Age", BinaryOperator.GreaterThan, 18))),
             Sorts = [new QuerySort("Name")],
             Page = 1,
             PageSize = 25,
@@ -124,11 +128,14 @@ public class _14_QueryRequestTests : TestBase
             {
               "entity": "User",
               "filter": {
-                "field": "Name",
-                "operator": 0,
-                "value": "Alice",
-                "parameterized": false,
-                "enabled": true
+                "logicalOperation": 0,
+                "filters": [{
+                  "logicalOperator": 0,
+                  "field": "Name",
+                  "operation": 0,
+                  "value": "Alice",
+                  "parameterized": false
+                }]
               }
             }
             """;
@@ -137,8 +144,11 @@ public class _14_QueryRequestTests : TestBase
             json,
             new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
-        Assert.That(definition.Filter, Is.TypeOf<BinaryFilter>());
-        Assert.That(definition.Filter!.ToString(), Does.Contain("Alice"));
+        Assert.That(definition.Filter, Is.TypeOf<QueryFilter>());
+        var filter = definition.Filter!.Filters.Single() as QueryFilterItem;
+        Assert.That(filter, Is.Not.Null);
+        Assert.That(filter!.Field, Is.EqualTo("Name"));
+        Assert.That(filter.Value?.ToString(), Is.EqualTo("Alice"));
     }
 
     [Test]

@@ -10,7 +10,7 @@ internal implementation details.
 ```mermaid
 flowchart LR
     A[Input] --> A1[C# expression API]
-    A --> A2[JSON QueryRequest]
+    A --> A2[JSON QueryRequestDto]
     A --> A3[Runtime metadata]
     A1 --> B[IDbQueryable expression tree]
     A2 --> B2[QueryRequestExtensions]
@@ -38,7 +38,7 @@ flowchart LR
 ### Pipeline responsibilities
 
 1. **Input** accepts C# expression trees over `IRecordParameter` and
-   `IDbQueryable`, JSON `QueryRequest` values, and runtime metadata
+   `IDbQueryable`, JSON `QueryRequestDto` values, and runtime metadata
    (`Entity`, `Field`, and `Relation`).
 2. **Process the interface input** uses public query extensions to build a
    normal expression tree. JSON definitions are converted into the same
@@ -73,7 +73,7 @@ src/Namh.Data.DynamicSql/Internal
     SqlStatementGenerator, ADO.NET execution, and result mapping
 
 src/Namh.Data.DynamicSql.Model
-    Entity, Field, Relation, QueryRequest, and JSON filter models
+    Entity, Field, Relation, QueryRequestDto, and JSON filter models
 
 src/Namh.Data.DynamicSql.Test
     NUnit tests, metadata fixtures, provider tests, and SQL diagnostics tests
@@ -119,15 +119,15 @@ It provides:
 `DataValue` overloads make comparisons and expressions possible without
 materializing a CLR entity.
 
-### `QueryRequest`
+### `QueryRequestDto`
 
 The JSON transport model contains entity, columns, filters, sorting, and
 paging. `QueryRequestExtensions` converts it into the same query pipeline
 used by C# expressions.
 
-Filters are represented recursively: `BinaryFilter` contains a field
-comparison, while `LogicalFilter` combines two `QueryFilter` instances with
-`And` or `Or`.
+Filters are represented recursively: `FilterDto` contains a field comparison,
+while `GroupFilterDto` combines child filters with `And` or `Or`. This flattened
+shape is suitable for recursively-built frontend query filters.
 
 `QueryRequestJsonParser` is responsible for:
 
@@ -216,7 +216,7 @@ The IR must not depend on `ISqlDialect`.
 | --- | --- | --- |
 | Query root | `IDbQueryable` | Deferred query and expression-tree root |
 | C# field input | `IRecordParameter` / `DataValue` | Dynamic fields, parameters, trusted raw SQL, and related queries |
-| JSON input | `QueryRequest`, `QueryFilter`, `QuerySort` | Serializable query transport, including page and page size |
+| JSON input | `QueryRequestDto`, `GroupFilterDto`, `QuerySortDto` | Serializable query transport, including page and page size |
 | Metadata | `IMetaProvider`, `Entity`, `Field`, `Relation` | Runtime schema and relationship resolution |
 | Compiler IR | Internal `SqlExpression` hierarchy | Provider-independent query representation |
 | SQL target | `ISqlDialect` | SQL Server, SQLite, PostgreSQL, or a custom provider |
