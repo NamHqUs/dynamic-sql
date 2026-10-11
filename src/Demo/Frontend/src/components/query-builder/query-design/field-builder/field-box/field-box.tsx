@@ -8,6 +8,7 @@ type FieldBoxProps = {
   metadata: MetadataEntity[];
   value: string;
   onChange: (path: string) => void;
+  onIncompleteChange?: (incomplete: boolean) => void;
   clearOnSelect?: boolean;
   completeOnSelect?: boolean;
   showPath?: boolean;
@@ -38,7 +39,7 @@ export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], 
   return current;
 }
 
-export default function FieldBox({ entity, metadata, value, onChange, clearOnSelect = false, completeOnSelect = false, showPath = false, showDataType = false, placeholder = "Select field…", ariaLabel = "Field", excludedPaths = [], autoFocus = false }: FieldBoxProps) {
+export default function FieldBox({ entity, metadata, value, onChange, onIncompleteChange, clearOnSelect = false, completeOnSelect = false, showPath = false, showDataType = false, placeholder = "Select field…", ariaLabel = "Field", excludedPaths = [], autoFocus = false }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
   const [pendingAggregate, setPendingAggregate] = useState<string | null>(null);
@@ -101,6 +102,9 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
       ? valueSegments[valueSegments.length - 1] ?? ""
       : "";
   const selectedAggregate = aggregateMatch?.[1] ?? pendingAggregate;
+  useEffect(() => {
+    onIncompleteChange?.(pendingPath !== null || (pendingAggregate !== null && !pendingAggregateField));
+  }, [onIncompleteChange, pendingAggregate, pendingAggregateField, pendingPath]);
   const selectValue = selectedAggregate
       ? `${AGGREGATE_PREFIX}${selectedAggregate}`
       : selectedField && current.fields.some((field) => field.name === selectedField)

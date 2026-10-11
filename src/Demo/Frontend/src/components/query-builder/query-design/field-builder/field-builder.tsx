@@ -46,6 +46,7 @@ export default function FieldBuilder({
   onCancel,
 }: FieldBuilderProps) {
   const [isEditing, setIsEditing] = useState(editMode);
+  const [hasIncompleteSelection, setHasIncompleteSelection] = useState(false);
   const cancelEdit = () => {
     setIsEditing(false);
     onCancel?.();
@@ -54,7 +55,7 @@ export default function FieldBuilder({
   if (!value || editMode || isEditing) {
     return (
       <div
-        className="field-builder-editing"
+        className={`field-builder-editing${hasIncompleteSelection ? " field-builder-incomplete" : ""}`}
         autoFocus
         tabIndex={-1}
         onKeyDown={(event) => {
@@ -76,6 +77,7 @@ export default function FieldBuilder({
           entity={entity}
           metadata={metadata}
           value={value}
+          onIncompleteChange={setHasIncompleteSelection}
           clearOnSelect
           autoFocus={Boolean(value)}
           showPath={showPath}
