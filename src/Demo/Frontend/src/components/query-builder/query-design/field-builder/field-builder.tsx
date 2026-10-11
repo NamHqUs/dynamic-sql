@@ -78,6 +78,7 @@ export default function FieldBuilder({
           value={value}
           clearOnSelect
           autoFocus={Boolean(value)}
+          showPath={showPath}
           placeholder={placeholder}
           ariaLabel={ariaLabel}
           excludedPaths={excludedPaths}

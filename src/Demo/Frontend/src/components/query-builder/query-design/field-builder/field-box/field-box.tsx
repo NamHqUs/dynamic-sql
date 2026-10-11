@@ -10,6 +10,7 @@ type FieldBoxProps = {
   onChange: (path: string) => void;
   clearOnSelect?: boolean;
   completeOnSelect?: boolean;
+  showPath?: boolean;
   showDataType?: boolean;
   placeholder?: string;
   ariaLabel?: string;
@@ -37,7 +38,7 @@ export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], 
   return current;
 }
 
-export default function FieldBox({ entity, metadata, value, onChange, clearOnSelect = false, completeOnSelect = false, showDataType = false, placeholder = "Select field…", ariaLabel = "Field", excludedPaths = [], autoFocus = false }: FieldBoxProps) {
+export default function FieldBox({ entity, metadata, value, onChange, clearOnSelect = false, completeOnSelect = false, showPath = false, showDataType = false, placeholder = "Select field…", ariaLabel = "Field", excludedPaths = [], autoFocus = false }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
   const [pendingAggregate, setPendingAggregate] = useState<string | null>(null);
@@ -166,7 +167,9 @@ export default function FieldBox({ entity, metadata, value, onChange, clearOnSel
         aria-haspopup="listbox"
         onClick={() => setMenuOpen((open) => !open)}
       >
-        {selectedField || selectedAggregate || placeholder}
+        {showPath && (pendingPath?.length ? pendingPath.join(".") : value)
+          ? (pendingPath?.length ? pendingPath.join(".") : value)
+          : selectedField || selectedAggregate || placeholder}
       </button>
       {menuOpen && createPortal(<div ref={menuPopupRef} className="operator-menu field-box-menu-popup" style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, transform: "none", margin: 0 }} onMouseDown={(event) => event.preventDefault()} role="listbox" aria-label={`${ariaLabel} options`}>
         {relations.length > 0 && <>

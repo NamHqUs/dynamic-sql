@@ -43,10 +43,10 @@
 .text-button { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; font-size: 11px; }
 .text-button:hover { color: #c5b5ff; }
 .filter-row { position: relative; display: flex; align-items: center; gap: 6px; width: var(--filter-item-width, max-content); max-width: 100%; margin-top: 10px; }
-.filter-field-drag-target { position: relative; display: flex; align-items: center; }
+.filter-field-drag-target { position: relative; display: flex; align-items: center; flex: 0 0 auto; }
 .filter-field-drag-handle { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; border-left: 3px solid #654f9f; cursor: grab; z-index: 1; }
 .filter-field-drag-handle:active { cursor: grabbing; }
-.filter-row .field-box { flex: 0 1 auto; }
+.filter-row .field-box { flex: 0 0 auto; }
 .filter-row .field-box select, .filter-row .field-builder-selected { border-left: 3px solid #654f9f; }
 .filter-row > select { width: 120px; }
 .filter-row > .logical-operator-select { position: relative; flex: 0 0 40px; width: 40px; height: var(--field-box-height); }
