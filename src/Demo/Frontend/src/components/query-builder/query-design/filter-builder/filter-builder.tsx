@@ -377,22 +377,26 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
             />
           </label>
         )}
-        {depth > 0 && (
-          <button
-            className="icon-button filter-group-collapse"
-            type="button"
-            aria-label={collapsed ? "Expand filter group" : "Collapse filter group"}
-            aria-expanded={!collapsed}
-            title={collapsed ? "Expand filter group" : "Collapse filter group"}
-            onClick={() => setCollapsed((value) => !value)}
-          >
-            <Icon name={collapsed ? "chevron-right" : "chevron-down"} size={13} />
-          </button>
-        )}
-        {onRemove && (
+        {(depth > 0 || onRemove) && (
           <div className="filter-group-actions">
-            <button className="icon-button filter-group-action" type="button" aria-label="Ungroup filters" title="Ungroup filters" onClick={() => onUngroupFilter(path)}><Icon name="ungroup" size={13} /></button>
-            <button className="icon-button filter-group-action" type="button" aria-label="Remove filter group" title="Remove filter group" onClick={onRemove}><Icon name="trash" size={13} /></button>
+            {onRemove && (
+              <>
+                <button className="icon-button filter-group-action" type="button" aria-label="Ungroup filters" title="Ungroup filters" onClick={() => onUngroupFilter(path)}><Icon name="ungroup" size={13} /></button>
+                <button className="icon-button filter-group-action" type="button" aria-label="Remove filter group" title="Remove filter group" onClick={onRemove}><Icon name="trash" size={13} /></button>
+              </>
+            )}
+            {depth > 0 && (
+              <button
+                className="icon-button filter-group-collapse"
+                type="button"
+                aria-label={collapsed ? "Expand filter group" : "Collapse filter group"}
+                aria-expanded={!collapsed}
+                title={collapsed ? "Expand filter group" : "Collapse filter group"}
+                onClick={() => setCollapsed((value) => !value)}
+              >
+                <Icon name={collapsed ? "chevron-right" : "chevron-down"} size={13} />
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -459,9 +463,7 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
       )}
       {depth === 0 && (
         <>
-          {!group.filters.length && (
-            <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>
-          )}
+          <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>
           <div
               className={`filter-drop-zone filter-drop-zone-last${isPreview("after") ? " filter-drop-preview" : ""}`}
               onDragOver={(event) => {

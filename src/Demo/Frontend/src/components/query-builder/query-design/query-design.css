@@ -41,15 +41,15 @@
 .filters-section .section-header { display: flex; }
 .field-action-buttons { display: flex; align-items: center; gap: 12px; }
 .field-action { display: inline-flex; align-items: center; gap: 5px; color: var(--green); border: 0; background: transparent; padding: 0; font: 11px "DM Mono", monospace; cursor: pointer; }
-.field-action-clear { color: #e6b566; }
+.field-action-clear { color: var(--green); }
 .field-action:hover, .field-action:focus-visible { color: #7de8bd; outline: 0; }
-.field-action-clear:hover, .field-action-clear:focus-visible { color: #f0c982; }
+.field-action-clear:hover, .field-action-clear:focus-visible { color: #7de8bd; }
 .field-action:disabled { color: #4b806a; cursor: default; }
-.field-action-clear:disabled { color: #9a7b4f; }
+.field-action-clear:disabled { color: #4b806a; }
 .filter-description { max-width: 760px; margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; text-align: left; }
-.text-button { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; font-size: 11px; }
-.text-button:hover { color: #c5b5ff; }
-.filter-row { position: relative; display: flex; align-items: center; gap: 6px; width: var(--filter-item-width, max-content); max-width: 100%; margin-top: 10px; }
+.text-button { display: inline-flex; align-items: center; gap: 5px; color: var(--green); border: 0; background: transparent; font-size: 11px; }
+.text-button:hover { color: #7de8bd; }
+.filter-row { position: relative; display: flex; align-items: center; gap: 6px; width: 100%; max-width: 100%; margin-top: 10px; }
 .filter-field-drag-target { position: relative; display: flex; align-items: center; flex: 0 0 auto; }
 .filter-field-drag-handle { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; border-left: 3px solid #654f9f; cursor: grab; z-index: 1; }
 .filter-field-drag-handle:active { cursor: grabbing; }
@@ -85,12 +85,12 @@
 .sort-direction-select .operator-trigger:hover, .sort-direction-select .operator-trigger:focus-visible { color: #fff; outline: 0; }
 .sort-direction-select .operator-menu { left: 0; transform: none; }
 .sort-row-add { flex: 0 0 auto; }
-.filter-row input { flex: 1 1 160px; width: 160px; min-width: 55px; border: 0; background: transparent; padding: 0; color: #dce1eb; }
+.filter-row input { flex: 1 1 0; width: 0; min-width: 55px; border: 0; background: transparent; padding: 0; color: #dce1eb; }
 .filter-row-disabled { opacity: .48; }
 .filter-toggle { flex: 0 0 35px; height: var(--field-box-height); color: var(--purple); background: #191e28; border: 1px solid #323947; border-radius: 5px; font: 10px "DM Mono", monospace; cursor: pointer; }
 .filter-toggle[aria-pressed="false"] { color: #aab3c2; }
 .filter-toggle:hover, .filter-toggle:focus-visible { border-color: var(--purple); color: #fff; outline: 0; }
-.filter-row-actions { display: flex; align-items: center; gap: 0; margin-left: auto; transform: translateX(50px); border: 1px solid #323947; border-radius: 5px; background: #191e28; padding: 0; }
+.filter-row-actions { display: flex; align-items: center; gap: 0; margin-right: 77px; margin-left: auto; border: 1px solid #323947; border-radius: 5px; background: #191e28; padding: 0; }
 .filter-row-actions .filter-toggle, .filter-row-actions .icon-button { border: 0; border-radius: 3px; background: transparent; }
 .filter-row-actions .filter-toggle { flex-basis: 30px; height: 24px; }
 .filter-row .icon-button, .filter-group .icon-button { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; }
@@ -118,7 +118,6 @@
 .filter-group-depth-2 > .filter-group-header .filter-group-logic { position: absolute; top: 12px; left: -28px; z-index: 3; }
 .filter-group-depth-3 > .filter-group-header .filter-group-logic { position: absolute; top: 12px; left: -26px; z-index: 3; }
 .filter-group-depth-1 > .filter-group-header .icon-button, .filter-group-depth-2 > .filter-group-header .icon-button, .filter-group-depth-3 > .filter-group-header .icon-button { position: absolute; top: 3px; right: 3px; z-index: 1; }
-.filter-group-depth-1 > .filter-group-header .filter-group-collapse, .filter-group-depth-2 > .filter-group-header .filter-group-collapse, .filter-group-depth-3 > .filter-group-header .filter-group-collapse { position: absolute; top: 3px; right: 76px; z-index: 1; }
 .filter-group-title { color: #cfc3fb; font: 11px "DM Mono", monospace; letter-spacing: .4px; margin-right: 4px; }
 .filter-group-logic { display: inline-flex; align-items: center; gap: 5px; color: #8993a5; font-size: 10px; }
 .group-logical-operator-select { position: relative; flex: 0 0 46px; width: 46px; height: var(--field-box-height); }
