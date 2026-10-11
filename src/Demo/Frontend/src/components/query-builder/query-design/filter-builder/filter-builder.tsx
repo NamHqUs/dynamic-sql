@@ -1,5 +1,5 @@
 import type { CSSProperties, DragEvent } from "react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useLayoutEffect, useRef, useState } from "react";
 import Icon from "../../../icon/icon";
 import { MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
@@ -50,6 +50,17 @@ function createGroup(logicalOperation: number): QueryFilterGroup {
 }
 
 type FilterPath = number[];
+type DragPosition = "inside" | "before" | "after";
+
+type DragPreview = {
+  path: FilterPath;
+  position: DragPosition;
+};
+
+function getDropPosition(event: DragEvent<HTMLElement>): DragPosition {
+  const bounds = event.currentTarget.getBoundingClientRect();
+  return event.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
+}
 
 function isPathPrefix(prefix: FilterPath, path: FilterPath): boolean {
   return prefix.length < path.length && prefix.every((index, pathIndex) => index === path[pathIndex]);
@@ -129,7 +140,10 @@ type FilterGroupEditorProps = {
   entity: MetadataEntity;
   onChange: (group: QueryFilterGroup) => void;
   onRemove?: () => void;
-  onMoveFilter: (sourcePath: FilterPath, targetPath: FilterPath, position?: "inside" | "before") => void;
+  onMoveFilter: (sourcePath: FilterPath, targetPath: FilterPath, position?: DragPosition) => void;
+  onDragPreview: (path: FilterPath, position: DragPosition) => void;
+  onDragPreviewClear: () => void;
+  dragPreview?: DragPreview;
   onGroupFilter: (path: FilterPath) => void;
   onAddFilter: (path: FilterPath) => void;
   onUngroupFilter: (path: FilterPath) => void;
@@ -138,7 +152,7 @@ type FilterGroupEditorProps = {
   depth: number;
 };
 
-function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMoveFilter, onGroupFilter, onAddFilter, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
+function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMoveFilter, onDragPreview, onDragPreviewClear, dragPreview, onGroupFilter, onAddFilter, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
   const updateNode = (index: number, node: QueryFilterNode) => {
     const filters = group.filters.map((filter, filterIndex) => filterIndex === index ? node : filter);
     onChange({ ...group, filters });
@@ -152,24 +166,26 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
     onChange({ ...group, filters: [...group.filters, createFilter(group.filters.length ? group.logicalOperation : 0)] });
   };
 
-  const handleDrop = (event: DragEvent<HTMLDivElement>, position: "inside" | "before" = "inside") => {
+  const handleDrop = (event: DragEvent<HTMLDivElement>, position: DragPosition = "inside", targetPath = path) => {
     event.preventDefault();
     event.stopPropagation();
+    onDragPreviewClear();
     const serializedPath = event.dataTransfer.getData("application/x-filter-path");
     if (!serializedPath) return;
     try {
       const sourcePath = JSON.parse(serializedPath) as unknown;
       if (Array.isArray(sourcePath) && sourcePath.every((index) => Number.isInteger(index))) {
-        onMoveFilter(sourcePath, path, position);
+        onMoveFilter(sourcePath, targetPath, position);
       }
     } catch {
       // Ignore malformed drag payloads from outside this builder.
     }
   };
+  const isPreview = (position: DragPosition) => dragPreview?.position === position && isSamePath(dragPreview.path, path);
 
   return (
     <div
-      className={`filter-group filter-group-depth-${Math.min(depth, 3)}`}
+      className={`filter-group filter-group-depth-${Math.min(depth, 3)}${isPreview("inside") ? " filter-drop-preview-inside" : ""}`}
       draggable={depth > 0}
       onDragStart={(event) => {
         if (depth === 0) return;
@@ -177,18 +193,23 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
         event.dataTransfer.effectAllowed = "move";
         event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
       }}
+      onDragEnd={onDragPreviewClear}
       onDragOver={(event) => event.preventDefault()}
+      onDragEnter={() => onDragPreview(path, "inside")}
       onDrop={handleDrop}
     >
       {depth === 0 && (
         <div
-          className="filter-drop-zone filter-drop-zone-first"
-          onDragOver={(event) => event.preventDefault()}
+          className={`filter-drop-zone filter-drop-zone-before filter-drop-zone-first${isPreview("before") ? " filter-drop-preview" : ""}`}
+          onDragOver={(event) => {
+            event.preventDefault();
+            onDragPreview(path, "before");
+          }}
           onDrop={(event) => handleDrop(event, "before")}
         />
       )}
       <div
-        className="filter-group-header"
+        className={`filter-group-header${isPreview("before") ? " filter-drop-preview-before" : ""}`}
         draggable={depth > 0}
         onDragStart={(event) => {
           if (depth === 0) return;
@@ -196,7 +217,11 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
         }}
-        onDragOver={(event) => event.preventDefault()}
+        onDragEnd={onDragPreviewClear}
+        onDragOver={(event) => {
+          event.preventDefault();
+          onDragPreview(path, "before");
+        }}
         onDrop={(event) => handleDrop(event, "before")}
       >
         {depth === 0 && <p className="helper">Build your filters here.</p>}
@@ -221,21 +246,41 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
 
       {!group.filters.length && <p className="empty-builder">Add a condition or drag one here.</p>}
       {group.filters.map((filter, index) => isGroup(filter) ? (
-        <FilterGroupEditor
-          key={`group-${index}`}
-          group={filter}
-          metadata={metadata}
-          entity={entity}
-          depth={depth + 1}
-          path={[...path, index]}
-          onMoveFilter={onMoveFilter}
-          onGroupFilter={onGroupFilter}
-          onAddFilter={onAddFilter}
-          onUngroupFilter={onUngroupFilter}
-          showLogicalOperator={index !== 0}
-          onChange={(nested) => updateNode(index, nested)}
-          onRemove={() => removeNode(index)}
-        />
+        <Fragment key={`group-${index}`}>
+          <div
+            className={`filter-drop-zone filter-drop-zone-before${isSamePath(dragPreview?.path ?? [], [...path, index]) && dragPreview?.position === "before" ? " filter-drop-preview" : ""}`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              onDragPreview([...path, index], "before");
+            }}
+            onDrop={(event) => handleDrop(event, "before", [...path, index])}
+          />
+          <FilterGroupEditor
+            group={filter}
+            metadata={metadata}
+            entity={entity}
+            depth={depth + 1}
+            path={[...path, index]}
+            onMoveFilter={onMoveFilter}
+            onDragPreview={onDragPreview}
+            onDragPreviewClear={onDragPreviewClear}
+            dragPreview={dragPreview}
+            onGroupFilter={onGroupFilter}
+            onAddFilter={onAddFilter}
+            onUngroupFilter={onUngroupFilter}
+            showLogicalOperator={index !== 0}
+            onChange={(nested) => updateNode(index, nested)}
+            onRemove={() => removeNode(index)}
+          />
+          <div
+            className={`filter-drop-zone filter-drop-zone-after${isSamePath(dragPreview?.path ?? [], [...path, index]) && dragPreview?.position === "after" ? " filter-drop-preview" : ""}`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              onDragPreview([...path, index], "after");
+            }}
+            onDrop={(event) => handleDrop(event, "after", [...path, index])}
+          />
+        </Fragment>
       ) : (
         <FilterRow
           key={`filter-${index}`}
@@ -248,16 +293,22 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
           onRemove={() => removeNode(index)}
           onGroup={() => onGroupFilter([...path, index])}
           onAdd={() => onAddFilter([...path, index])}
-          onMoveBefore={(sourcePath) => onMoveFilter(sourcePath, [...path, index], "before")}
+          onMove={(sourcePath, position) => onMoveFilter(sourcePath, [...path, index], position)}
+          onDragPreview={onDragPreview}
+          onDragPreviewClear={onDragPreviewClear}
+          dragPreview={dragPreview}
         />
       ))}
       {depth === 0 && (
         <>
           <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>
           <div
-            className="filter-drop-zone filter-drop-zone-last"
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => handleDrop(event)}
+              className={`filter-drop-zone filter-drop-zone-last${isPreview("after") ? " filter-drop-preview" : ""}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                onDragPreview(path, "after");
+              }}
+            onDrop={(event) => handleDrop(event, "after")}
           />
         </>
       )}
@@ -275,23 +326,35 @@ type FilterRowProps = {
   onRemove: () => void;
   onGroup: () => void;
   onAdd: () => void;
-  onMoveBefore: (sourcePath: FilterPath) => void;
+  onMove: (sourcePath: FilterPath, position: DragPosition) => void;
+  onDragPreview: (path: FilterPath, position: DragPosition) => void;
+  onDragPreviewClear: () => void;
+  dragPreview?: DragPreview;
 };
 
-function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, onGroup, onAdd, onMoveBefore }: FilterRowProps) {
+function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, onGroup, onAdd, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
   const update = (changes: Partial<QueryFilterItem>) => onChange({ ...filter, ...changes });
+  const isPreview = (position: DragPosition) => dragPreview?.position === position && isSamePath(dragPreview.path, path);
+  const previewPosition = useRef<DragPosition>();
+  const updatePreview = (event: DragEvent<HTMLDivElement>) => {
+    const position = getDropPosition(event);
+    previewPosition.current = position;
+    onDragPreview(path, position);
+  };
 
   return (
     <div
-      className={`filter-row${first ? " filter-row-first" : ""}${filter.enabled ? "" : " filter-row-disabled"}`}
+      className={`filter-row${first ? " filter-row-first" : ""}${filter.enabled ? "" : " filter-row-disabled"}${isPreview("before") ? " filter-drop-preview-before" : ""}${isPreview("after") ? " filter-drop-preview-after" : ""}`}
       draggable
       onDragEnter={(event) => {
         event.preventDefault();
         event.stopPropagation();
+        updatePreview(event);
       }}
       onDragOver={(event) => {
         event.preventDefault();
         event.stopPropagation();
+        updatePreview(event);
       }}
       onDrop={(event) => {
         event.preventDefault();
@@ -301,7 +364,10 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
         try {
           const sourcePath = JSON.parse(serializedPath) as unknown;
           if (Array.isArray(sourcePath) && sourcePath.every((index) => Number.isInteger(index))) {
-            onMoveBefore(sourcePath);
+            const position = previewPosition.current ?? getDropPosition(event);
+            onDragPreviewClear();
+            previewPosition.current = undefined;
+            onMove(sourcePath, position);
           }
         } catch {
           // Ignore malformed drag payloads from outside this builder.
@@ -311,6 +377,10 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
         event.stopPropagation();
         event.dataTransfer.effectAllowed = "move";
         event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
+      }}
+      onDragEnd={() => {
+        previewPosition.current = undefined;
+        onDragPreviewClear();
       }}
     >
       {first ? (
@@ -369,6 +439,7 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
 export default function FilterBuilder({ metadata, definition, entity, onDefinitionChange }: FilterBuilderProps) {
   const builderRef = useRef<HTMLDivElement>(null);
   const [filterItemWidth, setFilterItemWidth] = useState<number>();
+  const [dragPreview, setDragPreview] = useState<DragPreview>();
 
   useLayoutEffect(() => {
     const rows = builderRef.current?.querySelectorAll<HTMLElement>(".filter-row");
@@ -386,18 +457,50 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
     setFilterItemWidth(maxValueOffset ? Math.max(maxValueOffset - 40, 0) : undefined);
   }, [definition]);
 
-  const moveFilter = (sourcePath: FilterPath, targetPath: FilterPath, position: "inside" | "before" = "inside") => {
+  const moveFilter = (sourcePath: FilterPath, targetPath: FilterPath, position: "inside" | "before" | "after" = "inside") => {
     const source = getNode(definition.filters, sourcePath);
     if (!source || isPathPrefix(sourcePath, targetPath) || isSamePath(sourcePath, targetPath)) return;
     const removed = removeNode(definition.filters, sourcePath);
     if (!removed.node) return;
+    if (position === "after" && !targetPath.length) {
+      onDefinitionChange({
+        ...definition,
+        filters: {
+          ...removed.group,
+          filters: [...removed.group.filters, removed.node],
+        },
+      });
+      return;
+    }
+    if (position === "after") {
+      const parentPath = targetPath.slice(0, -1);
+      const targetIndex = targetPath[targetPath.length - 1];
+      if (targetIndex === undefined) return;
+      const sourceParentPath = sourcePath.slice(0, -1);
+      const sameParent = sourceParentPath.length === parentPath.length
+        && sourceParentPath.every((index, pathIndex) => index === parentPath[pathIndex]);
+      const sourceIndex = sourcePath[sourcePath.length - 1];
+      const insertIndex = sameParent && sourceIndex < targetIndex ? targetIndex : targetIndex + 1;
+      onDefinitionChange({
+        ...definition,
+        filters: updateGroup(removed.group, parentPath, (parent) => ({
+          ...parent,
+          filters: [
+            ...parent.filters.slice(0, insertIndex),
+            removed.node!,
+            ...parent.filters.slice(insertIndex),
+          ],
+        })),
+      });
+      return;
+    }
     if (position === "before") {
       if (!targetPath.length) {
         onDefinitionChange({
           ...definition,
           filters: {
             ...removed.group,
-            filters: [...removed.group.filters, removed.node],
+            filters: [removed.node, ...removed.group.filters],
           },
         });
         return;
@@ -410,7 +513,7 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
         && sourceParentPath.every((index, pathIndex) => index === parentPath[pathIndex]);
       const sourceIndex = sourcePath[sourcePath.length - 1];
       const movingDown = sameParent && sourceIndex < targetIndex;
-      const adjustedTargetIndex = targetIndex;
+      const adjustedTargetIndex = movingDown ? targetIndex - 1 : targetIndex;
       const adjustedTargetPath = movingDown
         ? [...targetPath.slice(0, -1), targetIndex - 1]
         : targetPath;
@@ -514,6 +617,9 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
         depth={0}
         path={[]}
         onMoveFilter={moveFilter}
+        onDragPreview={(path, position) => setDragPreview({ path, position })}
+        onDragPreviewClear={() => setDragPreview(undefined)}
+        dragPreview={dragPreview}
         onGroupFilter={groupFilter}
         onAddFilter={addFilterAfter}
         onUngroupFilter={ungroupFilter}
