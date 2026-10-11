@@ -296,8 +296,8 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
           metadata={metadata}
           value=""
           excludedPaths={definition.columns.map((column) => column.field)}
-          placeholder="Add Field"
-          ariaLabel="Add column"
+          placeholder="+ Display Field"
+          ariaLabel="Display field"
           onChange={addColumn}
         />
       </div>

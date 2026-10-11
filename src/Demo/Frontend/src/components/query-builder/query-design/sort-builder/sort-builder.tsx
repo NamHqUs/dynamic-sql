@@ -167,8 +167,8 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
             entity={entity}
             metadata={metadata}
             value=""
-            placeholder="Add sort field"
-            ariaLabel="Add sort field"
+            placeholder="+ Sort by field"
+            ariaLabel="Sort by field"
             excludedPaths={definition.sorts.map((sort) => sort.field)}
             onChange={addSort}
           />

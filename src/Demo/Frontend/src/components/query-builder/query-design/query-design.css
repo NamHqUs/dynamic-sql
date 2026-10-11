@@ -29,10 +29,10 @@
 .field-card-primary { display: flex; align-items: baseline; gap: 4px; min-width: 0; }
 .field-alias-input { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 4px; padding: 3px 6px; width: 105px; font: 11px "Manrope", sans-serif; outline: 0; }
 .field-alias-input:focus { border-color: #654f9f; }
-.field-name, .field-alias-value { color: #c5cad4; font: 11px "Manrope", sans-serif; }
+.field-name, .field-alias-value { color: #ded5ff; font: 11px "DM Mono", monospace; }
 .field-alias-separator { display: inline-flex; align-items: center; color: #737e90; font: 11px "DM Mono", monospace; line-height: 1; }
 .field-alias-value.editable { cursor: pointer; }
-.field-name.editable, .field-alias-value.editable { color: var(--purple); cursor: pointer; }
+.field-name.editable, .field-alias-value.editable { color: #ded5ff; cursor: pointer; }
 .field-name.editable:hover, .field-name.editable:focus, .field-alias-value.editable:hover, .field-alias-value.editable:focus { color: #fff; text-decoration: underline; }
 .field-card .field-builder-editing { height: auto; min-height: 0; }
 .field-card .field-box-menu-selected { height: auto; max-height: none; }
@@ -63,6 +63,14 @@
 .select-fields-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .select-fields-row .field-cards { display: contents; }
 .select-fields-row > .field-box select { height: var(--field-box-height); }
+.select-fields-row > .field-builder-editing .field-box-menu .operator-trigger,
+.select-fields-row > .field-builder-editing .field-box-menu .operator-trigger:hover,
+.select-fields-row > .field-builder-editing .field-box-menu .operator-trigger:focus-visible,
+.sort-row-add > .field-builder-editing .field-box-menu .operator-trigger,
+.sort-row-add > .field-builder-editing .field-box-menu .operator-trigger:hover,
+.sort-row-add > .field-builder-editing .field-box-menu .operator-trigger:focus-visible,
+.filter-add-condition { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; padding: 0; font: 11px "DM Mono", monospace; }
+.filter-add-condition:hover { color: #c5b5ff; }
 .sort-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .sort-list .field-card-primary { gap: 4px; }
 .sort-direction-select { position: relative; }
