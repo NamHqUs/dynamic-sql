@@ -1,3 +1,5 @@
+import type { CSSProperties, DragEvent } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import Icon from "../../../icon/icon";
 import { MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
@@ -30,8 +32,95 @@ function createFilter(logicalOperator: number): QueryFilterItem {
   };
 }
 
+function updateGroup(group: QueryFilterGroup, path: FilterPath, update: (group: QueryFilterGroup) => QueryFilterGroup): QueryFilterGroup {
+  if (!path.length) return update(group);
+  const [index, ...rest] = path;
+  const child = group.filters[index];
+  if (!child || !isGroup(child)) return group;
+  return {
+    ...group,
+    filters: group.filters.map((filter, filterIndex) => filterIndex === index
+      ? updateGroup(child, rest, update)
+      : filter),
+  };
+}
+
 function createGroup(logicalOperation: number): QueryFilterGroup {
   return { logicalOperation, filters: [] };
+}
+
+type FilterPath = number[];
+
+function isPathPrefix(prefix: FilterPath, path: FilterPath): boolean {
+  return prefix.length < path.length && prefix.every((index, pathIndex) => index === path[pathIndex]);
+}
+
+function isSamePath(first: FilterPath, second: FilterPath): boolean {
+  return first.length === second.length && first.every((index, pathIndex) => index === second[pathIndex]);
+}
+
+function getNode(group: QueryFilterGroup, path: FilterPath): QueryFilterNode | undefined {
+  let node: QueryFilterNode = group;
+  for (const index of path) {
+    if (!isGroup(node) || !node.filters[index]) return undefined;
+    node = node.filters[index];
+  }
+  return node;
+}
+
+function removeNode(group: QueryFilterGroup, path: FilterPath): { group: QueryFilterGroup; node?: QueryFilterNode } {
+  if (!path.length) return { group };
+  const [index, ...rest] = path;
+  if (!rest.length) {
+    const node = group.filters[index];
+    return {
+      group: { ...group, filters: group.filters.filter((_, filterIndex) => filterIndex !== index) },
+      node,
+    };
+  }
+
+  const child = group.filters[index];
+  if (!child || !isGroup(child)) return { group };
+  const result = removeNode(child, rest);
+  return {
+    group: {
+      ...group,
+      filters: group.filters.map((filter, filterIndex) => filterIndex === index ? result.group : filter),
+    },
+    node: result.node,
+  };
+}
+
+function appendToGroup(group: QueryFilterGroup, path: FilterPath, node: QueryFilterNode): QueryFilterGroup {
+  if (!path.length) return { ...group, filters: [...group.filters, node] };
+  const [index, ...rest] = path;
+  const child = group.filters[index];
+  if (!child || !isGroup(child)) return group;
+  return {
+    ...group,
+    filters: group.filters.map((filter, filterIndex) => filterIndex === index
+      ? appendToGroup(child, rest, node)
+      : filter),
+  };
+}
+
+function replaceNode(group: QueryFilterGroup, path: FilterPath, node: QueryFilterNode): QueryFilterGroup {
+  if (!path.length) return group;
+  const [index, ...rest] = path;
+  if (!rest.length) {
+    return {
+      ...group,
+      filters: group.filters.map((filter, filterIndex) => filterIndex === index ? node : filter),
+    };
+  }
+  const child = group.filters[index];
+  if (!child || !isGroup(child)) return group;
+  return {
+    ...group,
+    filters: group.filters.map((filter, filterIndex) => filterIndex === index
+      ? replaceNode(child, rest, node)
+      : filter),
+  };
 }
 
 type FilterGroupEditorProps = {
@@ -40,10 +129,16 @@ type FilterGroupEditorProps = {
   entity: MetadataEntity;
   onChange: (group: QueryFilterGroup) => void;
   onRemove?: () => void;
+  onMoveFilter: (sourcePath: FilterPath, targetPath: FilterPath, position?: "inside" | "before") => void;
+  onGroupFilter: (path: FilterPath) => void;
+  onAddFilter: (path: FilterPath) => void;
+  onUngroupFilter: (path: FilterPath) => void;
+  path: FilterPath;
+  showLogicalOperator: boolean;
   depth: number;
 };
 
-function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, depth }: FilterGroupEditorProps) {
+function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMoveFilter, onGroupFilter, onAddFilter, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
   const updateNode = (index: number, node: QueryFilterNode) => {
     const filters = group.filters.map((filter, filterIndex) => filterIndex === index ? node : filter);
     onChange({ ...group, filters });
@@ -57,31 +152,60 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, depth 
     onChange({ ...group, filters: [...group.filters, createFilter(group.filters.length ? group.logicalOperation : 0)] });
   };
 
-  const addGroup = () => {
-    onChange({ ...group, filters: [...group.filters, createGroup(group.logicalOperation)] });
+  const handleDrop = (event: DragEvent<HTMLDivElement>, position: "inside" | "before" = "inside") => {
+    event.preventDefault();
+    event.stopPropagation();
+    const serializedPath = event.dataTransfer.getData("application/x-filter-path");
+    if (!serializedPath) return;
+    try {
+      const sourcePath = JSON.parse(serializedPath) as unknown;
+      if (Array.isArray(sourcePath) && sourcePath.every((index) => Number.isInteger(index))) {
+        onMoveFilter(sourcePath, path, position);
+      }
+    } catch {
+      // Ignore malformed drag payloads from outside this builder.
+    }
   };
 
   return (
-    <div className={`filter-group filter-group-depth-${Math.min(depth, 3)}`}>
-      <div className="filter-group-header">
-        <span className="filter-group-title">{depth === 0 ? "All filters" : "Filter group"}</span>
-        <label className="filter-group-logic">
-          <span>Match</span>
-          <select
-            aria-label={`${depth === 0 ? "Root" : "Nested"} group logical operator`}
-            value={group.logicalOperation}
-            onChange={(event) => onChange({ ...group, logicalOperation: Number(event.target.value) })}
-          >
-            <option value={0}>ALL (AND)</option>
-            <option value={1}>ANY (OR)</option>
-          </select>
-        </label>
-        <button className="text-button" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>
-        <button className="text-button" type="button" onClick={addGroup}><Icon name="plus" size={12} /> Group</button>
-        {onRemove && <button className="icon-button" type="button" aria-label="Remove filter group" onClick={onRemove}><Icon name="trash" size={13} /></button>}
+    <div
+      className={`filter-group filter-group-depth-${Math.min(depth, 3)}`}
+      draggable={depth > 0}
+      onDragStart={(event) => {
+        if (depth === 0) return;
+        event.stopPropagation();
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
+      }}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={handleDrop}
+    >
+      <div
+        className="filter-group-header"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => handleDrop(event, "before")}
+      >
+        {depth === 0 && <p className="helper">Build your filters here.</p>}
+        {depth > 0 && showLogicalOperator && (
+          <label className="filter-group-logic">
+            <select
+              className="filter-group-logic-select"
+              aria-label="Group logical operator"
+              value={group.logicalOperation}
+              onChange={(event) => onChange({ ...group, logicalOperation: Number(event.target.value) })}
+            >
+              <option value={0}>AND</option>
+              <option value={1}>OR</option>
+            </select>
+          </label>
+        )}
+        {onRemove && <>
+          <button className="icon-button filter-group-action" type="button" aria-label="Ungroup filters" title="Ungroup filters" onClick={() => onUngroupFilter(path)}><Icon name="ungroup" size={13} /></button>
+          <button className="icon-button filter-group-action" type="button" aria-label="Remove filter group" title="Remove filter group" onClick={onRemove}><Icon name="trash" size={13} /></button>
+        </>}
       </div>
 
-      {!group.filters.length && <p className="empty-builder">Add a condition or nested group.</p>}
+      {!group.filters.length && <p className="empty-builder">Add a condition or drag one here.</p>}
       {group.filters.map((filter, index) => isGroup(filter) ? (
         <FilterGroupEditor
           key={`group-${index}`}
@@ -89,6 +213,12 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, depth 
           metadata={metadata}
           entity={entity}
           depth={depth + 1}
+          path={[...path, index]}
+          onMoveFilter={onMoveFilter}
+          onGroupFilter={onGroupFilter}
+          onAddFilter={onAddFilter}
+          onUngroupFilter={onUngroupFilter}
+          showLogicalOperator={index !== 0}
           onChange={(nested) => updateNode(index, nested)}
           onRemove={() => removeNode(index)}
         />
@@ -97,12 +227,17 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, depth 
           key={`filter-${index}`}
           filter={filter}
           first={index === 0}
+          path={[...path, index]}
           metadata={metadata}
           entity={entity}
           onChange={(next) => updateNode(index, next)}
           onRemove={() => removeNode(index)}
+          onGroup={() => onGroupFilter([...path, index])}
+          onAdd={() => onAddFilter([...path, index])}
+          onMoveBefore={(sourcePath) => onMoveFilter(sourcePath, [...path, index], "before")}
         />
       ))}
+      {depth === 0 && <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>}
     </div>
   );
 }
@@ -110,19 +245,58 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, depth 
 type FilterRowProps = {
   filter: QueryFilterItem;
   first: boolean;
+  path: FilterPath;
   metadata: MetadataEntity[];
   entity: MetadataEntity;
   onChange: (filter: QueryFilterItem) => void;
   onRemove: () => void;
+  onGroup: () => void;
+  onAdd: () => void;
+  onMoveBefore: (sourcePath: FilterPath) => void;
 };
 
-function FilterRow({ filter, first, metadata, entity, onChange, onRemove }: FilterRowProps) {
+function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, onGroup, onAdd, onMoveBefore }: FilterRowProps) {
   const update = (changes: Partial<QueryFilterItem>) => onChange({ ...filter, ...changes });
 
   return (
-    <div className={`filter-row${filter.enabled ? "" : " filter-row-disabled"}`}>
+    <div
+      className={`filter-row${first ? " filter-row-first" : ""}${filter.enabled ? "" : " filter-row-disabled"}`}
+      draggable
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const serializedPath = event.dataTransfer.getData("application/x-filter-path");
+        if (!serializedPath) return;
+        try {
+          const sourcePath = JSON.parse(serializedPath) as unknown;
+          if (Array.isArray(sourcePath) && sourcePath.every((index) => Number.isInteger(index))) {
+            onMoveBefore(sourcePath);
+          }
+        } catch {
+          // Ignore malformed drag payloads from outside this builder.
+        }
+      }}
+      onDragStart={(event) => {
+        event.stopPropagation();
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
+      }}
+    >
       {first ? (
-        <span className="logical-operator-spacer" aria-hidden="true" />
+        <select
+          className="logical-operator logical-operator-hidden"
+          aria-hidden="true"
+          tabIndex={-1}
+          value={filter.logicalOperator}
+          onChange={() => undefined}
+        >
+          <option value={0}>AND</option>
+          <option value={1}>OR</option>
+        </select>
       ) : (
         <select
           className="logical-operator"
@@ -144,10 +318,10 @@ function FilterRow({ filter, first, metadata, entity, onChange, onRemove }: Filt
         onChange={(field) => update({ field })}
         onRemove={() => update({ field: "" })}
       />
-      <select value={filter.operation} aria-label="Filter operation" onChange={(event) => update({ operation: Number(event.target.value) })}>
+      <select className="filter-operator-select" value={filter.operation} aria-label="Filter operation" onChange={(event) => update({ operation: Number(event.target.value) })}>
         {operators.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
       </select>
-      <input value={filter.value} placeholder="Value" aria-label="Filter value" onChange={(event) => update({ value: event.target.value })} />
+      <input value={filter.value} placeholder="<NULL>" aria-label="Filter value" onChange={(event) => update({ value: event.target.value })} />
       <button
         className="filter-toggle"
         type="button"
@@ -158,14 +332,127 @@ function FilterRow({ filter, first, metadata, entity, onChange, onRemove }: Filt
       >
         {filter.enabled ? "ON" : "OFF"}
       </button>
+      <button className="icon-button filter-action" type="button" aria-label="Add filter after this condition" title="Add filter after this condition" onClick={onAdd}><Icon name="plus" size={13} /></button>
+      <button className="icon-button filter-action" type="button" aria-label="Create filter group" title="Create filter group" onClick={onGroup}><Icon name="grid" size={13} /></button>
       <button className="icon-button" type="button" aria-label="Remove filter" onClick={onRemove}><Icon name="trash" size={13} /></button>
     </div>
   );
 }
 
 export default function FilterBuilder({ metadata, definition, entity, onDefinitionChange }: FilterBuilderProps) {
+  const builderRef = useRef<HTMLDivElement>(null);
+  const [filterItemWidth, setFilterItemWidth] = useState<number>();
+
+  useLayoutEffect(() => {
+    const rows = builderRef.current?.querySelectorAll<HTMLElement>(".filter-row");
+    if (!rows?.length) {
+      setFilterItemWidth(undefined);
+      return;
+    }
+
+    let maxValueOffset = 0;
+    rows.forEach((row) => {
+      const valueInput = row.querySelector<HTMLInputElement>("input");
+      if (!valueInput) return;
+      maxValueOffset = Math.max(maxValueOffset, valueInput.getBoundingClientRect().right - row.getBoundingClientRect().left);
+    });
+    setFilterItemWidth(maxValueOffset ? Math.max(maxValueOffset - 40, 0) : undefined);
+  }, [definition]);
+
+  const moveFilter = (sourcePath: FilterPath, targetPath: FilterPath, position: "inside" | "before" = "inside") => {
+    const source = getNode(definition.filters, sourcePath);
+    if (!source || isPathPrefix(sourcePath, targetPath) || isSamePath(sourcePath, targetPath)) return;
+    const removed = removeNode(definition.filters, sourcePath);
+    if (!removed.node) return;
+    if (position === "before") {
+      const target = getNode(removed.group, targetPath);
+      if (!target || !targetPath.length) return;
+      const parentPath = targetPath.slice(0, -1);
+      const targetIndex = targetPath[targetPath.length - 1];
+      const sourceParentPath = sourcePath.slice(0, -1);
+      const sameParent = sourceParentPath.length === parentPath.length
+        && sourceParentPath.every((index, pathIndex) => index === parentPath[pathIndex]);
+      const adjustedTargetIndex = sameParent && sourcePath[sourcePath.length - 1] < targetIndex
+        ? targetIndex - 1
+        : targetIndex;
+      onDefinitionChange({
+        ...definition,
+        filters: updateGroup(removed.group, parentPath, (parent) => ({
+          ...parent,
+          filters: [
+            ...parent.filters.slice(0, adjustedTargetIndex),
+            removed.node!,
+            ...parent.filters.slice(adjustedTargetIndex),
+          ],
+        })),
+      });
+      return;
+    }
+    const sourceParentPath = sourcePath.slice(0, -1);
+    const targetParentPath = targetPath.slice(0, -1);
+    const sameParent = sourceParentPath.length === targetParentPath.length
+      && sourceParentPath.every((index, pathIndex) => index === targetParentPath[pathIndex]);
+    const targetIndex = targetPath[targetPath.length - 1];
+    const adjustedTargetPath = sameParent
+      && targetIndex !== undefined
+      && sourcePath[sourcePath.length - 1] < targetIndex
+      ? [...targetPath.slice(0, -1), targetIndex - 1]
+      : targetPath;
+    onDefinitionChange({ ...definition, filters: appendToGroup(removed.group, adjustedTargetPath, removed.node) });
+  };
+
+  const groupFilter = (path: FilterPath) => {
+    const filter = getNode(definition.filters, path);
+    if (!filter || isGroup(filter)) return;
+    const groupedFilter: QueryFilterGroup = {
+      ...createGroup(filter.logicalOperator),
+      filters: [{ ...filter, logicalOperator: 0 }],
+    };
+    onDefinitionChange({ ...definition, filters: replaceNode(definition.filters, path, groupedFilter) });
+  };
+
+  const addFilterAfter = (path: FilterPath) => {
+    const parentPath = path.slice(0, -1);
+    const index = path[path.length - 1];
+    const parent = getNode(definition.filters, parentPath);
+    if (!parent || !isGroup(parent)) return;
+    const filters = [...parent.filters];
+    filters.splice(index + 1, 0, createFilter(parent.filters.length ? parent.logicalOperation : 0));
+    const updatedParent = { ...parent, filters };
+    const replaceParent = (group: QueryFilterGroup, currentPath: FilterPath): QueryFilterGroup => {
+      if (!currentPath.length) return updatedParent;
+      const [currentIndex, ...rest] = currentPath;
+      const child = group.filters[currentIndex];
+      if (!child || !isGroup(child)) return group;
+      return { ...group, filters: group.filters.map((node, nodeIndex) => nodeIndex === currentIndex ? replaceParent(child, rest) : node) };
+    };
+    onDefinitionChange({ ...definition, filters: replaceParent(definition.filters, parentPath) });
+  };
+
+  const ungroupFilter = (path: FilterPath) => {
+    const nested = getNode(definition.filters, path);
+    if (!nested || !isGroup(nested) || !path.length) return;
+    const parentPath = path.slice(0, -1);
+    const index = path[path.length - 1];
+    onDefinitionChange({
+      ...definition,
+      filters: updateGroup(definition.filters, parentPath, (parent) => ({
+        ...parent,
+        filters: [
+          ...parent.filters.slice(0, index),
+          ...nested.filters,
+          ...parent.filters.slice(index + 1),
+        ],
+      })),
+    });
+  };
+
   return (
-    <div className="builder-section filters-section">
+    <div
+      ref={builderRef}
+      className="builder-section filters-section"
+      style={filterItemWidth ? { "--filter-item-width": `${filterItemWidth}px` } as CSSProperties : undefined}
+    >
       <div className="section-header">
         <span className="section-kicker">FILTERS</span>
       </div>
@@ -174,6 +461,12 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
         metadata={metadata}
         entity={entity}
         depth={0}
+        path={[]}
+        onMoveFilter={moveFilter}
+        onGroupFilter={groupFilter}
+        onAddFilter={addFilterAfter}
+        onUngroupFilter={ungroupFilter}
+        showLogicalOperator={false}
         onChange={(filters) => onDefinitionChange({ ...definition, filters })}
       />
     </div>
