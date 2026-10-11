@@ -189,6 +189,15 @@ type FilterGroupEditorProps = {
 };
 
 function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMoveFilter, onDragPreview, onDragPreviewClear, dragPreview, onGroupFilter, onAddFilter, onAddField, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
+  const [collapsed, setCollapsed] = useState(false);
+  const noteRef = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    if (!collapsed || !noteRef.current) return;
+    noteRef.current.style.height = "auto";
+    noteRef.current.style.height = `${noteRef.current.scrollHeight}px`;
+  }, [collapsed, group.note]);
+
   const updateNode = (index: number, node: QueryFilterNode) => {
     const filters = group.filters.map((filter, filterIndex) => filterIndex === index ? node : filter);
     onChange({ ...group, filters });
@@ -226,7 +235,7 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
 
   return (
     <div
-      className={`filter-group filter-group-depth-${Math.min(depth, 3)}${isPreview("inside") ? " filter-drop-preview-inside" : ""}`}
+      className={`filter-group filter-group-depth-${Math.min(depth, 3)}${collapsed ? " filter-group-collapsed" : ""}${isPreview("inside") ? " filter-drop-preview-inside" : ""}`}
       onDragOver={(event) => event.preventDefault()}
       onDragEnter={() => onDragPreview(path, "inside")}
       onDrop={handleDrop}
@@ -274,6 +283,17 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
         }}
         onDrop={(event) => handleDrop(event, "inside")}
       >
+        {collapsed && (
+          <textarea
+            ref={noteRef}
+            className="filter-group-note"
+            aria-label="Filter group note"
+            placeholder="Add a note..."
+            rows={1}
+            value={group.note ?? ""}
+            onChange={(event) => onChange({ ...group, note: event.target.value })}
+          />
+        )}
         {depth > 0 && showLogicalOperator && (
           <label className="filter-group-logic">
             <select
@@ -287,14 +307,30 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
             </select>
           </label>
         )}
-        {onRemove && <>
-          <button className="icon-button filter-group-action" type="button" aria-label="Ungroup filters" title="Ungroup filters" onClick={() => onUngroupFilter(path)}><Icon name="ungroup" size={13} /></button>
-          <button className="icon-button filter-group-action" type="button" aria-label="Remove filter group" title="Remove filter group" onClick={onRemove}><Icon name="trash" size={13} /></button>
-        </>}
+        {depth > 0 && (
+          <button
+            className="icon-button filter-group-collapse"
+            type="button"
+            aria-label={collapsed ? "Expand filter group" : "Collapse filter group"}
+            aria-expanded={!collapsed}
+            title={collapsed ? "Expand filter group" : "Collapse filter group"}
+            onClick={() => setCollapsed((value) => !value)}
+          >
+            <Icon name={collapsed ? "chevron-right" : "chevron-down"} size={13} />
+          </button>
+        )}
+        {onRemove && (
+          <div className="filter-group-actions">
+            <button className="icon-button filter-group-action" type="button" aria-label="Ungroup filters" title="Ungroup filters" onClick={() => onUngroupFilter(path)}><Icon name="ungroup" size={13} /></button>
+            <button className="icon-button filter-group-action" type="button" aria-label="Remove filter group" title="Remove filter group" onClick={onRemove}><Icon name="trash" size={13} /></button>
+          </div>
+        )}
       </div>
 
-      {!group.filters.length && <p className="empty-builder">Add a condition or drag one here.</p>}
-      {group.filters.map((filter, index) => isGroup(filter) ? (
+      {!collapsed && (
+        <>
+          {!group.filters.length && <p className="empty-builder">Add a condition or drag one here.</p>}
+          {group.filters.map((filter, index) => isGroup(filter) ? (
         <Fragment key={`group-${index}`}>
           <div
             className={`filter-drop-zone filter-drop-zone-before${isSamePath(dragPreview?.path ?? [], [...path, index]) && dragPreview?.position === "before" ? " filter-drop-preview" : ""}`}
@@ -331,7 +367,7 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
             onDrop={(event) => handleDrop(event, "after", [...path, index])}
           />
         </Fragment>
-      ) : (
+          ) : (
         <FilterRow
           key={`filter-${index}`}
           filter={filter}
@@ -349,7 +385,9 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
           onDragPreviewClear={onDragPreviewClear}
           dragPreview={dragPreview}
         />
-      ))}
+          ))}
+        </>
+      )}
       {depth === 0 && (
         <>
           <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>

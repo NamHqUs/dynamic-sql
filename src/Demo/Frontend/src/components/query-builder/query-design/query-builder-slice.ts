@@ -33,6 +33,7 @@ export type QueryFilterNode = QueryFilterItem | QueryFilterGroup;
 export type QueryFilterGroup = {
   logicalOperation: number;
   filters: QueryFilterNode[];
+  note?: string;
 };
 
 export type QueryDefinition = {
