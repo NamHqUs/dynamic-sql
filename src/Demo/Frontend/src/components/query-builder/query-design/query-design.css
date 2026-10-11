@@ -37,8 +37,10 @@
 .section-header { display: flex; align-items: center; justify-content: space-between; }
 .text-button { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; font-size: 11px; }
 .text-button:hover { color: #c5b5ff; }
-.filter-row { display: flex; align-items: center; gap: 6px; width: var(--filter-item-width, max-content); max-width: 100%; margin-top: 10px; cursor: grab; }
-.filter-row:active { cursor: grabbing; }
+.filter-row { position: relative; display: flex; align-items: center; gap: 6px; width: var(--filter-item-width, max-content); max-width: 100%; margin-top: 10px; }
+.filter-field-drag-target { position: relative; display: flex; align-items: center; }
+.filter-field-drag-handle { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; border-left: 3px solid #654f9f; cursor: grab; z-index: 1; }
+.filter-field-drag-handle:active { cursor: grabbing; }
 .filter-row .field-box { flex: 0 1 auto; }
 .filter-row .field-box select, .filter-row .field-builder-selected { border-left: 3px solid #654f9f; }
 .filter-row > select { width: 120px; }
@@ -61,8 +63,8 @@
 .filter-row .filter-action:hover { color: #d8c8ff; border-color: #654f9f; }
 .empty-builder { color: var(--muted); font-size: 12px; }
 .filter-group { position: relative; margin-top: 12px; padding: 12px; border: 1px solid #2d3441; border-radius: 6px; background: #151923; }
-.filter-group[draggable="true"] { cursor: grab; }
-.filter-group[draggable="true"]:active { cursor: grabbing; }
+.filter-group-drag-handle { position: absolute; top: 0; bottom: 0; left: -2px; width: 4px; border-left: 3px solid currentColor; cursor: grab; z-index: 2; }
+.filter-group-drag-handle:active { cursor: grabbing; }
 .filter-group-depth-0 { margin-top: 15px; padding: 0; border: 0; background: transparent; }
 .filter-group-depth-1 { margin-left: 20px; border-left: 2px solid #654f9f; }
 .filter-group-depth-2 { margin-left: 18px; border-left-color: #4c719f; }
@@ -71,9 +73,9 @@
 .filter-group-header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 30px; }
 .filter-group-header.filter-drop-preview-before { border-top: 2px solid #a78bfa; }
 .filter-group-depth-1 > .filter-group-header, .filter-group-depth-2 > .filter-group-header, .filter-group-depth-3 > .filter-group-header { min-height: 0; height: 0; }
-.filter-group-depth-1 > .filter-group-header .filter-group-logic { position: absolute; top: 12px; left: -30px; z-index: 1; }
-.filter-group-depth-2 > .filter-group-header .filter-group-logic { position: absolute; top: 12px; left: -28px; z-index: 1; }
-.filter-group-depth-3 > .filter-group-header .filter-group-logic { position: absolute; top: 12px; left: -26px; z-index: 1; }
+.filter-group-depth-1 > .filter-group-header .filter-group-logic { position: absolute; top: 12px; left: -30px; z-index: 3; }
+.filter-group-depth-2 > .filter-group-header .filter-group-logic { position: absolute; top: 12px; left: -28px; z-index: 3; }
+.filter-group-depth-3 > .filter-group-header .filter-group-logic { position: absolute; top: 12px; left: -26px; z-index: 3; }
 .filter-group-depth-1 > .filter-group-header .icon-button, .filter-group-depth-2 > .filter-group-header .icon-button, .filter-group-depth-3 > .filter-group-header .icon-button { position: absolute; top: 3px; right: 3px; z-index: 1; }
 .filter-group-depth-1 > .filter-group-header .filter-group-action:first-of-type, .filter-group-depth-2 > .filter-group-header .filter-group-action:first-of-type, .filter-group-depth-3 > .filter-group-header .filter-group-action:first-of-type { right: 42px; }
 .filter-group-title { color: #cfc3fb; font: 11px "DM Mono", monospace; letter-spacing: .4px; margin-right: 4px; }

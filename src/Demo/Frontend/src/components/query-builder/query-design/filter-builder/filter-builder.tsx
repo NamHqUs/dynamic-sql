@@ -62,6 +62,12 @@ function getDropPosition(event: DragEvent<HTMLElement>): DragPosition {
   return event.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
 }
 
+function startFilterDrag(event: DragEvent<HTMLElement>, path: FilterPath) {
+  event.stopPropagation();
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
+}
+
 function isPathPrefix(prefix: FilterPath, path: FilterPath): boolean {
   return prefix.length < path.length && prefix.every((index, pathIndex) => index === path[pathIndex]);
 }
@@ -186,18 +192,19 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
   return (
     <div
       className={`filter-group filter-group-depth-${Math.min(depth, 3)}${isPreview("inside") ? " filter-drop-preview-inside" : ""}`}
-      draggable={depth > 0}
-      onDragStart={(event) => {
-        if (depth === 0) return;
-        event.stopPropagation();
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
-      }}
-      onDragEnd={onDragPreviewClear}
       onDragOver={(event) => event.preventDefault()}
       onDragEnter={() => onDragPreview(path, "inside")}
       onDrop={handleDrop}
     >
+      {depth > 0 && (
+        <span
+          className="filter-group-drag-handle"
+          draggable
+          aria-hidden="true"
+          onDragStart={(event) => startFilterDrag(event, path)}
+          onDragEnd={onDragPreviewClear}
+        />
+      )}
       {depth === 0 && (
         <div
           className={`filter-drop-zone filter-drop-zone-before filter-drop-zone-first${isPreview("before") ? " filter-drop-preview" : ""}`}
@@ -210,14 +217,6 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
       )}
       <div
         className={`filter-group-header${isPreview("before") ? " filter-drop-preview-before" : ""}`}
-        draggable={depth > 0}
-        onDragStart={(event) => {
-          if (depth === 0) return;
-          event.stopPropagation();
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
-        }}
-        onDragEnd={onDragPreviewClear}
         onDragOver={(event) => {
           event.preventDefault();
           onDragPreview(path, "before");
@@ -345,7 +344,6 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
   return (
     <div
       className={`filter-row${first ? " filter-row-first" : ""}${filter.enabled ? "" : " filter-row-disabled"}${isPreview("before") ? " filter-drop-preview-before" : ""}${isPreview("after") ? " filter-drop-preview-after" : ""}`}
-      draggable
       onDragEnter={(event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -373,15 +371,6 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
           // Ignore malformed drag payloads from outside this builder.
         }
       }}
-      onDragStart={(event) => {
-        event.stopPropagation();
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("application/x-filter-path", JSON.stringify(path));
-      }}
-      onDragEnd={() => {
-        previewPosition.current = undefined;
-        onDragPreviewClear();
-      }}
     >
       {first ? (
         <select
@@ -405,16 +394,28 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
           <option value={1}>OR</option>
         </select>
       )}
-      <FieldBuilder
-        entity={entity}
-        metadata={metadata}
-        value={filter.field}
-        showPath
-        showDataType
-        ariaLabel="Filter field"
-        onChange={(field) => update({ field })}
-        onRemove={() => update({ field: "" })}
-      />
+      <div className="filter-field-drag-target">
+        <span
+          className="filter-field-drag-handle"
+          draggable
+          aria-hidden="true"
+          onDragStart={(event) => startFilterDrag(event, path)}
+          onDragEnd={() => {
+            previewPosition.current = undefined;
+            onDragPreviewClear();
+          }}
+        />
+        <FieldBuilder
+          entity={entity}
+          metadata={metadata}
+          value={filter.field}
+          showPath
+          showDataType
+          ariaLabel="Filter field"
+          onChange={(field) => update({ field })}
+          onRemove={() => update({ field: "" })}
+        />
+      </div>
       <select className="filter-operator-select" value={filter.operation} aria-label="Filter operation" onChange={(event) => update({ operation: Number(event.target.value) })}>
         {operators.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
       </select>
