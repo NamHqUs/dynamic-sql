@@ -190,6 +190,11 @@ const queryBuilderSlice = createSlice({
       state.resultView = "data";
       state.queryError = "";
     },
+    invalidateQueryMetadata(state) {
+      state.metadata = [];
+      state.metadataStatus = "idle";
+      state.metadataError = "";
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -235,5 +240,5 @@ const queryBuilderSlice = createSlice({
   },
 });
 
-export const { clearQueryResult } = queryBuilderSlice.actions;
+export const { clearQueryResult, invalidateQueryMetadata } = queryBuilderSlice.actions;
 export default queryBuilderSlice.reducer;

@@ -7,6 +7,10 @@ import "./query-builder.css";
 
 let cachedDefinition: QueryDefinition | null = null;
 
+export function resetQueryBuilderCache() {
+  cachedDefinition = null;
+}
+
 function createDefinition(entity: string, fields: MetadataField[] = []): QueryDefinition {
   return {
     entity,

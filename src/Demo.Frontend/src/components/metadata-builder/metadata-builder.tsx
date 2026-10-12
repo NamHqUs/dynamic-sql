@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import Icon from "../icon/icon";
-import { MetadataEntity } from "../query-builder/query-design/query-builder-slice";
+import { MetadataEntity, clearQueryResult, invalidateQueryMetadata } from "../query-builder/query-design/query-builder-slice";
+import { resetQueryBuilderCache } from "../query-builder/query-builder";
 import EntityList from "./entity-list/entity-list";
 import EntityBuilder from "./entity-builder/entity-builder";
 import { EditableEntity, emptyEntity, toEditable } from "./types";
@@ -22,6 +24,7 @@ async function request(url: string, options?: RequestInit) {
 type MetadataBuilderProps = { onDirtyChange?: (dirty: boolean) => void };
 
 export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps) {
+  const dispatch = useDispatch();
   const [entities, setEntities] = useState<MetadataEntity[]>([]);
   const [selectedName, setSelectedName] = useState("");
   const [draft, setDraft] = useState<EditableEntity | null>(null);
@@ -106,6 +109,7 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      dispatch(invalidateQueryMetadata());
       await loadEntities(false, payload.name);
     } catch (error) {
       setStatus("failed");
@@ -119,6 +123,7 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
     try {
       await request(`/dynamic-query/metadata/${encodeURIComponent(selectedName)}`, { method: "DELETE" });
       setSelectedName("");
+      dispatch(invalidateQueryMetadata());
       await loadEntities(true);
     } catch (error) {
       setStatus("failed");
@@ -132,6 +137,9 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
     setMessage("");
     try {
       await request("/dynamic-query/metadata/reset", { method: "POST" });
+      resetQueryBuilderCache();
+      dispatch(clearQueryResult());
+      dispatch(invalidateQueryMetadata());
       await loadEntities(true);
     } catch (error) {
       setStatus("failed");
