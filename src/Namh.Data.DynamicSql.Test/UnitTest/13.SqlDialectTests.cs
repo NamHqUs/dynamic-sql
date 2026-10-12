@@ -24,6 +24,37 @@ public class _13_SqlDialectTests
     }
 
     [Test]
+    public void SqlServerDialectAddsRequiredOrderByForPagingWithoutSort()
+    {
+        using var connection = new Microsoft.Data.SqlClient.SqlConnection();
+        using var db = new DynamicSqlContext(connection, Metadata, new SqlServerDialect());
+
+        var sql = db.Query("User").Select("Id").Skip(0).TakeQuery(2).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("ORDER BY (SELECT 1)"));
+        Assert.That(sql.IndexOf("ORDER BY (SELECT 1)", StringComparison.Ordinal),
+            Is.LessThan(sql.IndexOf("OFFSET 0 ROWS", StringComparison.Ordinal)));
+    }
+
+    [Test]
+    public void SqlServerDialectDoesNotAddSyntheticOrderByWhenSorted()
+    {
+        using var connection = new Microsoft.Data.SqlClient.SqlConnection();
+        using var db = new DynamicSqlContext(connection, Metadata, new SqlServerDialect());
+
+        var sql = db.Query("User")
+            .Select("Id")
+            .OrderBy("Id")
+            .Skip(0)
+            .TakeQuery(2)
+            .ToSql()
+            .CommandText;
+
+        Assert.That(sql, Does.Contain("ORDER BY t0.[Id] ASC"));
+        Assert.That(sql, Does.Not.Contain("ORDER BY (SELECT 1)"));
+    }
+
+    [Test]
     public void EntityCopiesLogicalNameToPhysicalTableNameWhenRawSqlIsMissing()
     {
         var entity = new Entity("User", []);

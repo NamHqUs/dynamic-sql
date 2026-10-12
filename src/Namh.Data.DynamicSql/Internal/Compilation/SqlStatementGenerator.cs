@@ -59,7 +59,10 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         if (query.Orders.Count != 0)
             text += "\nORDER BY " + string.Join(", ", query.Orders.Select(RenderOrder));
 
-        text += dialect.RenderPaging(query.Skip, query.IsTake ? null : query.Take);
+        text += dialect.RenderPaging(
+            query.Skip,
+            query.IsTake ? null : query.Take,
+            query.Orders.Count != 0);
 
         return text;
     }

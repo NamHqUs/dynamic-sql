@@ -12,6 +12,8 @@ public interface ISqlDialect
     string RenderStringConcatenation(string left, string right);
     string RenderTakePrefix(int count);
     string RenderPaging(int? skip, int? take);
+    string RenderPaging(int? skip, int? take, bool hasOrderBy)
+        => RenderPaging(skip, take);
 }
 
 public sealed class SqlServerDialect : ISqlDialect
@@ -35,6 +37,13 @@ public sealed class SqlServerDialect : ISqlDialect
         => skip is null
             ? string.Empty
             : $" OFFSET {skip} ROWS" +
+              (take is null ? string.Empty : $" FETCH NEXT {take} ROWS ONLY");
+
+    public string RenderPaging(int? skip, int? take, bool hasOrderBy)
+        => skip is null
+            ? RenderPaging(skip, take)
+            : (hasOrderBy ? string.Empty : " ORDER BY (SELECT 1)") +
+              $" OFFSET {skip} ROWS" +
               (take is null ? string.Empty : $" FETCH NEXT {take} ROWS ONLY");
 }
 
