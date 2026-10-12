@@ -10,12 +10,11 @@ class AggregateExpression : TableExpression
     {
         GroupWithQuery = groupWithQuery;
         ProjectionItems = [];
-        aggregation = aggregation.Replace("@", $"{tableContext.Alias}.");
         var i = aggregation.IndexOf('$');
         SqlSelect = new StringBuilder(i < 0 ? aggregation : aggregation[..i]);
 
         if (i > 0)
-            SqlWhere.Add(new RawSqlExpression(aggregation[(i + 1)..], typeof(bool)));
+            SqlWhere.Add(new RawSqlExpression(aggregation[(i + 1)..].Replace("@", $"{tableContext.Alias}."), typeof(bool)));
     }
 
     protected override StringBuilder TranslateSelect()

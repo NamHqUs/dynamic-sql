@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MetadataEntity, QueryDefinition } from "./query-builder-slice";
 import ProjectionBuilder from "./projection-builder/projection-builder";
 import SortBuilder from "./sort-builder/sort-builder";
@@ -21,6 +22,8 @@ export default function QueryDesign({
   entity,
   onDefinitionChange,
 }: QueryDesignProps) {
+  const [draggedProjectionField, setDraggedProjectionField] = useState<string | null>(null);
+
   return (
     <section className="query-builder-card">
       <div className="query-builder-toolbar">
@@ -48,8 +51,20 @@ export default function QueryDesign({
       {metadataStatus === "loading" && <p className="query-message">Loading metadata…</p>}
       {metadataStatus === "failed" && <p className="query-message error" role="alert">{metadataError}</p>}
       {entity && <div className="query-builder-body">
-        <ProjectionBuilder metadata={metadata} definition={definition} entity={entity} onDefinitionChange={onDefinitionChange} />
-        <SortBuilder metadata={metadata} definition={definition} entity={entity} onDefinitionChange={onDefinitionChange} />
+        <ProjectionBuilder
+          metadata={metadata}
+          definition={definition}
+          entity={entity}
+          onDefinitionChange={onDefinitionChange}
+          onFieldDragStart={setDraggedProjectionField}
+        />
+        <SortBuilder
+          metadata={metadata}
+          definition={definition}
+          entity={entity}
+          onDefinitionChange={onDefinitionChange}
+          draggedProjectionField={draggedProjectionField}
+        />
         <FilterBuilder metadata={metadata} definition={definition} entity={entity} onDefinitionChange={onDefinitionChange} />
       </div>}
     </section>

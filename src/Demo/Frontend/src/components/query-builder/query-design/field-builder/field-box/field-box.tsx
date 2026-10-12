@@ -43,6 +43,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
   const [pendingAggregate, setPendingAggregate] = useState<string | null>(null);
+  const [pendingAggregateWrapsPath, setPendingAggregateWrapsPath] = useState<boolean | null>(null);
   const [pendingAggregateField, setPendingAggregateField] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -91,13 +92,23 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [menuOpen]);
-  const aggregateMatch = valueSegments[valueSegments.length - 1]?.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/);
-  const rawPath = pendingPath ?? (aggregateMatch ? valueSegments.slice(0, -1) : valueSegments.slice(0, -1));
+  const rootAggregateMatch = value.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^()]*)\)$/);
+  const legacyAggregateMatch = valueSegments[valueSegments.length - 1]?.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/);
+  const aggregateMatch = rootAggregateMatch ?? legacyAggregateMatch;
+  const aggregateWrapsPath = pendingAggregateWrapsPath ?? Boolean(rootAggregateMatch);
+  const aggregateFieldPath = rootAggregateMatch
+    ? rootAggregateMatch[2].split(".")
+    : valueSegments.slice(-1)[0]?.match(/^(?:Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/)?.[1]?.split(".");
+  const rawPath = pendingPath ?? (
+    rootAggregateMatch
+      ? aggregateFieldPath?.slice(0, -1) ?? []
+      : valueSegments.slice(0, -1)
+  );
   const aggregatePathIndex = rawPath.findIndex((segment) => aggregateSegment(segment));
   const path = aggregatePathIndex < 0 ? rawPath : rawPath.slice(0, aggregatePathIndex);
   const current = resolveEntity(entity, metadata, path) ?? entity;
   const selectedField = aggregateMatch
-    ? aggregateMatch[2]
+    ? aggregateFieldPath?.[aggregateFieldPath.length - 1] ?? ""
     : path.join(".") === valueSegments.slice(0, -1).join(".")
       ? valueSegments[valueSegments.length - 1] ?? ""
       : "";
@@ -119,6 +130,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
     if (selected === `${AGGREGATE_PREFIX}${COUNT_AGGREGATE}`) {
       onChange([...path, COUNT_AGGREGATE].join("."));
       setPendingAggregate(null);
+      setPendingAggregateWrapsPath(null);
       setPendingAggregateField("");
       setPendingPath(clearOnSelect ? [] : path);
       setMenuOpen(false);
@@ -126,37 +138,50 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
     }
     if (selected.startsWith(AGGREGATE_PREFIX)) {
       setPendingAggregate(selected.slice(AGGREGATE_PREFIX.length));
+      setPendingAggregateWrapsPath(path.length === 0);
       setPendingAggregateField("");
       return;
     }
     if (!selected.startsWith(FIELD_PREFIX)) return;
-    onChange([...path, selected.slice(FIELD_PREFIX.length)].join("."));
+    const field = selected.slice(FIELD_PREFIX.length);
+    const activeAggregate = pendingAggregate ?? selectedAggregate;
+    if (activeAggregate && activeAggregate !== COUNT_AGGREGATE) {
+      selectAggregateField(field);
+      setMenuOpen(false);
+      return;
+    }
+    onChange([...path, field].join("."));
     setPendingPath(clearOnSelect ? [] : path);
     setMenuOpen(false);
   };
 
   const relations = (current.relations || []).filter((relation) => metadata.some((item) => item.name === relation.relatedEntity));
-  const numericFields = current.fields.filter((field) =>
-    NUMERIC_DATA_TYPES.has(field.dataType.toLowerCase()) &&
-    !excludedPaths.includes([...path, field.name].join(".")));
-  const aggregateField = pendingAggregateField || selectedField;
   const activeAggregate = pendingAggregate ?? selectedAggregate;
+  const fields = current.fields.filter((field) =>
+    (!activeAggregate || activeAggregate === COUNT_AGGREGATE || NUMERIC_DATA_TYPES.has(field.dataType.toLowerCase())) &&
+    !excludedPaths.includes([...path, field.name].join(".")));
   const isComplete = completeOnSelect && Boolean(value);
   const selectedDataType = aggregateMatch || selectedAggregate
     ? "Number"
     : current.fields.find((field) => field.name === selectedField)?.dataType;
   const selectAggregateField = (field: string) => {
     setPendingAggregateField(field);
-    if (activeAggregate && activeAggregate !== COUNT_AGGREGATE && field)
-      onChange([...path, `${activeAggregate}(${field})`].join("."));
+    if (activeAggregate && activeAggregate !== COUNT_AGGREGATE && field) {
+      const aggregate = `${activeAggregate}(${field})`;
+      onChange(aggregateWrapsPath ? `${activeAggregate}(${[...path, field].join(".")})` : [...path, aggregate].join("."));
+    }
   };
 
   return <div className="field-box">
-    {!isComplete && !showPath && !(activeAggregate && activeAggregate !== COUNT_AGGREGATE) && path.map((segment, index) => <span className="field-box-crumb" key={`${index}-${segment}`}>
+    {!isComplete && aggregateWrapsPath && activeAggregate && activeAggregate !== COUNT_AGGREGATE &&
+      <span className="field-box-aggregate-label">{activeAggregate}(</span>}
+    {!isComplete && !showPath && path.map((segment, index) => <span className="field-box-crumb" key={`${index}-${segment}`}>
       <button type="button" className="field-box-segment" title={`Back to ${index ? path[index - 1] : entity.name}`} onClick={() => setPendingPath(path.slice(0, index))}>{segment}</button>
       <span className="field-box-dot">.</span>
     </span>)}
-    {!isComplete && !(activeAggregate && activeAggregate !== COUNT_AGGREGATE) && <div className={`field-box-menu${value ? " field-box-menu-selected" : ""}`} ref={menuOpen ? menuRef : undefined}>
+    {!isComplete && !aggregateWrapsPath && activeAggregate && activeAggregate !== COUNT_AGGREGATE &&
+      <span className="field-box-aggregate-label">{activeAggregate}(</span>}
+    {!isComplete && <div className={`field-box-menu${value ? " field-box-menu-selected" : ""}`} ref={menuOpen ? menuRef : undefined}>
       <button
         type="button"
         autoFocus={autoFocus}
@@ -169,7 +194,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
       >
         {showPath && (pendingPath?.length ? pendingPath.join(".") : value)
           ? (pendingPath?.length ? pendingPath.join(".") : value)
-          : selectedField || selectedAggregate || placeholder}
+          : selectedField || (activeAggregate && activeAggregate !== COUNT_AGGREGATE ? placeholder : selectedAggregate) || placeholder}
       </button>
       {menuOpen && createPortal(<div ref={menuPopupRef} className="operator-menu field-box-menu-popup" style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, transform: "none", margin: 0 }} onMouseDown={(event) => event.preventDefault()} role="listbox" aria-label={`${ariaLabel} options`}>
         {relations.length > 0 && <>
@@ -181,37 +206,26 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
           ))}
         </>}
         <span className="field-box-menu-label">{current.name} fields</span>
-        {current.fields
-          .filter((field) => !excludedPaths.includes([...path, field.name].join(".")))
-          .map((field) => (
+        {fields.map((field) => (
             <button type="button" className={`operator-option${selectValue === `${FIELD_PREFIX}${field.name}` ? " operator-option-selected" : ""}`} role="option" aria-selected={selectValue === `${FIELD_PREFIX}${field.name}`} key={field.name} onClick={() => handleSelect(`${FIELD_PREFIX}${field.name}`)}>
               {field.name}
             </button>
           ))}
-        <>
+        {!activeAggregate && <>
           <span className="field-box-menu-label">Aggregate</span>
           {AGGREGATES.map((aggregate) => (
             <button type="button" className="operator-option" role="option" key={aggregate} onClick={() => handleSelect(`${AGGREGATE_PREFIX}${aggregate}`)}>
               {aggregate === COUNT_AGGREGATE ? aggregate : `${aggregate}(…)`}
             </button>
           ))}
-        </>
+        </>}
       </div>, document.body)}
     </div>}
     {completeOnSelect && value && <span className="field-box-completed" aria-label={`Selected ${ariaLabel.toLowerCase()}: ${value}`}>
       <span>{value}</span>
       {showDataType && selectedDataType && <span className="field-box-completed-type">{selectedDataType}</span>}
     </span>}
-    {!isComplete && activeAggregate && activeAggregate !== COUNT_AGGREGATE && <>
-      <span className="field-box-aggregate-label">{[...path, activeAggregate].join(".")}</span>
-      <select
-        aria-label={`${activeAggregate} field`}
-        value={aggregateField}
-        onChange={(event) => selectAggregateField(event.target.value)}
-      >
-        <option value="" disabled>Select numeric field…</option>
-        {numericFields.map((field) => <option value={field.name} key={field.name}>{field.name}</option>)}
-      </select>
-    </>}
+    {!isComplete && activeAggregate && activeAggregate !== COUNT_AGGREGATE &&
+      <span className="field-box-aggregate-label">)</span>}
   </div>;
 }

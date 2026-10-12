@@ -79,6 +79,7 @@
 .filter-add-condition { display: inline-flex; align-items: center; gap: 5px; color: var(--green); border: 0; background: transparent; padding: 0; font: 11px "DM Mono", monospace; }
 .filter-add-condition:hover { color: #7de8bd; }
 .sort-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.sort-list-drop-target { outline: 1px dashed #a78bfa; outline-offset: 5px; }
 .sort-list .field-card-primary { gap: 4px; }
 .sort-direction-select { position: relative; }
 .sort-direction-select .operator-trigger { width: auto; height: auto; padding: 0; color: #c5cad4; font: 11px "Manrope", sans-serif; }

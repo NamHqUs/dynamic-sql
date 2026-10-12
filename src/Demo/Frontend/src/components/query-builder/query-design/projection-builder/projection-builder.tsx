@@ -8,6 +8,7 @@ type ProjectionBuilderProps = {
   definition: QueryDefinition;
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
+  onFieldDragStart: (field: string | null) => void;
 };
 
 function FieldCards({
@@ -26,6 +27,7 @@ function FieldCards({
   replaceColumn,
   restoreColumn,
   moveColumn,
+  onFieldDragStart,
 }: {
   fields: { name: string }[];
   entity: MetadataEntity;
@@ -42,6 +44,7 @@ function FieldCards({
   replaceColumn: (field: string, replacement: string) => void;
   restoreColumn: (field: string, original: { field: string; alias: string | null }) => void;
   moveColumn: (fromIndex: number, toIndex: number) => void;
+  onFieldDragStart: (field: string | null) => void;
 }) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
@@ -58,6 +61,7 @@ function FieldCards({
   return <div className="field-cards" onDragEnd={() => {
     setDraggedIndex(null);
     setDropTargetIndex(null);
+    onFieldDragStart(null);
   }}>{fields.map((field, index) => {
     const column = definition.columns.find((item) => item.field === field.name);
     return (
@@ -87,6 +91,7 @@ function FieldCards({
             aria-hidden="true"
             onDragStart={(event) => {
               setDraggedIndex(index);
+              onFieldDragStart(field.name);
               event.dataTransfer.effectAllowed = "move";
               event.dataTransfer.setData("text/plain", field.name);
               event.dataTransfer.setData("application/x-query-field", field.name);
@@ -186,7 +191,7 @@ function FieldCards({
   })}</div>;
 }
 
-export default function ProjectionBuilder({ metadata, definition, entity, onDefinitionChange }: ProjectionBuilderProps) {
+export default function ProjectionBuilder({ metadata, definition, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
   const [editingAliasField, setEditingAliasField] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const selectedFields = definition.columns.map((column) => ({ name: column.field }));
@@ -303,6 +308,7 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
           replaceColumn={replaceColumn}
           restoreColumn={restoreColumn}
           moveColumn={moveColumn}
+          onFieldDragStart={onFieldDragStart}
         />
         <FieldBuilder
           key={`${entity.name}-${definition.columns.length}`}

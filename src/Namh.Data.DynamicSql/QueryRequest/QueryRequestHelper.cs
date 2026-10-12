@@ -15,6 +15,9 @@ internal static class QueryRequestHelper
 
         var query = context.Query(definition.Entity, definition.IncludeArchive);
 
+        if (definition.Filter is not null)
+            query = query.Where(CreateFilter(definition.Filter));
+
         if (definition.Columns.Count > 0)
         {
             var selection = new DataRecord();
@@ -23,9 +26,6 @@ internal static class QueryRequestHelper
 
             query = query.Select(selection);
         }
-
-        if (definition.Filter is not null)
-            query = query.Where(CreateFilter(definition.Filter));
 
         foreach (var sortGroup in definition.Sorts.Select((sort, index) => (sort, index)))
         {

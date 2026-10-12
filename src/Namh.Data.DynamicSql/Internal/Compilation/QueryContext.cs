@@ -29,6 +29,19 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
             ?.Item is SqlExpression projection)
             return projection;
 
+        if (TryParseAggregate(fieldPath, out var wrappedAggregate, out var wrappedAggregateFieldPath))
+        {
+            var wrappedFieldSeparator = wrappedAggregateFieldPath.LastIndexOf('.');
+            var wrappedRelationPath = wrappedFieldSeparator < 0 ? null : wrappedAggregateFieldPath[..wrappedFieldSeparator];
+            var wrappedFieldName = wrappedAggregateFieldPath[(wrappedFieldSeparator + 1)..];
+            var wrappedJoinedData = ParseRelationPath(tableContext, wrappedRelationPath);
+            var wrappedAggregateEntity = wrappedJoinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
+            wrappedAggregateEntity.GetField(wrappedFieldName);
+
+            var wrappedLastTable = ApplyJoin(tableContext, wrappedJoinedData);
+            return new AggregateExpression(wrappedLastTable, $"{wrappedAggregate}(@{wrappedFieldName})", true);
+        }
+
         var i = fieldPath.LastIndexOf('.');
         var relationPath = i < 0 ? null : fieldPath[..i];
         var fieldName = fieldPath[(i + 1)..];

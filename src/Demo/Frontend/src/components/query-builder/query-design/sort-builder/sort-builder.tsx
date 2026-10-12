@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { type DragEvent, useEffect, useRef, useState } from "react";
 import { MetadataEntity, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
 import Icon from "../../../icon/icon";
+
+const QUERY_FIELD_DRAG_TYPE = "application/x-query-field";
 
 type SortBuilderProps = {
   metadata: MetadataEntity[];
   definition: QueryDefinition;
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
+  draggedProjectionField: string | null;
 };
 
 function SortDirectionMenu({
@@ -79,8 +82,9 @@ function SortDirectionMenu({
   );
 }
 
-export default function SortBuilder({ metadata, definition, entity, onDefinitionChange }: SortBuilderProps) {
+export default function SortBuilder({ metadata, definition, entity, onDefinitionChange, draggedProjectionField }: SortBuilderProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [isDropTarget, setIsDropTarget] = useState(false);
 
   const addSort = (field: string) => {
     if (definition.sorts.some((sort) => sort.field === field)) return;
@@ -116,6 +120,17 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
     if (definition.sorts.length) onDefinitionChange({ ...definition, sorts: [] });
   };
 
+  const getProjectField = (event: DragEvent<HTMLElement>) => {
+    const field = (
+      event.dataTransfer.getData(QUERY_FIELD_DRAG_TYPE)
+      || event.dataTransfer.getData("text/plain")
+    ).trim();
+    return definition.columns.some((column) => column.field === field) ? field : undefined;
+  };
+
+  const isProjectFieldDrag = (event: DragEvent<HTMLElement>) =>
+    Array.from(event.dataTransfer.types).includes(QUERY_FIELD_DRAG_TYPE);
+
   return (
     <div className="builder-section">
       <div className="section-header">
@@ -132,7 +147,26 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
           - Clear sorts
         </button>
       </div>
-      <div className="sort-list">
+      <div
+        className={`sort-list${isDropTarget ? " sort-list-drop-target" : ""}`}
+        onDragOver={(event) => {
+          if (draggedProjectionField || isProjectFieldDrag(event)) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            setIsDropTarget(true);
+          }
+        }}
+        onDragLeave={(event) => {
+          if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setIsDropTarget(false);
+        }}
+        onDrop={(event) => {
+          const field = draggedProjectionField ?? getProjectField(event);
+          if (!field) return;
+          event.preventDefault();
+          addSort(field);
+          setIsDropTarget(false);
+        }}
+      >
         {definition.sorts.map((sort) => (
           <div className="field-card selected" key={sort.field}>
             <button type="button" className="field-card-remove" onClick={() => removeSort(sort.field)} aria-label={`Remove sort for ${sort.field}`} title={`Remove sort for ${sort.field}`}>

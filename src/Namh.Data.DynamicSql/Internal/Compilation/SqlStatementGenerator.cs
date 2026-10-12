@@ -1,5 +1,6 @@
 using Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 using Namh.Data.DynamicSql.Internal.Compilation.Models;
+using System.Text;
 
 namespace Namh.Data.DynamicSql.Internal.Compilation;
 
@@ -21,6 +22,9 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             .Any(item => item.Item is AggregateExpression { GroupWithQuery: true });
 
         var select = exists ? "1" : query.SqlSelect?.ToString();
+
+        if (!exists && query is AggregateExpression aggregate && select is not null)
+            select = RenderAggregateSelect(aggregate);
 
         if (select is null)
             select = string.Join(", ", query.ProjectionItems.Select(item => RenderProjection(item, hasGroupedAggregate)));
@@ -63,7 +67,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     private string RenderProjection(ProjectionItem item, bool hasGroupedAggregate = false)
     {
         if (hasGroupedAggregate && item.Item is AggregateExpression { GroupWithQuery: true } aggregate)
-            return $"{aggregate.SelectSql} {dialect.QuoteIdentifier(item.Alias)}";
+            return $"{RenderAggregateSelect(aggregate)} {dialect.QuoteIdentifier(item.Alias)}";
 
         var expression = RenderExpression(item.Item);
 
@@ -118,6 +122,40 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         aggregate.EnsureDefaultProjection();
 
         return RenderQuery(aggregate);
+    }
+
+    private string RenderAggregateSelect(AggregateExpression aggregate)
+    {
+        var sql = aggregate.SelectSql;
+        var result = new StringBuilder(sql.Length);
+
+        for (var index = 0; index < sql.Length; index++)
+        {
+            if (sql[index] != '@')
+            {
+                result.Append(sql[index]);
+                continue;
+            }
+
+            var fieldStart = index + 1;
+            var fieldEnd = fieldStart;
+            while (fieldEnd < sql.Length &&
+                (char.IsLetterOrDigit(sql[fieldEnd]) || sql[fieldEnd] == '_'))
+                fieldEnd++;
+
+            if (fieldEnd == fieldStart)
+            {
+                result.Append('@');
+                continue;
+            }
+
+            result.Append(aggregate.Alias)
+                .Append('.')
+                .Append(dialect.QuoteIdentifier(sql[fieldStart..fieldEnd]));
+            index = fieldEnd - 1;
+        }
+
+        return result.ToString();
     }
 
     private string RenderValue(object? value)
