@@ -4,8 +4,9 @@ using Namh.Data.DynamicSql.QueryRequestParsing;
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
-public sealed class QueryRequestDto
+public sealed class QueryRequest
 {
+    public string? Name { get; init; }
     public required string Entity { get; init; }
     public List<QueryColumn> Columns { get; init; } = [];
     public QueryFilter? Filter { get; init; }
@@ -14,7 +15,7 @@ public sealed class QueryRequestDto
     public int? PageSize { get; init; }
     public bool IncludeArchive { get; init; }
 
-    public static QueryRequestDto FromJson(string json)
+    public static QueryRequest FromJson(string json)
         => QueryRequestJsonParser.Parse(json);
 
     public override string ToString()

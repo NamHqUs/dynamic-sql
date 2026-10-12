@@ -1,18 +1,15 @@
-#!
-#:include Shared.cs
-
 using System.Data;
 
-public static class SqliteServices
+namespace Demo.WebApi.Services;
+
+public static class RawDataServices
 {
-    private static IDbConnection _cn { get; } = DbConnection.Value;
     public static string[] GetExposedTables()
-        => [ "Customers", "Invoices", "InvoiceItems", "Products"];
+        => ["Customers", "Invoices", "InvoiceItems", "Products"];
 
     public static TableDataDto GetTableData(string tableName)
     {
-        using var cmd = _cn.CreateCommand();
-        cmd.CommandText = $"SELECT * FROM {tableName}";
+        using var cmd = DbProviderFactory.CreateDbCommand($"SELECT * FROM {tableName}");
         using var reader = cmd.ExecuteReader();
 
         var columns = Enumerable.Range(0, reader.FieldCount)
@@ -30,7 +27,6 @@ public static class SqliteServices
 
         return new TableDataDto(tableName, string.Join(",", columns), rows.ToArray());
     }
-
 }
 
 

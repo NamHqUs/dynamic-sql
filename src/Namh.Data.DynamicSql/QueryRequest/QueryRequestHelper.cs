@@ -8,7 +8,7 @@ internal static class QueryRequestHelper
 {
     public static IDbQueryable BuildQueryable(DynamicSqlContext context, string json)
         => BuildQueryable(context, QueryRequestJsonParser.Parse(json));
-    public static IDbQueryable BuildQueryable(DynamicSqlContext context, QueryRequestDto definition)
+    public static IDbQueryable BuildQueryable(DynamicSqlContext context, QueryRequest definition)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);
