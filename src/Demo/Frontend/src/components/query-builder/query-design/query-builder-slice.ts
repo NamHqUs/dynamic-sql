@@ -85,6 +85,26 @@ async function requestJson(url: string, options?: RequestInit) {
   }
 }
 
+async function requestText(url: string, options?: RequestInit) {
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}${url}`, options);
+  } catch (error) {
+    throw new Error(`Could not reach the query API: ${error instanceof Error ? error.message : "network error"}`);
+  }
+  if (!response.ok) throw new Error(`Query request failed (${response.status}).`);
+  return response.text();
+}
+
+function createApiQuery(definition: QueryDefinition) {
+  const { filters, sorts, ...query } = definition;
+  return {
+    ...query,
+    sorts: sorts.map((sort) => ({ ...sort, direction: sort.direction === "desc" ? 1 : 0 })),
+    filter: createApiFilter(filters),
+  };
+}
+
 export const fetchQueryMetadata = createAsyncThunk(
   "queryBuilder/fetchMetadata",
   async (_, { rejectWithValue }) => {
@@ -110,15 +130,10 @@ export const executeQuery = createAsyncThunk(
   "queryBuilder/execute",
   async (definition: QueryDefinition, { rejectWithValue }) => {
     try {
-      const { filters, sorts, ...query } = definition;
       const payload = await requestJson("/dynamic-query/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...query,
-          sorts: sorts.map((sort) => ({ ...sort, direction: sort.direction === "desc" ? 1 : 0 })),
-          filter: createApiFilter(filters),
-        }),
+        body: JSON.stringify(createApiQuery(definition)),
       });
       if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string")) {
         return rejectWithValue("Query API must return a name and an array of row strings.");
@@ -137,6 +152,25 @@ export const executeQuery = createAsyncThunk(
   },
 );
 
+export const getSqlStatement = createAsyncThunk(
+  "queryBuilder/getSqlStatement",
+  async (definition: QueryDefinition, { rejectWithValue }) => {
+    try {
+      const payload = await requestText("/dynamic-query/query/to-string", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(createApiQuery(definition)),
+      });
+      if (typeof payload !== "string") {
+        return rejectWithValue("Query API must return a SQL statement string.");
+      }
+      return payload;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to generate SQL statement.");
+    }
+  },
+);
+
 const queryBuilderSlice = createSlice({
   name: "queryBuilder",
   initialState: {
@@ -144,12 +178,16 @@ const queryBuilderSlice = createSlice({
     metadataStatus: "idle",
     metadataError: "",
     result: null as QueryResult | null,
+    sqlStatement: null as string | null,
+    resultView: "data" as "data" | "sql",
     queryStatus: "idle",
     queryError: "",
   },
   reducers: {
     clearQueryResult(state) {
       state.result = null;
+      state.sqlStatement = null;
+      state.resultView = "data";
       state.queryError = "";
     },
   },
@@ -173,11 +211,26 @@ const queryBuilderSlice = createSlice({
       })
       .addCase(executeQuery.fulfilled, (state, action) => {
         state.result = action.payload;
+        state.resultView = "data";
         state.queryStatus = "succeeded";
       })
       .addCase(executeQuery.rejected, (state, action) => {
         state.queryStatus = "failed";
         state.queryError = String(action.payload || action.error.message || "Unable to execute query.");
+      });
+    builder
+      .addCase(getSqlStatement.pending, (state) => {
+        state.queryStatus = "loading";
+        state.queryError = "";
+      })
+      .addCase(getSqlStatement.fulfilled, (state, action) => {
+        state.sqlStatement = action.payload;
+        state.resultView = "sql";
+        state.queryStatus = "succeeded";
+      })
+      .addCase(getSqlStatement.rejected, (state, action) => {
+        state.queryStatus = "failed";
+        state.queryError = String(action.payload || action.error.message || "Unable to generate SQL statement.");
       });
   },
 });

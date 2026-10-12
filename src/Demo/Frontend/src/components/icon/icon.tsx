@@ -5,6 +5,7 @@ const paths = {
   database: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5" /><path d="M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></>,
   sliders: <><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></>,
   play: <path d="m8 5 11 7-11 7V5Z" fill="currentColor" stroke="none" />,
+  code: <><path d="m9 7-5 5 5 5M15 7l5 5-5 5" /></>,
   upload: <><path d="M12 16V4m0 0L7 9m5-5 5 5" /><path d="M5 14v5h14v-5" /></>,
   plus: <><path d="M12 5v14M5 12h14" /></>,
   search: <><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></>,

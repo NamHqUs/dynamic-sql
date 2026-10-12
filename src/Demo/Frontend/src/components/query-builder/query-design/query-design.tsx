@@ -26,9 +26,10 @@ export default function QueryDesign({
       <div className="query-builder-toolbar">
         <label>Entity
           <select value={definition.entity} onChange={(event) => {
+            const selectedEntity = metadata.find((item) => item.name === event.target.value);
             onDefinitionChange({
               entity: event.target.value,
-              columns: [],
+              columns: selectedEntity?.fields.map((field) => ({ field: field.name, alias: null })) ?? [],
               filters: { logicalOperation: 0, filters: [] },
               sorts: [],
               page: null,

@@ -11,6 +11,9 @@ CREATE TABLE Customers (
     Email TEXT NOT NULL,
     Phone TEXT NOT NULL,
     Address TEXT NOT NULL,
+    Segment TEXT NOT NULL,
+    Region TEXT NOT NULL,
+    CustomerSince TEXT NOT NULL,
     CreatedOn TEXT NOT NULL,
     UpdatedOn TEXT NOT NULL,
     DeletedOn TEXT NULL
@@ -20,8 +23,11 @@ CREATE TABLE Products (
     Id INTEGER PRIMARY KEY,
     Name TEXT NOT NULL,
     Description TEXT NOT NULL,
+    Category TEXT NOT NULL,
     UnitPrice NUMERIC NOT NULL,
+    CostPrice NUMERIC NOT NULL,
     StockQuantity INTEGER NOT NULL,
+    ReorderLevel INTEGER NOT NULL,
     CreatedOn TEXT NOT NULL,
     UpdatedOn TEXT NOT NULL,
     DeletedOn TEXT NULL
@@ -34,6 +40,11 @@ CREATE TABLE Invoices (
     InvoiceDate TEXT NOT NULL,
     DueDate TEXT NOT NULL,
     Status TEXT NOT NULL,
+    SalesChannel TEXT NOT NULL,
+    PaymentMethod TEXT NOT NULL,
+    PaidOn TEXT NULL,
+    DiscountAmount NUMERIC NOT NULL DEFAULT 0,
+    TaxAmount NUMERIC NOT NULL,
     TotalAmount NUMERIC NOT NULL,
     CreatedOn TEXT NOT NULL,
     UpdatedOn TEXT NOT NULL,
@@ -47,6 +58,7 @@ CREATE TABLE InvoiceItems (
     ProductId INTEGER NOT NULL,
     Quantity INTEGER NOT NULL,
     UnitPrice NUMERIC NOT NULL,
+    DiscountAmount NUMERIC NOT NULL DEFAULT 0,
     LineTotal NUMERIC NOT NULL,
     CreatedOn TEXT NOT NULL,
     UpdatedOn TEXT NOT NULL,
@@ -56,56 +68,56 @@ CREATE TABLE InvoiceItems (
 );
 
 INSERT INTO Customers
-    (Id, Name, Email, Phone, Address, CreatedOn, UpdatedOn)
+    (Id, Name, Email, Phone, Address, Segment, Region, CustomerSince, CreatedOn, UpdatedOn)
 VALUES
-    (1, 'Alice Johnson', 'alice.johnson@example.com', '555-0101', '101 Main Street', '2025-01-01', '2025-01-01'),
-    (2, 'Bob Smith', 'bob.smith@example.com', '555-0102', '202 Oak Avenue', '2025-01-02', '2025-01-02'),
-    (3, 'Carol Williams', 'carol.williams@example.com', '555-0103', '303 Pine Road', '2025-01-03', '2025-01-03'),
-    (4, 'David Brown', 'david.brown@example.com', '555-0104', '404 Maple Lane', '2025-01-04', '2025-01-04'),
-    (5, 'Emma Davis', 'emma.davis@example.com', '555-0105', '505 Cedar Drive', '2025-01-05', '2025-01-05'),
-    (6, 'Frank Miller', 'frank.miller@example.com', '555-0106', '606 Elm Street', '2025-01-06', '2025-01-06'),
-    (7, 'Grace Wilson', 'grace.wilson@example.com', '555-0107', '707 Birch Boulevard', '2025-01-07', '2025-01-07'),
-    (8, 'Henry Moore', 'henry.moore@example.com', '555-0108', '808 Willow Way', '2025-01-08', '2025-01-08'),
-    (9, 'Ivy Taylor', 'ivy.taylor@example.com', '555-0109', '909 Spruce Court', '2025-01-09', '2025-01-09'),
-    (10, 'Jack Anderson', 'jack.anderson@example.com', '555-0110', '1010 Ash Place', '2025-01-10', '2025-01-10');
+    (1, 'Alice Johnson', 'alice.johnson@example.com', '555-0101', '101 Main Street', 'Enterprise', 'Northeast', '2023-04-12', '2025-01-01', '2025-01-01'),
+    (2, 'Bob Smith', 'bob.smith@example.com', '555-0102', '202 Oak Avenue', 'Small Business', 'Midwest', '2024-02-18', '2025-01-02', '2025-01-02'),
+    (3, 'Carol Williams', 'carol.williams@example.com', '555-0103', '303 Pine Road', 'Enterprise', 'West', '2022-11-05', '2025-01-03', '2025-01-03'),
+    (4, 'David Brown', 'david.brown@example.com', '555-0104', '404 Maple Lane', 'Small Business', 'South', '2024-06-21', '2025-01-04', '2025-01-04'),
+    (5, 'Emma Davis', 'emma.davis@example.com', '555-0105', '505 Cedar Drive', 'Consumer', 'Northeast', '2025-01-10', '2025-01-05', '2025-01-05'),
+    (6, 'Frank Miller', 'frank.miller@example.com', '555-0106', '606 Elm Street', 'Enterprise', 'Midwest', '2023-08-30', '2025-01-06', '2025-01-06'),
+    (7, 'Grace Wilson', 'grace.wilson@example.com', '555-0107', '707 Birch Boulevard', 'Consumer', 'West', '2024-12-02', '2025-01-07', '2025-01-07'),
+    (8, 'Henry Moore', 'henry.moore@example.com', '555-0108', '808 Willow Way', 'Small Business', 'South', '2024-01-14', '2025-01-08', '2025-01-08'),
+    (9, 'Ivy Taylor', 'ivy.taylor@example.com', '555-0109', '909 Spruce Court', 'Enterprise', 'Northeast', '2023-03-27', '2025-01-09', '2025-01-09'),
+    (10, 'Jack Anderson', 'jack.anderson@example.com', '555-0110', '1010 Ash Place', 'Consumer', 'Midwest', '2025-02-01', '2025-01-10', '2025-01-10');
 
 INSERT INTO Products
-    (Id, Name, Description, UnitPrice, StockQuantity, CreatedOn, UpdatedOn)
+    (Id, Name, Description, Category, UnitPrice, CostPrice, StockQuantity, ReorderLevel, CreatedOn, UpdatedOn)
 VALUES
-    (1, 'Laptop', '15-inch everyday laptop', 899.00, 25, '2025-01-01', '2025-01-01'),
-    (2, 'Wireless Mouse', 'Ergonomic wireless mouse', 25.00, 100, '2025-01-01', '2025-01-01'),
-    (3, 'Keyboard', 'Full-size USB keyboard', 45.00, 75, '2025-01-01', '2025-01-01'),
-    (4, 'Monitor', '24-inch full HD monitor', 199.00, 40, '2025-01-01', '2025-01-01'),
-    (5, 'USB Cable', 'Two-meter USB-C cable', 12.00, 200, '2025-01-01', '2025-01-01'),
-    (6, 'Headset', 'Noise-reducing wired headset', 59.00, 60, '2025-01-01', '2025-01-01'),
-    (7, 'Webcam', '1080p desktop webcam', 79.00, 35, '2025-01-01', '2025-01-01'),
-    (8, 'Desk Lamp', 'Adjustable LED desk lamp', 35.00, 50, '2025-01-01', '2025-01-01'),
-    (9, 'Notebook', 'Hardcover ruled notebook', 8.00, 150, '2025-01-01', '2025-01-01'),
-    (10, 'Pen Set', 'Pack of five blue pens', 6.00, 300, '2025-01-01', '2025-01-01');
+    (1, 'Laptop', '15-inch everyday laptop', 'Computers', 899.00, 650.00, 25, 10, '2025-01-01', '2025-01-01'),
+    (2, 'Wireless Mouse', 'Ergonomic wireless mouse', 'Office Accessories', 25.00, 12.00, 100, 25, '2025-01-01', '2025-01-01'),
+    (3, 'Keyboard', 'Full-size USB keyboard', 'Office Accessories', 45.00, 22.00, 75, 20, '2025-01-01', '2025-01-01'),
+    (4, 'Monitor', '24-inch full HD monitor', 'Displays', 199.00, 125.00, 40, 12, '2025-01-01', '2025-01-01'),
+    (5, 'USB Cable', 'Two-meter USB-C cable', 'Office Accessories', 12.00, 4.00, 200, 50, '2025-01-01', '2025-01-01'),
+    (6, 'Headset', 'Noise-reducing wired headset', 'Audio Video', 59.00, 31.00, 60, 15, '2025-01-01', '2025-01-01'),
+    (7, 'Webcam', '1080p desktop webcam', 'Audio Video', 79.00, 42.00, 35, 10, '2025-01-01', '2025-01-01'),
+    (8, 'Desk Lamp', 'Adjustable LED desk lamp', 'Office Accessories', 35.00, 15.00, 50, 15, '2025-01-01', '2025-01-01'),
+    (9, 'Notebook', 'Hardcover ruled notebook', 'Office Accessories', 8.00, 2.50, 150, 40, '2025-01-01', '2025-01-01'),
+    (10, 'Pen Set', 'Pack of five blue pens', 'Office Accessories', 6.00, 1.50, 300, 75, '2025-01-01', '2025-01-01');
 
 INSERT INTO Invoices
-    (Id, CustomerId, InvoiceNumber, InvoiceDate, DueDate, Status, TotalAmount, CreatedOn, UpdatedOn)
+    (Id, CustomerId, InvoiceNumber, InvoiceDate, DueDate, Status, SalesChannel, PaymentMethod, PaidOn, DiscountAmount, TaxAmount, TotalAmount, CreatedOn, UpdatedOn)
 VALUES
-    (1, 1, 'INV-1001', '2025-02-01', '2025-03-03', 'Paid', 949.00, '2025-02-01', '2025-02-10'),
-    (2, 1, 'INV-1002', '2025-03-01', '2025-03-31', 'Paid', 211.00, '2025-03-01', '2025-03-08'),
-    (3, 2, 'INV-1003', '2025-02-05', '2025-03-07', 'Paid', 104.00, '2025-02-05', '2025-02-12'),
-    (4, 3, 'INV-1004', '2025-02-10', '2025-03-12', 'Sent', 1064.00, '2025-02-10', '2025-02-10'),
-    (5, 3, 'INV-1005', '2025-03-10', '2025-04-09', 'Paid', 108.00, '2025-03-10', '2025-03-18'),
-    (6, 3, 'INV-1006', '2025-04-10', '2025-05-10', 'Draft', 259.00, '2025-04-10', '2025-04-10'),
-    (7, 4, 'INV-1007', '2025-02-15', '2025-03-17', 'Paid', 224.00, '2025-02-15', '2025-02-20'),
-    (8, 4, 'INV-1008', '2025-03-15', '2025-04-14', 'Sent', 103.00, '2025-03-15', '2025-03-15'),
-    (9, 5, 'INV-1009', '2025-02-20', '2025-03-22', 'Paid', 150.00, '2025-02-20', '2025-02-25'),
-    (10, 6, 'INV-1010', '2025-02-25', '2025-03-27', 'Paid', 937.00, '2025-02-25', '2025-03-01'),
-    (11, 6, 'INV-1011', '2025-03-25', '2025-04-24', 'Sent', 114.00, '2025-03-25', '2025-03-25'),
-    (12, 6, 'INV-1012', '2025-04-25', '2025-05-25', 'Draft', 248.00, '2025-04-25', '2025-04-25'),
-    (13, 7, 'INV-1013', '2025-03-02', '2025-04-01', 'Paid', 128.00, '2025-03-02', '2025-03-10'),
-    (14, 7, 'INV-1014', '2025-04-02', '2025-05-02', 'Sent', 79.00, '2025-04-02', '2025-04-02'),
-    (15, 8, 'INV-1015', '2025-03-05', '2025-04-04', 'Paid', 104.00, '2025-03-05', '2025-03-12'),
-    (16, 9, 'INV-1016', '2025-03-08', '2025-04-07', 'Paid', 924.00, '2025-03-08', '2025-03-15'),
-    (17, 9, 'INV-1017', '2025-04-08', '2025-05-08', 'Sent', 246.00, '2025-04-08', '2025-04-08'),
-    (18, 9, 'INV-1018', '2025-05-08', '2025-06-07', 'Draft', 59.00, '2025-05-08', '2025-05-08'),
-    (19, 10, 'INV-1019', '2025-03-12', '2025-04-11', 'Paid', 239.00, '2025-03-12', '2025-03-20'),
-    (20, 10, 'INV-1020', '2025-04-12', '2025-05-12', 'Sent', 104.00, '2025-04-12', '2025-04-12');
+    (1, 1, 'INV-1001', '2025-02-01', '2025-03-03', 'Paid', 'Online', 'Card', '2025-02-10', 0, 75.92, 949.00, '2025-02-01', '2025-02-10'),
+    (2, 1, 'INV-1002', '2025-03-01', '2025-03-31', 'Paid', 'Sales Rep', 'ACH', '2025-03-08', 14.00, 16.88, 211.00, '2025-03-01', '2025-03-08'),
+    (3, 2, 'INV-1003', '2025-02-05', '2025-03-07', 'Paid', 'Online', 'Card', '2025-02-12', 0, 8.32, 104.00, '2025-02-05', '2025-02-12'),
+    (4, 3, 'INV-1004', '2025-02-10', '2025-03-12', 'Sent', 'Online', 'Card', NULL, 18.00, 85.12, 1064.00, '2025-02-10', '2025-02-10'),
+    (5, 3, 'INV-1005', '2025-03-10', '2025-04-09', 'Paid', 'Online', 'Card', '2025-03-18', 0, 8.64, 108.00, '2025-03-10', '2025-03-18'),
+    (6, 3, 'INV-1006', '2025-04-10', '2025-05-10', 'Draft', 'Sales Rep', 'Invoice', NULL, 0, 0, 259.00, '2025-04-10', '2025-04-10'),
+    (7, 4, 'INV-1007', '2025-02-15', '2025-03-17', 'Paid', 'Store', 'Cash', '2025-02-20', 0, 17.92, 224.00, '2025-02-15', '2025-02-20'),
+    (8, 4, 'INV-1008', '2025-03-15', '2025-04-14', 'Sent', 'Online', 'Card', NULL, 0, 8.24, 103.00, '2025-03-15', '2025-03-15'),
+    (9, 5, 'INV-1009', '2025-02-20', '2025-03-22', 'Paid', 'Store', 'Card', '2025-02-25', 0, 12.00, 150.00, '2025-02-20', '2025-02-25'),
+    (10, 6, 'INV-1010', '2025-02-25', '2025-03-27', 'Paid', 'Sales Rep', 'ACH', '2025-03-01', 30.00, 74.96, 937.00, '2025-02-25', '2025-03-01'),
+    (11, 6, 'INV-1011', '2025-03-25', '2025-04-24', 'Sent', 'Sales Rep', 'Invoice', NULL, 0, 9.12, 114.00, '2025-03-25', '2025-03-25'),
+    (12, 6, 'INV-1012', '2025-04-25', '2025-05-25', 'Draft', 'Online', 'Invoice', NULL, 0, 0, 248.00, '2025-04-25', '2025-04-25'),
+    (13, 7, 'INV-1013', '2025-03-02', '2025-04-01', 'Paid', 'Online', 'Card', '2025-03-10', 0, 10.24, 128.00, '2025-03-02', '2025-03-10'),
+    (14, 7, 'INV-1014', '2025-04-02', '2025-05-02', 'Sent', 'Store', 'Card', NULL, 0, 6.32, 79.00, '2025-04-02', '2025-04-02'),
+    (15, 8, 'INV-1015', '2025-03-05', '2025-04-04', 'Paid', 'Sales Rep', 'ACH', '2025-03-12', 0, 8.32, 104.00, '2025-03-05', '2025-03-12'),
+    (16, 9, 'INV-1016', '2025-03-08', '2025-04-07', 'Paid', 'Online', 'Card', '2025-03-15', 0, 73.92, 924.00, '2025-03-08', '2025-03-15'),
+    (17, 9, 'INV-1017', '2025-04-08', '2025-05-08', 'Sent', 'Sales Rep', 'Invoice', NULL, 0, 19.68, 246.00, '2025-04-08', '2025-04-08'),
+    (18, 9, 'INV-1018', '2025-05-08', '2025-06-07', 'Draft', 'Online', 'Invoice', NULL, 0, 0, 59.00, '2025-05-08', '2025-05-08'),
+    (19, 10, 'INV-1019', '2025-03-12', '2025-04-11', 'Paid', 'Store', 'Cash', '2025-03-20', 0, 19.12, 239.00, '2025-03-12', '2025-03-20'),
+    (20, 10, 'INV-1020', '2025-04-12', '2025-05-12', 'Sent', 'Online', 'Card', NULL, 0, 8.32, 104.00, '2025-04-12', '2025-04-12');
 
 INSERT INTO InvoiceItems
     (Id, InvoiceId, ProductId, Quantity, UnitPrice, LineTotal, CreatedOn, UpdatedOn)
@@ -167,3 +179,10 @@ VALUES
     (55, 19, 5, 1, 12.00, 12.00, '2025-03-12', '2025-03-12'),
     (56, 20, 7, 1, 79.00, 79.00, '2025-04-12', '2025-04-12'),
     (57, 20, 2, 1, 25.00, 25.00, '2025-04-12', '2025-04-12');
+
+CREATE INDEX IF NOT EXISTS IX_Invoices_InvoiceDate_Status
+    ON Invoices (InvoiceDate, Status);
+CREATE INDEX IF NOT EXISTS IX_Invoices_CustomerId
+    ON Invoices (CustomerId);
+CREATE INDEX IF NOT EXISTS IX_InvoiceItems_ProductId
+    ON InvoiceItems (ProductId);
