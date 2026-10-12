@@ -1,0 +1,13 @@
+.relation-card { padding: 14px; margin-top: 11px; border: 1px solid #2a3140; border-radius: 6px; background: #141821; }
+.relation-main { display: grid; grid-template-columns: 1fr .8fr 1fr 34px; gap: 8px; }
+.key-mappings { margin: 10px 0 0 14px; padding-left: 14px; border-left: 1px solid #333a4a; }
+.key-row { display: grid; grid-template-columns: 1fr 20px 1fr 34px; align-items: center; gap: 7px; margin-top: 7px; }
+.key-row span { color: #8f7fca; text-align: center; }
+.key-mappings .add-key { border: 0; background: none; color: var(--purple); font: 12px "DM Mono", monospace; padding: 16px 0 0; cursor: pointer; }
+.key-mappings .add-key:hover { text-decoration: underline; }
+
+@media (max-width: 760px) {
+  .relation-main { grid-template-columns: 1fr 1fr 34px; }
+  .relation-main select:last-of-type { grid-column: span 2; }
+  .key-row { grid-template-columns: 1fr 18px 1fr 30px; }
+}

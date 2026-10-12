@@ -36,6 +36,14 @@ group.MapGet("/data/{tableName}", (string tableName) => RawDataServices.GetTable
 
 group = app.MapGroup("/dynamic-query").WithTags("Dynamic Query Services");
 group.MapGet("/metadata", MetadataServices.GetMetadata);
+group.MapPost("/metadata", MetadataServices.CreateMetadata);
+group.MapPost("/metadata/reset", MetadataServices.Reset);
+group.MapPut("/metadata/{entityName}", (string entityName, Entity entity) => MetadataServices.UpdateMetadata(entityName, entity));
+group.MapDelete("/metadata/{entityName}", (string entityName) =>
+{
+    MetadataServices.DeleteMetadata(entityName);
+    return Results.NoContent();
+});
 group.MapPost("/query/to-string", (QueryRequest query) => DynamicQueryServices.GetSqlQueryStringAsync(query));
 group.MapPost("/query", (QueryRequest query) => DynamicQueryServices.ExecuteQueryAsync(query));
 

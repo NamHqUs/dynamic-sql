@@ -1,0 +1,21 @@
+.field-editor-table { margin-top: 14px; border: 1px solid #2a3140; border-radius: 6px; overflow: hidden; background: #141821; }
+.field-editor-head, .field-editor-row { display: grid; grid-template-columns: 28px 1.1fr .85fr .9fr 1.2fr 34px; gap: 8px; align-items: center; }
+.field-editor-head { color: #858fa1; background: #10131a; border-bottom: 1px solid #2a3140; font: 500 10px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .5px; margin: 0; padding: 9px 10px; }
+.field-editor-row { margin-top: 0; padding: 4px 10px; border-bottom: 1px solid #202633; background: #141821; transition: background-color .15s ease; }
+.field-editor-row:last-child { border-bottom: 0; }
+.field-editor-row:hover { background: #181d28; }
+.field-editor-row.dragging { opacity: .4; background: #222938; }
+.field-editor-row.drop-target { border-top: 2px solid #8064e8; background: #1c202d; }
+.field-row-drag-handle { display: inline-flex; align-items: center; justify-content: center; color: #5a6578; cursor: grab; padding: 4px 2px; border-radius: 3px; }
+.field-row-drag-handle:hover { color: #aeb6c5; background: #222836; }
+.field-row-drag-handle:active { cursor: grabbing; }
+.field-editor-row input, .field-editor-row select { min-width: 0; background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 7px 8px; color: #dce1eb; font-size: 11px; outline: 0; }
+.field-editor-row input:hover, .field-editor-row select:hover { border-color: #2b3342; }
+.field-editor-row input:focus, .field-editor-row select:focus { border-color: transparent; background: #10141d; box-shadow: inset 0 0 0 1px #7054d4; }
+.button.compact.add-field-button { margin-top: 16px; padding: 0; border: 0; color: var(--purple); background: none; font: 12px "DM Mono", monospace; }
+.button.compact.add-field-button:hover { border: 0; color: var(--purple); background: none; }
+
+@media (max-width: 1100px) {
+  .field-editor-head, .field-editor-row { grid-template-columns: 28px 1fr 1fr 1fr 34px; }
+  .field-editor-head span:nth-child(5), .field-editor-row input:nth-child(5) { display: none; }
+}

@@ -6,12 +6,11 @@ namespace Demo.WebApi.Services;
 
 public static class DynamicQueryServices
 {
-    private static readonly IMetaProvider _metaProvider = MetadataServices.GetMetaProvider();
     public static string GetSqlQueryStringAsync(QueryRequest query)
     {
         Console.WriteLine($"\n{query}\n");
         var dbConnection = DbProviderFactory.GetDbConnection();
-        var context = new DynamicSqlContext(dbConnection, _metaProvider);
+        var context = new DynamicSqlContext(dbConnection, MetadataServices.GetMetaProvider());
         var result = context.Query(query).ToSql();
         return result.CommandText;
     }
@@ -20,7 +19,7 @@ public static class DynamicQueryServices
     {
         Console.WriteLine($"\n{query}\n");
         var dbConnection = DbProviderFactory.GetDbConnection();
-        var context = new DynamicSqlContext(dbConnection, _metaProvider);
+        var context = new DynamicSqlContext(dbConnection, MetadataServices.GetMetaProvider());
         var result = await context.Query(query).ToListAsync();
 
         var rows = result.Select(row => string.Join(",", row.Select(v => v.Value))).ToArray();
