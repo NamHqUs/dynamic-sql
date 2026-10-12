@@ -34,6 +34,35 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
+    public void AggregateFilterUsesHavingInsteadOfScalarSubquery()
+    {
+        var definition = new QueryRequest
+        {
+            Entity = "User",
+            Columns =
+            [
+                new QueryColumn("Name"),
+                new QueryColumn("Average(Age)")
+            ],
+            Filter = new QueryFilter(
+                LogicalOperator.And,
+                new QueryFilterItem(
+                    LogicalOperator.And,
+                    "Average(Age)",
+                    BinaryOperator.GreaterThan,
+                    12)),
+            PageSize = 50
+        };
+
+        var sql = _db.Query(definition).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("GROUP BY t0.[Name]"));
+        Assert.That(sql, Does.Contain("HAVING (AVG (t0.[Age]) >"));
+        Assert.That(sql, Does.Not.Contain("WHERE (("));
+        Assert.That(sql, Does.Not.Contain("SELECT AVG"));
+    }
+
+    [Test]
     public void DefinitionExecutesWithProjectionAndFilter()
     {
         var definition = new QueryRequest

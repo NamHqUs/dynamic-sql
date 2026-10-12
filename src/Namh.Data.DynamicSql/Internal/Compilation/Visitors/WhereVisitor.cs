@@ -9,8 +9,21 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
 {
     protected override void OnProcessResult(Expression body)
     {
+        AddPredicate((SqlExpression)body);
+    }
 
-        TableContext.SqlWhere.Add((SqlExpression)body);
+    private void AddPredicate(SqlExpression predicate)
+    {
+        if (predicate is BinarySqlExpression { Operator: "AND" } conjunction)
+        {
+            AddPredicate(conjunction.Left);
+            AddPredicate(conjunction.Right);
+            return;
+        }
+
+        (predicate.ContainsGroupedAggregate()
+            ? TableContext.SqlHaving
+            : TableContext.SqlWhere).Add(predicate);
     }
 
     protected override Expression VisitBinary(BinaryExpression node)

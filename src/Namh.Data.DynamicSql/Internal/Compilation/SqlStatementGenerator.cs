@@ -56,6 +56,14 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 text += "\nGROUP BY " + string.Join(", ", groupBy);
         }
 
+        if (query.SqlHaving.Count != 0)
+        {
+            text += "\nHAVING " + RenderExpression(query.SqlHaving[0]);
+
+            foreach (var having in query.SqlHaving.Skip(1))
+                text += "\n\tAND " + RenderExpression(having);
+        }
+
         if (query.Orders.Count != 0)
             text += "\nORDER BY " + string.Join(", ", query.Orders.Select(RenderOrder));
 
@@ -121,7 +129,9 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             AnyExpression any => $"EXISTS({RenderQuery(any.Query, true)})",
 
-            AggregateExpression aggregate => $"({RenderAggregate(aggregate)})",
+            AggregateExpression aggregate => aggregate.GroupWithQuery
+                ? RenderAggregateSelect(aggregate)
+                : $"({RenderAggregate(aggregate)})",
 
             _ => throw new NotSupportedException($"Unsupported SQL expression {expression.GetType().Name}")
         };
