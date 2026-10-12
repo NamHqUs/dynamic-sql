@@ -52,6 +52,34 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
+    public void DefinitionSupportsAggregateOnRootEntity()
+    {
+        var definition = new QueryRequestDto
+        {
+            Entity = "User",
+            Columns =
+            [
+                new QueryColumn("Name"),
+                new QueryColumn("Count()", "InvoiceCount"),
+                new QueryColumn("Sum(Age)", "Revenue"),
+                new QueryColumn("Average(Age)", "AverageOrderValue")
+            ]
+        };
+
+        var sql = _db.Query(definition).ToSql();
+        var records = _db.Query(definition).ToList();
+
+        Assert.That(sql.CommandText, Does.Contain("GROUP BY"));
+        Assert.That(sql.CommandText, Does.Contain("Count(*)"));
+        Assert.That(sql.CommandText, Does.Contain("SUM("));
+        Assert.That(sql.CommandText, Does.Contain("AVG("));
+        Assert.That(sql.CommandText, Does.Not.Contain("SELECT Count(*)"));
+        Assert.That(sql.CommandText, Does.Not.Contain("Average("));
+        Assert.That(records, Is.Not.Empty);
+        Assert.That(records[0]["InvoiceCount"], Is.EqualTo(1L));
+    }
+
+    [Test]
     public void DefinitionConnectsStructuredFiltersWithLogicalOperators()
     {
         var definition = new QueryRequestDto

@@ -35,23 +35,19 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
 
         var joinedData = ParseRelationPath(tableContext, relationPath);
 
-        if (string.Equals(fieldName, "Count()", StringComparison.OrdinalIgnoreCase) &&
-            joinedData.Any() &&
-            joinedData.Last().relation.Type == RelationType.Collection)
+        if (string.Equals(fieldName, "Count()", StringComparison.OrdinalIgnoreCase))
         {
             var lastTable = ApplyJoinAggregate(tableContext, joinedData);
-            return new AggregateExpression(lastTable, "Count(*)");
+            return new AggregateExpression(lastTable, "Count(*)", !joinedData.Any());
         }
 
-        if (TryParseCollectionAggregate(fieldName, out var aggregate, out var aggregateField) &&
-            joinedData.Any() &&
-            joinedData.Last().relation.Type == RelationType.Collection)
+        if (TryParseAggregate(fieldName, out var aggregate, out var aggregateField))
         {
-            var aggregateEntity = joinedData.Last().joinedEntity;
+            var aggregateEntity = joinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
             aggregateEntity.GetField(aggregateField);
 
             var lastTable = ApplyJoinAggregate(tableContext, joinedData);
-            return new AggregateExpression(lastTable, $"{aggregate}(@{aggregateField})");
+            return new AggregateExpression(lastTable, $"{aggregate}(@{aggregateField})", !joinedData.Any());
         }
 
         var lastEntity = joinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
@@ -60,7 +56,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         if (metaField.FieldType == FieldType.Aggregate)
         {
             var lastTable = ApplyJoinAggregate(tableContext, joinedData);
-            return new AggregateExpression(lastTable, metaField.RawSql);
+            return new AggregateExpression(lastTable, metaField.RawSql, !joinedData.Any());
         }
         else
         {
@@ -69,7 +65,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         }
     }
 
-    private static bool TryParseCollectionAggregate(
+    private static bool TryParseAggregate(
         string fieldName,
         out string aggregate,
         out string aggregateField)
@@ -92,7 +88,9 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         if (aggregateField.Length == 0 || aggregateField.Contains('(') || aggregateField.Contains(')'))
             return false;
 
-        aggregate = function;
+        aggregate = string.Equals(function, "Average", StringComparison.OrdinalIgnoreCase)
+            ? "AVG"
+            : function;
         return true;
     }
 

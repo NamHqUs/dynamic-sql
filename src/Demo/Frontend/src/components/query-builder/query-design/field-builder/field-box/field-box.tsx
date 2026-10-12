@@ -111,10 +111,6 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
         ? `${FIELD_PREFIX}${selectedField}`
       : "";
 
-  const parent = path.length > 0 ? resolveEntity(entity, metadata, path.slice(0, -1)) : undefined;
-  const selectedRelation = parent?.relations?.find((relation) => relation.name === path[path.length - 1]);
-  const isCollection = selectedRelation?.type === 1 || selectedRelation?.type === "Collection";
-
   const handleSelect = (selected: string) => {
     if (selected.startsWith(RELATION_PREFIX)) {
       setPendingPath([...path, selected.slice(RELATION_PREFIX.length)]);
@@ -156,11 +152,11 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
   };
 
   return <div className="field-box">
-    {!isComplete && !showPath && !(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && path.map((segment, index) => <span className="field-box-crumb" key={`${index}-${segment}`}>
+    {!isComplete && !showPath && !(activeAggregate && activeAggregate !== COUNT_AGGREGATE) && path.map((segment, index) => <span className="field-box-crumb" key={`${index}-${segment}`}>
       <button type="button" className="field-box-segment" title={`Back to ${index ? path[index - 1] : entity.name}`} onClick={() => setPendingPath(path.slice(0, index))}>{segment}</button>
       <span className="field-box-dot">.</span>
     </span>)}
-    {!isComplete && !(isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE) && <div className={`field-box-menu${value ? " field-box-menu-selected" : ""}`} ref={menuOpen ? menuRef : undefined}>
+    {!isComplete && !(activeAggregate && activeAggregate !== COUNT_AGGREGATE) && <div className={`field-box-menu${value ? " field-box-menu-selected" : ""}`} ref={menuOpen ? menuRef : undefined}>
       <button
         type="button"
         autoFocus={autoFocus}
@@ -192,21 +188,21 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
               {field.name}
             </button>
           ))}
-        {isCollection && <>
+        <>
           <span className="field-box-menu-label">Aggregate</span>
           {AGGREGATES.map((aggregate) => (
             <button type="button" className="operator-option" role="option" key={aggregate} onClick={() => handleSelect(`${AGGREGATE_PREFIX}${aggregate}`)}>
               {aggregate === COUNT_AGGREGATE ? aggregate : `${aggregate}(…)`}
             </button>
           ))}
-        </>}
+        </>
       </div>, document.body)}
     </div>}
     {completeOnSelect && value && <span className="field-box-completed" aria-label={`Selected ${ariaLabel.toLowerCase()}: ${value}`}>
       <span>{value}</span>
       {showDataType && selectedDataType && <span className="field-box-completed-type">{selectedDataType}</span>}
     </span>}
-    {!isComplete && isCollection && activeAggregate && activeAggregate !== COUNT_AGGREGATE && <>
+    {!isComplete && activeAggregate && activeAggregate !== COUNT_AGGREGATE && <>
       <span className="field-box-aggregate-label">{[...path, activeAggregate].join(".")}</span>
       <select
         aria-label={`${activeAggregate} field`}

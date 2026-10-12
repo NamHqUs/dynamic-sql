@@ -17,11 +17,13 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     private string RenderQuery(TableExpression query, bool exists = false)
     {
         query.EnsureDefaultProjection();
+        var hasGroupedAggregate = query.ProjectionItems
+            .Any(item => item.Item is AggregateExpression { GroupWithQuery: true });
 
         var select = exists ? "1" : query.SqlSelect?.ToString();
 
         if (select is null)
-            select = string.Join(", ", query.ProjectionItems.Select(RenderProjection));
+            select = string.Join(", ", query.ProjectionItems.Select(item => RenderProjection(item, hasGroupedAggregate)));
 
         if (query.IsTake)
             select = dialect.RenderTakePrefix(query.Take!.Value) + select;
@@ -40,6 +42,16 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 text += "\n\tAND " + RenderExpression(where);
         }
 
+        if (hasGroupedAggregate)
+        {
+            var groupBy = query.ProjectionItems
+                .Where(item => item.Item is not AggregateExpression)
+                .Select(item => RenderExpression(item.Item))
+                .ToArray();
+            if (groupBy.Length > 0)
+                text += "\nGROUP BY " + string.Join(", ", groupBy);
+        }
+
         if (query.Orders.Count != 0)
             text += "\nORDER BY " + string.Join(", ", query.Orders.Select(RenderOrder));
 
@@ -48,8 +60,11 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         return text;
     }
 
-    private string RenderProjection(ProjectionItem item)
+    private string RenderProjection(ProjectionItem item, bool hasGroupedAggregate = false)
     {
+        if (hasGroupedAggregate && item.Item is AggregateExpression { GroupWithQuery: true } aggregate)
+            return $"{aggregate.SelectSql} {dialect.QuoteIdentifier(item.Alias)}";
+
         var expression = RenderExpression(item.Item);
 
         if (item.Item is not FieldExpression)

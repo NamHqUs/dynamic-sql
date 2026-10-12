@@ -4,9 +4,11 @@ namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 class AggregateExpression : TableExpression
 {
     public override Type Type => typeof(double);
+    public bool GroupWithQuery { get; }
 
-    public AggregateExpression(TableExpression tableContext, string aggregation) : base(tableContext)
+    public AggregateExpression(TableExpression tableContext, string aggregation, bool groupWithQuery = false) : base(tableContext)
     {
+        GroupWithQuery = groupWithQuery;
         ProjectionItems = [];
         aggregation = aggregation.Replace("@", $"{tableContext.Alias}.");
         var i = aggregation.IndexOf('$');
