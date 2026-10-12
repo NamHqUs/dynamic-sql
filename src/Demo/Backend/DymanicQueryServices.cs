@@ -13,6 +13,14 @@ public static class DynamicQueryServices
     private static readonly Entity[] _metadata = LoadMetadata().ToArray();
     public static Entity[] GetMetadata() => _metadata;
 
+    public static string GetSqlQueryStringAsync(QueryRequestDto query)
+    {
+        Console.WriteLine($"\n{query}\n");
+        var context = new DynamicSqlContext(_cn, _metadata);
+        var result = context.Query(query).ToSql();
+        return result.CommandText;
+    }
+
     public static async Task<TableDataDto> ExecuteQueryAsync(QueryRequestDto query)
     {
         Console.WriteLine($"\n{query}\n");
@@ -27,6 +35,8 @@ public static class DynamicQueryServices
             Columns: string.Join(",", query.Columns.Select(c => c.Alias ?? c.Field)),
             Rows: rows);
     }
+
+
     private static List<Entity> LoadMetadata() => 
     [
         new(

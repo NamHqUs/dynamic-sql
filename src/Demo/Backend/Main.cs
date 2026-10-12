@@ -37,6 +37,7 @@ group.MapGet("/data/{tableName}", (string tableName) => SqliteServices.GetTableD
 
 group = app.MapGroup("/dynamic-query").WithTags("Dynamic Query Services");
 group.MapGet("/metadata", DynamicQueryServices.GetMetadata);
+group.MapPost("/query/to-string", (QueryRequestDto query) => DynamicQueryServices.GetSqlQueryStringAsync(query));
 group.MapPost("/query", (QueryRequestDto query) => DynamicQueryServices.ExecuteQueryAsync(query));
 
 app.Run();
