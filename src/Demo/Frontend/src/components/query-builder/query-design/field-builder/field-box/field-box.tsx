@@ -46,6 +46,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
   const [pendingAggregateWrapsPath, setPendingAggregateWrapsPath] = useState<boolean | null>(null);
   const [pendingAggregateField, setPendingAggregateField] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [fieldSearch, setFieldSearch] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
   const menuPopupRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -92,6 +93,9 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [menuOpen]);
+  useEffect(() => {
+    if (!menuOpen) setFieldSearch("");
+  }, [menuOpen]);
   const rootAggregateMatch = value.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^()]*)\)$/);
   const legacyAggregateMatch = valueSegments[valueSegments.length - 1]?.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/);
   const aggregateMatch = rootAggregateMatch ?? legacyAggregateMatch;
@@ -123,6 +127,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
       : "";
 
   const handleSelect = (selected: string) => {
+    setFieldSearch("");
     if (selected.startsWith(RELATION_PREFIX)) {
       setPendingPath([...path, selected.slice(RELATION_PREFIX.length)]);
       return;
@@ -160,6 +165,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
   const fields = current.fields.filter((field) =>
     (!activeAggregate || activeAggregate === COUNT_AGGREGATE || NUMERIC_DATA_TYPES.has(field.dataType.toLowerCase())) &&
     !excludedPaths.includes([...path, field.name].join(".")));
+  const filteredFields = fields.filter((field) => field.name.toLowerCase().includes(fieldSearch.trim().toLowerCase()));
   const isComplete = completeOnSelect && Boolean(value);
   const selectedDataType = aggregateMatch || selectedAggregate
     ? "Number"
@@ -197,6 +203,15 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
           : selectedField || (activeAggregate && activeAggregate !== COUNT_AGGREGATE ? placeholder : selectedAggregate) || placeholder}
       </button>
       {menuOpen && createPortal(<div ref={menuPopupRef} className="operator-menu field-box-menu-popup" style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, transform: "none", margin: 0 }} onMouseDown={(event) => event.preventDefault()} role="listbox" aria-label={`${ariaLabel} options`}>
+        <input
+          type="search"
+          className="field-box-search"
+          aria-label="Search fields"
+          placeholder="Search fields…"
+          autoFocus
+          value={fieldSearch}
+          onChange={(event) => setFieldSearch(event.target.value)}
+        />
         {relations.length > 0 && <>
           <span className="field-box-menu-label">Relations</span>
           {relations.map((relation) => (
@@ -206,11 +221,12 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
           ))}
         </>}
         <span className="field-box-menu-label">{current.name} fields</span>
-        {fields.map((field) => (
+        {filteredFields.map((field) => (
             <button type="button" className={`operator-option${selectValue === `${FIELD_PREFIX}${field.name}` ? " operator-option-selected" : ""}`} role="option" aria-selected={selectValue === `${FIELD_PREFIX}${field.name}`} key={field.name} onClick={() => handleSelect(`${FIELD_PREFIX}${field.name}`)}>
               {field.name}
             </button>
           ))}
+        {filteredFields.length === 0 && <span className="field-box-no-results">No matching fields</span>}
         {!activeAggregate && <>
           <span className="field-box-menu-label">Aggregate</span>
           {AGGREGATES.map((aggregate) => (

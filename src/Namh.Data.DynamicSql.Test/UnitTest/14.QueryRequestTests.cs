@@ -80,6 +80,29 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
+    public void DefinitionSortsByCollectionAggregate()
+    {
+        var definition = new QueryRequestDto
+        {
+            Entity = "User",
+            Columns =
+            [
+                new QueryColumn("Name"),
+                new QueryColumn("Sum(Members.Age)")
+            ],
+            Sorts = [new QuerySort("Sum(Members.Age)")]
+        };
+
+        var sql = _db.Query(definition).ToSql();
+        var records = _db.Query(definition).ToList();
+
+        Assert.That(sql.CommandText, Does.Contain("ORDER BY Sum ("));
+        Assert.That(sql.CommandText, Does.Not.Contain("ORDER BY (\n    SELECT"));
+        Assert.That(records.Select(record => record["Name"]),
+            Is.EqualTo(new object?[] { "Charlie", "Eve", "Frank", "Bob", "David", "Alice" }));
+    }
+
+    [Test]
     public void DefinitionConnectsStructuredFiltersWithLogicalOperators()
     {
         var definition = new QueryRequestDto

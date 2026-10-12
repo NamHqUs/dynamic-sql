@@ -16,4 +16,7 @@
 .field-box-menu-popup .field-box-menu-label { margin-top: 4px; padding: 8px 12px 6px; color: #c5b5ff; border-top: 1px solid #4a4163; background: #211b32; font-weight: 700; letter-spacing: 1px; }
 .field-box-menu-popup .field-box-menu-label:first-child { margin-top: 0; border-top: 0; }
 .field-box-menu-popup .operator-option { padding: 5px 12px 5px 24px; }
+.field-box-search { width: calc(100% - 16px); margin: 8px; padding: 6px 8px; color: #dce1eb; background: #191e28; border: 1px solid #4a4163; border-radius: 4px; box-sizing: border-box; font: 11px "DM Mono", monospace; outline: 0; }
+.field-box-search:focus { border-color: #8a6ed1; }
+.field-box-no-results { display: block; padding: 5px 12px 8px 24px; color: #8993a5; font: 11px "DM Mono", monospace; }
 .field-box-menu-label { display: block; padding: 6px 12px 3px; color: #8993a5; font: 10px "DM Mono", monospace; text-transform: uppercase; }

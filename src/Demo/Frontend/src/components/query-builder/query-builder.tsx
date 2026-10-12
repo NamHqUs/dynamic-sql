@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { clearQueryResult, executeQuery, fetchQueryMetadata, getSqlStatement, MetadataField, QueryDefinition } from "./query-design/query-builder-slice";
+import { executeQuery, fetchQueryMetadata, getSqlStatement, MetadataField, QueryDefinition } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import "./query-builder.css";
@@ -35,9 +35,6 @@ export default function QueryBuilder() {
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
 
   const updateDefinition = (nextDefinition: QueryDefinition) => {
-    if (cachedDefinition && JSON.stringify(cachedDefinition) !== JSON.stringify(nextDefinition)) {
-      dispatch(clearQueryResult());
-    }
     cachedDefinition = nextDefinition;
     setDefinition(nextDefinition);
   };

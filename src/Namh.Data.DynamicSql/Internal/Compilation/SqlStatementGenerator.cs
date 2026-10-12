@@ -81,7 +81,13 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         => $"{dialect.RenderTable(table.Entity)} {table.Alias}";
 
     private string RenderOrder(OrderExpression order)
-        => $"{RenderExpression(order.Expression)}{(order.Descending ? " DESC" : " ASC")}";
+    {
+        var expression = order.Expression is AggregateExpression { GroupWithQuery: true } aggregate
+            ? RenderAggregateSelect(aggregate)
+            : RenderExpression(order.Expression);
+
+        return $"{expression}{(order.Descending ? " DESC" : " ASC")}";
+    }
 
     private string RenderExpression(SqlExpression expression)
         => expression switch
