@@ -16,7 +16,7 @@ internal sealed class SqlQueryCompiler(
     ISqlDialect sqlDialect,
     bool includeArchive)
 {
-    internal const int TotalRecordsLimit = 5;
+    internal const int TotalRecordsLimit = 1000;
     public CompiledQuery Compile(Expression expression, bool includeTotalRecords = false)
     {
         var queryContext = new QueryContext(metaProvider, includeArchive);

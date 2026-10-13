@@ -22,6 +22,8 @@ public static class DynamicQueryServices
         var context = new DynamicSqlContext(dbConnection, MetadataServices.GetMetaProvider());
         var result = await context.Query(query).ToListWithTotalRecordsAsync();
 
+        Console.WriteLine($"\nTotal Records: {result.TotalRecords}\n");
+
         return new TableDataDto(
             Name: query.Entity,
             Columns: string.Join(",", query.Columns.Select(c => c.Alias ?? c.Field)),

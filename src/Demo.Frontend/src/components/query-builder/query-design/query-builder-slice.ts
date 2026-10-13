@@ -182,7 +182,7 @@ export const executeQuery = createAsyncThunk(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(createApiQuery(definition)),
       });
-      if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string") || typeof payload.totalRecords !== "number" || !Number.isFinite(payload.totalRecords) || payload.totalRecords < 0) {
+      if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string") || typeof payload.totalRecords !== "number" || !Number.isFinite(payload.totalRecords) || payload.totalRecords < -1) {
         return rejectWithValue("Query API must return a name, an array of row strings, and a valid total record count.");
       }
       const responseColumns = typeof payload.columns === "string"
@@ -209,7 +209,7 @@ export const executeQueryFromText = createAsyncThunk(
         headers: { "Content-Type": "text/plain" },
         body: text,
       });
-      if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string") || typeof payload.totalRecords !== "number" || !Number.isFinite(payload.totalRecords) || payload.totalRecords < 0) {
+      if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string") || typeof payload.totalRecords !== "number" || !Number.isFinite(payload.totalRecords) || payload.totalRecords < -1) {
         return rejectWithValue("Query API must return a name, an array of row strings, and a valid total record count.");
       }
       const responseColumns = typeof payload.columns === "string"
