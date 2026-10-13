@@ -48,6 +48,12 @@
       "DataType": 1,
       "FieldType": 0,
       "RawSql": "ReorderLevel"
+    },
+    {
+      "Name": "Margin",
+      "DataType": 1,
+      "FieldType": 0,
+      "RawSql": "InvoiceItems.LineTotal"
     }
   ],
   "RawSql": "Products",

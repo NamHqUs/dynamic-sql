@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../../icon/icon";
@@ -58,7 +58,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
     if (autoFocus) setMenuOpen(true);
   }, [autoFocus]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!menuOpen || !triggerRef.current) return;
     const updateMenuPosition = () => {
       if (!triggerRef.current) return;
