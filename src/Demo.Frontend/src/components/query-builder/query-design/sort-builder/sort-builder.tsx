@@ -1,4 +1,5 @@
-import { type DragEvent, useEffect, useRef, useState } from "react";
+import { type DragEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MetadataEntity, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
 import Icon from "../../../icon/icon";
@@ -23,14 +24,51 @@ function SortDirectionMenu({
   onChange: (direction: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const label = value === "desc" ? "Descending" : "Ascending";
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPosition(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      const trigger = triggerRef.current;
+      const menu = menuRef.current;
+      if (!trigger || !menu) return;
+
+      const triggerBounds = trigger.getBoundingClientRect();
+      const menuHeight = menu.getBoundingClientRect().height;
+      const spaceBelow = window.innerHeight - triggerBounds.bottom;
+      const top = spaceBelow < menuHeight + 4 && triggerBounds.top >= menuHeight + 4
+        ? triggerBounds.top - menuHeight - 4
+        : triggerBounds.bottom + 4;
+
+      setMenuPosition({ top, left: triggerBounds.left });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
 
     const closeOnOutsideClick = (event: MouseEvent) => {
-      if (event.target instanceof Node && !containerRef.current?.contains(event.target)) setOpen(false);
+      if (
+        event.target instanceof Node
+        && !containerRef.current?.contains(event.target)
+        && !menuRef.current?.contains(event.target)
+      ) setOpen(false);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
@@ -49,6 +87,7 @@ function SortDirectionMenu({
       <button
         type="button"
         className="operator-trigger"
+        ref={triggerRef}
         aria-label={`Sort direction for ${field}`}
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -57,26 +96,42 @@ function SortDirectionMenu({
         {label}
       </button>
       {open && (
-        <div className="operator-menu" role="listbox" aria-label={`Sort direction options for ${field}`}>
-          {[
-            ["asc", "Ascending"],
-            ["desc", "Descending"],
-          ].map(([direction, directionLabel]) => (
-            <button
-              type="button"
-              className={`operator-option${direction === value ? " operator-option-selected" : ""}`}
-              role="option"
-              aria-selected={direction === value}
-              key={direction}
-              onClick={() => {
-                onChange(direction);
-                setOpen(false);
-              }}
-            >
-              {directionLabel}
-            </button>
-          ))}
-        </div>
+        createPortal(
+          <div
+            className="operator-menu"
+            ref={menuRef}
+            role="listbox"
+            aria-label={`Sort direction options for ${field}`}
+            style={{
+              position: "fixed",
+              top: menuPosition?.top ?? 0,
+              left: menuPosition?.left ?? 0,
+              transform: "none",
+              zIndex: 1000,
+              visibility: menuPosition ? "visible" : "hidden",
+            }}
+          >
+            {[
+              ["asc", "Ascending"],
+              ["desc", "Descending"],
+            ].map(([direction, directionLabel]) => (
+              <button
+                type="button"
+                className={`operator-option${direction === value ? " operator-option-selected" : ""}`}
+                role="option"
+                aria-selected={direction === value}
+                key={direction}
+                onClick={() => {
+                  onChange(direction);
+                  setOpen(false);
+                }}
+              >
+                {directionLabel}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )
       )}
     </div>
   );

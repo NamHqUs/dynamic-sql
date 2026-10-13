@@ -1,0 +1,43 @@
+{
+  "Name": "Revenue by customer segment and region",
+  "Entity": "Customers",
+  "Columns": [
+    {
+      "Field": "Segment",
+      "Alias": null
+    },
+    {
+      "Field": "Region",
+      "Alias": null
+    },
+    {
+      "Field": "Count()",
+      "Alias": "InvoiceCount"
+    },
+    {
+      "Field": "Sum(Invoices.TotalAmount)",
+      "Alias": "Revenue"
+    }
+  ],
+  "Filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "LogicalOperator": 0,
+        "Field": "Invoices.Status",
+        "Operation": 1,
+        "Value": "Draft",
+        "Parameterized": false
+      }
+    ]
+  },
+  "Sorts": [
+    {
+      "Field": "Sum(Invoices.TotalAmount)",
+      "Direction": 0
+    }
+  ],
+  "Page": null,
+  "PageSize": 50,
+  "IncludeArchive": false
+}
