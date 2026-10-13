@@ -3,8 +3,7 @@
 .key-mappings { margin: 10px 0 0 14px; padding-left: 14px; border-left: 1px solid #333a4a; }
 .key-row { display: grid; grid-template-columns: 1fr 20px 1fr 34px; align-items: center; gap: 7px; margin-top: 7px; }
 .key-row span { color: #8f7fca; text-align: center; }
-.key-mappings .add-key { border: 0; background: none; color: var(--purple); font: 12px "DM Mono", monospace; padding: 16px 0 0; cursor: pointer; }
-.key-mappings .add-key:hover { text-decoration: underline; }
+.key-mappings .add-key { display: inline-flex; align-items: center; gap: 5px; border: 0; background: none; color: var(--purple); font: 12px "DM Mono", monospace; padding: 16px 0 0; cursor: pointer; }
 
 @media (max-width: 760px) {
   .relation-main { grid-template-columns: 1fr 1fr 34px; }

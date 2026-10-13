@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MetadataEntity } from "../query-builder-slice";
+import Icon from "../../../../icon/icon";
 import "./field-box.css";
 
 type FieldBoxProps = {
@@ -14,6 +15,7 @@ type FieldBoxProps = {
   showPath?: boolean;
   showDataType?: boolean;
   placeholder?: string;
+  placeholderIcon?: boolean;
   ariaLabel?: string;
   excludedPaths?: string[];
   autoFocus?: boolean;
@@ -39,7 +41,7 @@ export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], 
   return current;
 }
 
-export default function FieldBox({ entity, metadata, value, onChange, onIncompleteChange, clearOnSelect = false, completeOnSelect = false, showPath = false, showDataType = false, placeholder = "Select field…", ariaLabel = "Field", excludedPaths = [], autoFocus = false }: FieldBoxProps) {
+export default function FieldBox({ entity, metadata, value, onChange, onIncompleteChange, clearOnSelect = false, completeOnSelect = false, showPath = false, showDataType = false, placeholder = "Select field…", placeholderIcon = false, ariaLabel = "Field", excludedPaths = [], autoFocus = false }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
   const [pendingAggregate, setPendingAggregate] = useState<string | null>(null);
@@ -198,9 +200,14 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
         aria-haspopup="listbox"
         onClick={() => setMenuOpen((open) => !open)}
       >
-        {showPath && (pendingPath?.length ? pendingPath.join(".") : value)
-          ? (pendingPath?.length ? pendingPath.join(".") : value)
-          : selectedField || (activeAggregate && activeAggregate !== COUNT_AGGREGATE ? placeholder : selectedAggregate) || placeholder}
+        {(() => {
+          const label = showPath && (pendingPath?.length ? pendingPath.join(".") : value)
+            ? (pendingPath?.length ? pendingPath.join(".") : value)
+            : selectedField || (activeAggregate && activeAggregate !== COUNT_AGGREGATE ? placeholder : selectedAggregate) || placeholder;
+          return placeholderIcon && label === placeholder
+            ? <><Icon name="plus" size={12} /><span className="action-link-text">{label}</span></>
+            : label;
+        })()}
       </button>
       {menuOpen && createPortal(<div ref={menuPopupRef} className="operator-menu field-box-menu-popup" style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, transform: "none", margin: 0 }} onMouseDown={(event) => event.preventDefault()} role="listbox" aria-label={`${ariaLabel} options`}>
         <input

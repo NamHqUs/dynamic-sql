@@ -463,7 +463,7 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
       )}
       {depth === 0 && (
         <>
-          <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /> Condition</button>
+          <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /><span className="action-link-text">Condition</span></button>
           <div
               className={`filter-drop-zone filter-drop-zone-last${isPreview("after") ? " filter-drop-preview" : ""}`}
               onDragOver={(event) => {
@@ -845,7 +845,7 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
           onClick={clearFilters}
           disabled={!definition.filters.filters.length}
         >
-          - Clear filters
+          <Icon name="minus" size={12} /><span className="action-link-text">Clear filters</span>
         </button>
       </div>
       <FilterGroupEditor

@@ -8,6 +8,7 @@ const paths = {
   code: <><path d="m9 7-5 5 5 5M15 7l5 5-5 5" /></>,
   upload: <><path d="M12 16V4m0 0L7 9m5-5 5 5" /><path d="M5 14v5h14v-5" /></>,
   plus: <><path d="M12 5v14M5 12h14" /></>,
+  minus: <path d="M5 12h14" />,
   search: <><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></>,
   download: <><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14" /></>,
   reset: <><path d="M4 12a8 8 0 1 0 2.5-5.8L4 8.5" /><path d="M4 4v4.5h4.5" /></>,

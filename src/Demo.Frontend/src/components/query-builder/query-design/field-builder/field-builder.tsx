@@ -15,6 +15,7 @@ type FieldBuilderProps = {
   showPath?: boolean;
   showDataType?: boolean;
   placeholder?: string;
+  placeholderIcon?: boolean;
   ariaLabel?: string;
   excludedPaths?: string[];
   editMode?: boolean;
@@ -41,6 +42,7 @@ export default function FieldBuilder({
   showPath = false,
   showDataType = false,
   placeholder = "Select field…",
+  placeholderIcon = false,
   ariaLabel = "Field",
   excludedPaths = [],
   editMode = false,
@@ -83,6 +85,7 @@ export default function FieldBuilder({
           autoFocus={Boolean(value)}
           showPath={showPath}
           placeholder={placeholder}
+          placeholderIcon={placeholderIcon}
           ariaLabel={ariaLabel}
           excludedPaths={excludedPaths}
           onChange={(path) => {

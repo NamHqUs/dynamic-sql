@@ -279,7 +279,7 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
             onClick={selectAllFields}
             disabled={entity.fields.every((field) => definition.columns.some((column) => column.field === field.name))}
           >
-            + Select all fields
+            <Icon name="plus" size={12} /><span className="action-link-text">Select all fields</span>
           </button>
           <button
             type="button"
@@ -287,7 +287,7 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
             onClick={clearProjection}
             disabled={!definition.columns.length}
           >
-            - Clear projection
+            <Icon name="minus" size={12} /><span className="action-link-text">Clear projection</span>
           </button>
         </div>
       </div>
@@ -316,7 +316,8 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
           metadata={metadata}
           value=""
           excludedPaths={definition.columns.map((column) => column.field)}
-          placeholder="+ Display field"
+          placeholder="Display field"
+          placeholderIcon
           ariaLabel="Display field"
           onChange={addColumn}
         />

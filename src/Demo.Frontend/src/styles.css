@@ -5,6 +5,7 @@
 body { margin: 0; min-width: 1000px; background: radial-gradient(circle at 76% -10%, #1b1630 0, transparent 32%), #080a0f; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
+.action-link-text { text-decoration: underline; }
 .app-shell { max-width: 1440px; margin: auto; padding: 0 44px 28px; min-height: 100vh; }
 .topbar { height: 76px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 50px; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 800; letter-spacing: -.5px; white-space: nowrap; }.brand-accent { color: var(--purple); }.brand-product { color: var(--muted); font-weight: 500; }.brand-divider { width: 1px; height: 19px; background: var(--line); margin-left: 5px; }.brand-mark { color: var(--purple); display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #5a4798; background: #211c3b; border-radius: 7px; }

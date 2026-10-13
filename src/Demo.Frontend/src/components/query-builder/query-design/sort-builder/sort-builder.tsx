@@ -144,7 +144,7 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
           onClick={clearSorts}
           disabled={!definition.sorts.length}
         >
-          - Clear sorts
+          <Icon name="minus" size={12} /><span className="action-link-text">Clear sorts</span>
         </button>
       </div>
       <div
@@ -213,7 +213,8 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
             entity={entity}
             metadata={metadata}
             value=""
-            placeholder="+ Sort by field"
+            placeholder="Sort by field"
+            placeholderIcon
             ariaLabel="Sort by field"
             excludedPaths={definition.sorts.map((sort) => sort.field)}
             onChange={addSort}

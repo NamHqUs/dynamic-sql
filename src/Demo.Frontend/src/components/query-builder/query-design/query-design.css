@@ -42,11 +42,11 @@
 .field-action-buttons { display: flex; align-items: center; gap: 12px; }
 .field-action { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; padding: 0; font: 12px "DM Mono", monospace; cursor: pointer; }
 .field-action-clear { color: var(--purple); }
-.field-action:focus-visible { text-decoration: underline; outline: 0; }
+.field-action:focus-visible { outline: 0; }
 .field-action:disabled { opacity: .5; cursor: default; }
 .filter-description { max-width: 760px; margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; text-align: left; }
-.text-button { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; padding: 0; font: 12px "DM Mono", monospace; }
-.text-button:focus-visible { text-decoration: underline; outline: 0; }
+.text-button { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; padding: 0; font: 12px "DM Mono", monospace; cursor: pointer; }
+.text-button:focus-visible { outline: 0; }
 .filter-row { position: relative; display: flex; align-items: center; gap: 6px; width: 100%; max-width: 100%; margin-top: 10px; }
 .filter-field-drag-target { position: relative; display: flex; align-items: center; flex: 0 0 auto; }
 .filter-field-drag-handle { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; border-left: 3px solid #654f9f; cursor: grab; z-index: 1; }

@@ -159,7 +159,7 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
         ))}
       </div>
       <button className="button secondary compact add-field-button" type="button" onClick={addField}>
-        <Icon name="plus" size={13} /> Add field
+        <Icon name="plus" size={13} /><span className="action-link-text">Add field</span>
       </button>
     </div>
   );

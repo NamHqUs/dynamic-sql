@@ -164,7 +164,7 @@ export default function RelationsBuilder({
               type="button"
               onClick={() => addKeyMapping(index)}
             >
-              + Add key pair
+              <Icon name="plus" size={12} /><span className="action-link-text">Add key pair</span>
             </button>
           </div>
         </div>
