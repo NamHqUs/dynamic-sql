@@ -1,0 +1,43 @@
+{
+  "Name": "4. Best-selling products by units and revenue",
+  "Entity": "Products",
+  "Columns": [
+    {
+      "Field": "Name",
+      "Alias": null
+    },
+    {
+      "Field": "Category",
+      "Alias": null
+    },
+    {
+      "Field": "Sum(InvoiceItems.Quantity)",
+      "Alias": "UnitsSold"
+    },
+    {
+      "Field": "Sum(InvoiceItems.LineTotal)",
+      "Alias": "Revenue"
+    }
+  ],
+  "Filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "LogicalOperator": 0,
+        "Field": "InvoiceItems.Invoice.Status",
+        "Operation": 1,
+        "Value": "Draft",
+        "Parameterized": false
+      }
+    ]
+  },
+  "Sorts": [
+    {
+      "Field": "Sum(InvoiceItems.LineTotal)",
+      "Direction": 1
+    }
+  ],
+  "Page": 1,
+  "PageSize": 50,
+  "IncludeArchive": false
+}

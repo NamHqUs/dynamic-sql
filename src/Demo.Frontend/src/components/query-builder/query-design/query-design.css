@@ -1,8 +1,10 @@
 .query-builder-card { --field-box-height: 34px; background: linear-gradient(135deg, #11141c, #0f1218); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
 .query-builder-toolbar { display: flex; align-items: end; gap: 25px; padding: 0; margin-bottom: 20px; border-bottom: 0; background: transparent; }
 .query-builder-toolbar label { display: flex; flex-direction: column; gap: 7px; color: #aab3c2; font: 10px "DM Mono", monospace; letter-spacing: .7px; text-transform: uppercase; }
-.query-builder-toolbar select, .query-builder-toolbar input, .filter-row select, .filter-row input { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 9px; font-size: 12px; outline: 0; height: var(--field-box-height); box-sizing: border-box; }
+.query-builder-toolbar select, .query-builder-toolbar input, .filter-row select, .filter-row input { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 9px; font-size: 12px; outline: 0; }
+.query-builder-toolbar select, .query-builder-toolbar input:not([type="checkbox"]), .filter-row select, .filter-row input { height: var(--field-box-height); box-sizing: border-box; }
 .query-builder-toolbar select { min-width: 220px; }
+.query-builder-toolbar input.small-input { height: calc(var(--field-box-height) - 1px); }
 .query-builder-toolbar input[type="checkbox"] { width: auto; height: auto; padding: 0; }
 .small-input { width: 75px; }
 .checkbox-label { align-self: flex-end; flex-direction: row !important; align-items: center; height: var(--field-box-height); box-sizing: border-box; text-transform: none !important; letter-spacing: 0 !important; font-family: inherit !important; font-size: 12px !important; }

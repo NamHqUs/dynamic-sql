@@ -216,7 +216,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
 
   return (
     <>
-      <section className="page-heading">
+      <section className="page-heading metadata-page-heading">
         <div>
           <div className="eyebrow">WORKSPACE / METADATA BUILDER</div>
           <h1>Design entity metadata</h1>

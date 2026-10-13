@@ -114,7 +114,7 @@ async function requestText(url: string, options?: RequestInit) {
   return response.text();
 }
 
-function createApiQuery(definition: QueryDefinition) {
+export function createApiQuery(definition: QueryDefinition) {
   const { filters, sorts, ...query } = definition;
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   return {

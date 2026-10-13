@@ -833,6 +833,11 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
       ref={builderRef}
       className="builder-section filters-section"
       style={filterItemWidth ? { "--filter-item-width": `${filterItemWidth}px` } as CSSProperties : undefined}
+      onDragLeave={(event) => {
+        if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) {
+          setDragPreview(undefined);
+        }
+      }}
     >
       <div className="section-header">
         <div className="section-heading">
