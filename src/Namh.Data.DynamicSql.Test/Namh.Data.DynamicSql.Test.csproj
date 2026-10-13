@@ -17,14 +17,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="C:\Users\namhq\.nuget\packages\nunit3testadapter\6.3.0\build\net8.0\nunit.engine.api.dll" />
-	  <None Remove="C:\Users\namhq\.nuget\packages\nunit3testadapter\6.3.0\build\net8.0\nunit.engine.core.dll" />
-	  <None Remove="C:\Users\namhq\.nuget\packages\nunit3testadapter\6.3.0\build\net8.0\nunit.engine.dll" />
-	  <None Remove="C:\Users\namhq\.nuget\packages\nunit3testadapter\6.3.0\build\net8.0\NUnit3.TestAdapter.pdb" />
-	  <None Remove="C:\Users\namhq\.nuget\packages\nunit3testadapter\6.3.0\build\net8.0\testcentric.engine.metadata.dll" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <None Include="..\..\scripts\testdata-sqlserver.sql" Link="TestData\datatest-sqlserver.sql" CopyToOutputDirectory="PreserveNewest" />
 	  <None Include="..\..\scripts\testdata-sqlite.sql" Link="TestData\datatest-sqlite.sql" CopyToOutputDirectory="PreserveNewest" />
 	  <None Include="..\..\scripts\testdata-postgres.sql" Link="TestData\datatest-postgres.sql" CopyToOutputDirectory="PreserveNewest" />
@@ -48,22 +40,4 @@
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
 		<PackageReference Include="Npgsql" Version="9.0.4" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="C:\Users\namhq\.nuget\packages\nunit3testadapter\6.3.0\build\net8.0\NUnit3.TestAdapter.dll" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="C:\Users\namhq\.nuget\packages\nunit3testadapter\6.3.0\build\net8.0\NUnit3.TestAdapter.dll" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="C:\Users\namhq\.nuget\packages\nunit3testadapter\6.3.0\build\net8.0\NUnit3.TestAdapter.dll" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="C:\Users\namhq\.nuget\packages\nunit3testadapter\6.3.0\build\net8.0\NUnit3.TestAdapter.dll" />
-	</ItemGroup>
-
-
 </Project>

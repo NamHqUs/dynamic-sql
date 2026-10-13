@@ -6,7 +6,7 @@ public class _01_ProjectionAsyncTest : TestBase
     [Test]
     public async Task _01_Field_Primitive()
     {
-        string[] fields = ["Id", "ManagerId", "SchoolId", "Name", "Age", "Birthday", "IsMale"];
+        string[] fields = ["Id", "Name", "Age", "Birthday", "IsMale"];
         var data = await _db.Query("User").Select(fields).ToListAsync();
 
         Assert.That(data.Count, Is.EqualTo(6));

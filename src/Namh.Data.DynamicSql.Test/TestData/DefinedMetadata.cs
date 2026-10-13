@@ -34,8 +34,8 @@ public class DefinedMetadata
             Fields : [
                 new("Id"),
                 new("Name"),
-                new("ManagerId"),
-                new("SchoolId"),
+                //new("ManagerId"),
+                //new("SchoolId"),
                 new("Age"),
                 new("Birthday"),
                 new("IsMale"),

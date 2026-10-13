@@ -6,7 +6,7 @@ public class _01_ProjectionTest : TestBase
     [Test]
     public void _01_Field_Primitive()
     {
-        string[] fields = ["Id", "ManagerId", "SchoolId", "Name", "Age", "Birthday", "IsMale"];
+        string[] fields = ["Id", "Name", "Age", "Birthday", "IsMale"];
         var query = _db.Query("User").Select(fields);
         var data = query.ToList();
 

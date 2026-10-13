@@ -192,9 +192,9 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         var predicates = new List<SqlExpression>();
         foreach (var e in relation.RelatedKeys)
             predicates.Add(new BinarySqlExpression(
-                new FieldExpression(joinedTable.Alias, joinedTable.Entity.GetField(e.ToDbColumn)),
+                new FieldExpression(joinedTable.Alias, new Field(e.ToDbColumn)),
                 "=",
-                new FieldExpression(table.Alias, table.Entity.GetField(e.FromDbColumn)),
+                new FieldExpression(table.Alias, new Field(e.FromDbColumn)),
                 typeof(bool)));
 
         if (BuildEnforceFilter(joinedTable, out var filter))
