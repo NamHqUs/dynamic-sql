@@ -5,10 +5,11 @@
 
 .query-request-workspace { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; align-items: start; }
 .query-request-list { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
-.query-request-item { display: block; width: 100%; margin-top: 8px; padding: 11px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.query-request-item { display: block; width: 100%; margin-top: 2px; padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
 .query-request-item:hover, .query-request-item.active { background: var(--panel-muted); border-color: var(--line); }
 .query-request-item strong, .query-request-item small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.query-request-item small { color: var(--muted); margin-top: 4px; }
+.query-request-item strong { font-size: 11px; }
+.query-request-item small { color: var(--muted); margin-top: 1px; font-size: 9px; line-height: 1.2; }
 .query-request-editor { min-width: 0; }
 .query-request-header { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 12px; }
 .query-request-header label { display: grid; gap: 5px; color: var(--muted); font-size: 10px; letter-spacing: .5px; width: min(640px, 100%); }
