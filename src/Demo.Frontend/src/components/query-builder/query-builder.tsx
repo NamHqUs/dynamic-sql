@@ -383,7 +383,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
         <div className="query-request-editor">
           <PanelSplitter panel={panel} label="saved requests panel" />
           <div className="query-request-header">
-            <label>Request name <input value={requestName} onChange={(event) => {
+            <label><span className="query-request-label-caption">Request name</span><input value={requestName} onChange={(event) => {
               setRequestName(event.target.value);
               cachedRequestName = event.target.value;
             }} placeholder="e.g. recent-invoices" /></label>
@@ -412,6 +412,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
               onClick={() => void requestPlanTextNavigation(() => setActiveRequestTab("design"))}
               disabled={isResolvingPlanChanges}
             >
+              <Icon name="grid" size={14} />
               Query design
             </button>
             <button
@@ -430,6 +431,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
               }}
               disabled={isResolvingPlanChanges}
             >
+              <Icon name="code" size={14} />
               Plan text
             </button>
           </div>

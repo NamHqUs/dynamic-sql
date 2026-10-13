@@ -18,15 +18,18 @@
 .query-request-editor > .panel-splitter { left: 0; }
 .query-request-header { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 12px; }
 .query-request-header label { display: grid; gap: 5px; color: var(--muted); font-size: 10px; letter-spacing: .5px; width: min(640px, 100%); }
-.query-request-header input { width: 100%; padding: 6px 12px; border: 0; border-radius: 7px; outline: 0; color: #f0edf9; background: #151923; font-size: 15px; font-weight: 600; letter-spacing: -.3px; transition: background .15s ease, box-shadow .15s ease; }
+.query-request-label-caption { margin-left: 8px; }
+.query-request-header input { width: 100%; padding: 6px 12px; border: 0; border-radius: 7px; outline: 0; color: #f0edf9; background: #151923; font-size: 13px; font-weight: 400; letter-spacing: normal; transition: background .15s ease, box-shadow .15s ease; }
 .query-request-header input:hover { background: #191e29; }
 .query-request-header input:focus-visible { background: #191e29; box-shadow: 0 0 0 2px #8064e8; }
 .query-request-header input::placeholder { color: #687284; font-weight: 400; }
 .query-request-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
-.query-request-tab { position: relative; padding: 11px 2px; border: 0; background: transparent; color: var(--muted); font-size: 14px; }
-.query-request-tab:hover, .query-request-tab.active { color: #fff; }
+.query-request-tab { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 11px 2px; border: 0; background: transparent; color: var(--muted); font-size: 14px; }
+.query-request-tab:hover { color: #fff; }
+.query-request-tab.active { color: #b9a5ff; }
 .query-request-tab.active::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--purple); content: ""; }
 .query-request-tab:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+.query-request-tab:disabled { cursor: default; opacity: .65; }
 .query-design-area { border: 0; border-radius: 0; overflow: hidden; }
 .query-design-area .query-builder-card { border: 0; border-radius: 0; }
 .query-request-structure { min-height: 280px; max-height: 620px; overflow: auto; border: 0; border-radius: 10px; background: transparent; }
