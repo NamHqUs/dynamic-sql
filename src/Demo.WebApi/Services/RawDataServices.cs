@@ -25,7 +25,7 @@ public static class RawDataServices
             rows.Add(string.Join(",", row));
         }
 
-        return new TableDataDto(tableName, string.Join(",", columns), rows.ToArray());
+        return new TableDataDto(tableName, string.Join(",", columns), rows.ToArray(), 0, 0, rows.Count);
     }
 }
 

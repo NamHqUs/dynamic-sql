@@ -78,6 +78,7 @@ export type QueryResult = {
   name: string;
   columns: string[];
   rows: string[][];
+  totalRecords: number;
 };
 
 async function requestJson(url: string, options?: RequestInit) {
@@ -181,8 +182,8 @@ export const executeQuery = createAsyncThunk(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(createApiQuery(definition)),
       });
-      if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string")) {
-        return rejectWithValue("Query API must return a name and an array of row strings.");
+      if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string") || typeof payload.totalRecords !== "number" || !Number.isFinite(payload.totalRecords) || payload.totalRecords < 0) {
+        return rejectWithValue("Query API must return a name, an array of row strings, and a valid total record count.");
       }
       const responseColumns = typeof payload.columns === "string"
         ? payload.columns.split(",").filter((column: string) => column.trim())
@@ -191,6 +192,7 @@ export const executeQuery = createAsyncThunk(
         name: payload.name,
         columns: responseColumns.length ? responseColumns : definition.columns.map((column) => column.alias || column.field),
         rows: payload.rows.map((row: string) => row.split(",")),
+        totalRecords: payload.totalRecords,
       } as QueryResult;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to execute query.");
@@ -207,8 +209,8 @@ export const executeQueryFromText = createAsyncThunk(
         headers: { "Content-Type": "text/plain" },
         body: text,
       });
-      if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string")) {
-        return rejectWithValue("Query API must return a name and an array of row strings.");
+      if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string") || typeof payload.totalRecords !== "number" || !Number.isFinite(payload.totalRecords) || payload.totalRecords < 0) {
+        return rejectWithValue("Query API must return a name, an array of row strings, and a valid total record count.");
       }
       const responseColumns = typeof payload.columns === "string"
         ? payload.columns.split(",").filter((column: string) => column.trim())
@@ -217,6 +219,7 @@ export const executeQueryFromText = createAsyncThunk(
         name: payload.name,
         columns: responseColumns,
         rows: payload.rows.map((row: string) => row.split(",")),
+        totalRecords: payload.totalRecords,
       } as QueryResult;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to execute query.");

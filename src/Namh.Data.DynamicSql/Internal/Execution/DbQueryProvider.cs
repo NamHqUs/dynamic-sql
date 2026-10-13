@@ -84,11 +84,37 @@ class DbQueryProvider(
         };
 
     public IEnumerable<DataRecord> Execute(Expression expression)
-    {
-        var compiled = Translate(expression);
+        => Execute(Translate(expression));
 
+    private IEnumerable<DataRecord> Execute(CompiledQuery compiled)
+    {
         var cmd = CreateDbCommand(compiled.CommandText, compiled.Parameters);
         return new DbReader(cmd.ExecuteReader(), compiled.ProjectionItems);
+    }
+
+    public (List<DataRecord> Records, long TotalRecords) ExecuteWithTotalRecords(Expression expression)
+    {
+        var compiled = Translate(expression, includeTotalRecords: true);
+        var records = new List<DataRecord>(Execute(compiled));
+        var commandText = compiled.TotalRecordsCommandText
+            ?? throw new InvalidOperationException("The total-record SQL was not generated.");
+
+        using var cmd = CreateDbCommand(commandText, compiled.Parameters);
+        var value = cmd.ExecuteScalar();
+        return (records, ConvertTotalRecords(value));
+    }
+
+    public async Task<(List<DataRecord> Records, long TotalRecords)> ExecuteWithTotalRecordsAsync(
+        Expression expression,
+        CancellationToken cancellationToken)
+    {
+        var compiled = Translate(expression, includeTotalRecords: true);
+        var records = await ExecuteAsync(compiled, cancellationToken);
+        var commandText = compiled.TotalRecordsCommandText
+            ?? throw new InvalidOperationException("The total-record SQL was not generated.");
+        var value = await ExecuteScalarAsync(compiled, commandText, cancellationToken);
+
+        return (records, ConvertTotalRecords(value));
     }
 
     public object? ExecuteScalar(Expression expression)
@@ -99,9 +125,13 @@ class DbQueryProvider(
         return cmd.ExecuteScalar();
     }
 
-    public async Task<List<DataRecord>> ExecuteAsync(Expression expression, CancellationToken cancellationToken)
+    public Task<List<DataRecord>> ExecuteAsync(Expression expression, CancellationToken cancellationToken)
+        => ExecuteAsync(Translate(expression), cancellationToken);
+
+    private async Task<List<DataRecord>> ExecuteAsync(
+        CompiledQuery compiled,
+        CancellationToken cancellationToken)
     {
-        var compiled = Translate(expression);
         var connection = GetAsyncConnection();
 
         if (connection.State != ConnectionState.Open)
@@ -116,15 +146,23 @@ class DbQueryProvider(
         return await DbReader.ReadAllAsync(reader, compiled.ProjectionItems, cancellationToken);
     }
 
-    public async Task<object?> ExecuteScalarAsync(Expression expression, CancellationToken cancellationToken)
+    public Task<object?> ExecuteScalarAsync(Expression expression, CancellationToken cancellationToken)
     {
         var compiled = Translate(expression);
+        return ExecuteScalarAsync(compiled, compiled.CommandText, cancellationToken);
+    }
+
+    private async Task<object?> ExecuteScalarAsync(
+        CompiledQuery compiled,
+        string commandText,
+        CancellationToken cancellationToken)
+    {
         var connection = GetAsyncConnection();
 
         if (connection.State != ConnectionState.Open)
             await connection.OpenAsync(cancellationToken);
 
-        using var cmd = CreateDbCommand(compiled.CommandText, compiled.Parameters);
+        using var cmd = CreateDbCommand(commandText, compiled.Parameters);
         if (cmd is not DbCommand dbCommand)
             throw new InvalidOperationException(
                 $"The database command type [{cmd.GetType().FullName}] does not support asynchronous execution.");
@@ -150,7 +188,20 @@ class DbQueryProvider(
     }
 
     private CompiledQuery Translate(Expression expression)
-        => new SqlQueryCompiler(metaProvider, sqlDialect, includeArchive).Compile(expression);
+        => Translate(expression, includeTotalRecords: false);
+
+    private CompiledQuery Translate(Expression expression, bool includeTotalRecords)
+        => new SqlQueryCompiler(metaProvider, sqlDialect, includeArchive)
+            .Compile(expression, includeTotalRecords);
+
+    private static long ConvertTotalRecords(object? value)
+    {
+        if (value is null or DBNull)
+            throw new InvalidOperationException("The database did not return a total record count.");
+
+        var count = Convert.ToInt64(value);
+        return count > SqlQueryCompiler.TotalRecordsLimit ? -1 : count;
+    }
 
     private IDbCommand CreateDbCommand(string sqlQuery, IEnumerable<DbParameter> parameters)
     {

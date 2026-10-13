@@ -8,24 +8,32 @@ namespace Namh.Data.DynamicSql.Internal.Compilation;
 internal sealed record CompiledQuery(
     string CommandText,
     IReadOnlyList<DbParameter> Parameters,
-    IReadOnlyList<ProjectionItem> ProjectionItems);
+    IReadOnlyList<ProjectionItem> ProjectionItems,
+    string? TotalRecordsCommandText);
 
 internal sealed class SqlQueryCompiler(
     IMetaProvider metaProvider,
     ISqlDialect sqlDialect,
     bool includeArchive)
 {
-    public CompiledQuery Compile(Expression expression)
+    internal const int TotalRecordsLimit = 5;
+    public CompiledQuery Compile(Expression expression, bool includeTotalRecords = false)
     {
         var queryContext = new QueryContext(metaProvider, includeArchive);
         var tableExpression = (TableExpression)new QueryVisitor(queryContext).Visit(expression);
-        var generatedSql = new SqlStatementGenerator(sqlDialect).Generate(
-            tableExpression,
-            queryContext.DbParameters);
+        var statementGenerator = new SqlStatementGenerator(sqlDialect);
+        var generatedSql = statementGenerator.Generate(tableExpression, queryContext.DbParameters);
+        var totalRecordsSql = includeTotalRecords
+            ? statementGenerator.GenerateTotalRecords(
+                tableExpression,
+                queryContext.DbParameters,
+                TotalRecordsLimit + 1)
+            : null;
 
         return new CompiledQuery(
             generatedSql.CommandText,
             generatedSql.Parameters,
-            tableExpression.ProjectionItems.ToArray());
+            tableExpression.ProjectionItems.ToArray(),
+            totalRecordsSql?.CommandText);
     }
 }

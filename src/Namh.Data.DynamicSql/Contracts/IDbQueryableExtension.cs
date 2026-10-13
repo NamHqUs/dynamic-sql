@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Namh.Data.DynamicSql.Internal.Execution;
+using System.Linq.Expressions;
 using System.Reflection;
 
 #pragma warning disable IDE0130
@@ -55,6 +56,9 @@ public static class IDbQueryableExtension
     public static List<DataRecord> ToList(this IDbQueryable source)
         => [.. (IEnumerable<DataRecord>)source];
 
+    public static (List<DataRecord> Records, long TotalRecords) ToListWithTotalRecords(this IDbQueryable source)
+        =>  GetTotalRecordsProvider(source.Provider).ExecuteWithTotalRecords(source.Expression);
+
     public static SqlQuery ToSql(this IDbQueryable source)
         => source.Provider.GetQuery(source.Expression);
 
@@ -62,6 +66,12 @@ public static class IDbQueryableExtension
         this IDbQueryable source,
         CancellationToken cancellationToken = default)
         => source.Provider.ExecuteAsync(source.Expression, cancellationToken);
+
+    public static Task<(List<DataRecord> Records, long TotalRecords)> ToListWithTotalRecordsAsync(
+        this IDbQueryable source,
+        CancellationToken cancellationToken = default)
+        => GetTotalRecordsProvider(source.Provider)
+            .ExecuteWithTotalRecordsAsync(source.Expression, cancellationToken);
 
     public static DataRecord FirstOrDefault(this IDbQueryable source, Expression<Func<IRecordParameter, bool>> predicate)
         => source.Where(predicate).FirstOrDefault();
@@ -160,4 +170,9 @@ public static class IDbQueryableExtension
     private static MethodInfo? GetQueryMethod(string name, int parameterCount)
         => typeof(IDbQueryableExtension).GetMethods()
             .FirstOrDefault(method => method.Name == name && method.GetParameters().Length == parameterCount);
+
+    private static DbQueryProvider GetTotalRecordsProvider(IDbQueryProvider provider)
+        => provider as DbQueryProvider
+            ?? throw new NotSupportedException(
+                $"The query provider [{provider.GetType().FullName}] does not support total-record queries.");
 }

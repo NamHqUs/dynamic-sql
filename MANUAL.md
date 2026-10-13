@@ -221,6 +221,20 @@ var page = db.Query("User")
 
 `TakeQuery` keeps paging composable. `Take` materializes a list.
 
+To fetch a page together with the total number of matching records before
+paging, use `ToListWithTotal`. The total is `-1` when more than 1,000 records
+match:
+
+```csharp
+var query = db.Query("User")
+    .Where(user => user["IsMale"] == true)
+    .OrderByDescending("Age")
+    .Skip(10)
+    .TakeQuery(10);
+
+var (pageRecords, resultTotal) = query.ToListWithTotal(out var totalRecords);
+```
+
 ### Scalar operations
 
 ```csharp
@@ -314,6 +328,12 @@ Async list, first-row, count, and existence operations accept cancellation:
 var users = await db.Query("User")
     .Where(user => user["Age"] >= 18)
     .ToListAsync(cancellationToken);
+
+var (pageRecords, totalRecords) = await db.Query("User")
+    .Where(user => user["Age"] >= 18)
+    .Skip(10)
+    .TakeQuery(10)
+    .ToListWithTotalAsync(cancellationToken);
 
 var firstUser = await db.Query("User")
     .FirstOrDefaultAsync(cancellationToken);

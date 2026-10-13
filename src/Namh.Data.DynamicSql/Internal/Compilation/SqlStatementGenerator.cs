@@ -15,6 +15,19 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         return new SqlStatement(text, parameters.ToArray());
     }
 
+    public SqlStatement GenerateTotalRecords(
+        TableExpression query,
+        IEnumerable<DbParameter> parameters,
+        int maximumRecords)
+    {
+        query.EnsureDefaultProjection();
+        var limitedQuery = new TakeExpression(query.WithoutPaging(), maximumRecords);
+        var alias = dialect.QuoteIdentifier("__bounded_count");
+        var text = $"SELECT COUNT(*)\nFROM ({RenderQuery(limitedQuery)}) AS {alias}";
+
+        return new SqlStatement(text, parameters.ToArray());
+    }
+
     private string RenderQuery(TableExpression query, bool exists = false)
     {
         query.EnsureDefaultProjection();
@@ -29,8 +42,9 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         if (select is null)
             select = string.Join(", ", query.ProjectionItems.Select(item => RenderProjection(item, hasGroupedAggregate)));
 
-        if (query.IsTake)
-            select = dialect.RenderTakePrefix(query.Take!.Value) + select;
+        var takePrefix = query.IsTake ? dialect.RenderTakePrefix(query.Take!.Value) : string.Empty;
+        if (takePrefix.Length != 0)
+            select = takePrefix + select;
 
         var text = $"SELECT {select}\nFROM {RenderTable(query)}";
 
@@ -69,7 +83,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
         text += dialect.RenderPaging(
             query.Skip,
-            query.IsTake ? null : query.Take,
+            takePrefix.Length != 0 ? null : query.Take,
             query.Orders.Count != 0);
 
         return text;

@@ -50,6 +50,16 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQue
     internal int? Skip => SkipCount;
     internal bool IsTake => this is TakeExpression && SkipCount is null;
 
+    internal TableExpression WithoutPaging()
+    {
+        var copy = new TableExpression(this)
+        {
+            TakeCount = null,
+            SkipCount = null,
+        };
+        return copy;
+    }
+
     internal void EnsureDefaultProjection()
     {
         if (ProjectionItems.Any() || SqlSelect is not null)

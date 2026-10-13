@@ -20,14 +20,14 @@ public static class DynamicQueryServices
         Console.WriteLine($"\n{query}\n");
         var dbConnection = DbProviderFactory.GetDbConnection();
         var context = new DynamicSqlContext(dbConnection, MetadataServices.GetMetaProvider());
-        var result = await context.Query(query).ToListAsync();
-
-        var rows = result.Select(row => string.Join(",", row.Select(v => v.Value))).ToArray();
-        Console.WriteLine(string.Join("\n", rows));
+        var result = await context.Query(query).ToListWithTotalRecordsAsync();
 
         return new TableDataDto(
             Name: query.Entity,
             Columns: string.Join(",", query.Columns.Select(c => c.Alias ?? c.Field)),
-            Rows: rows);
+            Rows: result.Records.Select(row => string.Join(",", row.Select(v => v.Value))).ToArray(),
+            Page: query.Page,
+            PageSize: query.PageSize,
+            TotalRecords: result.TotalRecords);
     }
 }   
