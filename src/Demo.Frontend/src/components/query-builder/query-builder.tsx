@@ -134,6 +134,12 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     );
   }, [requestName]);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
+  const sortedSavedRequests = useMemo(() => [...savedRequests].sort((left, right) => {
+    const leftName = left.query.name || left.fileName.replace(/\.json$/i, "");
+    const rightName = right.query.name || right.fileName.replace(/\.json$/i, "");
+    return leftName.localeCompare(rightName, undefined, { numeric: true, sensitivity: "base" })
+      || left.fileName.localeCompare(right.fileName, undefined, { numeric: true, sensitivity: "base" });
+  }), [savedRequests]);
   const requestStructureFields = requestStructureDraft.split(/\r?\n/).map((line, index) => {
     const separator = line.indexOf(":");
     return separator < 0
@@ -393,7 +399,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           </div>
           {savedRequestsStatus === "loading" && <p className="query-message">Loading requests…</p>}
           {savedRequestsStatus === "failed" && <p className="query-message error" role="alert">{savedRequestsError}</p>}
-          {savedRequestsStatus !== "loading" && savedRequests.map((saved) => (
+          {savedRequestsStatus !== "loading" && sortedSavedRequests.map((saved) => (
             <button className={`query-request-item${saved.fileName === selectedFileName ? " active" : ""}`} key={saved.fileName} onClick={() => void selectSavedRequest(saved.fileName)} disabled={isResolvingPlanChanges}>
               <strong>{saved.query.name || saved.fileName.replace(/\.json$/i, "")}</strong>
               <small>{saved.query.entity} · {saved.query.columns.length} columns</small>

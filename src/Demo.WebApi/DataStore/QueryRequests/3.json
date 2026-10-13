@@ -1,22 +1,22 @@
 {
-  "Name": "Monthly revenue and invoice volume",
-  "Entity": "Invoices",
+  "Name": "3. Top customers by lifetime value",
+  "Entity": "Customers",
   "Columns": [
     {
-      "Field": "Month",
+      "Field": "Id",
+      "Alias": null
+    },
+    {
+      "Field": "Name",
       "Alias": null
     },
     {
       "Field": "Count()",
-      "Alias": "InvoiceCount"
+      "Alias": "Orders"
     },
     {
-      "Field": "Sum(TotalAmount)",
-      "Alias": "Revenue"
-    },
-    {
-      "Field": "Average(TotalAmount)",
-      "Alias": "AverageOrderValue"
+      "Field": "Sum(Invoices.TotalAmount)",
+      "Alias": "LifetimeValue"
     }
   ],
   "Filter": {
@@ -24,7 +24,7 @@
     "filters": [
       {
         "LogicalOperator": 0,
-        "Field": "Status",
+        "Field": "Invoices.Status",
         "Operation": 1,
         "Value": "Draft",
         "Parameterized": false
@@ -33,8 +33,8 @@
   },
   "Sorts": [
     {
-      "Field": "Month",
-      "Direction": 0
+      "Field": "Sum(Invoices.TotalAmount)",
+      "Direction": 1
     }
   ],
   "Page": null,

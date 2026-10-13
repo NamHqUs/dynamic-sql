@@ -1,0 +1,43 @@
+{
+  "Name": "1.Monthly revenue and invoice volume",
+  "Entity": "Invoices",
+  "Columns": [
+    {
+      "Field": "Month",
+      "Alias": null
+    },
+    {
+      "Field": "Count()",
+      "Alias": "InvoiceCount"
+    },
+    {
+      "Field": "Sum(TotalAmount)",
+      "Alias": "Revenue"
+    },
+    {
+      "Field": "Average(TotalAmount)",
+      "Alias": "AverageOrderValue"
+    }
+  ],
+  "Filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "LogicalOperator": 0,
+        "Field": "Status",
+        "Operation": 1,
+        "Value": "Draft",
+        "Parameterized": false
+      }
+    ]
+  },
+  "Sorts": [
+    {
+      "Field": "Month",
+      "Direction": 1
+    }
+  ],
+  "Page": null,
+  "PageSize": 50,
+  "IncludeArchive": false
+}
