@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using System.Text.RegularExpressions;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
@@ -31,8 +32,8 @@ public class _13_SqlDialectTests
 
         var sql = db.Query("User").Select("Id").Skip(0).TakeQuery(2).ToSql().CommandText;
 
-        Assert.That(sql, Does.Contain("ORDER BY (SELECT 1)"));
-        Assert.That(sql.IndexOf("ORDER BY (SELECT 1)", StringComparison.Ordinal),
+        Assert.That(sql, Does.Match(@"ORDER BY\s*\(\s*SELECT\s+1\s*\)"));
+        Assert.That(sql.IndexOf("ORDER BY", StringComparison.Ordinal),
             Is.LessThan(sql.IndexOf("OFFSET 0 ROWS", StringComparison.Ordinal)));
     }
 
@@ -52,6 +53,38 @@ public class _13_SqlDialectTests
 
         Assert.That(sql, Does.Contain("ORDER BY t0.[Id] ASC"));
         Assert.That(sql, Does.Not.Contain("ORDER BY (SELECT 1)"));
+    }
+
+    [Test]
+    public void SqlServerDialectRendersTypedParameterDeclarations()
+    {
+        using var connection = new Microsoft.Data.SqlClient.SqlConnection();
+        using var db = new DynamicSqlContext(connection, Metadata, new SqlServerDialect());
+        var name = "O'Neil";
+
+        var sql = db.Query("User")
+            .Where(user => user["Name"] == name)
+            .ToSql()
+            .CommandText;
+
+        Assert.That(sql, Does.Contain("DECLARE @p0 nvarchar(4000) = 'O''Neil';"));
+        Assert.That(new SqlServerDialect().RenderQueryWithParameters(
+            "SELECT @p0",
+            [("@p0", (object?)1)]), Does.StartWith("DECLARE @p0 int = 1;"));
+    }
+
+    [Test]
+    public void SqliteDialectRendersParameterValuesAsDiagnostics()
+    {
+        using var connection = new SqliteConnection();
+        using var db = new DynamicSqlContext(connection, Metadata, new SqliteDialect());
+
+        var sql = db.Query("User")
+            .Where(user => user["Name"] == "O'Neil")
+            .ToSql()
+            .CommandText;
+
+        Assert.That(sql, Does.Contain("-- Parameters: @p0 = 'O''Neil'"));
     }
 
     [Test]
