@@ -322,7 +322,8 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
         </div>
       </section>
 
-      <section className="query-request-workspace">
+      <section className="query-builder-workspace">
+        <div className="query-request-workspace">
         <aside className="query-request-list">
           <div className="metadata-list-head">
             <span className="section-kicker">SAVED QUERY REQUESTS</span>
@@ -334,6 +335,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
             <button className={`query-request-item${saved.fileName === selectedFileName ? " active" : ""}`} key={saved.fileName} onClick={() => void selectSavedRequest(saved.fileName)} disabled={isResolvingPlanChanges}>
               <strong>{saved.query.name || saved.fileName.replace(/\.json$/i, "")}</strong>
               <small>{saved.query.entity} · {saved.query.columns.length} columns</small>
+              <Icon name="chevron" size={14} />
             </button>
           ))}
           {savedRequestsStatus !== "loading" && !savedRequests.length && <p className="query-message">No saved requests.</p>}
@@ -388,7 +390,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
             </button>
           </div>
           {activeRequestTab === "design" ? (
-            <div id="query-request-design-panel" role="tabpanel" aria-labelledby="query-request-design-tab">
+            <div id="query-request-design-panel" className="query-design-area" role="tabpanel" aria-labelledby="query-request-design-tab">
               <QueryDesign
                 metadata={metadata}
                 metadataStatus={metadataStatus}
@@ -430,20 +432,20 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
             </div>
           )}
         </div>
+        </div>
+        {queryError && <p className="query-message error query-builder-error" role="alert">{queryError}</p>}
+        <QueryResult
+          result={result}
+          sqlStatement={sqlStatement}
+          resultView={resultView}
+          onRunQuery={runQuery}
+          onGetSql={getSql}
+          queryLoading={queryStatus === "loading"}
+          queryDisabled={isResolvingPlanChanges || (activeRequestTab === "structure"
+            ? requestStructureStatus !== "succeeded"
+            : !definition.columns.length)}
+        />
       </section>
-
-      {queryError && <p className="query-message error" role="alert">{queryError}</p>}
-      <QueryResult
-        result={result}
-        sqlStatement={sqlStatement}
-        resultView={resultView}
-        onRunQuery={runQuery}
-        onGetSql={getSql}
-        queryLoading={queryStatus === "loading"}
-        queryDisabled={isResolvingPlanChanges || (activeRequestTab === "structure"
-          ? requestStructureStatus !== "succeeded"
-          : !definition.columns.length)}
-      />
     </>
   );
 }

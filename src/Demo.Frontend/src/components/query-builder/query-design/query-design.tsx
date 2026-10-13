@@ -27,7 +27,7 @@ export default function QueryDesign({
   return (
     <section className="query-builder-card">
       <div className="query-builder-toolbar">
-        <label>Entity
+        <label><span className="section-kicker">ENTITY</span>
           <select value={definition.entity} onChange={(event) => {
             const selectedEntity = metadata.find((item) => item.name === event.target.value);
             onDefinitionChange({
@@ -58,6 +58,7 @@ export default function QueryDesign({
           onDefinitionChange={onDefinitionChange}
           onFieldDragStart={setDraggedProjectionField}
         />
+        <FilterBuilder metadata={metadata} definition={definition} entity={entity} onDefinitionChange={onDefinitionChange} />
         <SortBuilder
           metadata={metadata}
           definition={definition}
@@ -65,7 +66,6 @@ export default function QueryDesign({
           onDefinitionChange={onDefinitionChange}
           draggedProjectionField={draggedProjectionField}
         />
-        <FilterBuilder metadata={metadata} definition={definition} entity={entity} onDefinitionChange={onDefinitionChange} />
       </div>}
     </section>
   );
