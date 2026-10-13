@@ -52,10 +52,43 @@ function pruneFilters(group: QueryFilterGroup, fieldNames: Set<string>): QueryFi
   };
 }
 
+function resolveEntityPath(entity: MetadataEntity, metadata: MetadataEntity[], path: string[]): MetadataEntity | undefined {
+  let current: MetadataEntity | undefined = entity;
+  for (const relationName of path) {
+    const relation = current?.relations?.find((item) => item.name === relationName);
+    current = relation && metadata.find((item) => item.name === relation.relatedEntity);
+    if (!current) return undefined;
+  }
+  return current;
+}
+
+function isAvailableFieldPath(entity: MetadataEntity, metadata: MetadataEntity[], fieldPath: string): boolean {
+  const segments = fieldPath.split(".");
+  const fieldName = segments.pop();
+  const owner = resolveEntityPath(entity, metadata, segments);
+  return Boolean(fieldName && owner?.fields.some((field) => field.name === fieldName));
+}
+
+function isProjectionColumnAvailable(column: string, entity: MetadataEntity, metadata: MetadataEntity[]): boolean {
+  if (entity.fields.some((field) => field.name === column) || column === "Count()") return true;
+
+  const wrappedAggregate = column.match(/^(Sum|Max|Min|Average)\(([^()]*)\)$/);
+  if (wrappedAggregate) return isAvailableFieldPath(entity, metadata, wrappedAggregate[2]);
+
+  const pathAggregate = column.match(/^(.*)\.(Count\(\)|Sum|Max|Min|Average)\(([^()]*)\)$/);
+  if (!pathAggregate) return false;
+
+  const aggregateOwner = resolveEntityPath(entity, metadata, pathAggregate[1].split("."));
+  return Boolean(aggregateOwner && (pathAggregate[2] === "Count()"
+    ? !pathAggregate[3]
+    : isAvailableFieldPath(aggregateOwner, metadata, pathAggregate[3])));
+}
+
 // Drops columns, sorts and filters that reference fields removed from the entity metadata.
-function reconcileDefinition(definition: QueryDefinition, fields: MetadataField[]): QueryDefinition {
+function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity, metadata: MetadataEntity[]): QueryDefinition {
+  const fields = entity.fields;
   const fieldNames = new Set(fields.map((field) => field.name));
-  const columns = definition.columns.filter((column) => fieldNames.has(column.field));
+  const columns = definition.columns.filter((column) => isProjectionColumnAvailable(column.field, entity, metadata));
   const sorts = definition.sorts.filter((sort) => fieldNames.has(sort.field));
   const filters = pruneFilters(definition.filters, fieldNames);
   const unchanged = columns.length === definition.columns.length
@@ -75,6 +108,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const [activeRequestTab, setActiveRequestTab] = useState<"design" | "structure">("design");
   const [requestStructureDraft, setRequestStructureDraft] = useState("");
   const [requestStructureOriginal, setRequestStructureOriginal] = useState("");
+  const [requestStructureDefinition, setRequestStructureDefinition] = useState<string | null>(null);
   const [requestStructureStatus, setRequestStructureStatus] = useState<"idle" | "loading" | "succeeded" | "failed">("idle");
   const [requestStructureError, setRequestStructureError] = useState("");
   const [isResolvingPlanChanges, setIsResolvingPlanChanges] = useState(false);
@@ -109,7 +143,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     }
     const selectedEntity = metadata.find((item) => item.name === definition.entity);
     if (!selectedEntity) return;
-    const reconciled = reconcileDefinition(definition, selectedEntity.fields);
+    const reconciled = reconcileDefinition(definition, selectedEntity, metadata);
     if (!reconciled.columns.length) {
       updateDefinition({
         ...reconciled,
@@ -156,6 +190,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     if (getQueryRequestString.fulfilled.match(resultAction)) {
       setRequestStructureDraft(resultAction.payload);
       setRequestStructureOriginal(resultAction.payload);
+      setRequestStructureDefinition(JSON.stringify(nextDefinition));
       setRequestStructureStatus("succeeded");
     } else {
       setRequestStructureError(String(resultAction.payload || "Unable to format query request."));
@@ -179,6 +214,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       const nextDefinition = fromApiQuery(resultAction.payload);
       updateDefinition(nextDefinition);
       setRequestStructureOriginal(requestStructureDraft);
+      setRequestStructureDefinition(JSON.stringify(nextDefinition));
       setRequestMessage("Query structure applied.");
       setIsResolvingPlanChanges(false);
       return true;
@@ -260,6 +296,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     updateDefinition(createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []));
     setRequestStructureDraft("");
     setRequestStructureOriginal("");
+    setRequestStructureDefinition(null);
     setRequestStructureStatus("idle");
   };
 
@@ -385,8 +422,11 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
               aria-selected={activeRequestTab === "structure"}
               aria-controls="query-request-structure-panel"
               onClick={() => {
+                if (activeRequestTab === "structure" && requestStructureStatus !== "failed") return;
                 setActiveRequestTab("structure");
-                void loadRequestStructure();
+                if (requestStructureStatus !== "succeeded" || requestStructureDefinition !== JSON.stringify(definition)) {
+                  void loadRequestStructure();
+                }
               }}
               disabled={isResolvingPlanChanges}
             >

@@ -37,8 +37,8 @@ group.MapGet("/tables", RawDataServices.GetExposedTables);
 group.MapGet("/data/{tableName}", (string tableName) => RawDataServices.GetTableData(tableName));
 
 group = app.MapGroup("/metadata").WithTags("Defined Metadata");
-group.MapGet("/", MetadataServices.GetMetadata);
-group.MapPost("/", MetadataServices.CreateMetadata);
+group.MapGet("", MetadataServices.GetMetadata);
+group.MapPost("", MetadataServices.CreateMetadata);
 group.MapPost("/reset", MetadataServices.Reset);
 group.MapPut("/{entityName}", (string entityName, Entity entity) => MetadataServices.UpdateMetadata(entityName, entity));
 group.MapDelete("/{entityName}", (string entityName) =>
@@ -106,7 +106,7 @@ group.MapPost("/parse", (QueryRequestTextRequest request) =>
 })
     .WithSummary("Parse an edited query request structure")
     .WithDescription("Converts the formatted query request text back into a structured query request. The entity is fixed.");
-group.MapGet("/{fileName}", (string fileName) =>
+group.MapGet("{fileName}", (string fileName) =>
     QueryRequestServices.LoadQueryRequest(fileName) is { } request
         ? Results.Ok(request)
         : Results.NotFound());
@@ -115,11 +115,11 @@ group.MapPost("/", (QueryRequest query) =>
     var saved = QueryRequestServices.SaveQueryRequest(query);
     return Results.Created($"/query-request/{saved.FileName}", saved);
 });
-group.MapPut("/{fileName}", (string fileName, QueryRequest query) =>
+group.MapPut("{fileName}", (string fileName, QueryRequest query) =>
     QueryRequestServices.UpdateQueryRequest(fileName, query) is { } request
         ? Results.Ok(request)
         : Results.NotFound());
-group.MapDelete("/{fileName}", (string fileName) =>
+group.MapDelete("{fileName}", (string fileName) =>
     QueryRequestServices.DeleteQueryRequest(fileName) ? Results.NoContent() : Results.NotFound());
 
 app.Run();

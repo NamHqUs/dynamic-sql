@@ -161,8 +161,11 @@ public static class QueryRequestServices
         => Directory.CreateDirectory(_StorePath);
 
     private static QueryRequest ReadQuery(string filePath)
-        => JsonSerializer.Deserialize<QueryRequest>(File.ReadAllText(filePath), JsonOptions())
+    {
+        var result = JsonSerializer.Deserialize<QueryRequest>(File.ReadAllText(filePath), JsonOptions())
             ?? throw new InvalidDataException($"Query request file '{Path.GetFileName(filePath)}' is empty.");
+        return result;
+    }
 
     private static void WriteQuery(string filePath, QueryRequest query)
         => File.WriteAllText(filePath, JsonSerializer.Serialize(query, JsonOptions(writeIndented: true)));
