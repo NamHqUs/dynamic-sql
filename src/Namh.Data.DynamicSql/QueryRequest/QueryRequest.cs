@@ -20,6 +20,7 @@ public sealed class QueryRequest
 
     public override string ToString()
         => string.Join(Environment.NewLine,
+            $"Name: {Name}",
             $"Entity: {Entity}",
             $"Columns: {string.Join(", ", Columns.Select(FormatColumn))}",
             $"Filters: {(Filter is null ? string.Empty : FormatFilter(Filter, false))}",

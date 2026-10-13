@@ -164,6 +164,8 @@ public static class QueryRequestServices
     {
         var result = JsonSerializer.Deserialize<QueryRequest>(File.ReadAllText(filePath), JsonOptions())
             ?? throw new InvalidDataException($"Query request file '{Path.GetFileName(filePath)}' is empty.");
+
+        Console.WriteLine($"\n{new('-', 8)}Loaded query request from '{Path.GetFileName(filePath)}': \n{result}");
         return result;
     }
 

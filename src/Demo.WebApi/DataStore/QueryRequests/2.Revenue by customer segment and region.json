@@ -19,13 +19,19 @@
       "Alias": "Revenue"
     }
   ],
-  "Filter": null,
-  "Sorts": [
-    {
-      "Field": "Sum(Invoices.TotalAmount)",
-      "Direction": 1
-    }
-  ],
+  "Filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "LogicalOperator": 0,
+        "Field": "Invoices.Status",
+        "Operation": 1,
+        "Value": "Draft",
+        "Parameterized": false
+      }
+    ]
+  },
+  "Sorts": [],
   "Page": null,
   "PageSize": 50,
   "IncludeArchive": false

@@ -1,5 +1,5 @@
 .metadata-editor { min-width: 0; }
-.editor-head { padding: 25px 28px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+.editor-head { padding: 21px 28px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
 .editor-head h2 { margin: 8px 0 0; font-size: 17px; }
 .editor-actions { display: flex; align-items: center; gap: 9px; }
 .metadata-workspace .editor-actions .button.primary:disabled { cursor: not-allowed; }

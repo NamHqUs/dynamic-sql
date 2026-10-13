@@ -1,14 +1,15 @@
 .database-sidebar {
-  padding: 20px 12px;
+  padding: 22px 12px;
   border-right: 1px solid var(--line);
-  background: #11141b;
+  background: #0e1117;
 }
 
 .database-sidebar-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px 13px;
+  height: 37px;
+  padding: 0 10px 15px;
 }
 
 .database-table-count {
