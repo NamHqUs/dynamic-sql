@@ -1,0 +1,102 @@
+{
+  "Name": "Invoices",
+  "Fields": [
+    {
+      "Name": "Id",
+      "DataType": 1,
+      "FieldType": 0,
+      "RawSql": "Id"
+    },
+    {
+      "Name": "InvoiceNumber",
+      "DataType": 0,
+      "FieldType": 0,
+      "RawSql": "InvoiceNumber"
+    },
+    {
+      "Name": "InvoiceDate",
+      "DataType": 2,
+      "FieldType": 0,
+      "RawSql": "InvoiceDate"
+    },
+    {
+      "Name": "DueDate",
+      "DataType": 2,
+      "FieldType": 0,
+      "RawSql": "DueDate"
+    },
+    {
+      "Name": "Status",
+      "DataType": 0,
+      "FieldType": 0,
+      "RawSql": "Status"
+    },
+    {
+      "Name": "SalesChannel",
+      "DataType": 0,
+      "FieldType": 0,
+      "RawSql": "SalesChannel"
+    },
+    {
+      "Name": "PaymentMethod",
+      "DataType": 0,
+      "FieldType": 0,
+      "RawSql": "PaymentMethod"
+    },
+    {
+      "Name": "PaidOn",
+      "DataType": 2,
+      "FieldType": 0,
+      "RawSql": "PaidOn"
+    },
+    {
+      "Name": "DiscountAmount",
+      "DataType": 1,
+      "FieldType": 0,
+      "RawSql": "DiscountAmount"
+    },
+    {
+      "Name": "TaxAmount",
+      "DataType": 1,
+      "FieldType": 0,
+      "RawSql": "TaxAmount"
+    },
+    {
+      "Name": "TotalAmount",
+      "DataType": 1,
+      "FieldType": 0,
+      "RawSql": "TotalAmount"
+    },
+    {
+      "Name": "Month",
+      "DataType": 0,
+      "FieldType": 2,
+      "RawSql": "FORMAT(InvoiceDate, \u0027yyyy-MM\u0027)"
+    }
+  ],
+  "RawSql": "Invoices",
+  "Relations": [
+    {
+      "Name": "Customer",
+      "RelatedEntity": "Customers",
+      "Type": 0,
+      "RelatedKeys": [
+        {
+          "FromDbColumn": "CustomerId",
+          "ToDbColumn": "Id"
+        }
+      ]
+    },
+    {
+      "Name": "Items",
+      "RelatedEntity": "InvoiceItems",
+      "Type": 1,
+      "RelatedKeys": [
+        {
+          "FromDbColumn": "Id",
+          "ToDbColumn": "InvoiceId"
+        }
+      ]
+    }
+  ]
+}

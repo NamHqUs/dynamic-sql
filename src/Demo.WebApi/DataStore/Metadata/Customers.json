@@ -1,0 +1,67 @@
+{
+  "Name": "Customers",
+  "Fields": [
+    {
+      "Name": "Id",
+      "DataType": 1,
+      "FieldType": 0,
+      "RawSql": "Id"
+    },
+    {
+      "Name": "Name",
+      "DataType": 0,
+      "FieldType": 0,
+      "RawSql": "Name"
+    },
+    {
+      "Name": "Email",
+      "DataType": 0,
+      "FieldType": 0,
+      "RawSql": "Email"
+    },
+    {
+      "Name": "Phone",
+      "DataType": 0,
+      "FieldType": 0,
+      "RawSql": "Phone"
+    },
+    {
+      "Name": "Address",
+      "DataType": 0,
+      "FieldType": 0,
+      "RawSql": "Address"
+    },
+    {
+      "Name": "Segment",
+      "DataType": 0,
+      "FieldType": 0,
+      "RawSql": "Segment"
+    },
+    {
+      "Name": "Region",
+      "DataType": 0,
+      "FieldType": 0,
+      "RawSql": "Region"
+    },
+    {
+      "Name": "CustomerSince",
+      "DataType": 2,
+      "FieldType": 0,
+      "RawSql": "CustomerSince"
+    }
+  ],
+  "RawSql": "Customers",
+  "Relations": [
+    {
+      "Name": "Invoices",
+      "RelatedEntity": "Invoices",
+      "Type": 1,
+      "RelatedKeys": [
+        {
+          "FromDbColumn": "Id",
+          "ToDbColumn": "CustomerId"
+        }
+      ]
+    }
+  ]
+}

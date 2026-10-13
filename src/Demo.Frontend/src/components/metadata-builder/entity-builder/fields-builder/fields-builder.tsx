@@ -64,7 +64,7 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
         {fields.map((field, index) => (
           <div
             className={`field-editor-row${draggedFieldIndex === index ? " dragging" : ""}${dropTargetFieldIndex === index ? " drop-target" : ""}`}
-            key={`${index}-${field.name}`}
+            key={field.id ?? index}
             onDragOver={(event) => {
               if (draggedFieldIndex !== null && draggedFieldIndex !== index) {
                 event.preventDefault();
@@ -123,7 +123,7 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
             <input
               value={field.name}
               onChange={(event) => updateField(index, "name", event.target.value)}
-              placeholder="Column name"
+              placeholder="Field name"
             />
             <select
               value={field.dataType}

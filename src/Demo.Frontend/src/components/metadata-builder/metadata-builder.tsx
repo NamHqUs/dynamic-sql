@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
+import { apiUrls } from "../../const/api-urls";
 import Icon from "../icon/icon";
 import { MetadataEntity, clearQueryResult, invalidateQueryMetadata } from "../query-builder/query-design/query-builder-slice";
 import { resetQueryBuilderCache } from "../query-builder/query-builder";
@@ -10,10 +11,8 @@ import "./metadata-builder.css";
 
 export * from "./types";
 
-const apiBaseUrl = import.meta.env.VITE_DYNAMIC_QUERY_API_URL || "";
-
 async function request(url: string, options?: RequestInit) {
-  const response = await fetch(`${apiBaseUrl}${url}`, options);
+  const response = await fetch(url, options);
   if (!response.ok) {
     const detail = await response.text();
     throw new Error(detail || `Metadata request failed (${response.status}).`);
@@ -53,7 +52,7 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
     setStatus("loading");
     setMessage("");
     try {
-      const payload = await request("/dynamic-query/metadata");
+      const payload = await request(apiUrls.metadata.list);
       if (!Array.isArray(payload)) throw new Error("Metadata API must return an array of entities.");
       setEntities(payload);
       const preferred = payload.find((entity) => entity.name === preferredName);
@@ -103,7 +102,7 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
     setStatus("saving");
     setMessage("");
     try {
-      const url = selectedName ? `/dynamic-query/metadata/${encodeURIComponent(selectedName)}` : "/dynamic-query/metadata";
+      const url = selectedName ? apiUrls.metadata.byName(selectedName) : apiUrls.metadata.list;
       await request(url, {
         method: selectedName ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -121,7 +120,7 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
     if (!selectedName || !confirmDiscardChanges() || !window.confirm(`Delete the ${selectedName} entity definition?`)) return;
     setStatus("saving");
     try {
-      await request(`/dynamic-query/metadata/${encodeURIComponent(selectedName)}`, { method: "DELETE" });
+      await request(apiUrls.metadata.byName(selectedName), { method: "DELETE" });
       setSelectedName("");
       dispatch(invalidateQueryMetadata());
       await loadEntities(true);
@@ -136,7 +135,7 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
     setStatus("saving");
     setMessage("");
     try {
-      await request("/dynamic-query/metadata/reset", { method: "POST" });
+      await request(apiUrls.metadata.reset, { method: "POST" });
       resetQueryBuilderCache();
       dispatch(clearQueryResult());
       dispatch(invalidateQueryMetadata());

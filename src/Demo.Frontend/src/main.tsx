@@ -11,11 +11,12 @@ import "./styles.css";
 function App() {
   const [page, setPage] = useState("sources");
   const [metadataDirty, setMetadataDirty] = useState(false);
+  const [metadataVisited, setMetadataVisited] = useState(false);
 
   const navigate = (nextPage: string) => {
     if (nextPage === page) return;
     if (page === "metadata" && metadataDirty && !window.confirm("You have unsaved changes. Leave without saving?")) return;
-    setMetadataDirty(false);
+    if (nextPage === "metadata") setMetadataVisited(true);
     setPage(nextPage);
   };
 
@@ -27,7 +28,9 @@ function App() {
         <div className="top-actions"><span className="live-dot" /> Local demo <button className="avatar">N</button></div>
       </header>
 
-      {page === "sources" ? <DataSources /> : page === "metadata" ? <MetadataBuilder onDirtyChange={setMetadataDirty} /> : <QueryBuilder />}
+      {page === "sources" ? <DataSources /> : null}
+      {metadataVisited && <div hidden={page !== "metadata"}><MetadataBuilder onDirtyChange={setMetadataDirty} /></div>}
+      {page === "builder" ? <QueryBuilder /> : null}
       <footer><span><span className="footer-mark">✦</span> DynamicSQL engine</span><span>Metadata-driven queries · Client preview</span></footer>
     </main>
   );

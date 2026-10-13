@@ -94,7 +94,7 @@ export default function RelationsBuilder({
       {!relations.length && <div className="section-empty">No relations defined.</div>}
 
       {relations.map((relation, index) => (
-        <div className="relation-card" key={`${index}-${relation.name}`}>
+        <div className="relation-card" key={relation.id ?? index}>
           <div className="relation-main">
             <input
               value={relation.name}

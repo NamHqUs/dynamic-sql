@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-
-const apiBaseUrl = import.meta.env.VITE_DYNAMIC_QUERY_API_URL || "";
+import { apiUrls } from "../../../const/api-urls";
 
 export type MetadataField = {
   name: string;
@@ -73,7 +72,7 @@ export type QueryResult = {
 async function requestJson(url: string, options?: RequestInit) {
   let response: Response;
   try {
-    response = await fetch(`${apiBaseUrl}${url}`, options);
+    response = await fetch(url, options);
   } catch (error) {
     throw new Error(`Could not reach the query API: ${error instanceof Error ? error.message : "network error"}`);
   }
@@ -88,7 +87,7 @@ async function requestJson(url: string, options?: RequestInit) {
 async function requestText(url: string, options?: RequestInit) {
   let response: Response;
   try {
-    response = await fetch(`${apiBaseUrl}${url}`, options);
+    response = await fetch(url, options);
   } catch (error) {
     throw new Error(`Could not reach the query API: ${error instanceof Error ? error.message : "network error"}`);
   }
@@ -109,7 +108,7 @@ export const fetchQueryMetadata = createAsyncThunk(
   "queryBuilder/fetchMetadata",
   async (_, { rejectWithValue }) => {
     try {
-      const payload = await requestJson("/dynamic-query/metadata");
+      const payload = await requestJson(apiUrls.metadata.list);
       if (!Array.isArray(payload) || payload.some((entity) => !entity
         || typeof entity.name !== "string"
         || !Array.isArray(entity.fields)
@@ -130,7 +129,7 @@ export const executeQuery = createAsyncThunk(
   "queryBuilder/execute",
   async (definition: QueryDefinition, { rejectWithValue }) => {
     try {
-      const payload = await requestJson("/dynamic-query/query", {
+      const payload = await requestJson(apiUrls.dynamicQuery.execute, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(createApiQuery(definition)),
@@ -156,7 +155,7 @@ export const getSqlStatement = createAsyncThunk(
   "queryBuilder/getSqlStatement",
   async (definition: QueryDefinition, { rejectWithValue }) => {
     try {
-      const payload = await requestText("/dynamic-query/query/to-string", {
+      const payload = await requestText(apiUrls.dynamicQuery.toString, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(createApiQuery(definition)),

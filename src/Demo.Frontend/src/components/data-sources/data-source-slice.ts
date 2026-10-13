@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { apiUrls } from "../../const/api-urls";
 
 const seedRows = [
   { id: 1042, customer: "Northwind Traders", segment: "Enterprise", region: "North America", revenue: 128400, orders: 42, status: "Active", updated: "Oct 08, 2026" },
@@ -12,9 +13,10 @@ const seedRows = [
 ];
 
 export const fetchDataSource = createAsyncThunk("dataSource/fetch", async (url, { rejectWithValue }) => {
-  if (!url) return rejectWithValue("Set VITE_DATA_SOURCE_URL to load a datasource from an API.");
+  const sourceUrl = url || apiUrls.dataSource;
+  if (!sourceUrl) return rejectWithValue("Set VITE_DATA_SOURCE_URL to load a datasource from an API.");
 
-  const response = await fetch(url);
+  const response = await fetch(sourceUrl);
   if (!response.ok) {
     return rejectWithValue(`Datasource request failed (${response.status}).`);
   }

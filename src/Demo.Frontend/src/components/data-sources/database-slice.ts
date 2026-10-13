@@ -1,11 +1,10 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-
-const apiBaseUrl = import.meta.env.VITE_DATABASE_API_URL || "";
+import { apiUrls } from "../../const/api-urls";
 
 async function getJson(url) {
   let response;
   try {
-    response = await fetch(`${apiBaseUrl}${url}`);
+    response = await fetch(url);
   } catch (error) {
     throw new Error(`Could not reach the database API: ${error.message}`);
   }
@@ -26,7 +25,7 @@ export const fetchDbTables = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     let payload;
     try {
-      payload = await getJson("/db/tables");
+      payload = await getJson(apiUrls.database.tables);
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -48,7 +47,7 @@ export const fetchDbTableData = createAsyncThunk(
   async (tableName, { rejectWithValue }) => {
     let payload;
     try {
-      payload = await getJson(`/db/data/${encodeURIComponent(tableName)}`);
+      payload = await getJson(apiUrls.database.tableData(tableName));
     } catch (error) {
       return rejectWithValue(error.message);
     }

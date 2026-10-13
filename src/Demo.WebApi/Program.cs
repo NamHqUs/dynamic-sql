@@ -34,16 +34,18 @@ var group = app.MapGroup("/db").WithTags("Raw Database Services");
 group.MapGet("/tables", RawDataServices.GetExposedTables);
 group.MapGet("/data/{tableName}", (string tableName) => RawDataServices.GetTableData(tableName));
 
-group = app.MapGroup("/dynamic-query").WithTags("Dynamic Query Services");
-group.MapGet("/metadata", MetadataServices.GetMetadata);
-group.MapPost("/metadata", MetadataServices.CreateMetadata);
-group.MapPost("/metadata/reset", MetadataServices.Reset);
-group.MapPut("/metadata/{entityName}", (string entityName, Entity entity) => MetadataServices.UpdateMetadata(entityName, entity));
-group.MapDelete("/metadata/{entityName}", (string entityName) =>
+group = app.MapGroup("/metadata").WithTags("Defined Metadata");
+group.MapGet("/", MetadataServices.GetMetadata);
+group.MapPost("/", MetadataServices.CreateMetadata);
+group.MapPost("/reset", MetadataServices.Reset);
+group.MapPut("/{entityName}", (string entityName, Entity entity) => MetadataServices.UpdateMetadata(entityName, entity));
+group.MapDelete("/{entityName}", (string entityName) =>
 {
     MetadataServices.DeleteMetadata(entityName);
     return Results.NoContent();
 });
+
+group = app.MapGroup("/dynamic-query").WithTags("Dynamic Query Services");
 group.MapPost("/query/to-string", (QueryRequest query) => DynamicQueryServices.GetSqlQueryStringAsync(query));
 group.MapPost("/query", (QueryRequest query) => DynamicQueryServices.ExecuteQueryAsync(query));
 

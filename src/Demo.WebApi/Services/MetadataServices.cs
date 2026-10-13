@@ -1,11 +1,25 @@
 ﻿using Namh.Data.DynamicSql;
+using System.Text.Json;
 
 namespace Demo.WebApi.Services;
 
-public static class MetadataServices
+public static partial class MetadataServices
 {
-    private static List<Entity> _metadata = Reset();
+    private static List<Entity> _metadata = [];
 
+    static MetadataServices()
+    {
+        var dict = Reset().ToDictionary(e => e.Name);
+        var entities = MetadataFilesManager.LoadAllMetadataFromFiles();
+
+        foreach (var entity in entities)
+            dict[entity.Name] = entity;
+
+        _metadata = dict.Values.ToList();
+    }
+
+    public static IMetaProvider GetMetaProvider()
+        => new MetaProvider(_metadata);
     public static List<Entity> Reset()
     => _metadata = [
         new(
@@ -121,6 +135,7 @@ public static class MetadataServices
             throw new InvalidOperationException($"An entity named '{entity.Name}' already exists.");
 
         _metadata.Add(entity);
+        MetadataFilesManager.SaveMetadataToFile(entity);
         return entity;
     }
 
@@ -135,6 +150,9 @@ public static class MetadataServices
             throw new InvalidOperationException($"An entity named '{entity.Name}' already exists.");
 
         _metadata[index] = entity;
+
+        MetadataFilesManager.SaveMetadataToFile(entity);
+
         return entity;
     }
 
@@ -144,6 +162,7 @@ public static class MetadataServices
         if (index < 0)
             throw new KeyNotFoundException($"Entity '{entityName}' was not found.");
 
+        MetadataFilesManager.DeleteMetadataFile(entityName);
         _metadata.RemoveAt(index);
     }
 
@@ -159,6 +178,5 @@ public static class MetadataServices
             throw new ArgumentException("Field names must be unique within an entity.");
     }
 
-    public static IMetaProvider GetMetaProvider()
-        => new MetaProvider(_metadata);
+
 }
