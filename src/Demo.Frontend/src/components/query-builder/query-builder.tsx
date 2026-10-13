@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../icon/icon";
 import PanelSplitter from "../panel-splitter/panel-splitter";
@@ -104,7 +104,10 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
   const [selectedFileName, setSelectedFileName] = useState(cachedSelectedFileName);
   const [requestName, setRequestName] = useState(cachedRequestName);
+  const [requestNameInputWidth, setRequestNameInputWidth] = useState(100);
   const [requestMessage, setRequestMessage] = useState("");
+  const requestNameInputRef = useRef<HTMLInputElement>(null);
+  const requestNameMeasureRef = useRef<HTMLSpanElement>(null);
   const [activeRequestTab, setActiveRequestTab] = useState<"design" | "structure">("design");
   const [requestStructureDraft, setRequestStructureDraft] = useState("");
   const [requestStructureOriginal, setRequestStructureOriginal] = useState("");
@@ -114,6 +117,22 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const [isResolvingPlanChanges, setIsResolvingPlanChanges] = useState(false);
   const panel = useResizablePanel("query-builder");
   const planTextDirty = requestStructureStatus === "succeeded" && requestStructureDraft !== requestStructureOriginal;
+  useLayoutEffect(() => {
+    const input = requestNameInputRef.current;
+    const measure = requestNameMeasureRef.current;
+    if (!input || !measure) return;
+
+    const inputStyle = window.getComputedStyle(input);
+    measure.style.font = inputStyle.font;
+    measure.style.letterSpacing = inputStyle.letterSpacing;
+    measure.textContent = input.value || input.placeholder;
+
+    const paddingLeft = Number.parseFloat(inputStyle.paddingLeft);
+    const paddingRight = Number.parseFloat(inputStyle.paddingRight);
+    setRequestNameInputWidth(
+      Math.max(100, measure.getBoundingClientRect().width + paddingLeft + paddingRight + 2),
+    );
+  }, [requestName]);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
   const requestStructureFields = requestStructureDraft.split(/\r?\n/).map((line, index) => {
     const separator = line.indexOf(":");
@@ -357,6 +376,9 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           <p>Choose metadata fields, define filters, and preview the result from the connected API.</p>
         </div>
         <div className="heading-actions">
+          <button className="button danger" type="button" onClick={removeRequest} disabled={!selectedFileName || isResolvingPlanChanges} title="Delete query request" aria-label="Delete query request">
+            <Icon name="trash" size={16} />
+          </button>
           <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>New request</button>
           <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges}>Save request</button>
         </div>
@@ -383,22 +405,10 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
         <div className="query-request-editor">
           <PanelSplitter panel={panel} label="saved requests panel" />
           <div className="query-request-header">
-            <label><span className="query-request-label-caption">Request name</span><input value={requestName} onChange={(event) => {
+            <label><span className="query-request-label-caption">Query name</span><input ref={requestNameInputRef} style={{ width: `${requestNameInputWidth}px` }} value={requestName} onChange={(event) => {
               setRequestName(event.target.value);
               cachedRequestName = event.target.value;
-            }} placeholder="e.g. recent-invoices" /></label>
-            {selectedFileName && (
-              <button
-                className="icon-button danger"
-                type="button"
-                title="Delete query request"
-                aria-label="Delete query request"
-                onClick={removeRequest}
-                disabled={isResolvingPlanChanges}
-              >
-                <Icon name="trash" size={19} />
-              </button>
-            )}
+            }} placeholder="e.g. recent-invoices" /><span className="query-request-name-measure" ref={requestNameMeasureRef} aria-hidden="true" /></label>
           </div>
           {requestMessage && <p className={`query-message${requestMessage.includes("Unable") ? " error" : ""}`} role="status">{requestMessage}</p>}
           <div className="query-request-tabs" role="tablist" aria-label="Query request views">

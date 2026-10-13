@@ -2,6 +2,9 @@
 .query-message { color: var(--muted); font-size: 12px; }
 .query-message { margin: 18px 0 0; }
 .query-message.error { color: #f0a6ae; }
+.query-page-heading .button.danger { color: #ef9da7; border-color: #56313a; background: #21171d; }
+.query-page-heading .button.danger:hover { background: #2b1b22; }
+.query-page-heading .button.danger:disabled { opacity: .65; cursor: wait; }
 
 .query-builder-workspace { display: grid; grid-template-columns: var(--panel-width, 260px) minmax(0, 1fr); align-items: stretch; overflow: hidden; background: linear-gradient(135deg, #11141c, #0f1218); border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 14px 40px #00000018; }
 .query-request-workspace { display: contents; }
@@ -21,10 +24,11 @@
 .query-request-header { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 12px; }
 .query-request-header label { display: grid; gap: 5px; color: var(--muted); font-size: 10px; letter-spacing: .5px; width: min(640px, 100%); }
 .query-request-label-caption { margin-left: 8px; }
-.query-request-header input { width: 100%; padding: 6px 12px; border: 0; border-radius: 7px; outline: 0; color: #f0edf9; background: #151923; font-size: 13px; font-weight: 400; letter-spacing: normal; transition: background .15s ease, box-shadow .15s ease; }
-.query-request-header input:hover { background: #191e29; }
-.query-request-header input:focus-visible { background: #191e29; box-shadow: 0 0 0 2px #8064e8; }
+.query-request-header input { justify-self: start; width: auto; min-width: 100px; max-width: 100%; box-sizing: border-box; padding: 6px 4px 6px 12px; border: 0; border-radius: 7px; outline: 0; color: #f0edf9; background: transparent; font-size: 12px; font-weight: 400; letter-spacing: normal; transition: box-shadow .15s ease; }
+.query-request-header input:hover { background: transparent; }
+.query-request-header input:focus-visible { background: transparent; box-shadow: 0 0 0 2px #8064e8; }
 .query-request-header input::placeholder { color: #687284; font-weight: 400; }
+.query-request-name-measure { position: fixed; top: -10000px; left: -10000px; visibility: hidden; white-space: pre; }
 .query-request-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
 .query-request-tab { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 11px 2px; border: 0; background: transparent; color: var(--muted); font-size: 14px; }
 .query-request-tab:hover { color: #fff; }
