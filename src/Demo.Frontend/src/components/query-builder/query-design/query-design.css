@@ -3,6 +3,7 @@
 .query-builder-toolbar label { display: flex; flex-direction: column; gap: 7px; color: #aab3c2; font: 10px "DM Mono", monospace; letter-spacing: .7px; text-transform: uppercase; }
 .query-builder-toolbar select, .query-builder-toolbar input, .filter-row select, .filter-row input { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 9px; font-size: 12px; outline: 0; height: var(--field-box-height); box-sizing: border-box; }
 .query-builder-toolbar select { min-width: 220px; }
+.query-builder-toolbar input[type="checkbox"] { width: auto; height: auto; padding: 0; }
 .small-input { width: 75px; }
 .checkbox-label { align-self: flex-end; flex-direction: row !important; align-items: center; height: var(--field-box-height); box-sizing: border-box; text-transform: none !important; letter-spacing: 0 !important; font-family: inherit !important; font-size: 12px !important; }
 .query-builder-body { padding: 0; }

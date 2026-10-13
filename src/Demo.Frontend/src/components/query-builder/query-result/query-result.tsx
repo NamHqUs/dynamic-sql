@@ -9,11 +9,15 @@ type QueryResultProps = {
   resultView: "data" | "sql";
   onRunQuery: () => void;
   onGetSql: () => void;
+  pageNumber: number;
+  pageSize: number | null;
+  onPageChange: (page: number) => void;
+  pageNavigationEnabled: boolean;
   queryLoading: boolean;
   queryDisabled: boolean;
 };
 
-export default function QueryResult({ result, sqlStatement, resultView, onRunQuery, onGetSql, queryLoading, queryDisabled }: QueryResultProps) {
+export default function QueryResult({ result, sqlStatement, resultView, onRunQuery, onGetSql, pageNumber, pageSize, onPageChange, pageNavigationEnabled, queryLoading, queryDisabled }: QueryResultProps) {
   return (
     <section className="results-card query-results">
       <div className="results-head">
@@ -35,6 +39,11 @@ export default function QueryResult({ result, sqlStatement, resultView, onRunQue
         : result
           ? <div className="table-wrap"><table><thead><tr>{result.columns.map((column, index) => <th key={`${column}-${index}`}>{column}</th>)}</tr></thead><tbody>{result.rows.map((row, rowIndex) => <tr key={rowIndex}>{result.columns.map((_, columnIndex) => <td key={columnIndex}>{row[columnIndex] ?? ""}</td>)}</tr>)}</tbody></table>{!result.rows.length && <p className="empty-state">No records matched this query.</p>}</div>
           : <p className="empty-state">Your query results will appear here.</p>}
+      {resultView === "data" && result && pageNavigationEnabled && pageSize !== null && pageSize > 0 && <nav className="query-pagination" aria-label="Query result pages">
+        <button className="button secondary" onClick={() => onPageChange(pageNumber - 1)} disabled={queryLoading || queryDisabled || pageNumber <= 1}>Previous</button>
+        <span>Page {pageNumber}</span>
+        <button className="button secondary" onClick={() => onPageChange(pageNumber + 1)} disabled={queryLoading || queryDisabled || result.rows.length < pageSize}>Next</button>
+      </nav>}
     </section>
   );
 }

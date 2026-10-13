@@ -27,7 +27,7 @@ function createDefinition(entity: string, fields: MetadataField[] = []): QueryDe
     columns: fields.map((field) => ({ field: field.name, alias: null })),
     filters: { logicalOperation: 0, filters: [] },
     sorts: [],
-    page: null,
+    page: 1,
     pageSize: 50,
     includeArchive: false,
   };
@@ -190,6 +190,13 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
         filters: definition.filters,
       }));
     }
+  };
+
+  const changePage = (page: number) => {
+    if (activeRequestTab !== "design" || !definition.entity || !definition.columns.length) return;
+    const nextDefinition = { ...definition, page };
+    updateDefinition(nextDefinition);
+    dispatch(executeQuery(nextDefinition));
   };
 
   const getSql = () => {
@@ -513,6 +520,10 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           resultView={resultView}
           onRunQuery={runQuery}
           onGetSql={getSql}
+          pageNumber={definition.page ?? 1}
+          pageSize={definition.pageSize}
+          onPageChange={changePage}
+          pageNavigationEnabled={activeRequestTab === "design"}
           queryLoading={queryStatus === "loading"}
           queryDisabled={isResolvingPlanChanges || (activeRequestTab === "structure"
             ? requestStructureStatus !== "succeeded"

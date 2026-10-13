@@ -115,8 +115,11 @@ async function requestText(url: string, options?: RequestInit) {
 
 function createApiQuery(definition: QueryDefinition) {
   const { filters, sorts, ...query } = definition;
+  const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   return {
     ...query,
+    page: noPaging ? null : query.page,
+    pageSize: noPaging ? null : query.pageSize,
     sorts: sorts.map((sort) => ({ ...sort, direction: sort.direction === "desc" ? 1 : 0 })),
     filter: createApiFilter(filters),
   };
