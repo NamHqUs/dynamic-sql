@@ -275,19 +275,23 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
         <div className="field-action-buttons">
           <button
             type="button"
-            className="field-action field-action-clear"
+            className="field-action field-action-icon"
+            aria-label="Select all fields"
+            title="Select all fields"
             onClick={selectAllFields}
             disabled={entity.fields.every((field) => definition.columns.some((column) => column.field === field.name))}
           >
-            <Icon name="plus" size={12} /><span className="action-link-text">Select all fields</span>
+            <Icon name="check" size={14} />
           </button>
           <button
             type="button"
-            className="field-action field-action-clear"
+            className="field-action field-action-icon"
+            aria-label="Clear projection"
+            title="Clear projection"
             onClick={clearProjection}
             disabled={!definition.columns.length}
           >
-            <Icon name="minus" size={12} /><span className="action-link-text">Clear projection</span>
+            <Icon name="close" size={14} />
           </button>
         </div>
       </div>

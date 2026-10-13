@@ -195,11 +195,13 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
         </div>
         <button
           type="button"
-          className="field-action field-action-clear"
+          className="field-action field-action-icon"
+          aria-label="Clear sorts"
+          title="Clear sorts"
           onClick={clearSorts}
           disabled={!definition.sorts.length}
         >
-          <Icon name="minus" size={12} /><span className="action-link-text">Clear sorts</span>
+          <Icon name="close" size={14} />
         </button>
       </div>
       <div
@@ -268,9 +270,9 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
             entity={entity}
             metadata={metadata}
             value=""
-            placeholder="Sort by field"
+            placeholder="Sorted field"
             placeholderIcon
-            ariaLabel="Sort by field"
+            ariaLabel="Sorted field"
             excludedPaths={definition.sorts.map((sort) => sort.field)}
             onChange={addSort}
           />

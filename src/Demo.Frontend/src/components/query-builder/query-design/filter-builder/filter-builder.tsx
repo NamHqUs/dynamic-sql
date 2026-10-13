@@ -846,11 +846,13 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
         </div>
         <button
           type="button"
-          className="field-action field-action-clear"
+          className="field-action field-action-icon"
+          aria-label="Clear filters"
+          title="Clear filters"
           onClick={clearFilters}
           disabled={!definition.filters.filters.length}
         >
-          <Icon name="minus" size={12} /><span className="action-link-text">Clear filters</span>
+          <Icon name="close" size={14} />
         </button>
       </div>
       <FilterGroupEditor
