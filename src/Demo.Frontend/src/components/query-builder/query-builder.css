@@ -23,7 +23,7 @@
 .query-request-header input:focus-visible { background: #191e29; box-shadow: 0 0 0 2px #8064e8; }
 .query-request-header input::placeholder { color: #687284; font-weight: 400; }
 .query-request-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
-.query-request-tab { position: relative; padding: 11px 2px; border: 0; background: transparent; color: var(--muted); font-size: 12px; }
+.query-request-tab { position: relative; padding: 11px 2px; border: 0; background: transparent; color: var(--muted); font-size: 14px; }
 .query-request-tab:hover, .query-request-tab.active { color: #fff; }
 .query-request-tab.active::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--purple); content: ""; }
 .query-request-tab:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }

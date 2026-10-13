@@ -837,7 +837,7 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
       <div className="section-header">
         <div className="section-heading">
           <span className="section-kicker">FILTERS</span>
-          <p className="filter-description">Drag a selected field here to create a filter, or drag from the left border of a FieldFilter or GroupFilter to reorder. Drop onto a GroupFilter to nest it, or use its top or bottom edge to place a filter before or after it.</p>
+          <p className="filter-description">Drag a selected field here to create a filter.</p>
         </div>
         <button
           type="button"
