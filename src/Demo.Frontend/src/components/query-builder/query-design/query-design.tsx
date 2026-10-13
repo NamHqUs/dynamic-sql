@@ -11,6 +11,8 @@ type QueryDesignProps = {
   metadataError: string;
   definition: QueryDefinition;
   entity?: MetadataEntity;
+  requestName: string;
+  onRequestNameChange: (name: string) => void;
   onDefinitionChange: (definition: QueryDefinition) => void;
 };
 
@@ -20,12 +22,19 @@ export default function QueryDesign({
   metadataError,
   definition,
   entity,
+  requestName,
+  onRequestNameChange,
   onDefinitionChange,
 }: QueryDesignProps) {
   const [draggedProjectionField, setDraggedProjectionField] = useState<string | null>(null);
 
   return (
     <section className="query-builder-card">
+      <div className="query-name-row">
+        <label className="query-name-field"><span className="section-kicker">QUERY NAME</span>
+          <input type="text" value={requestName} onChange={(event) => onRequestNameChange(event.target.value)} placeholder="e.g. recent-invoices" />
+        </label>
+      </div>
       <div className="query-builder-toolbar">
         <label><span className="section-kicker">ENTITY</span>
           <select value={definition.entity} onChange={(event) => {

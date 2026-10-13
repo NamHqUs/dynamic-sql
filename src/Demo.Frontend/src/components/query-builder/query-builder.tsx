@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../icon/icon";
 import PanelSplitter from "../panel-splitter/panel-splitter";
@@ -108,11 +108,8 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const definitionRef = useRef(definition);
   const [selectedFileName, setSelectedFileName] = useState(cachedSelectedFileName);
   const [requestName, setRequestName] = useState(cachedRequestName);
-  const [requestNameInputWidth, setRequestNameInputWidth] = useState(100);
   const [requestMessage, setRequestMessage] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
-  const requestNameInputRef = useRef<HTMLInputElement>(null);
-  const requestNameMeasureRef = useRef<HTMLSpanElement>(null);
   const [activeRequestTab, setActiveRequestTab] = useState<"design" | "structure">("design");
   const [requestStructureDraft, setRequestStructureDraft] = useState("");
   const [requestStructureOriginal, setRequestStructureOriginal] = useState("");
@@ -122,22 +119,6 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const [isResolvingPlanChanges, setIsResolvingPlanChanges] = useState(false);
   const panel = useResizablePanel("query-builder");
   const planTextDirty = requestStructureStatus === "succeeded" && requestStructureDraft !== requestStructureOriginal;
-  useLayoutEffect(() => {
-    const input = requestNameInputRef.current;
-    const measure = requestNameMeasureRef.current;
-    if (!input || !measure) return;
-
-    const inputStyle = window.getComputedStyle(input);
-    measure.style.font = inputStyle.font;
-    measure.style.letterSpacing = inputStyle.letterSpacing;
-    measure.textContent = input.value || input.placeholder;
-
-    const paddingLeft = Number.parseFloat(inputStyle.paddingLeft);
-    const paddingRight = Number.parseFloat(inputStyle.paddingRight);
-    setRequestNameInputWidth(
-      Math.max(100, measure.getBoundingClientRect().width + paddingLeft + paddingRight + 2),
-    );
-  }, [requestName]);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
   const sortedSavedRequests = useMemo(() => [...savedRequests].sort((left, right) => {
     const leftName = left.query.name || left.fileName.replace(/\.json$/i, "");
@@ -478,12 +459,6 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
         </aside>
         <div className="query-request-editor">
           <PanelSplitter panel={panel} label="saved requests panel" />
-          <div className="query-request-header">
-            <label><span className="query-request-label-caption">Query name</span><input ref={requestNameInputRef} style={{ width: `${requestNameInputWidth}px` }} value={requestName} onChange={(event) => {
-              setRequestName(event.target.value);
-              cachedRequestName = event.target.value;
-            }} placeholder="e.g. recent-invoices" /><span className="query-request-name-measure" ref={requestNameMeasureRef} aria-hidden="true" /></label>
-          </div>
           {requestMessage && <p className={`query-message${requestMessage.includes("Unable") ? " error" : ""}`} role="status">{requestMessage}</p>}
           <div className="query-request-tabs" role="tablist" aria-label="Query request views">
             <button
@@ -527,6 +502,11 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
                 metadataError={metadataError}
                 definition={definition}
                 entity={entity}
+                requestName={requestName}
+                onRequestNameChange={(name) => {
+                  setRequestName(name);
+                  cachedRequestName = name;
+                }}
                 onDefinitionChange={updateDefinition}
               />
             </div>
