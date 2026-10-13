@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { executeQuery, fetchQueryMetadata, getSqlStatement, MetadataField, QueryDefinition, QueryFilterGroup, QueryFilterNode } from "./query-design/query-builder-slice";
+import Icon from "../icon/icon";
+import { useMessageBox } from "../message-box/message-box";
+import { deleteQueryRequest, executeQuery, executeQueryFromText, fetchQueryMetadata, fetchSavedQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataField, parseQueryRequestString, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import "./query-builder.css";
 
+type QueryBuilderProps = {
+  onNavigationGuardChange: (guard: ((continueNavigation: () => void) => void) | null) => void;
+};
+
 let cachedDefinition: QueryDefinition | null = null;
+let cachedSelectedFileName = "";
+let cachedRequestName = "";
 
 export function resetQueryBuilderCache() {
   cachedDefinition = null;
@@ -54,11 +62,32 @@ function reconcileDefinition(definition: QueryDefinition, fields: MetadataField[
   return unchanged ? definition : { ...definition, columns, sorts, filters };
 }
 
-export default function QueryBuilder() {
+export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderProps) {
   const dispatch = useDispatch();
-  const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError } = useSelector((state) => state.queryBuilder);
+  const showMessageBox = useMessageBox();
+  const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, savedRequests, savedRequestsStatus, savedRequestsError } = useSelector((state) => state.queryBuilder);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
+  const [selectedFileName, setSelectedFileName] = useState(cachedSelectedFileName);
+  const [requestName, setRequestName] = useState(cachedRequestName);
+  const [requestMessage, setRequestMessage] = useState("");
+  const [activeRequestTab, setActiveRequestTab] = useState<"design" | "structure">("design");
+  const [requestStructureDraft, setRequestStructureDraft] = useState("");
+  const [requestStructureOriginal, setRequestStructureOriginal] = useState("");
+  const [requestStructureStatus, setRequestStructureStatus] = useState<"idle" | "loading" | "succeeded" | "failed">("idle");
+  const [requestStructureError, setRequestStructureError] = useState("");
+  const [isResolvingPlanChanges, setIsResolvingPlanChanges] = useState(false);
+  const planTextDirty = requestStructureStatus === "succeeded" && requestStructureDraft !== requestStructureOriginal;
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
+  const requestStructureFields = requestStructureDraft.split(/\r?\n/).map((line, index) => {
+    const separator = line.indexOf(":");
+    return separator < 0
+      ? { label: "", value: line, index }
+      : {
+        label: line.slice(0, separator).trim(),
+        value: line.slice(separator + 1).replace(/^ /, ""),
+        index,
+      };
+  }).filter((field) => field.label);
 
   const updateDefinition = (nextDefinition: QueryDefinition) => {
     cachedDefinition = nextDefinition;
@@ -67,6 +96,7 @@ export default function QueryBuilder() {
 
   useEffect(() => {
     dispatch(fetchQueryMetadata());
+    dispatch(fetchSavedQueryRequests());
   }, [dispatch]);
 
   useEffect(() => {
@@ -88,6 +118,10 @@ export default function QueryBuilder() {
   }, [metadata, definition.entity]);
 
   const runQuery = () => {
+    if (activeRequestTab === "structure") {
+      dispatch(executeQueryFromText(requestStructureDraft));
+      return;
+    }
     if (definition.entity && definition.columns.length) {
       dispatch(executeQuery({
         ...definition,
@@ -97,12 +131,181 @@ export default function QueryBuilder() {
   };
 
   const getSql = () => {
+    if (activeRequestTab === "structure") {
+      dispatch(getSqlStatementFromText(requestStructureDraft));
+      return;
+    }
     if (definition.entity && definition.columns.length) {
       dispatch(getSqlStatement({
         ...definition,
         filters: definition.filters,
       }));
     }
+  };
+
+  const loadRequestStructure = async (nextDefinition = definition, name = requestName) => {
+    setRequestStructureStatus("loading");
+    setRequestStructureError("");
+    const resultAction = await dispatch(getQueryRequestString({
+      name,
+      definition: nextDefinition,
+    }));
+    if (getQueryRequestString.fulfilled.match(resultAction)) {
+      setRequestStructureDraft(resultAction.payload);
+      setRequestStructureOriginal(resultAction.payload);
+      setRequestStructureStatus("succeeded");
+    } else {
+      setRequestStructureError(String(resultAction.payload || "Unable to format query request."));
+      setRequestStructureStatus("failed");
+    }
+  };
+
+  const updateRequestStructureField = (index: number, value: string) => {
+    setRequestStructureDraft((current) => current.split(/\r?\n/).map((line, lineIndex) => {
+      if (lineIndex !== index) return line;
+      const separator = line.indexOf(":");
+      return `${line.slice(0, separator + 1)} ${value}`;
+    }).join("\n"));
+  };
+
+  const applyRequestStructure = async () => {
+    setIsResolvingPlanChanges(true);
+    setRequestStructureError("");
+    const resultAction = await dispatch(parseQueryRequestString({ text: requestStructureDraft, entity: definition.entity }));
+    if (parseQueryRequestString.fulfilled.match(resultAction)) {
+      const nextDefinition = fromApiQuery(resultAction.payload);
+      updateDefinition(nextDefinition);
+      setRequestStructureOriginal(requestStructureDraft);
+      setRequestMessage("Query structure applied.");
+      setIsResolvingPlanChanges(false);
+      return true;
+    } else {
+      setRequestStructureError(String(resultAction.payload || "Unable to apply query request structure."));
+    }
+    setIsResolvingPlanChanges(false);
+    return false;
+  };
+
+  const requestPlanTextNavigation = async (continueNavigation: () => void) => {
+    if (isResolvingPlanChanges) return;
+    if (!planTextDirty) {
+      continueNavigation();
+      return;
+    }
+    const action = await showMessageBox({
+      eyebrow: "UNAPPLIED PLAN TEXT",
+      title: "Apply your plan text changes?",
+      message: "We’ll validate these edits with the backend before continuing. If the plan text is invalid, you’ll stay here so you can fix or discard it.",
+      actions: [
+        { value: "stay", label: "Stay here", variant: "secondary" },
+        { value: "discard", label: "Discard changes", variant: "secondary" },
+        { value: "apply", label: "Apply changes", variant: "primary" },
+      ],
+    });
+    if (action === "apply") {
+      if (await applyRequestStructure()) continueNavigation();
+    } else if (action === "discard") {
+      setRequestStructureDraft(requestStructureOriginal);
+      setRequestStructureError("");
+      continueNavigation();
+    }
+  };
+
+  useEffect(() => {
+    const guard = (continueNavigation: () => void) => requestPlanTextNavigation(continueNavigation);
+    onNavigationGuardChange(guard);
+    return () => onNavigationGuardChange(null);
+  }, [onNavigationGuardChange, planTextDirty, requestStructureOriginal, isResolvingPlanChanges]);
+
+  useEffect(() => {
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (!planTextDirty) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    return () => window.removeEventListener("beforeunload", beforeUnload);
+  }, [planTextDirty]);
+
+  const loadSavedRequest = (fileName: string) => {
+    const saved = savedRequests.find((item) => item.fileName === fileName);
+    if (!saved) return;
+    setSelectedFileName(saved.fileName);
+    cachedSelectedFileName = saved.fileName;
+    const nextName = saved.query.name || saved.fileName.replace(/\.json$/i, "");
+    setRequestName(nextName);
+    cachedRequestName = nextName;
+    updateDefinition(fromApiQuery(saved.query));
+    setRequestMessage("");
+    if (activeRequestTab === "structure") {
+      void loadRequestStructure(fromApiQuery(saved.query), nextName);
+    }
+  };
+
+  const selectSavedRequest = (fileName: string) => {
+    if (fileName === selectedFileName) return;
+    requestPlanTextNavigation(() => loadSavedRequest(fileName));
+  };
+
+  const startNewRequest = () => {
+    setSelectedFileName("");
+    setRequestName("");
+    cachedSelectedFileName = "";
+    cachedRequestName = "";
+    setRequestMessage("");
+    setRequestStructureError("");
+    updateDefinition(createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []));
+    setRequestStructureDraft("");
+    setRequestStructureOriginal("");
+    setRequestStructureStatus("idle");
+  };
+
+  const createNewRequest = () => requestPlanTextNavigation(startNewRequest);
+
+  const saveRequest = async () => {
+    if (!requestName.trim()) {
+      setRequestMessage("A name is required for the query request.");
+      return;
+    }
+    setRequestMessage("");
+    const resultAction = await dispatch(saveQueryRequest({
+      fileName: selectedFileName || undefined,
+      name: requestName.trim(),
+      definition,
+    }));
+    if (saveQueryRequest.fulfilled.match(resultAction)) {
+      setSelectedFileName(resultAction.payload.fileName);
+      cachedSelectedFileName = resultAction.payload.fileName;
+      const savedName = resultAction.payload.query.name || requestName.trim();
+      setRequestName(savedName);
+      cachedRequestName = savedName;
+      setRequestMessage("Query request saved.");
+    } else {
+      setRequestMessage(String(resultAction.payload || "Unable to save query request."));
+    }
+  };
+
+  const removeRequest = async () => {
+    if (!selectedFileName) return;
+    const action = await showMessageBox({
+      eyebrow: "DELETE QUERY REQUEST",
+      title: `Delete "${requestName}"?`,
+      message: "This saved query request will be permanently removed.",
+      actions: [
+        { value: "cancel", label: "Cancel", variant: "secondary" },
+        { value: "delete", label: "Delete request", variant: "danger" },
+      ],
+    });
+    if (action !== "delete") return;
+    await requestPlanTextNavigation(async () => {
+      const resultAction = await dispatch(deleteQueryRequest(selectedFileName));
+      if (deleteQueryRequest.fulfilled.match(resultAction)) {
+        startNewRequest();
+        setRequestMessage("Query request deleted.");
+      } else {
+        setRequestMessage(String(resultAction.payload || "Unable to delete query request."));
+      }
+    });
   };
 
   return (
@@ -113,16 +316,121 @@ export default function QueryBuilder() {
           <h1>Build a query</h1>
           <p>Choose metadata fields, define filters, and preview the result from the connected API.</p>
         </div>
+        <div className="heading-actions">
+          <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>New request</button>
+          <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges}>Save request</button>
+        </div>
       </section>
 
-      <QueryDesign
-        metadata={metadata}
-        metadataStatus={metadataStatus}
-        metadataError={metadataError}
-        definition={definition}
-        entity={entity}
-        onDefinitionChange={updateDefinition}
-      />
+      <section className="query-request-workspace">
+        <aside className="query-request-list">
+          <div className="metadata-list-head">
+            <span className="section-kicker">SAVED QUERY REQUESTS</span>
+            <span className="tab-number">{savedRequests.length}</span>
+          </div>
+          {savedRequestsStatus === "loading" && <p className="query-message">Loading requests…</p>}
+          {savedRequestsStatus === "failed" && <p className="query-message error" role="alert">{savedRequestsError}</p>}
+          {savedRequestsStatus !== "loading" && savedRequests.map((saved) => (
+            <button className={`query-request-item${saved.fileName === selectedFileName ? " active" : ""}`} key={saved.fileName} onClick={() => void selectSavedRequest(saved.fileName)} disabled={isResolvingPlanChanges}>
+              <strong>{saved.query.name || saved.fileName.replace(/\.json$/i, "")}</strong>
+              <small>{saved.query.entity} · {saved.query.columns.length} columns</small>
+            </button>
+          ))}
+          {savedRequestsStatus !== "loading" && !savedRequests.length && <p className="query-message">No saved requests.</p>}
+        </aside>
+        <div className="query-request-editor">
+          <div className="query-request-header">
+            <label>Request name <input value={requestName} onChange={(event) => {
+              setRequestName(event.target.value);
+              cachedRequestName = event.target.value;
+            }} placeholder="e.g. recent-invoices" /></label>
+            {selectedFileName && (
+              <button
+                className="icon-button danger"
+                type="button"
+                title="Delete query request"
+                aria-label="Delete query request"
+                onClick={removeRequest}
+                disabled={isResolvingPlanChanges}
+              >
+                <Icon name="trash" size={19} />
+              </button>
+            )}
+          </div>
+          {requestMessage && <p className={`query-message${requestMessage.includes("Unable") ? " error" : ""}`} role="status">{requestMessage}</p>}
+          <div className="query-request-tabs" role="tablist" aria-label="Query request views">
+            <button
+              className={`query-request-tab${activeRequestTab === "design" ? " active" : ""}`}
+              id="query-request-design-tab"
+              type="button"
+              role="tab"
+              aria-selected={activeRequestTab === "design"}
+              aria-controls="query-request-design-panel"
+              onClick={() => void requestPlanTextNavigation(() => setActiveRequestTab("design"))}
+              disabled={isResolvingPlanChanges}
+            >
+              Query design
+            </button>
+            <button
+              className={`query-request-tab${activeRequestTab === "structure" ? " active" : ""}`}
+              id="query-request-structure-tab"
+              type="button"
+              role="tab"
+              aria-selected={activeRequestTab === "structure"}
+              aria-controls="query-request-structure-panel"
+              onClick={() => {
+                setActiveRequestTab("structure");
+                void loadRequestStructure();
+              }}
+              disabled={isResolvingPlanChanges}
+            >
+              Plan text
+            </button>
+          </div>
+          {activeRequestTab === "design" ? (
+            <div id="query-request-design-panel" role="tabpanel" aria-labelledby="query-request-design-tab">
+              <QueryDesign
+                metadata={metadata}
+                metadataStatus={metadataStatus}
+                metadataError={metadataError}
+                definition={definition}
+                entity={entity}
+                onDefinitionChange={updateDefinition}
+              />
+            </div>
+          ) : (
+            <div id="query-request-structure-panel" className="query-request-structure" role="tabpanel" aria-labelledby="query-request-structure-tab">
+              {requestStructureStatus === "loading" && <p className="query-message">Loading request structure…</p>}
+              {requestStructureStatus === "failed" && <p className="query-message error" role="alert">{requestStructureError}</p>}
+              {requestStructureStatus === "succeeded" && (
+                <div className="query-request-structure-content">
+                  <div className="query-request-structure-actions">
+                    <span>Entity is fixed.{planTextDirty ? " Plan text has unapplied changes." : ""}</span>
+                    {planTextDirty && <span className="query-plan-text-changed">CHANGED</span>}
+                  </div>
+                  {requestStructureError && <p className="query-message error" role="alert">{requestStructureError}</p>}
+                  {requestStructureFields.map(({ label, value, index }) => (
+                    <div className="query-request-structure-line" key={label}>
+                      <span className="query-request-structure-key">{label}:</span>
+                      {label === "Entity" ? (
+                        <span className="query-request-structure-entity">{value}</span>
+                      ) : (
+                        <input
+                          className="query-request-structure-input"
+                          aria-label={label}
+                          value={value}
+                          onChange={(event) => updateRequestStructureField(index, event.target.value)}
+                          disabled={isResolvingPlanChanges}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
 
       {queryError && <p className="query-message error" role="alert">{queryError}</p>}
       <QueryResult
@@ -132,7 +440,9 @@ export default function QueryBuilder() {
         onRunQuery={runQuery}
         onGetSql={getSql}
         queryLoading={queryStatus === "loading"}
-        queryDisabled={!definition.columns.length}
+        queryDisabled={isResolvingPlanChanges || (activeRequestTab === "structure"
+          ? requestStructureStatus !== "succeeded"
+          : !definition.columns.length)}
       />
     </>
   );

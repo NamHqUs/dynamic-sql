@@ -266,4 +266,13 @@ public class _14_QueryRequestTests : TestBase
         Assert.Throws<FormatException>(() =>
             QueryRequest.FromJson("""{"entity":"User","filter":"Age > (12 + OtherAge)"}"""));
     }
+
+    [Test]
+    public void JsonDefinitionParsesEscapedSingleQuotesInFilterValues()
+    {
+        var definition = QueryRequest.FromJson("""{"entity":"User","filter":"Name == 'O''Neil'"}""");
+        var filter = (QueryFilterItem)definition.Filter!.Filters[0];
+
+        Assert.That(filter.Value, Is.EqualTo("O'Neil"));
+    }
 }

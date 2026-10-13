@@ -45,6 +45,17 @@ export type QueryDefinition = {
   includeArchive: boolean;
 };
 
+export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts"> & {
+  name?: string;
+  filter: QueryFilterGroup | null;
+  sorts: { field: string; direction: number }[];
+};
+
+export type StoredQueryRequest = {
+  fileName: string;
+  query: ApiQueryRequest;
+};
+
 function createApiFilter(group: QueryFilterGroup): QueryFilterGroup | null {
   const filters = group.filters.flatMap((filter) => {
     if ("filters" in filter) {
@@ -76,7 +87,11 @@ async function requestJson(url: string, options?: RequestInit) {
   } catch (error) {
     throw new Error(`Could not reach the query API: ${error instanceof Error ? error.message : "network error"}`);
   }
-  if (!response.ok) throw new Error(`Query request failed (${response.status}).`);
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `Query request failed (${response.status}).`);
+  }
+  if (response.status === 204) return null;
   try {
     return await response.json();
   } catch {
@@ -91,7 +106,10 @@ async function requestText(url: string, options?: RequestInit) {
   } catch (error) {
     throw new Error(`Could not reach the query API: ${error instanceof Error ? error.message : "network error"}`);
   }
-  if (!response.ok) throw new Error(`Query request failed (${response.status}).`);
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `Query request failed (${response.status}).`);
+  }
   return response.text();
 }
 
@@ -101,6 +119,32 @@ function createApiQuery(definition: QueryDefinition) {
     ...query,
     sorts: sorts.map((sort) => ({ ...sort, direction: sort.direction === "desc" ? 1 : 0 })),
     filter: createApiFilter(filters),
+  };
+}
+
+function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
+  const restoreGroup = (group: QueryFilterGroup): QueryFilterGroup => ({
+    ...group,
+    filters: group.filters.map((node): QueryFilterNode => {
+      if ("filters" in node) return restoreGroup(node);
+      return {
+        ...node,
+        value: String(node.value ?? ""),
+        parameterized: node.parameterized ?? false,
+        logicalOperator: node.logicalOperator ?? 0,
+        enabled: true,
+      };
+    }),
+  });
+
+  return {
+    entity: query.entity,
+    columns: query.columns,
+    filters: query.filter ? restoreGroup(query.filter) : { logicalOperation: 0, filters: [] },
+    sorts: query.sorts.map((sort) => ({ ...sort, direction: sort.direction === 1 ? "desc" : "asc" })),
+    page: query.page,
+    pageSize: query.pageSize,
+    includeArchive: query.includeArchive,
   };
 }
 
@@ -151,6 +195,32 @@ export const executeQuery = createAsyncThunk(
   },
 );
 
+export const executeQueryFromText = createAsyncThunk(
+  "queryBuilder/executeFromText",
+  async (text: string, { rejectWithValue }) => {
+    try {
+      const payload = await requestJson(apiUrls.dynamicQuery.executeText, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: text,
+      });
+      if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string")) {
+        return rejectWithValue("Query API must return a name and an array of row strings.");
+      }
+      const responseColumns = typeof payload.columns === "string"
+        ? payload.columns.split(",").filter((column: string) => column.trim())
+        : [];
+      return {
+        name: payload.name,
+        columns: responseColumns,
+        rows: payload.rows.map((row: string) => row.split(",")),
+      } as QueryResult;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to execute query.");
+    }
+  },
+);
+
 export const getSqlStatement = createAsyncThunk(
   "queryBuilder/getSqlStatement",
   async (definition: QueryDefinition, { rejectWithValue }) => {
@@ -170,6 +240,102 @@ export const getSqlStatement = createAsyncThunk(
   },
 );
 
+export const getSqlStatementFromText = createAsyncThunk(
+  "queryBuilder/getSqlStatementFromText",
+  async (text: string, { rejectWithValue }) => {
+    try {
+      return await requestText(apiUrls.dynamicQuery.toStringText, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: text,
+      });
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to generate SQL statement.");
+    }
+  },
+);
+
+export const getQueryRequestString = createAsyncThunk(
+  "queryBuilder/getQueryRequestString",
+  async ({ name, definition }: { name: string; definition: QueryDefinition }, { rejectWithValue }) => {
+    try {
+      return await requestText(apiUrls.queryRequests.toString, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...createApiQuery(definition), name }),
+      });
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to format query request.");
+    }
+  },
+);
+
+export const parseQueryRequestString = createAsyncThunk(
+  "queryBuilder/parseQueryRequestString",
+  async ({ text, entity }: { text: string; entity: string }, { rejectWithValue }) => {
+    try {
+      const payload = await requestJson(apiUrls.queryRequests.parse, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, entity }),
+      });
+      if (!payload || typeof payload.entity !== "string" || !Array.isArray(payload.columns) || !Array.isArray(payload.sorts)) {
+        return rejectWithValue("Query request API returned an invalid request.");
+      }
+      return payload as ApiQueryRequest;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to apply query request structure.");
+    }
+  },
+);
+
+export const fetchSavedQueryRequests = createAsyncThunk(
+  "queryBuilder/fetchSavedRequests",
+  async (_, { rejectWithValue }) => {
+    try {
+      const payload = await requestJson(apiUrls.queryRequests.list);
+      if (!Array.isArray(payload) || payload.some((item) => !item || typeof item.fileName !== "string" || !item.query)) {
+        return rejectWithValue("Query request API must return saved requests.");
+      }
+      return payload as StoredQueryRequest[];
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to load saved query requests.");
+    }
+  },
+);
+
+export const saveQueryRequest = createAsyncThunk(
+  "queryBuilder/saveRequest",
+  async ({ fileName, name, definition }: { fileName?: string; name: string; definition: QueryDefinition }, { rejectWithValue }) => {
+    try {
+      const url = fileName ? apiUrls.queryRequests.byFileName(fileName) : apiUrls.queryRequests.list;
+      const payload = await requestJson(url, {
+        method: fileName ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...createApiQuery(definition), name }),
+      });
+      if (!payload || typeof payload.fileName !== "string" || !payload.query) {
+        return rejectWithValue("Query request API returned an invalid saved request.");
+      }
+      return payload as StoredQueryRequest;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to save query request.");
+    }
+  },
+);
+
+export const deleteQueryRequest = createAsyncThunk(
+  "queryBuilder/deleteRequest",
+  async (fileName: string, { rejectWithValue }) => {
+    try {
+      await requestJson(apiUrls.queryRequests.byFileName(fileName), { method: "DELETE" });
+      return fileName;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to delete query request.");
+    }
+  },
+);
+
 const queryBuilderSlice = createSlice({
   name: "queryBuilder",
   initialState: {
@@ -181,6 +347,9 @@ const queryBuilderSlice = createSlice({
     resultView: "data" as "data" | "sql",
     queryStatus: "idle",
     queryError: "",
+    savedRequests: [] as StoredQueryRequest[],
+    savedRequestsStatus: "idle",
+    savedRequestsError: "",
   },
   reducers: {
     clearQueryResult(state) {
@@ -221,6 +390,19 @@ const queryBuilderSlice = createSlice({
       .addCase(executeQuery.rejected, (state, action) => {
         state.queryStatus = "failed";
         state.queryError = String(action.payload || action.error.message || "Unable to execute query.");
+      })
+      .addCase(executeQueryFromText.pending, (state) => {
+        state.queryStatus = "loading";
+        state.queryError = "";
+      })
+      .addCase(executeQueryFromText.fulfilled, (state, action) => {
+        state.result = action.payload;
+        state.resultView = "data";
+        state.queryStatus = "succeeded";
+      })
+      .addCase(executeQueryFromText.rejected, (state, action) => {
+        state.queryStatus = "failed";
+        state.queryError = String(action.payload || action.error.message || "Unable to execute query.");
       });
     builder
       .addCase(getSqlStatement.pending, (state) => {
@@ -235,9 +417,43 @@ const queryBuilderSlice = createSlice({
       .addCase(getSqlStatement.rejected, (state, action) => {
         state.queryStatus = "failed";
         state.queryError = String(action.payload || action.error.message || "Unable to generate SQL statement.");
+      })
+      .addCase(getSqlStatementFromText.pending, (state) => {
+        state.queryStatus = "loading";
+        state.queryError = "";
+      })
+      .addCase(getSqlStatementFromText.fulfilled, (state, action) => {
+        state.sqlStatement = action.payload;
+        state.resultView = "sql";
+        state.queryStatus = "succeeded";
+      })
+      .addCase(getSqlStatementFromText.rejected, (state, action) => {
+        state.queryStatus = "failed";
+        state.queryError = String(action.payload || action.error.message || "Unable to generate SQL statement.");
+      })
+      .addCase(fetchSavedQueryRequests.pending, (state) => {
+        state.savedRequestsStatus = "loading";
+        state.savedRequestsError = "";
+      })
+      .addCase(fetchSavedQueryRequests.fulfilled, (state, action) => {
+        state.savedRequests = action.payload;
+        state.savedRequestsStatus = "succeeded";
+      })
+      .addCase(fetchSavedQueryRequests.rejected, (state, action) => {
+        state.savedRequestsStatus = "failed";
+        state.savedRequestsError = String(action.payload || action.error.message || "Unable to load saved query requests.");
+      })
+      .addCase(saveQueryRequest.fulfilled, (state, action) => {
+        const index = state.savedRequests.findIndex((item) => item.fileName === action.payload.fileName);
+        if (index >= 0) state.savedRequests[index] = action.payload;
+        else state.savedRequests.unshift(action.payload);
+      })
+      .addCase(deleteQueryRequest.fulfilled, (state, action) => {
+        state.savedRequests = state.savedRequests.filter((item) => item.fileName !== action.payload);
       });
   },
 });
 
 export const { clearQueryResult, invalidateQueryMetadata } = queryBuilderSlice.actions;
+export { fromApiQuery };
 export default queryBuilderSlice.reducer;

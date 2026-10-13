@@ -1,0 +1,43 @@
+{
+  "Name": "asdff",
+  "Entity": "Customers",
+  "Columns": [
+    {
+      "Field": "Id",
+      "Alias": null
+    },
+    {
+      "Field": "Name",
+      "Alias": null
+    },
+    {
+      "Field": "Email",
+      "Alias": null
+    },
+    {
+      "Field": "Phone",
+      "Alias": null
+    },
+    {
+      "Field": "Address",
+      "Alias": null
+    },
+    {
+      "Field": "Segment",
+      "Alias": null
+    },
+    {
+      "Field": "Region",
+      "Alias": null
+    },
+    {
+      "Field": "CustomerSince",
+      "Alias": null
+    }
+  ],
+  "Filter": null,
+  "Sorts": [],
+  "Page": null,
+  "PageSize": 50,
+  "IncludeArchive": false
+}

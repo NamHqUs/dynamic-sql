@@ -208,14 +208,25 @@ internal sealed class QueryFilterParser
     {
         if (index < text.Length && text[index] == '\'')
         {
-            var start = ++index;
-            while (index < text.Length && text[index] != '\'')
-                index++;
+            index++;
+            var value = new System.Text.StringBuilder();
+            while (index < text.Length)
+            {
+                if (text[index] == '\'' && index + 1 < text.Length && text[index + 1] == '\'')
+                {
+                    value.Append('\'');
+                    index += 2;
+                    continue;
+                }
+                if (text[index] == '\'')
+                    break;
+                value.Append(text[index++]);
+            }
             if (index >= text.Length)
                 throw new FormatException("Unterminated string parameter.");
 
-            var value = text[start..index];
-            tokens.Add(new Token(TokenType.Value, value, value));
+            var parsedValue = value.ToString();
+            tokens.Add(new Token(TokenType.Value, parsedValue, parsedValue));
             index++;
             return;
         }

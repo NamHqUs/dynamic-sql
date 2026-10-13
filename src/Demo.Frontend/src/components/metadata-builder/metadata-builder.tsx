@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { apiUrls } from "../../const/api-urls";
+import { useMessageBox } from "../message-box/message-box";
 import Icon from "../icon/icon";
 import { MetadataEntity, clearQueryResult, invalidateQueryMetadata } from "../query-builder/query-design/query-builder-slice";
 import { resetQueryBuilderCache } from "../query-builder/query-builder";
@@ -20,10 +21,13 @@ async function request(url: string, options?: RequestInit) {
   return response.status === 204 ? null : response.json();
 }
 
-type MetadataBuilderProps = { onDirtyChange?: (dirty: boolean) => void };
+type MetadataBuilderProps = {
+  onNavigationGuardChange?: (guard: ((continueNavigation: () => void) => void) | null) => void;
+};
 
-export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps) {
+export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBuilderProps) {
   const dispatch = useDispatch();
+  const showMessageBox = useMessageBox();
   const [entities, setEntities] = useState<MetadataEntity[]>([]);
   const [selectedName, setSelectedName] = useState("");
   const [draft, setDraft] = useState<EditableEntity | null>(null);
@@ -31,10 +35,6 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [dirty, setDirty] = useState(false);
-
-  useEffect(() => {
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -45,8 +45,6 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [dirty]);
-
-  const confirmDiscardChanges = () => !dirty || window.confirm("You have unsaved changes. Leave without saving?");
 
   const loadEntities = async (selectFirst = false, preferredName = selectedName) => {
     setStatus("loading");
@@ -66,32 +64,27 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
       }
       setDirty(false);
       setStatus("succeeded");
+      return true;
     } catch (error) {
       setStatus("failed");
       setMessage(error instanceof Error ? error.message : "Unable to load metadata.");
+      return false;
     }
   };
 
   useEffect(() => { loadEntities(true); }, []);
 
-  const selectEntity = (entity: MetadataEntity) => {
-    if (!confirmDiscardChanges()) return;
-    setSelectedName(entity.name);
-    setDraft(toEditable(entity));
+  const discardChanges = () => {
+    const original = entities.find((entity) => entity.name === selectedName);
+    setDraft(original ? toEditable(original) : null);
     setDirty(false);
     setMessage("");
   };
 
-  const updateDraft = (update: (entity: EditableEntity) => EditableEntity) => {
-    if (!draft) return;
-    setDraft(update(draft));
-    setDirty(true);
-  };
-
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
     if (!draft?.name.trim() || draft.fields.some((field) => !field.name.trim())) {
       setMessage("Entity and field names are required.");
-      return;
+      return false;
     }
     const payload = {
       name: draft.name.trim(),
@@ -109,15 +102,70 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
         body: JSON.stringify(payload),
       });
       dispatch(invalidateQueryMetadata());
-      await loadEntities(false, payload.name);
+      return await loadEntities(false, payload.name);
     } catch (error) {
       setStatus("failed");
       setMessage(error instanceof Error ? error.message : "Unable to save metadata.");
+      return false;
     }
   };
 
+  const resolveDirtyChanges = async () => {
+    if (!dirty) return true;
+    const action = await showMessageBox({
+      eyebrow: "UNSAVED METADATA",
+      title: "Apply your metadata changes?",
+      message: "Save your changes before continuing, discard them, or stay here to keep editing.",
+      actions: [
+        { value: "stay", label: "Stay here", variant: "secondary" },
+        { value: "discard", label: "Discard changes", variant: "secondary" },
+        { value: "apply", label: "Apply changes", variant: "primary" },
+      ],
+    });
+    if (action === "apply") return save();
+    if (action === "discard") {
+      discardChanges();
+      return true;
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    const guard = (continueNavigation: () => void) => {
+      void (async () => {
+        if (await resolveDirtyChanges()) continueNavigation();
+      })();
+    };
+    onNavigationGuardChange?.(guard);
+    return () => onNavigationGuardChange?.(null);
+  }, [onNavigationGuardChange, dirty, draft, entities, selectedName]);
+
+  const selectEntity = async (entity: MetadataEntity) => {
+    if (!(await resolveDirtyChanges())) return;
+    setSelectedName(entity.name);
+    setDraft(toEditable(entity));
+    setDirty(false);
+    setMessage("");
+  };
+
+  const updateDraft = (update: (entity: EditableEntity) => EditableEntity) => {
+    if (!draft) return;
+    setDraft(update(draft));
+    setDirty(true);
+  };
+
   const remove = async () => {
-    if (!selectedName || !confirmDiscardChanges() || !window.confirm(`Delete the ${selectedName} entity definition?`)) return;
+    if (!selectedName || !(await resolveDirtyChanges())) return;
+    const action = await showMessageBox({
+      eyebrow: "DELETE ENTITY",
+      title: `Delete ${selectedName}?`,
+      message: "This entity definition will be permanently removed.",
+      actions: [
+        { value: "cancel", label: "Cancel", variant: "secondary" },
+        { value: "delete", label: "Delete entity", variant: "danger" },
+      ],
+    });
+    if (action !== "delete") return;
     setStatus("saving");
     try {
       await request(apiUrls.metadata.byName(selectedName), { method: "DELETE" });
@@ -131,7 +179,16 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
   };
 
   const reset = async () => {
-    if (!window.confirm("Reset metadata to the original definitions? All changes will be lost.")) return;
+    const action = await showMessageBox({
+      eyebrow: "RESET METADATA",
+      title: "Restore original definitions?",
+      message: "All current metadata changes will be lost and the original definitions will be restored.",
+      actions: [
+        { value: "cancel", label: "Cancel", variant: "secondary" },
+        { value: "reset", label: "Reset metadata", variant: "danger" },
+      ],
+    });
+    if (action !== "reset") return;
     setStatus("saving");
     setMessage("");
     try {
@@ -146,8 +203,8 @@ export default function MetadataBuilder({ onDirtyChange }: MetadataBuilderProps)
     }
   };
 
-  const addEntity = () => {
-    if (!confirmDiscardChanges()) return;
+  const addEntity = async () => {
+    if (!(await resolveDirtyChanges())) return;
     setSelectedName("");
     setDraft(emptyEntity());
     setDirty(true);

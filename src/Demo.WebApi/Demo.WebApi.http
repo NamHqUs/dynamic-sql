@@ -4,3 +4,36 @@ GET {{Demo.WebApi_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+### Parse an edited query request structure (Entity must match the original query)
+POST http://localhost:21210/query-request/parse
+Content-Type: application/json
+
+{
+  "entity": "Customers",
+  "text": "Entity: Customers\nColumns: Id, Name\nFilters: Name = \"O'Neil\"\nSorts: Name DESC\nPage: 1\nPageSize: 50\nIncludeArchive: False"
+}
+
+### Run a query from formatted request text
+POST http://localhost:21210/dynamic-query/query/from-text
+Content-Type: text/plain
+
+Entity: Customers
+Columns: Id, Name
+Filters: Name = "Nancy"
+Sorts: Name ASC
+Page: 1
+PageSize: 50
+IncludeArchive: False
+
+### Generate SQL from formatted request text
+POST http://localhost:21210/dynamic-query/query/to-string-from-text
+Content-Type: text/plain
+
+Entity: Customers
+Columns: Id, Name
+Filters: Name = "Nancy"
+Sorts: Name ASC
+Page: 1
+PageSize: 50
+IncludeArchive: False

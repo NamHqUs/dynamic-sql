@@ -1,23 +1,39 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import Icon from "./components/icon/icon";
 import DataSources from "./components/data-sources/data-sources";
 import QueryBuilder from "./components/query-builder/query-builder";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
+import { MessageBoxProvider } from "./components/message-box/message-box";
 import { store } from "./store/store";
 import "./styles.css";
 
 function App() {
   const [page, setPage] = useState("sources");
-  const [metadataDirty, setMetadataDirty] = useState(false);
   const [metadataVisited, setMetadataVisited] = useState(false);
+  const queryBuilderNavigationGuard = useRef<((continueNavigation: () => void) => void) | null>(null);
+  const metadataNavigationGuard = useRef<((continueNavigation: () => void) => void) | null>(null);
+  const updateQueryBuilderNavigationGuard = useCallback((guard: ((continueNavigation: () => void) => void) | null) => {
+    queryBuilderNavigationGuard.current = guard;
+  }, []);
+  const updateMetadataNavigationGuard = useCallback((guard: ((continueNavigation: () => void) => void) | null) => {
+    metadataNavigationGuard.current = guard;
+  }, []);
 
   const navigate = (nextPage: string) => {
     if (nextPage === page) return;
-    if (page === "metadata" && metadataDirty && !window.confirm("You have unsaved changes. Leave without saving?")) return;
-    if (nextPage === "metadata") setMetadataVisited(true);
-    setPage(nextPage);
+    const continueNavigation = () => {
+      if (nextPage === "metadata") setMetadataVisited(true);
+      setPage(nextPage);
+    };
+    if (page === "builder" && queryBuilderNavigationGuard.current) {
+      queryBuilderNavigationGuard.current(continueNavigation);
+    } else if (page === "metadata" && metadataNavigationGuard.current) {
+      metadataNavigationGuard.current(continueNavigation);
+    } else {
+      continueNavigation();
+    }
   };
 
   return (
@@ -29,11 +45,15 @@ function App() {
       </header>
 
       {page === "sources" ? <DataSources /> : null}
-      {metadataVisited && <div hidden={page !== "metadata"}><MetadataBuilder onDirtyChange={setMetadataDirty} /></div>}
-      {page === "builder" ? <QueryBuilder /> : null}
+      {metadataVisited && <div hidden={page !== "metadata"}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
+      {page === "builder" ? <QueryBuilder onNavigationGuardChange={updateQueryBuilderNavigationGuard} /> : null}
       <footer><span><span className="footer-mark">✦</span> DynamicSQL engine</span><span>Metadata-driven queries · Client preview</span></footer>
     </main>
   );
 }
 
-createRoot(document.getElementById("root")).render(<Provider store={store}><App /></Provider>);
+createRoot(document.getElementById("root")).render(
+  <Provider store={store}>
+    <MessageBoxProvider><App /></MessageBoxProvider>
+  </Provider>,
+);

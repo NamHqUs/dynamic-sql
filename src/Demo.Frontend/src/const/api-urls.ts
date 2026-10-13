@@ -14,6 +14,14 @@ export const apiUrls = {
   },
   dynamicQuery: {
     execute: `${backendApiUrl}/dynamic-query/query`,
+    executeText: `${backendApiUrl}/dynamic-query/query/from-text`,
     toString: `${backendApiUrl}/dynamic-query/query/to-string`,
+    toStringText: `${backendApiUrl}/dynamic-query/query/to-string-from-text`,
+  },
+  queryRequests: {
+    list: `${backendApiUrl}/query-request`,
+    toString: `${backendApiUrl}/query-request/to-string`,
+    parse: `${backendApiUrl}/query-request/parse`,
+    byFileName: (fileName: string) => `${backendApiUrl}/query-request/${encodeURIComponent(fileName)}`,
   },
 } as const;
