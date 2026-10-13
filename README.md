@@ -60,6 +60,20 @@ the complete text can be copied directly into a query window.
 
 Targets: **.NET 8, .NET 9, and .NET 10**.
 
+## Run the demo
+
+Install the **.NET 10 SDK** and **Node.js with npm**, then run this from the
+repository root in PowerShell:
+
+```powershell
+.\start.ps1
+```
+
+The script installs frontend dependencies on first run, then starts the API and
+frontend in separate windows. Open the frontend at
+<http://localhost:5173>; the API's Swagger UI is at
+<http://localhost:21210/swagger>.
+
 ## License
 
 MIT License. See [MANUAL.md](MANUAL.md#license) for the full license text.
