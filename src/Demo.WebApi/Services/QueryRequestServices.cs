@@ -21,18 +21,16 @@ public static class QueryRequestServices
 
     public static StoredQueryRequest SaveQueryRequest(QueryRequest query, string? fileName = null)
     {
-        EnsureStore();
-        var resolvedFileName = NormalizeFileName(fileName ?? query.Name);
-        var filePath = GetPath(resolvedFileName);
+        fileName??= CreateRandonFileName();
+        var filePath = GetPath(fileName);
         WriteQuery(filePath, query);
-        return new StoredQueryRequest(resolvedFileName, query);
+        return new StoredQueryRequest(fileName, query);
     }
 
     public static StoredQueryRequest? LoadQueryRequest(string fileName)
     {
-        var safeFileName = NormalizeFileName(fileName);
-        var filePath = GetPath(safeFileName);
-        return File.Exists(filePath) ? new StoredQueryRequest(safeFileName, ReadQuery(filePath)) : null;
+        var filePath = GetPath(fileName);
+        return File.Exists(filePath) ? new StoredQueryRequest(fileName, ReadQuery(filePath)) : null;
     }
 
     public static string GetQueryRequestString(QueryRequest query)
@@ -127,18 +125,17 @@ public static class QueryRequestServices
 
     public static StoredQueryRequest? UpdateQueryRequest(string fileName, QueryRequest query)
     {
-        var safeFileName = NormalizeFileName(fileName);
-        var filePath = GetPath(safeFileName);
+        var filePath = GetPath(fileName);
         if (!File.Exists(filePath))
             return null;
 
         WriteQuery(filePath, query);
-        return new StoredQueryRequest(safeFileName, query);
+        return new StoredQueryRequest(fileName, query);
     }
 
     public static bool DeleteQueryRequest(string fileName)
     {
-        var filePath = GetPath(NormalizeFileName(fileName));
+        var filePath = GetPath(fileName);
         if (!File.Exists(filePath))
             return false;
 
@@ -146,16 +143,11 @@ public static class QueryRequestServices
         return true;
     }
 
-    private static string NormalizeFileName(string? fileName)
-    {
-        var name = Path.GetFileNameWithoutExtension(fileName);
-        if (string.IsNullOrWhiteSpace(name))
-            name = $"query_{DateTime.Now:yyyyMMdd_HHmmss}";
-        return $"{name}.json";
-    }
+    private static string CreateRandonFileName()
+        => $"query_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.json";
 
     private static string GetPath(string fileName)
-        => Path.Combine(_StorePath, NormalizeFileName(fileName));
+        => Path.Combine(_StorePath, fileName);
 
     private static void EnsureStore()
         => Directory.CreateDirectory(_StorePath);
