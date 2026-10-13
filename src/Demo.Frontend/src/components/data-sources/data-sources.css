@@ -1,7 +1,7 @@
 .database-browser {
   min-height: 480px;
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-columns: var(--panel-width, 260px) minmax(0, 1fr);
   overflow: hidden;
   background: linear-gradient(135deg, #11141c, #0f1218);
   border: 1px solid var(--line);

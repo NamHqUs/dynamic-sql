@@ -202,6 +202,23 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
+    public void DefinitionFormatsEmptyValuesAsBlank()
+    {
+        var definition = new QueryRequest { Entity = "User" };
+
+        var expected = string.Join(Environment.NewLine,
+            "Entity: User",
+            "Columns: ",
+            "Filters: ",
+            "Sorts: ",
+            "Page: ",
+            "PageSize: ",
+            "IncludeArchive: False");
+
+        Assert.That(definition.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
     public void DefinitionJsonDeserializesRecursiveFilterValues()
     {
         const string json = """

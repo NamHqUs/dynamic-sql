@@ -80,7 +80,7 @@ public static class QueryRequestServices
             return new QuerySort(parts[0], direction);
         });
         var filterText = values.GetValueOrDefault("Filters");
-        var filter = string.IsNullOrWhiteSpace(filterText) || filterText.Equals("Empty", StringComparison.OrdinalIgnoreCase)
+        var filter = string.IsNullOrWhiteSpace(filterText)
             ? null
             : QueryRequest.FromJson(JsonSerializer.Serialize(new
             {
@@ -175,16 +175,16 @@ public static class QueryRequestServices
         };
 
     private static List<T> ParseList<T>(string? value, Func<string, T> parse)
-        => string.IsNullOrWhiteSpace(value) || value.Equals("Empty", StringComparison.OrdinalIgnoreCase)
+        => string.IsNullOrWhiteSpace(value)
             ? []
             : value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Select(parse).ToList();
 
     private static int? ParseNullableInt(string? value, string fieldName)
-        => string.IsNullOrWhiteSpace(value) || value.Equals("Empty", StringComparison.OrdinalIgnoreCase)
+        => string.IsNullOrWhiteSpace(value)
             ? null
             : int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result)
                 ? result
-                : throw new FormatException($"{fieldName} must be an integer or Empty.");
+                : throw new FormatException($"{fieldName} must be an integer or blank.");
 
     private static string ConvertFilterExpression(string expression)
     {

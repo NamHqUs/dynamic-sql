@@ -21,11 +21,11 @@ public sealed class QueryRequest
     public override string ToString()
         => string.Join(Environment.NewLine,
             $"Entity: {Entity}",
-            $"Columns: {(Columns.Count == 0 ? "Empty" : string.Join(", ", Columns.Select(FormatColumn)))}",
-            $"Filters: {(Filter is null ? "Empty" : FormatFilter(Filter, false))}",
-            $"Sorts: {(Sorts.Count == 0 ? "Empty" : string.Join(", ", Sorts.Select(FormatSort)))}",
-            $"Page: {Page?.ToString() ?? "Empty"}",
-            $"PageSize: {PageSize?.ToString() ?? "Empty"}",
+            $"Columns: {string.Join(", ", Columns.Select(FormatColumn))}",
+            $"Filters: {(Filter is null ? string.Empty : FormatFilter(Filter, false))}",
+            $"Sorts: {string.Join(", ", Sorts.Select(FormatSort))}",
+            $"Page: {Page}",
+            $"PageSize: {PageSize}",
             $"IncludeArchive: {IncludeArchive}");
 
     private static string FormatColumn(QueryColumn column)

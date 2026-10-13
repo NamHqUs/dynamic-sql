@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../icon/icon";
+import PanelSplitter from "../panel-splitter/panel-splitter";
+import { useResizablePanel } from "../../utils/use-resizable-panel";
 import { useMessageBox } from "../message-box/message-box";
 import { deleteQueryRequest, executeQuery, executeQueryFromText, fetchQueryMetadata, fetchSavedQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataField, parseQueryRequestString, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
@@ -76,6 +78,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const [requestStructureStatus, setRequestStructureStatus] = useState<"idle" | "loading" | "succeeded" | "failed">("idle");
   const [requestStructureError, setRequestStructureError] = useState("");
   const [isResolvingPlanChanges, setIsResolvingPlanChanges] = useState(false);
+  const panel = useResizablePanel("query-builder");
   const planTextDirty = requestStructureStatus === "succeeded" && requestStructureDraft !== requestStructureOriginal;
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
   const requestStructureFields = requestStructureDraft.split(/\r?\n/).map((line, index) => {
@@ -322,9 +325,9 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
         </div>
       </section>
 
-      <section className="query-builder-workspace">
+      <section className={`query-builder-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>
         <div className="query-request-workspace">
-        <aside className="query-request-list">
+        <aside className="query-request-list split-panel">
           <div className="metadata-list-head">
             <span className="section-kicker">SAVED QUERY REQUESTS</span>
             <span className="tab-number">{savedRequests.length}</span>
@@ -341,6 +344,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           {savedRequestsStatus !== "loading" && !savedRequests.length && <p className="query-message">No saved requests.</p>}
         </aside>
         <div className="query-request-editor">
+          <PanelSplitter panel={panel} label="saved requests panel" />
           <div className="query-request-header">
             <label>Request name <input value={requestName} onChange={(event) => {
               setRequestName(event.target.value);
@@ -406,16 +410,27 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
               {requestStructureStatus === "failed" && <p className="query-message error" role="alert">{requestStructureError}</p>}
               {requestStructureStatus === "succeeded" && (
                 <div className="query-request-structure-content">
-                  <div className="query-request-structure-actions">
-                    <span>Entity is fixed.{planTextDirty ? " Plan text has unapplied changes." : ""}</span>
-                    {planTextDirty && <span className="query-plan-text-changed">CHANGED</span>}
-                  </div>
+                  {planTextDirty && (
+                    <div className="query-request-structure-actions">
+                      <span>Plan text has unapplied changes.</span>
+                      <span className="query-plan-text-changed">CHANGED</span>
+                    </div>
+                  )}
                   {requestStructureError && <p className="query-message error" role="alert">{requestStructureError}</p>}
                   {requestStructureFields.map(({ label, value, index }) => (
                     <div className="query-request-structure-line" key={label}>
                       <span className="query-request-structure-key">{label}:</span>
                       {label === "Entity" ? (
                         <span className="query-request-structure-entity">{value}</span>
+                      ) : label === "IncludeArchive" ? (
+                        <input
+                          className="query-request-structure-checkbox"
+                          type="checkbox"
+                          aria-label={label}
+                          checked={value.trim().toLowerCase() === "true"}
+                          onChange={(event) => updateRequestStructureField(index, event.target.checked ? "True" : "False")}
+                          disabled={isResolvingPlanChanges}
+                        />
                       ) : (
                         <input
                           className="query-request-structure-input"

@@ -24,7 +24,7 @@ export default function EntityList({
   );
 
   return (
-    <aside className="metadata-list">
+    <aside className="metadata-list split-panel">
       <div className="metadata-list-head">
         <span className="section-kicker">ENTITIES</span>
         <span className="tab-number">{entities.length}</span>

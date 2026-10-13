@@ -8,7 +8,7 @@ export default function TableList() {
   const { tables, selectedTable, tableStatus, tableError } = useSelector((state) => state.database);
 
   return (
-    <aside className="database-sidebar" aria-label="Database tables">
+    <aside className="database-sidebar split-panel" aria-label="Database tables">
       <div className="database-sidebar-heading">
         <span className="section-kicker">TABLES</span>
         {tableStatus === "succeeded" && <span className="database-table-count">{tables.length}</span>}

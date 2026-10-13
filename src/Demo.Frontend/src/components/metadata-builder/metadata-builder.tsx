@@ -3,6 +3,8 @@ import { useDispatch } from "react-redux";
 import { apiUrls } from "../../const/api-urls";
 import { useMessageBox } from "../message-box/message-box";
 import Icon from "../icon/icon";
+import PanelSplitter from "../panel-splitter/panel-splitter";
+import { useResizablePanel } from "../../utils/use-resizable-panel";
 import { MetadataEntity, clearQueryResult, invalidateQueryMetadata } from "../query-builder/query-design/query-builder-slice";
 import { resetQueryBuilderCache } from "../query-builder/query-builder";
 import EntityList from "./entity-list/entity-list";
@@ -32,6 +34,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   const [selectedName, setSelectedName] = useState("");
   const [draft, setDraft] = useState<EditableEntity | null>(null);
   const [filter, setFilter] = useState("");
+  const panel = useResizablePanel("metadata-builder");
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -224,7 +227,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
           <button className="button primary" onClick={addEntity}><Icon name="plus" size={14} /> New entity</button>
         </div>
       </section>
-      <section className="metadata-workspace">
+      <section className={`metadata-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>
         <EntityList
           entities={entities}
           selectedName={selectedName}
@@ -233,6 +236,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
           onFilterChange={setFilter}
           onSelectEntity={selectEntity}
         />
+        <PanelSplitter panel={panel} label="entities panel" />
         <EntityBuilder
           draft={draft}
           selectedName={selectedName}
