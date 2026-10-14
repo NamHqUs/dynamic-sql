@@ -57,16 +57,10 @@ public static class QueryRequestServices
         if (!values.TryGetValue("Entity", out var parsedEntity) || !string.Equals(parsedEntity, entity, StringComparison.Ordinal))
             throw new FormatException("Entity cannot be changed in the request structure.");
 
-        var columnText = values.GetValueOrDefault("Columns");
-        var columns = !string.IsNullOrWhiteSpace(columnText) && columnText.TrimStart().StartsWith('[')
-            ? ParseJsonColumns(columnText, parsedEntity)
-            : ParseList(columnText, item =>
-        {
-            var aliasSeparator = item.IndexOf(" AS ", StringComparison.OrdinalIgnoreCase);
-            return aliasSeparator < 0
-                ? new FieldTranslator(item)
-                : new FieldTranslator(item[..aliasSeparator].Trim(), item[(aliasSeparator + 4)..].Trim());
-        });
+        var fieldText = values.GetValueOrDefault("Fields");
+        var fields = !string.IsNullOrWhiteSpace(fieldText) && fieldText.TrimStart().StartsWith('[')
+            ? ParseJsonFields(fieldText, parsedEntity)
+            : ProjectionField.FromTextList(fieldText ?? string.Empty);
         var groupBy = ParseList(values.GetValueOrDefault("GroupBy"), item => item);
         var sorts = ParseList(values.GetValueOrDefault("Sorts"), item =>
         {
@@ -98,7 +92,7 @@ public static class QueryRequestServices
         return new QueryRequest
         {
             Entity = parsedEntity,
-            Columns = columns,
+            Fields = fields,
             GroupBy = groupBy,
             Filter = filter,
             Sorts = sorts,
@@ -159,12 +153,59 @@ public static class QueryRequestServices
 
     private static QueryRequest ReadQuery(string filePath)
     {
-        var result = JsonSerializer.Deserialize<QueryRequest>(File.ReadAllText(filePath), JsonOptions())
+        var json = File.ReadAllText(filePath);
+        var result = JsonSerializer.Deserialize<QueryRequest>(json, JsonOptions())
             ?? throw new InvalidDataException($"Query request file '{Path.GetFileName(filePath)}' is empty.");
+
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+        if (!TryGetProperty(root, "Fields", out _) &&
+            TryGetProperty(root, "Columns", out var legacyColumns))
+        {
+            result = new QueryRequest
+            {
+                Name = result.Name,
+                Entity = result.Entity,
+                Fields = legacyColumns.EnumerateArray().Select(ParseLegacyProjection).ToList(),
+                GroupBy = result.GroupBy,
+                Filter = result.Filter,
+                Sorts = result.Sorts,
+                Page = result.Page,
+                PageSize = result.PageSize,
+                IncludeArchive = result.IncludeArchive
+            };
+        }
 
         Console.WriteLine($"\n{new('-', 8)}Loaded query request from '{Path.GetFileName(filePath)}': \n{result}");
         return result;
     }
+
+    private static ProjectionField ParseLegacyProjection(JsonElement column)
+    {
+        var alias = TryGetProperty(column, "Alias", out var aliasElement)
+            ? aliasElement.ValueKind switch
+            {
+                JsonValueKind.Null => null,
+                JsonValueKind.String => aliasElement.GetString(),
+                _ => throw new InvalidDataException("A saved projection alias must be a string or null.")
+            }
+            : null;
+        object field = TryGetProperty(column, "Expression", out var expressionElement) &&
+            expressionElement.ValueKind != JsonValueKind.Null
+                ? expressionElement.Clone()
+                : TryGetProperty(column, "Field", out var fieldElement) &&
+                    fieldElement.ValueKind == JsonValueKind.String
+                    ? new { kind = "field", field = fieldElement.GetString() }
+                    : throw new InvalidDataException("A saved projection must contain a field or expression.");
+        var json = JsonSerializer.Serialize(new { field, alias });
+
+        return JsonSerializer.Deserialize<ProjectionField>(json, JsonOptions())
+            ?? throw new InvalidDataException("A saved projection field is empty.");
+    }
+
+    private static bool TryGetProperty(JsonElement element, string name, out JsonElement value)
+        => element.TryGetProperty(name, out value) ||
+            element.TryGetProperty(char.ToLowerInvariant(name[0]) + name[1..], out value);
 
     private static void WriteQuery(string filePath, QueryRequest query)
         => File.WriteAllText(filePath, JsonSerializer.Serialize(query, JsonOptions(writeIndented: true)));
@@ -181,14 +222,14 @@ public static class QueryRequestServices
             ? []
             : value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Select(parse).ToList();
 
-    private static List<FieldTranslator> ParseJsonColumns(string text, string entity)
+    private static List<ProjectionField> ParseJsonFields(string text, string entity)
     {
         using var document = JsonDocument.Parse(text);
         return QueryRequest.FromJson(JsonSerializer.Serialize(new
         {
             entity,
-            columns = document.RootElement
-        })).Columns;
+            fields = document.RootElement
+        })).Fields;
     }
 
     private static int? ParseNullableInt(string? value, string fieldName)

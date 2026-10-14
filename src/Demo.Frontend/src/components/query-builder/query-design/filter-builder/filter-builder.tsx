@@ -600,7 +600,12 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
         ariaLabel="Filter operation"
         className="filter-operator-select"
       />
-      <input value={filter.value} placeholder="<NULL>" aria-label="Filter value" onChange={(event) => update({ value: event.target.value })} />
+      <input
+        value={filter.rightField ? `[${filter.rightField}]` : filter.value}
+        placeholder="<NULL>"
+        aria-label="Filter value"
+        onChange={(event) => update({ value: event.target.value, rightField: undefined })}
+      />
       <div className="filter-row-actions">
         <button
           className="filter-toggle"

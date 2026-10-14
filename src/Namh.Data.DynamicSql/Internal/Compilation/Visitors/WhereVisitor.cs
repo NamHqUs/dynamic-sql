@@ -51,9 +51,8 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
         if (node.Method.DeclaringType == typeof(DataValue) && node.Method.Name == nameof(DataValue.Like))
         {
             var left = (SqlExpression)Visit(node.Object!);
-            var value = ((ConstantExpression)node.Arguments[0]).Value;
-            var parameter = QueryContext.AddDbParameter(value, true);
-            return new PredicateExpression(left, "LIKE", new ValueExpression(parameter, typeof(object)));
+            var value = (SqlExpression)Visit(node.Arguments[0]);
+            return new PredicateExpression(left, "LIKE", value);
         }
 
         if (node.Method.DeclaringType == typeof(DataValue) && node.Method.Name == nameof(DataValue.Parameter))

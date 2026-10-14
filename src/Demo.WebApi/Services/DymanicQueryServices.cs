@@ -26,7 +26,7 @@ public static class DynamicQueryServices
 
         return new TableDataDto(
             Name: query.Entity,
-            Columns: string.Join(",", query.Columns.Select(c => c.Alias ?? c.Field)),
+            Columns: string.Join(",", query.Fields.Select(field => field.Alias ?? field.Field.ToText())),
             Rows: result.Records.Select(row => string.Join(",", row.Select(v => v.Value))).ToArray(),
             Page: query.Page,
             PageSize: query.PageSize,

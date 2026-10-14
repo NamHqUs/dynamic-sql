@@ -53,7 +53,10 @@ function pruneFilters(group: QueryFilterGroup, entity: MetadataEntity, metadata:
     ...group,
     filters: group.filters.flatMap((node): QueryFilterNode[] => {
       if ("filters" in node) return [pruneFilters(node, entity, metadata)];
-      return isAvailableFieldPath(entity, metadata, node.field) ? [node] : [];
+      return isAvailableFieldPath(entity, metadata, node.field)
+        && (!node.rightField || isAvailableFieldPath(entity, metadata, node.rightField))
+        ? [node]
+        : [];
     }),
   };
 }
@@ -470,7 +473,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           {savedRequestsStatus !== "loading" && sortedSavedRequests.map((saved) => (
             <button className={`query-request-item${saved.fileName === selectedFileName ? " active" : ""}`} key={saved.fileName} onClick={() => void selectSavedRequest(saved.fileName)} disabled={isResolvingPlanChanges}>
               <strong>{saved.query.name || saved.fileName.replace(/\.json$/i, "")}</strong>
-              <small>{saved.query.entity} · {saved.query.columns.length} columns</small>
+              <small>{saved.query.entity} · {saved.query.fields.length} columns</small>
               <Icon name="chevron" size={14} />
             </button>
           ))}

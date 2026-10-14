@@ -34,6 +34,7 @@ export type QueryFilterItem = {
   field: string;
   operation: number;
   value: string;
+  rightField?: string;
   parameterized: boolean;
   logicalOperator: number;
   enabled: boolean;
@@ -47,6 +48,27 @@ export type QueryFilterGroup = {
   note?: string;
 };
 
+type ApiFilterOperand =
+  | { kind: "field"; field: string }
+  | { kind: "value"; value: unknown };
+
+type ApiQueryFilterItem = {
+  logicalOperator?: number | null;
+  left?: ApiFilterOperand | string;
+  right?: ApiFilterOperand | string | number | boolean | null;
+  operation: number;
+  parameterized?: boolean;
+  field?: ApiFilterOperand | string;
+  value?: unknown;
+  enabled?: boolean;
+};
+
+type ApiQueryFilterNode = ApiQueryFilterItem | ApiQueryFilterGroup;
+
+type ApiQueryFilterGroup = Omit<QueryFilterGroup, "filters"> & {
+  filters: ApiQueryFilterNode[];
+};
+
 export type QueryDefinition = {
   entity: string;
   columns: QueryColumn[];
@@ -58,11 +80,11 @@ export type QueryDefinition = {
   includeArchive: boolean;
 };
 
-export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts"> & {
+export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns"> & {
   name?: string;
-  filter: QueryFilterGroup | null;
+  filter: ApiQueryFilterGroup | null;
   sorts: { field: string; direction: number }[];
-  columns: (Omit<QueryColumn, "field"> & { field?: string })[];
+  fields: { field: QueryExpression; alias: string | null }[];
 };
 
 export type StoredQueryRequest = {
@@ -70,7 +92,7 @@ export type StoredQueryRequest = {
   query: ApiQueryRequest;
 };
 
-function createApiFilter(group: QueryFilterGroup): QueryFilterGroup | null {
+function createApiFilter(group: QueryFilterGroup): ApiQueryFilterGroup | null {
   const filters = group.filters.flatMap((filter) => {
     if ("filters" in filter) {
       const nested = createApiFilter(filter);
@@ -78,9 +100,11 @@ function createApiFilter(group: QueryFilterGroup): QueryFilterGroup | null {
     }
     return filter.enabled && filter.field ? [{
       logicalOperator: filter.logicalOperator,
-      field: filter.field,
+      left: { kind: "field", field: filter.field },
       operation: filter.operation,
-      value: filter.value,
+      right: filter.rightField
+        ? { kind: "field", field: filter.rightField }
+        : { kind: "value", value: filter.value },
       parameterized: filter.parameterized,
     }] : [];
   });
@@ -129,13 +153,14 @@ async function requestText(url: string, options?: RequestInit) {
 }
 
 export function createApiQuery(definition: QueryDefinition) {
-  const { filters, sorts, ...query } = definition;
+  const { filters, sorts, columns, ...query } = definition;
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   return {
     ...query,
-    columns: query.columns.map(({ field, ...column }) => column.expression
-      ? column
-      : { ...column, field }),
+    fields: columns.map(({ field, alias, expression }) => ({
+      field: expression ?? { kind: "field", field },
+      alias,
+    })),
     page: noPaging ? null : query.page,
     pageSize: noPaging ? null : query.pageSize,
     sorts: sorts.map((sort) => ({ ...sort, direction: sort.direction === "desc" ? 1 : 0 })),
@@ -144,13 +169,30 @@ export function createApiQuery(definition: QueryDefinition) {
 }
 
 function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
-  const restoreGroup = (group: QueryFilterGroup): QueryFilterGroup => ({
+  const restoreGroup = (group: ApiQueryFilterGroup): QueryFilterGroup => ({
     ...group,
     filters: group.filters.map((node): QueryFilterNode => {
       if ("filters" in node) return restoreGroup(node);
+      const left = node.left ?? node.field;
+      const field = typeof left === "string"
+        ? left
+        : left?.kind === "field"
+          ? left.field
+          : "";
+      const right = node.right;
+      const rightField = right && typeof right === "object" && right.kind === "field"
+        ? right.field
+        : undefined;
+      const value = right && typeof right === "object" && right.kind === "value"
+        ? String(right.value ?? "")
+        : "right" in node
+          ? String(right ?? "")
+          : String(node.value ?? "");
       return {
-        ...node,
-        value: String(node.value ?? ""),
+        field,
+        operation: node.operation,
+        value,
+        ...(rightField ? { rightField } : {}),
         parameterized: node.parameterized ?? false,
         logicalOperator: node.logicalOperator ?? 0,
         enabled: true,
@@ -160,10 +202,12 @@ function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
 
   return {
     entity: query.entity,
-    columns: query.columns.map((column, index) => ({
-      field: column.expression ? `__calculated__${column.alias || index}` : column.field || "",
-      alias: column.alias,
-      ...(column.expression ? { expression: column.expression } : {}),
+    columns: query.fields.map((projection, index) => ({
+      field: projection.field.kind === "field"
+        ? projection.field.field
+        : `__calculated__${projection.alias || index}`,
+      alias: projection.alias,
+      ...(projection.field.kind === "field" ? {} : { expression: projection.field }),
     })),
     groupBy: query.groupBy ?? [],
     filters: query.filter ? restoreGroup(query.filter) : { logicalOperation: 0, filters: [] },
@@ -307,7 +351,7 @@ export const parseQueryRequestString = createAsyncThunk(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, entity }),
       });
-      if (!payload || typeof payload.entity !== "string" || !Array.isArray(payload.columns) || !Array.isArray(payload.sorts)) {
+      if (!payload || typeof payload.entity !== "string" || !Array.isArray(payload.fields) || !Array.isArray(payload.sorts)) {
         return rejectWithValue("Query request API returned an invalid request.");
       }
       return payload as ApiQueryRequest;

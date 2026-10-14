@@ -13,7 +13,7 @@ internal static class QueryRequestHelper
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(definition.GroupBy);
-        ArgumentNullException.ThrowIfNull(definition.Columns);
+        ArgumentNullException.ThrowIfNull(definition.Fields);
 
         var query = context.Query(definition.Entity, definition.IncludeArchive);
 
@@ -23,22 +23,17 @@ internal static class QueryRequestHelper
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));
 
-        if (definition.Columns.Count > 0)
+        if (definition.Fields.Count > 0)
         {
             var selection = new DataRecord();
-            foreach (var column in definition.Columns)
+            foreach (var field in definition.Fields)
             {
-                if (column.Expression is not null)
-                {
-                    var alias = string.IsNullOrWhiteSpace(column.Alias)
-                        ? throw new FormatException("Calculated query columns require an alias.")
-                        : column.Alias;
-                    selection[alias] = column.Expression;
-                }
-                else if (!string.IsNullOrWhiteSpace(column.Field))
-                    selection[column.Alias ?? column.Field] = column.Field;
-                else
-                    throw new FormatException("A query column requires either a field or an expression.");
+                var alias = string.IsNullOrWhiteSpace(field.Alias)
+                    ? field.Field is FieldDto simpleField
+                        ? simpleField.FieldName
+                        : throw new FormatException("Calculated projection fields require an alias.")
+                    : field.Alias;
+                selection[alias] = field.Field;
             }
 
             query = query.Select(selection);
@@ -74,7 +69,7 @@ internal static class QueryRequestHelper
         return query;
     }
 
-    private static Expression<Func<IRecordParameter, bool>> CreateFilter(QueryFilter filter)
+    private static Expression<Func<IRecordParameter, bool>> CreateFilter(FilterDto filter)
     {
         var parameter = Expression.Parameter(typeof(IRecordParameter), "record");
         var body = CreateFilterBody(filter, parameter);
@@ -83,17 +78,17 @@ internal static class QueryRequestHelper
     }
 
     private static Expression CreateFilterBody(
-        IQueryFilter filter,
+        IFilterDto filter,
         ParameterExpression parameter)
         => filter switch
         {
-            QueryFilter group => CreateLogicalFilter(group, parameter),
-            QueryFilterItem binary => CreateCondition(binary, parameter),
+            FilterDto group => CreateLogicalFilter(group, parameter),
+            FilterItemDto binary => CreateCondition(binary, parameter),
             _ => throw new ArgumentOutOfRangeException(nameof(filter))
         };
 
     private static Expression CreateLogicalFilter(
-        QueryFilter group,
+        FilterDto group,
         ParameterExpression parameter)
     {
         if (group.Filters.Count == 0)
@@ -103,8 +98,8 @@ internal static class QueryRequestHelper
         foreach (var filter in group.Filters.Skip(1))
         {
             var next = CreateFilterBody(filter, parameter);
-            var logicalOperation = filter is QueryFilterItem binary
-                ? binary.LogicalOperator
+            var logicalOperation = filter is FilterItemDto { LogicalOperator: not null } binary
+                ? binary.LogicalOperator.Value
                 : group.LogicalOperation;
             expression = logicalOperation == LogicalOperator.And
                 ? Expression.AndAlso(expression, next)
@@ -115,23 +110,22 @@ internal static class QueryRequestHelper
     }
 
     private static Expression CreateCondition(
-        QueryFilterItem filter,
+        FilterItemDto filter,
         ParameterExpression parameter)
     {
-        var field = Expression.Call(
-            parameter,
-            typeof(IRecordParameter).GetProperty("Item")!.GetMethod!,
-            Expression.Constant(filter.Field));
-
-        var filterValue = NormalizeFilterValue(filter.Value);
+        var field = CreateFieldAccess(filter.Left, parameter);
+        var value = CreateFilterValue(filter, parameter);
 
         if (filter.Operation == BinaryOperator.Like)
+        {
+            if (field.Type != typeof(DataValue))
+                throw new FormatException("The left side of a LIKE filter must be a field reference.");
+
             return Expression.Call(
                 field,
                 typeof(DataValue).GetMethod(nameof(DataValue.Like))!,
-                Expression.Constant(filterValue, typeof(object)));
-
-        var value = CreateFilterValue(filter);
+                value);
+        }
 
         return filter.Operation switch
         {
@@ -145,15 +139,43 @@ internal static class QueryRequestHelper
         };
     }
 
-    private static Expression CreateFilterValue(QueryFilterItem filter)
-    {
-        var value = NormalizeFilterValue(filter.Value);
+    private static string GetFilterFieldName(IFieldDto field)
+        => field is FieldDto fieldDto
+            ? fieldDto.FieldName
+            : throw new FormatException(
+                $"Filter fields must be field references. Received [{field.GetType().Name}].");
 
-        return filter.Parameterized
+    private static Expression CreateFieldAccess(IFieldDto field, ParameterExpression parameter)
+        => field is FieldDto fieldDto
+            ? Expression.Call(
+                parameter,
+                typeof(IRecordParameter).GetProperty("Item")!.GetMethod!,
+                Expression.Constant(GetFilterFieldName(fieldDto)))
+            : throw new FormatException(
+                $"Filter field expressions must be field references. Received [{field.GetType().Name}].");
+
+    private static Expression CreateFilterValue(
+        FilterItemDto filter,
+        ParameterExpression parameter)
+    {
+        return filter.Right switch
+        {
+            null => Expression.Constant(null, typeof(object)),
+            FieldDto field => CreateFieldAccess(field, parameter),
+            ConstFieldDto constant => CreateFilterConstant(constant.Value, filter.Parameterized),
+            _ => throw new FormatException(
+                $"Filter right expressions must be field references or constants. Received [{filter.Right.GetType().Name}].")
+        };
+    }
+
+    private static Expression CreateFilterConstant(object? value, bool parameterized)
+    {
+        var normalizedValue = NormalizeFilterValue(value);
+        return parameterized
             ? Expression.Call(
                 typeof(DataValue).GetMethod(nameof(DataValue.Parameter))!,
-                Expression.Constant(value, typeof(object)))
-            : Expression.Constant(value, typeof(object));
+                Expression.Constant(normalizedValue, typeof(object)))
+            : Expression.Constant(normalizedValue, typeof(object));
     }
 
     private static object? NormalizeFilterValue(object? value)

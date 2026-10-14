@@ -119,20 +119,23 @@ It provides:
 `DataValue` overloads make comparisons and expressions possible without
 materializing a CLR entity.
 
-### `QueryRequestDto`
+### `QueryRequest`
 
-The JSON transport model contains entity, columns, filters, sorting, and
-paging. `QueryRequestExtensions` converts it into the same query pipeline
-used by C# expressions.
+The JSON transport model contains entity, projection fields, filters, sorting,
+and paging. Each `ProjectionField` carries a structured field expression and
+optional alias, and is translated into the same query pipeline used by C#
+expressions.
 
-Filters are represented recursively: `FilterDto` contains a field comparison,
-while `GroupFilterDto` combines child filters with `And` or `Or`. This flattened
-shape is suitable for recursively-built frontend query filters.
+Filters are represented recursively: `FilterItemDto` carries `Left` and optional
+`Right` `IFieldDto` expressions plus an operation, while `FilterDto` combines
+child filters with `And` or `Or`. Field expressions use the same tagged JSON
+format as projection fields; constants are tagged value expressions. Legacy
+`field`/`value` filter JSON and string field names remain readable.
 
 `QueryRequestJsonParser` is responsible for:
 
 - JSON property parsing
-- Column aliases
+- Projection fields and aliases
 - Bracketed field paths
 - Filter precedence
 - Typed literals

@@ -1,21 +1,33 @@
 {
   "Name": "3. Top customers by lifetime value",
   "Entity": "Customers",
-  "Columns": [
+  "Fields": [
     {
-      "Field": "Id",
+      "Field": {
+        "kind": "field",
+        "field": "Id"
+      },
       "Alias": null
     },
     {
-      "Field": "Name",
+      "Field": {
+        "kind": "field",
+        "field": "Name"
+      },
       "Alias": null
     },
     {
-      "Field": "Count()",
+      "Field": {
+        "kind": "field",
+        "field": "Count()"
+      },
       "Alias": "Orders"
     },
     {
-      "Field": "Sum(Invoices.TotalAmount)",
+      "Field": {
+        "kind": "field",
+        "field": "Sum(Invoices.TotalAmount)"
+      },
       "Alias": "LifetimeValue"
     }
   ],
@@ -24,7 +36,10 @@
     "filters": [
       {
         "LogicalOperator": 0,
-        "Field": "Invoices.Status",
+        "Field": {
+          "kind": "field",
+          "field": "Invoices.Status"
+        },
         "Operation": 1,
         "Value": "Draft",
         "Parameterized": false

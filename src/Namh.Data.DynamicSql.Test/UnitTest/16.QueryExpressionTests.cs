@@ -60,11 +60,11 @@ public sealed class _16_QueryExpressionTests
         const string json = """
             {
               "entity": "Products",
-              "columns": [
-                { "field": "Name" },
+              "fields": [
+                { "field": { "kind": "field", "field": "Name" } },
                 {
                   "alias": "UnitsSold",
-                  "expression": {
+                  "field": {
                     "kind": "function",
                     "function": "SUM",
                     "arguments": [{ "kind": "field", "field": "InvoiceItems.Quantity" }]
@@ -72,7 +72,7 @@ public sealed class _16_QueryExpressionTests
                 },
                 {
                   "alias": "GrossProfit",
-                  "expression": {
+                  "field": {
                     "kind": "function",
                     "function": "SUM",
                     "arguments": [{
@@ -94,7 +94,7 @@ public sealed class _16_QueryExpressionTests
                 },
                 {
                   "alias": "MarginPercent",
-                  "expression": {
+                  "field": {
                     "kind": "function",
                     "function": "ROUND",
                     "arguments": [
@@ -218,7 +218,7 @@ public sealed class _16_QueryExpressionTests
         Assert.That(sql.Parameters.Select(parameter => parameter.Value),
             Is.EquivalentTo(new object?[] { 100m, 0m, 2m }));
         Assert.That(definition.ToString(), Does.Contain("GroupBy: Id, Name"));
-        Assert.That(definition.ToString(), Does.Contain("\"kind\":\"function\""));
+        Assert.That(definition.ToString(), Does.Contain("ROUND["));
 
         var queryResult = await db.Query(definition).ToListWithTotalRecordsAsync();
         var records = queryResult.Records;
@@ -239,17 +239,13 @@ public sealed class _16_QueryExpressionTests
         var request = new QueryRequest
         {
             Entity = "Products",
-            Columns =
+            Fields =
             [
-                new FieldTranslator(
-                    null,
-                    "Unsafe",
-                    new FieldExpressionTransaltion
-                    {
-                        Kind = "function",
-                        Function = "RANDOM_SQL",
-                        Arguments = [new FieldExpressionTransaltion { Kind = "value", Value = 1 }]
-                    })
+                new ProjectionField(
+                    new FunctionFieldDto(
+                        "RANDOM_SQL",
+                        [new ConstFieldDto(1)]),
+                    "Unsafe")
             ]
         };
 

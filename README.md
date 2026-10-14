@@ -13,7 +13,10 @@ relationships are selected at runtime.
 var rows = db.QueryJson("""
 {
   "entity": "User",
-  "columns": ["Name", "Manager.Name|Manager-Name"],
+  "fields": [
+    { "field": "Name" },
+    { "field": "Manager.Name", "alias": "Manager-Name" }
+  ],
   "filter": "[Name] like 'Dav%' && [Age] >= 18",
   "sorts": ["-Manager.Name"],
   "page": 1,

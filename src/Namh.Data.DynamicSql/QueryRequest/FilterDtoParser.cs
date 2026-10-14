@@ -1,34 +1,35 @@
 using System.Globalization;
+using Namh.Data.DynamicSql;
 
 namespace Namh.Data.DynamicSql.QueryRequestParsing;
 
-internal sealed class QueryFilterParser
+internal sealed class FilterDtoParser
 {
     private readonly List<Token> _tokens;
     private int _position;
 
-    public QueryFilterParser(string text)
+    public FilterDtoParser(string text)
         => _tokens = Tokenize(text);
 
-    public QueryFilter Parse()
+    public FilterDto Parse()
     {
         if (_tokens.Count == 1)
             throw new FormatException("The filter cannot be empty.");
 
         var expression = ParseOr();
         Expect(TokenType.End);
-        return expression as QueryFilter
-            ?? new QueryFilter(LogicalOperator.And, expression);
+        return expression as FilterDto
+            ?? new FilterDto(LogicalOperator.And, expression);
     }
 
-    private IQueryFilter ParseOr()
-        => ParseGroup(ParseAnd, "||", LogicalOperator.Or);
+    private IFilterDto ParseOr()
+        => ParseGroup(ParseAnd, "OR", LogicalOperator.Or);
 
-    private IQueryFilter ParseAnd()
-        => ParseGroup(ParsePrimary, "&&", LogicalOperator.And);
+    private IFilterDto ParseAnd()
+        => ParseGroup(ParsePrimary, "AND", LogicalOperator.And);
 
-    private IQueryFilter ParseGroup(
-        Func<IQueryFilter> operand,
+    private IFilterDto ParseGroup(
+        Func<IFilterDto> operand,
         string separator,
         LogicalOperator logicalOperator)
     {
@@ -37,16 +38,16 @@ internal sealed class QueryFilterParser
         while (Match(separator))
         {
             var next = operand();
-            if (next is QueryFilterItem filter)
+            if (next is FilterItemDto filter)
                 next = filter with { LogicalOperator = logicalOperator };
 
-            expression = new QueryFilter(logicalOperator, expression, next);
+            expression = new FilterDto(logicalOperator, expression, next);
         }
 
         return expression;
     }
 
-    private IQueryFilter ParsePrimary()
+    private IFilterDto ParsePrimary()
     {
         if (Match("("))
         {
@@ -55,14 +56,22 @@ internal sealed class QueryFilterParser
             return grouped;
         }
 
-        var field = Expect(TokenType.Identifier).Text;
-        var operation = Next().Text.ToLowerInvariant();
-        var value = ParseFilterValue();
+        var left = Next();
+        if (left.Type is not (TokenType.Identifier or TokenType.Field))
+            throw new FormatException($"Expected a filter field, received [{left.Text}].");
+        var leftField = left.Type == TokenType.Field
+            ? new FieldDto(left.Text)
+            : FieldDtoParser.Parse(left.Text);
+        var operationToken = Next();
+        if (operationToken.Type != TokenType.Operator)
+            throw new FormatException($"Expected a filter operator, received [{operationToken.Text}].");
+        var operation = operationToken.Text.ToLowerInvariant();
+        var value = ParseFilterValue(operation);
 
         var filterOperator = operation switch
         {
-            "==" => BinaryOperator.Equals,
-            "!=" => BinaryOperator.NotEquals,
+            "=" or "==" => BinaryOperator.Equals,
+            "<>" or "!=" => BinaryOperator.NotEquals,
             "like" => BinaryOperator.Like,
             ">" => BinaryOperator.GreaterThan,
             "<" => BinaryOperator.LessThan,
@@ -71,14 +80,28 @@ internal sealed class QueryFilterParser
             _ => throw new FormatException($"Unsupported filter operator [{operation}].")
         };
 
-        return new QueryFilterItem(LogicalOperator.And, field, filterOperator, value)
+        return new FilterItemDto(LogicalOperator.And, leftField, filterOperator, value)
         {
             Parameterized = true
         };
     }
 
-    private object? ParseFilterValue()
-        => Expect(TokenType.Value).Value;
+    private IFieldDto? ParseFilterValue(string operation)
+    {
+        var token = Next();
+        return token.Type switch
+        {
+            TokenType.Value => new ConstFieldDto(token.Value),
+            TokenType.Field => new FieldDto(token.Text),
+            TokenType.FieldExpression => token.Text.Equals("<NULL>", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : FieldDtoParser.Parse(token.Text),
+            TokenType.Identifier => operation is "==" or "!="
+                ? new ConstFieldDto(token.Text)
+                : FieldDtoParser.Parse(token.Text),
+            _ => throw new FormatException($"Expected a filter value, received [{token.Text}].")
+        };
+    }
 
     private Token Next()
     {
@@ -99,13 +122,14 @@ internal sealed class QueryFilterParser
     private void Expect(string text)
     {
         var token = Next();
-        if (token.Text != text)
+        if (!token.Text.Equals(text, StringComparison.OrdinalIgnoreCase))
             throw new FormatException($"Expected [{text}], received [{token.Text}].");
     }
 
     private bool Match(string text)
     {
-        if (_position >= _tokens.Count || _tokens[_position].Text != text)
+        if (_position >= _tokens.Count ||
+            !_tokens[_position].Text.Equals(text, StringComparison.OrdinalIgnoreCase))
             return false;
 
         _position++;
@@ -131,7 +155,7 @@ internal sealed class QueryFilterParser
                 continue;
             }
 
-            if (text[index] == '\'')
+            if (text[index] is '\'' or '"')
             {
                 AddValueToken(text, ref index, tokens);
                 continue;
@@ -149,20 +173,41 @@ internal sealed class QueryFilterParser
                 if (field.Length == 0)
                     throw new FormatException("Field identifier cannot be empty.");
 
-                tokens.Add(new Token(TokenType.Identifier, field, null));
+                tokens.Add(new Token(TokenType.Field, field, null));
                 index++;
                 continue;
             }
 
-            if (index + 1 < text.Length &&
-                new[] { "&&", "||", "==", "!=", ">=", "<=" }.Contains(text[index..(index + 2)]))
+            if (text[index] == '<' &&
+                tokens.Count > 0 &&
+                tokens[^1].Type == TokenType.Operator &&
+                IsComparisonOperator(tokens[^1].Text))
             {
-                tokens.Add(new Token(TokenType.Operator, text[index..(index + 2)], null));
+                var closingBracket = text.IndexOf('>', index + 1);
+                if (closingBracket >= 0)
+                {
+                    var expression = text[index..(closingBracket + 1)];
+                    tokens.Add(new Token(TokenType.FieldExpression, expression, null));
+                    index = closingBracket + 1;
+                    continue;
+                }
+            }
+
+            if (index + 1 < text.Length &&
+                new[] { "&&", "||", "==", "!=", ">=", "<=", "<>" }.Contains(text[index..(index + 2)]))
+            {
+                var operation = text[index..(index + 2)] switch
+                {
+                    "&&" => "AND",
+                    "||" => "OR",
+                    var value => value
+                };
+                tokens.Add(new Token(TokenType.Operator, operation, null));
                 index += 2;
                 continue;
             }
 
-            if ("()><+-*/".Contains(text[index]))
+            if ("()=><+-*/".Contains(text[index]))
             {
                 var value = text[index].ToString();
                 tokens.Add(new Token(
@@ -182,7 +227,9 @@ internal sealed class QueryFilterParser
 
             var identifier = text[startIdentifier..index];
             tokens.Add(new Token(
-                identifier.Equals("like", StringComparison.OrdinalIgnoreCase)
+                identifier.Equals("like", StringComparison.OrdinalIgnoreCase) ||
+                identifier.Equals("and", StringComparison.OrdinalIgnoreCase) ||
+                identifier.Equals("or", StringComparison.OrdinalIgnoreCase)
                     ? TokenType.Operator
                     : int.TryParse(identifier, NumberStyles.Integer, CultureInfo.InvariantCulture, out _) ||
                       decimal.TryParse(identifier, NumberStyles.Number, CultureInfo.InvariantCulture, out _) ||
@@ -192,7 +239,9 @@ internal sealed class QueryFilterParser
                         ? TokenType.Value
                     : TokenType.Identifier,
                 identifier,
-                identifier.Equals("like", StringComparison.OrdinalIgnoreCase)
+                identifier.Equals("like", StringComparison.OrdinalIgnoreCase) ||
+                identifier.Equals("and", StringComparison.OrdinalIgnoreCase) ||
+                identifier.Equals("or", StringComparison.OrdinalIgnoreCase)
                     ? null
                     : ParseValue(identifier)));
         }
@@ -206,24 +255,25 @@ internal sealed class QueryFilterParser
         ref int index,
         ICollection<Token> tokens)
     {
-        if (index < text.Length && text[index] == '\'')
+        if (index < text.Length && text[index] is '\'' or '"')
         {
+            var quote = text[index];
             index++;
             var value = new System.Text.StringBuilder();
             while (index < text.Length)
             {
-                if (text[index] == '\'' && index + 1 < text.Length && text[index + 1] == '\'')
+                if (text[index] == quote && index + 1 < text.Length && text[index + 1] == quote)
                 {
-                    value.Append('\'');
+                    value.Append(quote);
                     index += 2;
                     continue;
                 }
-                if (text[index] == '\'')
+                if (text[index] == quote)
                     break;
                 value.Append(text[index++]);
             }
             if (index >= text.Length)
-                throw new FormatException("Unterminated string parameter.");
+                throw new FormatException("Unterminated quoted filter value.");
 
             var parsedValue = value.ToString();
             tokens.Add(new Token(TokenType.Value, parsedValue, parsedValue));
@@ -251,9 +301,15 @@ internal sealed class QueryFilterParser
                         ? null
                         : value;
 
+    private static bool IsComparisonOperator(string operation)
+        => operation is "=" or "==" or "!=" or "<>" or ">" or "<" or ">=" or "<=" ||
+            operation.Equals("LIKE", StringComparison.OrdinalIgnoreCase);
+
     private enum TokenType
     {
         Identifier,
+        Field,
+        FieldExpression,
         Operator,
         Parenthesis,
         Value,

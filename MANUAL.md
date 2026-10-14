@@ -260,9 +260,9 @@ Use `QueryJson` when a screen, API, or report supplies query rules at runtime:
 var rows = db.QueryJson("""
 {
   "entity": "User",
-  "columns": [
-    "Name",
-    "Manager.Name|Manager-Name"
+  "fields": [
+    { "field": "Name" },
+    { "field": "Manager.Name", "alias": "Manager-Name" }
   ],
   "filter": "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Age] < 12)",
   "sorts": ["-Manager.Name"],
@@ -275,13 +275,21 @@ var rows = db.QueryJson("""
 Supported properties:
 
 - `entity`: metadata entity name.
-- `columns`: field paths; use `field|alias` for aliases. Object columns may
-  provide a calculated `expression` and required `alias`.
+- `fields`: projection fields; each entry has a `field` expression and an
+  optional `alias`. A field expression can be a field path string or a
+  structured expression object.
 - `groupBy`: field paths used as explicit group keys.
-- `filter`: field comparisons, `like`, `&&`, `||`, and parentheses.
+- `filter`: field comparisons, `like`, `&&`, `||`, `AND`, `OR`, and parentheses.
 - `sorts`: field paths; prefix with `-` for descending order.
 - `page`: one-based page number.
 - `pageSize`: number of rows per page.
+
+Bare words on the right side of a filter comparison are accepted as string
+values (for example, `Status == Paid`). Filter values remain parameterized by
+the query engine, so the active provider handles their SQL representation.
+Plan-text filters use `=`/`<>`, quote string values with double quotes, and
+write right-side field references in brackets; this text can be parsed back
+into the same filter structure.
 
 Field references in filters use brackets:
 
@@ -301,11 +309,11 @@ Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
 ```json
 {
   "entity": "Products",
-  "columns": [
-    { "field": "Name" },
+  "fields": [
+    { "field": { "kind": "field", "field": "Name" } },
     {
       "alias": "GrossProfit",
-      "expression": {
+      "field": {
         "kind": "function",
         "function": "SUM",
         "arguments": [{

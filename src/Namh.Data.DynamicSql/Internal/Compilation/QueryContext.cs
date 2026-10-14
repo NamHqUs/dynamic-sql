@@ -78,64 +78,103 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         }
     }
 
-    public SqlExpression ParseQueryExpression(TableExpression tableContext, FieldExpressionTransaltion expression, int depth = 0)
+    public SqlExpression ParseQueryExpression(TableExpression tableContext, IFieldDto expression, int depth = 0)
     {
         if (depth > 32)
             throw new FormatException("Query expressions cannot be nested more than 32 levels.");
-        if (expression is null || string.IsNullOrWhiteSpace(expression.Kind))
-            throw new FormatException("A query expression requires a kind.");
+        if (expression is null)
+            throw new FormatException("A query expression cannot be null.");
 
-        return expression.Kind.ToLowerInvariant() switch
+        return expression switch
         {
-            "field" => ParseFieldExpression(tableContext, expression),
-            "value" => ParseValueExpression(expression),
-            "binary" => ParseBinaryExpression(tableContext, expression, depth),
-            "function" => ParseFunctionExpression(tableContext, expression, depth),
-            _ => throw new FormatException($"Invalid query expression kind [{expression.Kind}].")
+            FieldDto field => ParseFieldExpression(tableContext, field),
+            ConstFieldDto value => ParseValueExpression(value),
+            GroupFieldDto group => ParseGroupExpression(tableContext, group.Fields, depth),
+            FunctionFieldDto function => ParseFunctionExpression(tableContext, function, depth),
+            _ => throw new FormatException($"Unsupported query expression [{expression.GetType().Name}].")
         };
     }
 
-    private SqlExpression ParseFieldExpression(TableExpression tableContext, FieldExpressionTransaltion expression)
-        => string.IsNullOrWhiteSpace(expression.Field)
+    private SqlExpression ParseFieldExpression(TableExpression tableContext, FieldDto expression)
+        => string.IsNullOrWhiteSpace(expression.FieldName)
             ? throw new FormatException("A field query expression requires a field path.")
-            : ParseFieldPath(tableContext, expression.Field);
+            : ParseFieldPath(tableContext, expression.FieldName);
 
-    private SqlExpression ParseValueExpression(FieldExpressionTransaltion expression)
+    private SqlExpression ParseValueExpression(ConstFieldDto expression)
         => expression.Value is null
             ? throw new FormatException("A value query expression requires a numeric value.")
-            : new ValueExpression(AddDbParameter(expression.Value.Value, true), typeof(decimal));
+            : new ValueExpression(AddDbParameter(ToDecimal(expression.Value), true), typeof(decimal));
 
-    private SqlExpression ParseBinaryExpression(TableExpression tableContext, FieldExpressionTransaltion expression, int depth)
+    private SqlExpression ParseGroupExpression(TableExpression tableContext, IFieldDto[] fields, int depth)
     {
-        if (expression.Arguments is null ||
-            expression.Arguments.Count != 2 ||
-            expression.Operator is not ("+" or "-" or "*" or "/"))
-            throw new FormatException("A binary query expression requires two arguments and a supported arithmetic operator.");
+        if (fields.Length == 0)
+            throw new FormatException("A grouped query expression cannot be empty.");
+        if (fields.Length == 1)
+            return ParseQueryExpression(tableContext, fields[0], depth);
 
-        var left = ParseQueryExpression(tableContext, expression.Arguments[0], depth + 1);
-        var right = ParseQueryExpression(tableContext, expression.Arguments[1], depth + 1);
-        return new BinarySqlExpression(left, expression.Operator, right, typeof(decimal));
+        var result = ParseQueryExpression(tableContext, fields[0], depth + 1);
+        for (var index = 1; index < fields.Length; index++)
+        {
+            if (fields[index] is not BinaryFieldDto binary ||
+                binary.Oper is not ("+" or "-" or "*" or "/"))
+                throw new FormatException("Grouped projections must alternate expressions and supported binary operators.");
+
+            result = new BinarySqlExpression(
+                result,
+                binary.Oper,
+                ParseQueryExpression(tableContext, binary.Field, depth + 1),
+                typeof(decimal));
+        }
+
+        return result;
     }
 
-    private SqlExpression ParseFunctionExpression(TableExpression tableContext, FieldExpressionTransaltion expression, int depth)
+    private SqlExpression ParseFunctionExpression(TableExpression tableContext, FunctionFieldDto expression, int depth)
     {
-        var name = expression.Function?.ToUpperInvariant();
-        if (expression.Arguments is null)
-            throw new FormatException("A function query expression requires arguments.");
+        var name = expression.FunctionName.ToUpperInvariant();
         var valid = name switch
         {
-            "SUM" => expression.Arguments.Count == 1,
-            "ROUND" or "NULLIF" => expression.Arguments.Count == 2,
+            "SUM" => expression.Arguments.Length == 1,
+            "ROUND" or "NULLIF" => expression.Arguments.Length == 2,
             _ => false
         };
 
         if (!valid)
-            throw new FormatException($"Unsupported function or argument count [{expression.Function}].");
+            throw new FormatException($"Unsupported function or argument count [{expression.FunctionName}].");
 
         var arguments = expression.Arguments
             .Select(argument => ParseQueryExpression(tableContext, argument, depth + 1))
             .ToArray();
         return new FunctionSqlExpression(name!, arguments, typeof(decimal));
+    }
+
+    private static decimal ToDecimal(object value)
+    {
+        if (value is string text)
+        {
+            if (text.EndsWith('m') || text.EndsWith('M'))
+                text = text[..^1];
+            if (decimal.TryParse(
+                text,
+                System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var parsed))
+                return parsed;
+            throw new FormatException("A projection value must be numeric.");
+        }
+
+        try
+        {
+            return Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+        catch (FormatException exception)
+        {
+            throw new FormatException("A projection value must be numeric.", exception);
+        }
+        catch (InvalidCastException exception)
+        {
+            throw new FormatException("A projection value must be numeric.", exception);
+        }
     }
 
     private static bool TryParseAggregate(
