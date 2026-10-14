@@ -20,6 +20,7 @@ type FieldBuilderProps = {
   excludedPaths?: string[];
   editMode?: boolean;
   onCancel?: () => void;
+  allowAggregates?: boolean;
 };
 
 function getFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {
@@ -47,6 +48,7 @@ export default function FieldBuilder({
   excludedPaths = [],
   editMode = false,
   onCancel,
+  allowAggregates = true,
 }: FieldBuilderProps) {
   const [isEditing, setIsEditing] = useState(editMode);
   const [hasIncompleteSelection, setHasIncompleteSelection] = useState(false);
@@ -88,6 +90,7 @@ export default function FieldBuilder({
           placeholderIcon={placeholderIcon}
           ariaLabel={ariaLabel}
           excludedPaths={excludedPaths}
+          allowAggregates={allowAggregates}
           onChange={(path) => {
             setIsEditing(false);
             onChange(path);

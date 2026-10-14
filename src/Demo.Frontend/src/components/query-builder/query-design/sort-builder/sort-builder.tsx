@@ -142,10 +142,12 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
   const [isDropTarget, setIsDropTarget] = useState(false);
 
   const addSort = (field: string) => {
-    if (definition.sorts.some((sort) => sort.field === field)) return;
+    const projection = definition.columns.find((column) => column.field === field);
+    const sortField = projection?.expression ? projection.alias || field : field;
+    if (definition.sorts.some((sort) => sort.field === sortField)) return;
     onDefinitionChange({
       ...definition,
-      sorts: [...definition.sorts, { field, direction: "asc" }],
+      sorts: [...definition.sorts, { field: sortField, direction: "asc" }],
     });
   };
 
@@ -224,14 +226,16 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
           setIsDropTarget(false);
         }}
       >
-        {definition.sorts.map((sort) => (
+        {definition.sorts.map((sort) => {
+          const calculatedProjection = definition.columns.some((column) => column.expression && column.alias === sort.field);
+          return (
           <div className="field-card selected" key={sort.field}>
             <button type="button" className="field-card-remove" onClick={() => removeSort(sort.field)} aria-label={`Remove sort for ${sort.field}`} title={`Remove sort for ${sort.field}`}>
               <Icon name="close" size={12} />
             </button>
             <div className="field-card-details">
               <div className="field-card-primary">
-                {editingField === sort.field
+                {editingField === sort.field && !calculatedProjection
                   ? <FieldBuilder
                     entity={entity}
                     metadata={metadata}
@@ -247,11 +251,13 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
                   />
                   : <span
                     className="field-name editable"
-                    onClick={() => setEditingField(sort.field)}
+                    onClick={() => {
+                      if (!calculatedProjection) setEditingField(sort.field);
+                    }}
                     role="button"
-                    tabIndex={0}
+                    tabIndex={calculatedProjection ? -1 : 0}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") setEditingField(sort.field);
+                      if (!calculatedProjection && (event.key === "Enter" || event.key === " ")) setEditingField(sort.field);
                     }}
                   >{sort.field}</span>}
                 <span className="field-alias-separator" aria-hidden="true">|</span>
@@ -263,7 +269,8 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
         <div className="sort-row-add">
           <FieldBuilder
             key={`add-sort-${definition.sorts.length}`}
@@ -277,6 +284,17 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
             onChange={addSort}
           />
         </div>
+        {definition.columns.some((column) => column.expression && column.alias) && (
+          <div className="calculated-sort-options" aria-label="Calculated projection sort options">
+            {definition.columns
+              .filter((column) => column.expression && column.alias && !definition.sorts.some((sort) => sort.field === column.alias))
+              .map((column) => (
+                <button type="button" className="text-button" key={column.field} onClick={() => addSort(column.field)}>
+                  Sort by {column.alias}
+                </button>
+              ))}
+          </div>
+        )}
       </div>
     </div>
   );

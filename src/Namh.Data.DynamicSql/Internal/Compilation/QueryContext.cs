@@ -78,6 +78,66 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         }
     }
 
+    public SqlExpression ParseQueryExpression(TableExpression tableContext, FieldExpressionTransaltion expression, int depth = 0)
+    {
+        if (depth > 32)
+            throw new FormatException("Query expressions cannot be nested more than 32 levels.");
+        if (expression is null || string.IsNullOrWhiteSpace(expression.Kind))
+            throw new FormatException("A query expression requires a kind.");
+
+        return expression.Kind.ToLowerInvariant() switch
+        {
+            "field" => ParseFieldExpression(tableContext, expression),
+            "value" => ParseValueExpression(expression),
+            "binary" => ParseBinaryExpression(tableContext, expression, depth),
+            "function" => ParseFunctionExpression(tableContext, expression, depth),
+            _ => throw new FormatException($"Invalid query expression kind [{expression.Kind}].")
+        };
+    }
+
+    private SqlExpression ParseFieldExpression(TableExpression tableContext, FieldExpressionTransaltion expression)
+        => string.IsNullOrWhiteSpace(expression.Field)
+            ? throw new FormatException("A field query expression requires a field path.")
+            : ParseFieldPath(tableContext, expression.Field);
+
+    private SqlExpression ParseValueExpression(FieldExpressionTransaltion expression)
+        => expression.Value is null
+            ? throw new FormatException("A value query expression requires a numeric value.")
+            : new ValueExpression(AddDbParameter(expression.Value.Value, true), typeof(decimal));
+
+    private SqlExpression ParseBinaryExpression(TableExpression tableContext, FieldExpressionTransaltion expression, int depth)
+    {
+        if (expression.Arguments is null ||
+            expression.Arguments.Count != 2 ||
+            expression.Operator is not ("+" or "-" or "*" or "/"))
+            throw new FormatException("A binary query expression requires two arguments and a supported arithmetic operator.");
+
+        var left = ParseQueryExpression(tableContext, expression.Arguments[0], depth + 1);
+        var right = ParseQueryExpression(tableContext, expression.Arguments[1], depth + 1);
+        return new BinarySqlExpression(left, expression.Operator, right, typeof(decimal));
+    }
+
+    private SqlExpression ParseFunctionExpression(TableExpression tableContext, FieldExpressionTransaltion expression, int depth)
+    {
+        var name = expression.Function?.ToUpperInvariant();
+        if (expression.Arguments is null)
+            throw new FormatException("A function query expression requires arguments.");
+        var valid = name switch
+        {
+            "SUM" => expression.Arguments.Count == 1,
+            "ROUND" or "NULLIF" => expression.Arguments.Count == 2,
+            _ => false
+        };
+
+        if (!valid)
+            throw new FormatException($"Unsupported function or argument count [{expression.Function}].");
+
+        var arguments = expression.Arguments
+            .Select(argument => ParseQueryExpression(tableContext, argument, depth + 1))
+            .ToArray();
+        return new FunctionSqlExpression(name!, arguments, typeof(decimal));
+    }
+
     private static bool TryParseAggregate(
         string fieldName,
         out string aggregate,

@@ -32,7 +32,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     {
         query.EnsureDefaultProjection();
         var hasGroupedAggregate = query.ProjectionItems
-            .Any(item => item.Item is AggregateExpression { GroupWithQuery: true });
+            .Any(item => item.Item.ContainsGroupedAggregate());
 
         var select = exists ? "1" : query.SqlSelect?.ToString();
 
@@ -62,9 +62,12 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
         if (hasGroupedAggregate)
         {
-            var groupBy = query.ProjectionItems
-                .Where(item => item.Item is not AggregateExpression)
-                .Select(item => RenderExpression(item.Item))
+            var groupBy = query.GroupByExpressions
+                .Concat(query.ProjectionItems
+                    .Where(item => !item.Item.ContainsGroupedAggregate())
+                    .Select(item => item.Item))
+                .Select(RenderExpression)
+                .Distinct(StringComparer.Ordinal)
                 .ToArray();
             if (groupBy.Length > 0)
                 text += "\nGROUP BY " + string.Join(", ", groupBy);
@@ -146,6 +149,9 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             AggregateExpression aggregate => aggregate.GroupWithQuery
                 ? RenderAggregateSelect(aggregate)
                 : $"({RenderAggregate(aggregate)})",
+
+            FunctionSqlExpression function =>
+                $"{function.Name}({string.Join(", ", function.Arguments.Select(RenderExpression))})",
 
             _ => throw new NotSupportedException($"Unsupported SQL expression {expression.GetType().Name}")
         };

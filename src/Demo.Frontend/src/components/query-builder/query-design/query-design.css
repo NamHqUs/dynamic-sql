@@ -38,6 +38,7 @@
 .field-alias-input { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 4px; padding: 3px 6px; width: 105px; font: 11px "Manrope", sans-serif; outline: 0; }
 .field-alias-input:focus { border-color: #654f9f; }
 .field-name, .field-alias-value { color: #ded5ff; font: 11px "DM Mono", monospace; }
+.field-card .field-name { display: inline-block; max-width: min(360px, 45vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .field-alias-separator { display: inline-flex; align-items: center; color: #737e90; font: 11px "DM Mono", monospace; line-height: 1; }
 .field-alias-value.editable { cursor: pointer; }
 .field-name.editable, .field-alias-value.editable { color: #ded5ff; cursor: pointer; }
@@ -79,6 +80,14 @@
 .select-fields-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .select-fields-row .field-cards { display: contents; }
 .select-fields-row > .field-box select { height: var(--field-box-height); }
+.expression-add-button { min-height: var(--field-box-height); padding: 0 10px; border: 1px solid #654f9f; border-radius: 5px; background: #211d32; }
+.expression-add-button:hover { color: #fff; background: #29223e; }
+.calculated-sort-options { display: flex; flex-wrap: wrap; gap: 10px; padding: 6px 0; }
+.group-by-row { display: grid; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #242a35; }
+.group-by-fields { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.group-by-chip { display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 4px 7px 4px 9px; color: #ded5ff; background: #211d32; border: 1px solid #4a4163; border-radius: 5px; font: 10px "DM Mono", monospace; }
+.group-by-chip button { display: grid; place-items: center; width: 18px; height: 18px; padding: 0; color: #8993a5; background: transparent; border: 0; cursor: pointer; }
+.group-by-chip button:hover { color: #ffb0b0; }
 .select-fields-row > .field-builder-editing .field-box-menu .operator-trigger,
 .select-fields-row > .field-builder-editing .field-box-menu .operator-trigger:hover,
 .select-fields-row > .field-builder-editing .field-box-menu .operator-trigger:focus-visible,

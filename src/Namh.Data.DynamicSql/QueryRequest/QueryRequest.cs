@@ -8,7 +8,8 @@ public sealed class QueryRequest
 {
     public string? Name { get; init; }
     public required string Entity { get; init; }
-    public List<QueryColumn> Columns { get; init; } = [];
+    public List<FieldTranslator> Columns { get; init; } = [];
+    public List<string> GroupBy { get; init; } = [];
     public QueryFilter? Filter { get; init; }
     public List<QuerySort> Sorts { get; init; } = [];
     public int? Page { get; init; }
@@ -20,17 +21,23 @@ public sealed class QueryRequest
 
     public override string ToString()
         => string.Join(Environment.NewLine,
-            $"Name: {Name}",
-            $"Entity: {Entity}",
-            $"Columns: {string.Join(", ", Columns.Select(FormatColumn))}",
-            $"Filters: {(Filter is null ? string.Empty : FormatFilter(Filter, false))}",
-            $"Sorts: {string.Join(", ", Sorts.Select(FormatSort))}",
-            $"Page: {Page}",
-            $"PageSize: {PageSize}",
-            $"IncludeArchive: {IncludeArchive}");
+            new[]
+            {
+                Name is null ? null : $"Name: {Name}",
+                $"Entity: {Entity}",
+                $"Columns: {(Columns.Any(column => column.Expression is not null)
+                    ? System.Text.Json.JsonSerializer.Serialize(Columns, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))
+                    : string.Join(", ", Columns.Select(FormatColumn)))}",
+                GroupBy.Count == 0 ? null : $"GroupBy: {string.Join(", ", GroupBy)}",
+                $"Filters: {(Filter is null ? string.Empty : FormatFilter(Filter, false))}",
+                $"Sorts: {string.Join(", ", Sorts.Select(FormatSort))}",
+                $"Page: {Page}",
+                $"PageSize: {PageSize}",
+                $"IncludeArchive: {IncludeArchive}"
+            }.Where(line => line is not null)!);
 
-    private static string FormatColumn(QueryColumn column)
-        => column.Alias is null ? column.Field : $"{column.Field} AS {column.Alias}";
+    private static string FormatColumn(FieldTranslator column)
+        => column.Alias is null ? column.Field ?? string.Empty : $"{column.Field} AS {column.Alias}";
 
     private static string FormatSort(QuerySort sort)
         => $"{sort.Field} {sort.Direction switch

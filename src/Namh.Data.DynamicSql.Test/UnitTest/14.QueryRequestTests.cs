@@ -13,8 +13,8 @@ public class _14_QueryRequestTests : TestBase
             Entity = "User",
             Columns =
             [
-                new QueryColumn("Name"),
-                new QueryColumn("Manager.Name", "ManagerName")
+                new FieldTranslator("Name"),
+                new FieldTranslator("Manager.Name", "ManagerName")
             ],
             Filter = new QueryFilter(
                 LogicalOperator.And,
@@ -43,8 +43,8 @@ public class _14_QueryRequestTests : TestBase
             Entity = "User",
             Columns =
             [
-                new QueryColumn("Name"),
-                new QueryColumn("Average(Age)")
+                new FieldTranslator("Name"),
+                new FieldTranslator("Average(Age)")
             ],
             Filter = new QueryFilter(
                 LogicalOperator.And,
@@ -70,7 +70,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryRequest
         {
             Entity = "User",
-            Columns = [new QueryColumn("Name")],
+            Columns = [new FieldTranslator("Name")],
             Filter = new QueryFilter(
                 LogicalOperator.And,
                 new QueryFilterItem(LogicalOperator.And, "Name", BinaryOperator.Equals, "Alice"))
@@ -90,10 +90,10 @@ public class _14_QueryRequestTests : TestBase
             Entity = "User",
             Columns =
             [
-                new QueryColumn("Name"),
-                new QueryColumn("Count()", "InvoiceCount"),
-                new QueryColumn("Sum(Age)", "Revenue"),
-                new QueryColumn("Average(Age)", "AverageOrderValue")
+                new FieldTranslator("Name"),
+                new FieldTranslator("Count()", "InvoiceCount"),
+                new FieldTranslator("Sum(Age)", "Revenue"),
+                new FieldTranslator("Average(Age)", "AverageOrderValue")
             ]
         };
 
@@ -118,8 +118,8 @@ public class _14_QueryRequestTests : TestBase
             Entity = "User",
             Columns =
             [
-                new QueryColumn("Name"),
-                new QueryColumn("Sum(Members.Age)")
+                new FieldTranslator("Name"),
+                new FieldTranslator("Sum(Members.Age)")
             ],
             Sorts = [new QuerySort("Sum(Members.Age)")]
         };
@@ -174,7 +174,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryRequest
         {
             Entity = "User",
-            Columns = [new QueryColumn("Id"), new QueryColumn("Name")],
+            Columns = [new FieldTranslator("Id"), new FieldTranslator("Name")],
             Filter = new QueryFilter(
                 LogicalOperator.And,
                 new QueryFilter(
@@ -294,4 +294,5 @@ public class _14_QueryRequestTests : TestBase
 
         Assert.That(filter.Value, Is.EqualTo("O'Neil"));
     }
+
 }

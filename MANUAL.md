@@ -275,7 +275,9 @@ var rows = db.QueryJson("""
 Supported properties:
 
 - `entity`: metadata entity name.
-- `columns`: field paths; use `field|alias` for aliases.
+- `columns`: field paths; use `field|alias` for aliases. Object columns may
+  provide a calculated `expression` and required `alias`.
+- `groupBy`: field paths used as explicit group keys.
 - `filter`: field comparisons, `like`, `&&`, `||`, and parentheses.
 - `sorts`: field paths; prefix with `-` for descending order.
 - `page`: one-based page number.
@@ -291,6 +293,48 @@ Field references in filters use brackets:
 
 Values may be strings, integers, decimals, booleans, or `null`. JSON filter
 values are parameterized by the query pipeline.
+
+Calculated projections use a structured expression tree rather than SQL text.
+Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
+`*`, `/`), and `function` (`SUM`, `ROUND`, `NULLIF`):
+
+```json
+{
+  "entity": "Products",
+  "columns": [
+    { "field": "Name" },
+    {
+      "alias": "GrossProfit",
+      "expression": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [{
+          "kind": "binary",
+          "operator": "-",
+          "arguments": [
+            { "kind": "field", "field": "InvoiceItems.LineTotal" },
+            {
+              "kind": "binary",
+              "operator": "*",
+              "arguments": [
+                { "kind": "field", "field": "InvoiceItems.Quantity" },
+                { "kind": "field", "field": "CostPrice" }
+              ]
+            }
+          ]
+        }]
+      }
+    }
+  ],
+  "groupBy": ["Id", "Name"],
+  "sorts": ["-GrossProfit"]
+}
+```
+
+Related field references use metadata relation paths, so the query compiler
+creates the necessary joins. Numeric expression values are parameterized.
+Function names and operators are validated; arbitrary SQL is not accepted in
+calculated projections.
 
 ## SQL diagnostics
 

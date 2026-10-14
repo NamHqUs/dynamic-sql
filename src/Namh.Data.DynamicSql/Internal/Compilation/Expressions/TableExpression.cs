@@ -17,6 +17,7 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQue
     public List<SqlExpression> SqlHaving { get; } = [];
     public List<JoinExpression> Joins { get; } = [];
     public List<OrderExpression> Orders { get; } = [];
+    public List<SqlExpression> GroupByExpressions { get; } = [];
     public StringBuilder? SqlSelect { get; protected set; }
     public StringBuilder? SqlOrder { get; set; }
     public readonly string Alias = alias;
@@ -35,6 +36,7 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQue
         SqlHaving.AddRange(source.SqlHaving);
         Joins.AddRange(source.Joins);
         Orders.AddRange(source.Orders);
+        GroupByExpressions.AddRange(source.GroupByExpressions);
         SqlSelect = source.SqlSelect;
         SqlOrder = source.SqlOrder;
         TakeCount = source.TakeCount;

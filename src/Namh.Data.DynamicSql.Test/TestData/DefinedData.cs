@@ -36,7 +36,7 @@ internal sealed class DefinedData
         if (isExisted != 1)
         {
             StringBuilder sb = new("ATTACH DATABASE ':memory:' AS dbo;");
-            sb.Append(LoadScript("db-scripts.sqlite.sql"));
+            sb.Append(LoadScript("test-data.sqlite.sql", "sale-demo.sqlite.sql"));
             ExecuteNonQuery(cn, sb.ToString());
         }
 
@@ -50,7 +50,7 @@ internal sealed class DefinedData
 
         var isExisted = ExecuteScalar<int>(cn, "SELECT IIF(OBJECT_ID('dbo.[User]', 'U') IS NOT NULL, 1, 0);");
         if(isExisted != 1)
-            ExecuteNonQuery(cn, LoadScript("db-scripts.sql"));
+            ExecuteNonQuery(cn, LoadScript("test-data.sqlserver.sql", "sale-demo.sqlserver.sql"));
         return cn;
     }
 
@@ -67,14 +67,17 @@ internal sealed class DefinedData
                 "WHERE table_schema = 'public' AND table_name = 'User');");
 
             if (!isExisted)
-                ExecuteNonQuery(cn, LoadScript("db-scripts.postgres.sql"));
+                ExecuteNonQuery(cn, LoadScript("test-data.postgres.sql", "sale-demo.postgres.sql"));
         }
 
         return cn;
     }
 
-    private static string LoadScript(string fileName)
-        => File.ReadAllText(fileName);
+    private static string LoadScript(params string[] fileNames)
+    {
+        var path = new DirectoryInfo("../../../../../").FullName;
+        return string.Join(Environment.NewLine, fileNames.Select(fileName => File.ReadAllText(Path.Combine(path, "scripts", fileName))));
+    }
     private static void ExecuteNonQuery(IDbConnection cn, string sql)
     {
         using var cmd = cn.CreateCommand();

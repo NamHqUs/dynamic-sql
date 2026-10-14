@@ -83,8 +83,13 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
                     .GetEnumerator().Current;
             else
             {
-                var sql = e.Value as SqlExpression
-                    ?? QueryContext.ParseFieldPath(tableContext, e.Value!.ToString()!);
+                var sql = e.Value switch
+                {
+                    SqlExpression expression => expression,
+                    FieldExpressionTransaltion expression => QueryContext.ParseQueryExpression(tableContext, expression),
+                    string fieldPath => QueryContext.ParseFieldPath(tableContext, fieldPath),
+                    _ => throw new NotSupportedException($"Unsupported projection value [{e.Value?.GetType().Name ?? "null"}].")
+                };
 
                 var alias = parentKey == null ? e.Key : string.Format("{0}.{1}", parentKey, e.Key);
                 yield return new ProjectionItem(sql, alias);

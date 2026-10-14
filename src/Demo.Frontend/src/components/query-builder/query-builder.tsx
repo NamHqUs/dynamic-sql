@@ -4,7 +4,7 @@ import Icon from "../icon/icon";
 import PanelSplitter from "../panel-splitter/panel-splitter";
 import { useResizablePanel } from "../../utils/use-resizable-panel";
 import { useMessageBox } from "../message-box/message-box";
-import { createApiQuery, deleteQueryRequest, executeQuery, executeQueryFromText, fetchQueryMetadata, fetchSavedQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataField, parseQueryRequestString, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
+import { createApiQuery, deleteQueryRequest, executeQuery, executeQueryFromText, fetchQueryMetadata, fetchSavedQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import "./query-builder.css";
@@ -25,6 +25,7 @@ function createDefinition(entity: string, fields: MetadataField[] = []): QueryDe
   return {
     entity,
     columns: fields.map((field) => ({ field: field.name, alias: null })),
+    groupBy: [],
     filters: { logicalOperation: 0, filters: [] },
     sorts: [],
     page: 1,
@@ -42,6 +43,7 @@ function loadDefinition(): QueryDefinition {
 
   return {
     ...cachedDefinition,
+    groupBy: cachedDefinition.groupBy ?? [],
     filters: cachedDefinition.filters,
   };
 }
@@ -88,16 +90,33 @@ function isProjectionColumnAvailable(column: string, entity: MetadataEntity, met
     : isAvailableFieldPath(aggregateOwner, metadata, pathAggregate[3])));
 }
 
+function isExpressionAvailable(expression: QueryExpression, entity: MetadataEntity, metadata: MetadataEntity[]): boolean {
+  switch (expression.kind) {
+    case "field":
+      return isAvailableFieldPath(entity, metadata, expression.field);
+    case "value":
+      return Number.isFinite(expression.value);
+    case "binary":
+    case "function":
+      return expression.arguments.every((argument) => isExpressionAvailable(argument, entity, metadata));
+  }
+}
+
 // Drops columns, sorts and filters that reference fields removed from the entity metadata.
 function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity, metadata: MetadataEntity[]): QueryDefinition {
-  const columns = definition.columns.filter((column) => isProjectionColumnAvailable(column.field, entity, metadata));
+  const columns = definition.columns.filter((column) => column.expression
+    ? isExpressionAvailable(column.expression, entity, metadata)
+    : isProjectionColumnAvailable(column.field, entity, metadata));
   const sorts = definition.sorts.filter((sort) => isProjectionColumnAvailable(sort.field, entity, metadata)
-    || isAvailableFieldPath(entity, metadata, sort.field));
+    || isAvailableFieldPath(entity, metadata, sort.field)
+    || columns.some((column) => column.expression && column.alias === sort.field));
+  const groupBy = (definition.groupBy ?? []).filter((field) => isAvailableFieldPath(entity, metadata, field));
   const filters = pruneFilters(definition.filters, entity, metadata);
   const unchanged = columns.length === definition.columns.length
     && sorts.length === definition.sorts.length
+    && groupBy.length === (definition.groupBy ?? []).length
     && JSON.stringify(filters) === JSON.stringify(definition.filters);
-  return unchanged ? definition : { ...definition, columns, sorts, filters };
+  return unchanged ? definition : { ...definition, columns, sorts, groupBy, filters };
 }
 
 export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderProps) {

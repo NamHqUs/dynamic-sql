@@ -6,6 +6,8 @@ internal static class SqlExpressionExtensions
         => expression switch
         {
             AggregateExpression { GroupWithQuery: true } => true,
+            FunctionSqlExpression function =>
+                function.Name == "SUM" || function.Arguments.Any(ContainsGroupedAggregate),
             BinarySqlExpression binary =>
                 binary.Left.ContainsGroupedAggregate() || binary.Right.ContainsGroupedAggregate(),
             CompareSqlExpression compare => compare.Left.ContainsGroupedAggregate(),

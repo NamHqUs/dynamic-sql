@@ -73,6 +73,16 @@ class ClauseVisitor(QueryContext queryContext)
             case nameof(IDbQueryableExtension.Aggregate):
                 return (AggregateExpression)QueryContext.ParseFieldPath(tableContext, ((ConstantExpression)methodCall.Arguments[1].StripQuotes()).Value!.ToString()!);
 
+            case nameof(IDbQueryableExtension.GroupBy):
+                foreach (var field in (string[])((ConstantExpression)methodCall.Arguments[1]).Value!)
+                {
+                    var expression = QueryContext.ParseFieldPath(tableContext, field);
+                    if (expression.ContainsGroupedAggregate())
+                        throw new FormatException("Group-by fields cannot contain aggregate expressions.");
+                    tableContext.GroupByExpressions.Add(expression);
+                }
+                return tableContext;
+
             case nameof(IDbQueryableExtension.Count):
                 return new AggregateExpression(tableContext, "Count(*)");
 

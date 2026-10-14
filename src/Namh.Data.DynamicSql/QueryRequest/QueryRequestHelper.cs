@@ -12,8 +12,13 @@ internal static class QueryRequestHelper
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(definition.GroupBy);
+        ArgumentNullException.ThrowIfNull(definition.Columns);
 
         var query = context.Query(definition.Entity, definition.IncludeArchive);
+
+        if (definition.GroupBy.Count > 0)
+            query = query.GroupBy(definition.GroupBy.ToArray());
 
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));
@@ -22,7 +27,19 @@ internal static class QueryRequestHelper
         {
             var selection = new DataRecord();
             foreach (var column in definition.Columns)
-                selection[column.Alias ?? column.Field] = column.Field;
+            {
+                if (column.Expression is not null)
+                {
+                    var alias = string.IsNullOrWhiteSpace(column.Alias)
+                        ? throw new FormatException("Calculated query columns require an alias.")
+                        : column.Alias;
+                    selection[alias] = column.Expression;
+                }
+                else if (!string.IsNullOrWhiteSpace(column.Field))
+                    selection[column.Alias ?? column.Field] = column.Field;
+                else
+                    throw new FormatException("A query column requires either a field or an expression.");
+            }
 
             query = query.Select(selection);
         }

@@ -1,0 +1,163 @@
+{
+  "Name": "5. Gross margin by product",
+  "Entity": "Products",
+  "Columns": [
+    {
+      "Field": "Name",
+      "Alias": null
+    },
+    {
+      "Field": null,
+      "Alias": "UnitsSold",
+      "Expression": {
+        "Kind": "function",
+        "Function": "SUM",
+        "Arguments": [
+          {
+            "Kind": "field",
+            "Field": "InvoiceItems.Quantity"
+          }
+        ]
+      }
+    },
+    {
+      "Field": null,
+      "Alias": "GrossProfit",
+      "Expression": {
+        "Kind": "function",
+        "Function": "SUM",
+        "Arguments": [
+          {
+            "Kind": "binary",
+            "Operator": "-",
+            "Arguments": [
+              {
+                "Kind": "field",
+                "Field": "InvoiceItems.LineTotal"
+              },
+              {
+                "Kind": "binary",
+                "Operator": "*",
+                "Arguments": [
+                  {
+                    "Kind": "field",
+                    "Field": "InvoiceItems.Quantity"
+                  },
+                  {
+                    "Kind": "field",
+                    "Field": "CostPrice"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "Field": null,
+      "Alias": "MarginPercent",
+      "Expression": {
+        "Kind": "function",
+        "Function": "ROUND",
+        "Arguments": [
+          {
+            "Kind": "binary",
+            "Operator": "/",
+            "Arguments": [
+              {
+                "Kind": "binary",
+                "Operator": "*",
+                "Arguments": [
+                  {
+                    "Kind": "function",
+                    "Function": "SUM",
+                    "Arguments": [
+                      {
+                        "Kind": "binary",
+                        "Operator": "-",
+                        "Arguments": [
+                          {
+                            "Kind": "field",
+                            "Field": "InvoiceItems.LineTotal"
+                          },
+                          {
+                            "Kind": "binary",
+                            "Operator": "*",
+                            "Arguments": [
+                              {
+                                "Kind": "field",
+                                "Field": "InvoiceItems.Quantity"
+                              },
+                              {
+                                "Kind": "field",
+                                "Field": "CostPrice"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Kind": "value",
+                    "Value": 100.0
+                  }
+                ]
+              },
+              {
+                "Kind": "function",
+                "Function": "NULLIF",
+                "Arguments": [
+                  {
+                    "Kind": "function",
+                    "Function": "SUM",
+                    "Arguments": [
+                      {
+                        "Kind": "field",
+                        "Field": "InvoiceItems.LineTotal"
+                      }
+                    ]
+                  },
+                  {
+                    "Kind": "value",
+                    "Value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "Kind": "value",
+            "Value": 2
+          }
+        ]
+      }
+    }
+  ],
+  "GroupBy": [
+    "Id",
+    "Name"
+  ],
+  "Filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "LogicalOperator": 0,
+        "Field": "InvoiceItems.Invoice.Status",
+        "Operation": 0,
+        "Value": "Paid",
+        "Parameterized": false
+      }
+    ]
+  },
+  "Sorts": [
+    {
+      "Field": "GrossProfit",
+      "Direction": 1
+    }
+  ],
+  "Page": 1,
+  "PageSize": 50,
+  "IncludeArchive": false
+}

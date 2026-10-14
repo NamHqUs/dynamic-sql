@@ -40,6 +40,8 @@ public static class IDbQueryableExtension
         => source.CreateOrderQueryable(MethodBase.GetCurrentMethod()!.Name, fields);
     public static IDbQueryable ThenByDescending(this IDbQueryable source, params string[] fields)
         => source.CreateOrderQueryable(MethodBase.GetCurrentMethod()!.Name, fields);
+    public static IDbQueryable GroupBy(this IDbQueryable source, params string[] fields)
+        => source.CreateQuery(MethodBase.GetCurrentMethod()!, Expression.Constant(fields));
     public static IDbQueryable OrderByDescending(this IDbQueryable source, params string[] fields)
         => source.CreateOrderQueryable(MethodBase.GetCurrentMethod()!.Name, fields);
     public static IDbQueryable ThenByDescending<TSource>(this IDbQueryable source, params string[] fields) where TSource : DataRecord

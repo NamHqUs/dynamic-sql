@@ -12,7 +12,7 @@
 .field-box-menu .operator-trigger:hover, .field-box-menu .operator-trigger:focus-visible { border-color: #654f9f; color: #ded5ff; outline: 0; }
 .field-box-menu-selected .operator-trigger, .field-box-menu-selected .operator-trigger:hover, .field-box-menu-selected .operator-trigger:focus-visible { color: #ded5ff; border: 0; background: transparent; padding: 0; height: auto; max-height: none; outline: 0; }
 .field-box-menu .operator-menu { z-index: 20; transform: none; width: 200px; min-width: 200px; max-height: 420px; overflow-y: auto; }
-.field-box-menu-popup { z-index: 20; transform: none; width: 200px; min-width: 200px; max-height: 420px; overflow-y: auto; }
+.operator-menu.field-box-menu-popup { z-index: 1300; transform: none; width: 200px; min-width: 200px; max-height: 420px; overflow-y: auto; }
 .field-box-menu-popup .field-box-menu-label { margin-top: 4px; padding: 8px 12px 6px; color: #c5b5ff; border-top: 1px solid #4a4163; background: #211b32; font-weight: 700; letter-spacing: 1px; }
 .field-box-menu-popup .field-box-menu-label:first-child { margin-top: 0; border-top: 0; }
 .field-box-menu-popup .operator-option { padding: 5px 12px 5px 24px; }

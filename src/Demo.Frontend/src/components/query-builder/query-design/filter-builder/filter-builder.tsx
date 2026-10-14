@@ -610,7 +610,7 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
           title={filter.enabled ? "Disable filter" : "Enable filter"}
           onClick={() => update({ enabled: !filter.enabled })}
         >
-          {filter.enabled ? "OFF" : "ON"}
+          {filter.enabled ? "ON" : "OFF"}
         </button>
         <button className="icon-button filter-action" type="button" aria-label="Add filter after this condition" title="Add filter after this condition" onClick={onAdd}><Icon name="plus" size={13} /></button>
         <button className="icon-button filter-action" type="button" aria-label="Create filter group" title="Create filter group" onClick={onGroup}><Icon name="grid" size={13} /></button>

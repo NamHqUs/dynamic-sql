@@ -62,17 +62,17 @@ Targets: **.NET 8, .NET 9, and .NET 10**.
 
 ## Run the demo
 
-Install the **.NET 10 SDK** and **Node.js with npm**, then run this from the
-repository root in PowerShell:
+Install the **.NET 10 SDK**, **Node.js with npm**, and **Windows Terminal**,
+then run this from the repository root in PowerShell:
 
 ```powershell
 .\start.ps1
 ```
 
-The script installs frontend dependencies on first run, then starts the API and
-frontend in separate windows. Open the frontend at
-<http://localhost:5173>; the API's Swagger UI is at
-<http://localhost:21210/swagger>.
+The script installs frontend dependencies on first run, then opens the API and
+frontend in separate, titled Windows Terminal tabs, in that order. The API's
+Swagger UI is at <http://localhost:21210/swagger>; the frontend is at
+<http://localhost:5173>.
 
 ## License
 

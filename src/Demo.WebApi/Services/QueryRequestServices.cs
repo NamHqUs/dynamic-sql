@@ -57,13 +57,17 @@ public static class QueryRequestServices
         if (!values.TryGetValue("Entity", out var parsedEntity) || !string.Equals(parsedEntity, entity, StringComparison.Ordinal))
             throw new FormatException("Entity cannot be changed in the request structure.");
 
-        var columns = ParseList(values.GetValueOrDefault("Columns"), item =>
+        var columnText = values.GetValueOrDefault("Columns");
+        var columns = !string.IsNullOrWhiteSpace(columnText) && columnText.TrimStart().StartsWith('[')
+            ? ParseJsonColumns(columnText, parsedEntity)
+            : ParseList(columnText, item =>
         {
             var aliasSeparator = item.IndexOf(" AS ", StringComparison.OrdinalIgnoreCase);
             return aliasSeparator < 0
-                ? new QueryColumn(item)
-                : new QueryColumn(item[..aliasSeparator].Trim(), item[(aliasSeparator + 4)..].Trim());
+                ? new FieldTranslator(item)
+                : new FieldTranslator(item[..aliasSeparator].Trim(), item[(aliasSeparator + 4)..].Trim());
         });
+        var groupBy = ParseList(values.GetValueOrDefault("GroupBy"), item => item);
         var sorts = ParseList(values.GetValueOrDefault("Sorts"), item =>
         {
             var parts = item.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -95,6 +99,7 @@ public static class QueryRequestServices
         {
             Entity = parsedEntity,
             Columns = columns,
+            GroupBy = groupBy,
             Filter = filter,
             Sorts = sorts,
             Page = page,
@@ -175,6 +180,16 @@ public static class QueryRequestServices
         => string.IsNullOrWhiteSpace(value)
             ? []
             : value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Select(parse).ToList();
+
+    private static List<FieldTranslator> ParseJsonColumns(string text, string entity)
+    {
+        using var document = JsonDocument.Parse(text);
+        return QueryRequest.FromJson(JsonSerializer.Serialize(new
+        {
+            entity,
+            columns = document.RootElement
+        })).Columns;
+    }
 
     private static int? ParseNullableInt(string? value, string fieldName)
         => string.IsNullOrWhiteSpace(value)

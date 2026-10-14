@@ -17,6 +17,10 @@ internal static class QueryRequestJsonParser
             Columns = root.TryGetProperty("columns", out var columns)
                 ? columns.EnumerateArray().Select(ParseColumn).ToList()
                 : [],
+            GroupBy = root.TryGetProperty("groupBy", out var groupBy)
+                ? groupBy.EnumerateArray().Select(item => item.GetString()
+                    ?? throw new JsonException("A group-by field must be a string.")).ToList()
+                : [],
             Filter = root.TryGetProperty("filter", out var filter)
                 ? filter.ValueKind == JsonValueKind.String
                     ? new QueryFilterParser(filter.GetString() ?? string.Empty).Parse()
@@ -30,15 +34,30 @@ internal static class QueryRequestJsonParser
         };
     }
 
-    private static QueryColumn ParseColumn(JsonElement element)
+    private static FieldTranslator ParseColumn(JsonElement element)
     {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            var field = element.TryGetProperty("field", out var fieldElement)
+                ? ReadOptionalString(fieldElement, "field")
+                : null;
+            var alias = element.TryGetProperty("alias", out var aliasElement)
+                ? ReadOptionalString(aliasElement, "alias")
+                : null;
+            var expression = element.TryGetProperty("expression", out var expressionElement)
+                ? JsonSerializer.Deserialize<FieldExpressionTransaltion>(expressionElement, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+                : null;
+
+            return new FieldTranslator(field, alias, expression);
+        }
+
         var value = element.GetString()
-            ?? throw new JsonException("A column must be a string.");
+            ?? throw new JsonException("A column must be a string or an object.");
         var separator = value.IndexOf('|');
 
         return separator < 0
-            ? new QueryColumn(value)
-            : new QueryColumn(value[..separator], value[(separator + 1)..]);
+            ? new FieldTranslator(value)
+            : new FieldTranslator(value[..separator], value[(separator + 1)..]);
     }
 
     private static QuerySort ParseSort(JsonElement element)
@@ -54,4 +73,12 @@ internal static class QueryRequestJsonParser
 
     private static int? ReadInt(JsonElement root, string name)
         => root.TryGetProperty(name, out var element) ? element.GetInt32() : null;
+
+    private static string? ReadOptionalString(JsonElement element, string name)
+        => element.ValueKind switch
+        {
+            JsonValueKind.String => element.GetString(),
+            JsonValueKind.Null => null,
+            _ => throw new JsonException($"The {name} value must be a string or null.")
+        };
 }

@@ -18,6 +18,18 @@ export type MetadataEntity = {
   relations?: MetadataRelation[];
 };
 
+export type QueryExpression =
+  | { kind: "field"; field: string }
+  | { kind: "value"; value: number }
+  | { kind: "binary"; operator: "+" | "-" | "*" | "/"; arguments: [QueryExpression, QueryExpression] }
+  | { kind: "function"; function: "SUM" | "ROUND" | "NULLIF"; arguments: QueryExpression[] };
+
+export type QueryColumn = {
+  field: string;
+  alias: string | null;
+  expression?: QueryExpression;
+};
+
 export type QueryFilterItem = {
   field: string;
   operation: number;
@@ -37,7 +49,8 @@ export type QueryFilterGroup = {
 
 export type QueryDefinition = {
   entity: string;
-  columns: { field: string; alias: string | null }[];
+  columns: QueryColumn[];
+  groupBy: string[];
   filters: QueryFilterGroup;
   sorts: { field: string; direction: string }[];
   page: number | null;
@@ -49,6 +62,7 @@ export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts"> & {
   name?: string;
   filter: QueryFilterGroup | null;
   sorts: { field: string; direction: number }[];
+  columns: (Omit<QueryColumn, "field"> & { field?: string })[];
 };
 
 export type StoredQueryRequest = {
@@ -119,6 +133,9 @@ export function createApiQuery(definition: QueryDefinition) {
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   return {
     ...query,
+    columns: query.columns.map(({ field, ...column }) => column.expression
+      ? column
+      : { ...column, field }),
     page: noPaging ? null : query.page,
     pageSize: noPaging ? null : query.pageSize,
     sorts: sorts.map((sort) => ({ ...sort, direction: sort.direction === "desc" ? 1 : 0 })),
@@ -143,7 +160,12 @@ function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
 
   return {
     entity: query.entity,
-    columns: query.columns,
+    columns: query.columns.map((column, index) => ({
+      field: column.expression ? `__calculated__${column.alias || index}` : column.field || "",
+      alias: column.alias,
+      ...(column.expression ? { expression: column.expression } : {}),
+    })),
+    groupBy: query.groupBy ?? [],
     filters: query.filter ? restoreGroup(query.filter) : { logicalOperation: 0, filters: [] },
     sorts: query.sorts.map((sort) => ({ ...sort, direction: sort.direction === 1 ? "desc" : "asc" })),
     page: query.page,

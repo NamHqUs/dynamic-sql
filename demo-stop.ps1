@@ -1,11 +1,15 @@
-
 $ErrorActionPreference = "Stop"
 
 $ports = @(21210, 5173)
 
 function Write-Step {
-    param([string]$Message, [string]$Status = "INFO")
-    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] [$Status] $Message"
+    param(
+        [string]$Message,
+        [string]$Status = "INFO"
+    )
+
+    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] [$Status] $Message" `
+        -ForegroundColor DarkGray
 }
 
 function Stop-PortProcess {

@@ -19,6 +19,7 @@ type FieldBoxProps = {
   ariaLabel?: string;
   excludedPaths?: string[];
   autoFocus?: boolean;
+  allowAggregates?: boolean;
 };
 
 const RELATION_PREFIX = "relation:";
@@ -41,7 +42,7 @@ export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], 
   return current;
 }
 
-export default function FieldBox({ entity, metadata, value, onChange, onIncompleteChange, clearOnSelect = false, completeOnSelect = false, showPath = false, showDataType = false, placeholder = "Select field…", placeholderIcon = false, ariaLabel = "Field", excludedPaths = [], autoFocus = false }: FieldBoxProps) {
+export default function FieldBox({ entity, metadata, value, onChange, onIncompleteChange, clearOnSelect = false, completeOnSelect = false, showPath = false, showDataType = false, placeholder = "Select field…", placeholderIcon = false, ariaLabel = "Field", excludedPaths = [], autoFocus = false, allowAggregates = true }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
   const [pendingAggregate, setPendingAggregate] = useState<string | null>(null);
@@ -64,7 +65,15 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
       if (!triggerRef.current) return;
       const anchor = triggerRef.current.closest(".field-builder-editing") ?? triggerRef.current;
       const bounds = anchor.getBoundingClientRect();
-      setMenuPosition({ top: bounds.bottom + 4, left: bounds.left });
+      const menu = menuPopupRef.current;
+      const menuHeight = menu?.getBoundingClientRect().height ?? 420;
+      const menuWidth = menu?.getBoundingClientRect().width ?? 200;
+      const spaceBelow = window.innerHeight - bounds.bottom;
+      const top = spaceBelow < menuHeight + 4 && bounds.top >= menuHeight + 4
+        ? bounds.top - menuHeight - 4
+        : bounds.bottom + 4;
+      const left = Math.min(bounds.left, Math.max(4, window.innerWidth - menuWidth - 4));
+      setMenuPosition({ top, left });
     };
 
     updateMenuPosition();
@@ -234,7 +243,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
             </button>
           ))}
         {filteredFields.length === 0 && <span className="field-box-no-results">No matching fields</span>}
-        {!activeAggregate && <>
+        {!activeAggregate && allowAggregates && <>
           <span className="field-box-menu-label">Aggregate</span>
           {AGGREGATES.map((aggregate) => (
             <button type="button" className="operator-option" role="option" key={aggregate} onClick={() => handleSelect(`${AGGREGATE_PREFIX}${aggregate}`)}>

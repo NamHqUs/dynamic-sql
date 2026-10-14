@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import Icon from "../../../icon/icon";
 import { MetadataEntity, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
+import ExpressionBuilder, { formatExpression } from "../field-builder/expression-builder";
+import { QueryExpression } from "../query-builder-slice";
 
 type ProjectionBuilderProps = {
   metadata: MetadataEntity[];
@@ -28,6 +30,7 @@ function FieldCards({
   restoreColumn,
   moveColumn,
   onFieldDragStart,
+  editExpression,
 }: {
   fields: { name: string }[];
   entity: MetadataEntity;
@@ -45,6 +48,7 @@ function FieldCards({
   restoreColumn: (field: string, original: { field: string; alias: string | null }) => void;
   moveColumn: (fromIndex: number, toIndex: number) => void;
   onFieldDragStart: (field: string | null) => void;
+  editExpression: (column: { field: string; alias: string | null; expression?: QueryExpression }) => void;
 }) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
@@ -64,6 +68,7 @@ function FieldCards({
     onFieldDragStart(null);
   }}>{fields.map((field, index) => {
     const column = definition.columns.find((item) => item.field === field.name);
+    const fieldLabel = column?.expression ? column.alias || "calculated field" : field.name;
     return (
       <div
         className={`field-card${column ? " selected" : ""}${draggedIndex === index ? " dragging" : ""}${dropTargetIndex === index && draggedIndex !== index ? " drop-target" : ""}`}
@@ -99,7 +104,7 @@ function FieldCards({
           >
           </span>
         )}
-        <button type="button" className="field-card-remove" onClick={() => removeColumn(field.name)} aria-label={`Remove ${field.name}`} title={`Remove ${field.name}`}>
+        <button type="button" className="field-card-remove" onClick={() => removeColumn(field.name)} aria-label={`Remove ${fieldLabel}`} title={`Remove ${fieldLabel}`}>
           <Icon name="close" size={12} />
         </button>
         <button
@@ -109,8 +114,8 @@ function FieldCards({
             setAliasBeforeEdit(column?.alias ?? null);
             setEditingAliasField(field.name);
           }}
-          aria-label={`Edit alias for ${field.name}`}
-          title={`Edit alias for ${field.name}`}
+          aria-label={`Edit alias for ${fieldLabel}`}
+          title={`Edit alias for ${fieldLabel}`}
         >
           <Icon name="edit" size={12} />
         </button>
@@ -118,12 +123,12 @@ function FieldCards({
           <div className="field-card-primary">
             {column && editingAliasField === field.name
               ? <>
-                <span className="field-name">{field.name}</span>
+                <span className="field-name">{column.expression ? formatExpression(column.expression) : field.name}</span>
                 <span className="field-alias-separator" aria-hidden="true">|</span>
                 <input
                   autoFocus
                   className="field-alias-input"
-                  aria-label={`Alias for ${field.name}`}
+                  aria-label={`Alias for ${fieldLabel}`}
                   placeholder="Alias"
                   value={column.alias ?? ""}
                   onFocus={(event) => event.currentTarget.select()}
@@ -168,22 +173,24 @@ function FieldCards({
                 : column?.alias
                   ? <><span
                     className="field-name editable"
-                    onClick={() => startFieldEdit(column)}
+                    onClick={() => column.expression ? editExpression(column) : startFieldEdit(column)}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") startFieldEdit(column);
+                      if (event.key === "Enter" || event.key === " ")
+                        column.expression ? editExpression(column) : startFieldEdit(column);
                     }}
-                  >{field.name}</span><span className="field-alias-separator" aria-hidden="true">|</span><span className="field-alias-value">{column.alias}</span></>
+                  >{column.expression ? formatExpression(column.expression) : field.name}</span><span className="field-alias-separator" aria-hidden="true">|</span><span className="field-alias-value">{column.alias}</span></>
                   : <span
                     className="field-name editable"
-                    onClick={() => startFieldEdit(column)}
+                    onClick={() => column?.expression ? editExpression(column) : startFieldEdit(column)}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") startFieldEdit(column);
+                      if (event.key === "Enter" || event.key === " ")
+                        column?.expression ? editExpression(column) : startFieldEdit(column);
                     }}
-                  >{field.name}</span>}
+                  >{column?.expression ? formatExpression(column.expression) : field.name}</span>}
           </div>
         </div>
       </div>
@@ -194,11 +201,22 @@ function FieldCards({
 export default function ProjectionBuilder({ metadata, definition, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
   const [editingAliasField, setEditingAliasField] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingExpression, setEditingExpression] = useState<{ field: string | null; expression?: QueryExpression; alias?: string } | null>(null);
   const selectedFields = definition.columns.map((column) => ({ name: column.field }));
 
   const addColumn = (field: string) => {
     if (definition.columns.some((column) => column.field === field)) return;
     onDefinitionChange({ ...definition, columns: [...definition.columns, { field, alias: null }] });
+  };
+
+  const applyExpression = (expression: QueryExpression, alias: string) => {
+    const editing = editingExpression;
+    const field = editing?.field ?? `__calculated__${crypto.randomUUID()}`;
+    const columns = editing?.field
+      ? definition.columns.map((column) => column.field === field ? { ...column, alias, expression } : column)
+      : [...definition.columns, { field, alias, expression }];
+    onDefinitionChange({ ...definition, columns });
+    setEditingExpression(null);
   };
 
   const selectAllFields = () => {
@@ -313,6 +331,11 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
           restoreColumn={restoreColumn}
           moveColumn={moveColumn}
           onFieldDragStart={onFieldDragStart}
+          editExpression={(column) => setEditingExpression({
+            field: column.field,
+            expression: column.expression,
+            alias: column.alias ?? "",
+          })}
         />
         <FieldBuilder
           key={`${entity.name}-${definition.columns.length}`}
@@ -325,7 +348,63 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
           ariaLabel="Display field"
           onChange={addColumn}
         />
+        <button
+          type="button"
+          className="field-action expression-add-button"
+          onClick={() => setEditingExpression({ field: null })}
+        >
+          <span aria-hidden="true">ƒx</span> Add calculation
+        </button>
       </div>
+      <div className="group-by-row">
+        <div>
+          <span className="section-kicker">GROUP BY</span>
+          <p className="filter-description">Choose the fields that identify each aggregate row.</p>
+        </div>
+        <div className="group-by-fields">
+          {definition.groupBy.map((field) => (
+            <span className="group-by-chip" key={field}>
+              {field}
+              <button
+                type="button"
+                aria-label={`Remove ${field} from group by`}
+                title={`Remove ${field} from group by`}
+                onClick={() => onDefinitionChange({ ...definition, groupBy: definition.groupBy.filter((item) => item !== field) })}
+              >
+                <Icon name="close" size={11} />
+              </button>
+            </span>
+          ))}
+          <FieldBuilder
+            key={`${entity.name}-group-${definition.groupBy.length}`}
+            entity={entity}
+            metadata={metadata}
+            value=""
+            ariaLabel="Group by field"
+            placeholder="Add group field"
+            allowAggregates={false}
+            excludedPaths={definition.groupBy}
+            onChange={(field) => {
+              if (!definition.groupBy.includes(field))
+                onDefinitionChange({ ...definition, groupBy: [...definition.groupBy, field] });
+            }}
+          />
+        </div>
+      </div>
+      {editingExpression && (
+        <ExpressionBuilder
+          key={editingExpression.field ?? "new-expression"}
+          entity={entity}
+          metadata={metadata}
+          initialExpression={editingExpression.expression}
+          initialAlias={editingExpression.alias}
+          existingAliases={definition.columns
+            .filter((column) => column.field !== editingExpression.field)
+            .map((column) => column.alias || column.field)}
+          onApply={applyExpression}
+          onCancel={() => setEditingExpression(null)}
+        />
+      )}
     </div>
   );
 }
