@@ -1,5 +1,4 @@
 using Microsoft.Data.Sqlite;
-using System.Text.RegularExpressions;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 

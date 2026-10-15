@@ -241,7 +241,7 @@ public sealed class _16_QueryExpressionTests
             Entity = "Products",
             Fields =
             [
-                new ProjectionField(
+                new ProjectionDto(
                     new FunctionFieldDto(
                         "RANDOM_SQL",
                         [new ConstFieldDto(1)]),

@@ -162,7 +162,9 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
     if (definition.sorts.some((sort) => sort.field === replacement)) return;
     onDefinitionChange({
       ...definition,
-      sorts: definition.sorts.map((sort) => sort.field === field ? { ...sort, field: replacement } : sort),
+      sorts: definition.sorts.map((sort) => sort.field === field
+        ? { field: replacement, direction: sort.direction }
+        : sort),
     });
   };
 
@@ -227,7 +229,8 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
         }}
       >
         {definition.sorts.map((sort) => {
-          const calculatedProjection = definition.columns.some((column) => column.expression && column.alias === sort.field);
+          const calculatedProjection = Boolean(sort.expression)
+            || definition.columns.some((column) => column.expression && column.alias === sort.field);
           return (
           <div className="field-card selected" key={sort.field}>
             <button type="button" className="field-card-remove" onClick={() => removeSort(sort.field)} aria-label={`Remove sort for ${sort.field}`} title={`Remove sort for ${sort.field}`}>

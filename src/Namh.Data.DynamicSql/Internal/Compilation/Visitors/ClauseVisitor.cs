@@ -58,6 +58,10 @@ class ClauseVisitor(QueryContext queryContext)
             case nameof(IDbQueryableExtension.OrderByDescending):
             case nameof(IDbQueryableExtension.ThenBy):
             case nameof(IDbQueryableExtension.ThenByDescending):
+            case nameof(IDbQueryableExtension.DbQueryableDummy.OrderByField):
+            case nameof(IDbQueryableExtension.DbQueryableDummy.OrderByDescendingField):
+            case nameof(IDbQueryableExtension.DbQueryableDummy.ThenByField):
+            case nameof(IDbQueryableExtension.DbQueryableDummy.ThenByDescendingField):
                 return ProcessOrdering(tableContext, methodCall);
 
             case nameof(IDbQueryableExtension.Any):
@@ -98,6 +102,14 @@ class ClauseVisitor(QueryContext queryContext)
 
     private TableExpression ProcessOrdering(TableExpression tableContext, MethodCallExpression methodCall)
     {
+        if (methodCall.Arguments[1] is ConstantExpression { Value: IFieldDto sortField })
+        {
+            tableContext.Orders.Add(new OrderExpression(
+                QueryContext.ParseQueryExpression(tableContext, sortField),
+                methodCall.Method.Name.EndsWith("DescendingField", StringComparison.Ordinal)));
+            return tableContext;
+        }
+
         var fields = (string[])((LambdaExpression)methodCall.Arguments[1].StripQuotes())
             .Compile()
             .DynamicInvoke(new object?[] { null })!;

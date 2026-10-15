@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Namh.Data.DynamicSql;
+namespace Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 
 internal sealed class FieldDtoJsonConverter : JsonConverter<IFieldDto>
 {
@@ -15,12 +15,12 @@ internal sealed class FieldDtoJsonConverter : JsonConverter<IFieldDto>
                 ?? throw new JsonException("A filter field cannot be null."));
 
         using var document = JsonDocument.ParseValue(ref reader);
-        return ProjectionFieldJsonConverter.ParseField(document.RootElement);
+        return ProjectionDtoJsonConverter.ParseField(document.RootElement);
     }
 
     public override void Write(
         Utf8JsonWriter writer,
         IFieldDto value,
         JsonSerializerOptions options)
-        => ProjectionFieldJsonConverter.WriteField(writer, value);
+        => ProjectionDtoJsonConverter.WriteField(writer, value);
 }

@@ -1,11 +1,12 @@
+using Namh.Data.DynamicSql;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Namh.Data.DynamicSql;
+namespace Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 
-public sealed class ProjectionFieldJsonConverter : JsonConverter<ProjectionField>
+public sealed class ProjectionDtoJsonConverter : JsonConverter<ProjectionDto>
 {
-    public override ProjectionField Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override ProjectionDto Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using var document = JsonDocument.ParseValue(ref reader);
         var root = document.RootElement;
@@ -24,10 +25,10 @@ public sealed class ProjectionFieldJsonConverter : JsonConverter<ProjectionField
             }
             : null;
 
-        return new ProjectionField(field, alias);
+        return new ProjectionDto(field, alias);
     }
 
-    public override void Write(Utf8JsonWriter writer, ProjectionField value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, ProjectionDto value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
         writer.WritePropertyName("field");

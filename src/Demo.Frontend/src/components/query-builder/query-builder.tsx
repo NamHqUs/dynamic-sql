@@ -5,6 +5,7 @@ import PanelSplitter from "../panel-splitter/panel-splitter";
 import { useResizablePanel } from "../../utils/use-resizable-panel";
 import { useMessageBox } from "../message-box/message-box";
 import { createApiQuery, deleteQueryRequest, executeQuery, executeQueryFromText, fetchQueryMetadata, fetchSavedQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
+import PlainText from "./plain-text/plain-text";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import "./query-builder.css";
@@ -35,7 +36,17 @@ function createDefinition(entity: string, fields: MetadataField[] = []): QueryDe
 }
 
 function serializeQueryRequest(name: string, definition: QueryDefinition): string {
-  return JSON.stringify({ ...createApiQuery(definition), name });
+  const sortObjectKeys = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(sortObjectKeys);
+    if (value && typeof value === "object") {
+      return Object.fromEntries(
+        Object.entries(value).sort(([left], [right]) => left.localeCompare(right))
+          .map(([key, item]) => [key, sortObjectKeys(item)]),
+      );
+    }
+    return value;
+  };
+  return JSON.stringify(sortObjectKeys({ ...createApiQuery(definition), name }));
 }
 
 function loadDefinition(): QueryDefinition {
@@ -110,9 +121,11 @@ function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity
   const columns = definition.columns.filter((column) => column.expression
     ? isExpressionAvailable(column.expression, entity, metadata)
     : isProjectionColumnAvailable(column.field, entity, metadata));
-  const sorts = definition.sorts.filter((sort) => isProjectionColumnAvailable(sort.field, entity, metadata)
-    || isAvailableFieldPath(entity, metadata, sort.field)
-    || columns.some((column) => column.expression && column.alias === sort.field));
+  const sorts = definition.sorts.filter((sort) => sort.expression
+    ? isExpressionAvailable(sort.expression, entity, metadata)
+    : isProjectionColumnAvailable(sort.field, entity, metadata)
+      || isAvailableFieldPath(entity, metadata, sort.field)
+      || columns.some((column) => column.expression && column.alias === sort.field));
   const groupBy = (definition.groupBy ?? []).filter((field) => isAvailableFieldPath(entity, metadata, field));
   const filters = pruneFilters(definition.filters, entity, metadata);
   const unchanged = columns.length === definition.columns.length
@@ -157,17 +170,6 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
         fromApiQuery(selectedSavedRequest.query),
       )
     : serializeQueryRequest(requestName.trim(), definition) !== serializeQueryRequest("", defaultNewDefinition);
-  const requestStructureFields = requestStructureDraft.split(/\r?\n/).map((line, index) => {
-    const separator = line.indexOf(":");
-    return separator < 0
-      ? { label: "", value: line, index }
-      : {
-        label: line.slice(0, separator).trim(),
-        value: line.slice(separator + 1).replace(/^ /, ""),
-        index,
-      };
-  }).filter((field) => field.label);
-
   const updateDefinition = (nextDefinition: QueryDefinition) => {
     cachedDefinition = nextDefinition;
     definitionRef.current = nextDefinition;
@@ -256,7 +258,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     }).join("\n"));
   };
 
-  const applyRequestStructure = async () => {
+  const applyRequestStructure = async (keepResolving = false) => {
     setIsResolvingPlanChanges(true);
     setRequestStructureError("");
     const resultAction = await dispatch(parseQueryRequestString({ text: requestStructureDraft, entity: definition.entity }));
@@ -266,12 +268,12 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       setRequestStructureOriginal(requestStructureDraft);
       setRequestStructureDefinition(JSON.stringify(nextDefinition));
       setRequestMessage("Query structure applied.");
-      setIsResolvingPlanChanges(false);
+      if (!keepResolving) setIsResolvingPlanChanges(false);
       return true;
     } else {
       setRequestStructureError(String(resultAction.payload || "Unable to apply query request structure."));
     }
-    setIsResolvingPlanChanges(false);
+    if (!keepResolving) setIsResolvingPlanChanges(false);
     return false;
   };
 
@@ -399,11 +401,16 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     }
     setSavedMessage("");
     setRequestMessage("");
+    if (planTextDirty && !(await applyRequestStructure(true))) {
+      setIsResolvingPlanChanges(false);
+      return false;
+    }
     const resultAction = await dispatch(saveQueryRequest({
       fileName: selectedFileName || undefined,
       name: requestName.trim(),
       definition: definitionRef.current,
     }));
+    setIsResolvingPlanChanges(false);
     if (saveQueryRequest.fulfilled.match(resultAction)) {
       setSelectedFileName(resultAction.payload.fileName);
       cachedSelectedFileName = resultAction.payload.fileName;
@@ -456,7 +463,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>New Query</button>
           <div className="query-save-action">
             <p className="query-save-notification" role="status">{savedMessage}</p>
-            <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges || !hasUnsavedChanges} title="Save Query">Save Query</button>
+            <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges || (!hasUnsavedChanges && !planTextDirty)} title="Save Query">Save Query</button>
           </div>
         </div>
       </section>
@@ -533,46 +540,16 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
               />
             </div>
           ) : (
-            <div id="query-request-structure-panel" className="query-request-structure" role="tabpanel" aria-labelledby="query-request-structure-tab">
-              {requestStructureStatus === "loading" && <p className="query-message">Loading request structure…</p>}
-              {requestStructureStatus === "failed" && <p className="query-message error" role="alert">{requestStructureError}</p>}
-              {requestStructureStatus === "succeeded" && (
-                <div className="query-request-structure-content">
-                  {planTextDirty && (
-                    <div className="query-request-structure-actions">
-                      <span>Plan text has unapplied changes.</span>
-                      <span className="query-plan-text-changed">CHANGED</span>
-                    </div>
-                  )}
-                  {requestStructureError && <p className="query-message error" role="alert">{requestStructureError}</p>}
-                  {requestStructureFields.map(({ label, value, index }) => (
-                    <div className="query-request-structure-line" key={label}>
-                      <span className="query-request-structure-key">{label}:</span>
-                      {label === "Entity" ? (
-                        <span className="query-request-structure-entity">{value}</span>
-                      ) : label === "IncludeArchive" ? (
-                        <input
-                          className="query-request-structure-checkbox"
-                          type="checkbox"
-                          aria-label={label}
-                          checked={value.trim().toLowerCase() === "true"}
-                          onChange={(event) => updateRequestStructureField(index, event.target.checked ? "True" : "False")}
-                          disabled={isResolvingPlanChanges}
-                        />
-                      ) : (
-                        <input
-                          className="query-request-structure-input"
-                          aria-label={label}
-                          value={value}
-                          onChange={(event) => updateRequestStructureField(index, event.target.value)}
-                          disabled={isResolvingPlanChanges}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <PlainText
+              id="query-request-structure-panel"
+              labelledBy="query-request-structure-tab"
+              status={requestStructureStatus}
+              error={requestStructureError}
+              text={requestStructureDraft}
+              dirty={planTextDirty}
+              disabled={isResolvingPlanChanges}
+              onFieldChange={updateRequestStructureField}
+            />
           )}
         </div>
         </div>

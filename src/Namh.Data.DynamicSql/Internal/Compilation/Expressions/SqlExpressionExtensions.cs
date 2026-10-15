@@ -7,7 +7,8 @@ internal static class SqlExpressionExtensions
         {
             AggregateExpression { GroupWithQuery: true } => true,
             FunctionSqlExpression function =>
-                function.Name == "SUM" || function.Arguments.Any(ContainsGroupedAggregate),
+                function.Name is "COUNT" or "SUM" or "AVG" ||
+                function.Arguments.Any(ContainsGroupedAggregate),
             BinarySqlExpression binary =>
                 binary.Left.ContainsGroupedAggregate() || binary.Right.ContainsGroupedAggregate(),
             CompareSqlExpression compare => compare.Left.ContainsGroupedAggregate(),

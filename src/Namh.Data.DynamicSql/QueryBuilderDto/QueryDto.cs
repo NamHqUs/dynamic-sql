@@ -2,11 +2,13 @@
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
+using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
+
 public sealed class QueryDto
 {
     public string? Name { get; init; }
     public required string Entity { get; init; }
-    public List<ProjectionField> Fields { get; init; } = [];
+    public List<ProjectionDto> Fields { get; init; } = [];
     public List<string> GroupBy { get; init; } = [];
     public FilterDto? Filter { get; init; }
     public List<SortDto> Sorts { get; init; } = [];
@@ -15,7 +17,7 @@ public sealed class QueryDto
     public bool IncludeArchive { get; init; }
 
     public static QueryDto FromJson(string json)
-        => QueryDtoParsing.QueryDtoParser.Parse(json);
+        => QueryDtoParser.Parse(json);
 
     public override string ToString()
         => string.Join(Environment.NewLine,
@@ -33,7 +35,7 @@ public sealed class QueryDto
             }.Where(line => line is not null)!);
 
     private static string FormatSort(SortDto sort)
-        => $"{sort.Field} {sort.Direction switch
+        => $"{sort.Field.ToText()} {sort.Direction switch
         {
             QuerySortDirection.Ascending => "ASC",
             QuerySortDirection.Descending => "DESC",

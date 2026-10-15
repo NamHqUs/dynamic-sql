@@ -1,7 +1,6 @@
 using System.Globalization;
-using Namh.Data.DynamicSql;
 
-namespace Namh.Data.DynamicSql.QueryRequestParsing;
+namespace Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 
 internal sealed class FilterDtoParser
 {

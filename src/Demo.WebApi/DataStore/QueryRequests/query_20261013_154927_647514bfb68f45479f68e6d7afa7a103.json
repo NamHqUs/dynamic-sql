@@ -3,52 +3,58 @@
   "Entity": "Customers",
   "Fields": [
     {
-      "Field": {
+      "field": {
         "kind": "field",
         "field": "Id"
       },
-      "Alias": null
+      "alias": null
     },
     {
-      "Field": {
+      "field": {
         "kind": "field",
         "field": "Name"
       },
-      "Alias": null
+      "alias": null
     },
     {
-      "Field": {
-        "kind": "field",
-        "field": "Count()"
+      "field": {
+        "kind": "function",
+        "function": "Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Invoices.TotalAmount"
+          }
+        ]
       },
-      "Alias": "Orders"
-    },
-    {
-      "Field": {
-        "kind": "field",
-        "field": "Sum(Invoices.TotalAmount)"
-      },
-      "Alias": "LifetimeValue"
+      "alias": "LifetimeValue"
     }
   ],
+  "GroupBy": [],
   "Filter": {
     "logicalOperation": 0,
     "filters": [
       {
-        "LogicalOperator": 0,
-        "Field": {
+        "logicalOperator": 0,
+        "left": {
           "kind": "field",
           "field": "Invoices.Status"
         },
-        "Operation": 1,
-        "Value": "Draft",
-        "Parameterized": false
+        "operation": 1,
+        "right": {
+          "kind": "value",
+          "value": "Draft"
+        },
+        "parameterized": true
       }
     ]
   },
   "Sorts": [
     {
-      "Field": "Sum(Invoices.TotalAmount)",
+      "Field": {
+        "kind": "field",
+        "field": "Sum(Invoices.TotalAmount)"
+      },
       "Direction": 1
     }
   ],

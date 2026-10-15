@@ -3,52 +3,77 @@
   "Entity": "Products",
   "Fields": [
     {
-      "Field": {
+      "field": {
         "kind": "field",
         "field": "Name"
       },
-      "Alias": null
+      "alias": null
     },
     {
-      "Field": {
+      "field": {
         "kind": "field",
         "field": "Category"
       },
-      "Alias": null
+      "alias": null
     },
     {
-      "Field": {
-        "kind": "field",
-        "field": "Sum(InvoiceItems.Quantity)"
+      "field": {
+        "kind": "function",
+        "function": "Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "InvoiceItems.Quantity"
+          }
+        ]
       },
-      "Alias": "UnitsSold"
+      "alias": "UnitsSold"
     },
     {
-      "Field": {
-        "kind": "field",
-        "field": "Sum(InvoiceItems.LineTotal)"
+      "field": {
+        "kind": "function",
+        "function": "Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "InvoiceItems.LineTotal"
+          }
+        ]
       },
-      "Alias": "Revenue"
+      "alias": "Revenue"
     }
   ],
+  "GroupBy": [],
   "Filter": {
     "logicalOperation": 0,
     "filters": [
       {
-        "LogicalOperator": 0,
-        "Field": {
+        "logicalOperator": 0,
+        "left": {
           "kind": "field",
           "field": "InvoiceItems.Invoice.Status"
         },
-        "Operation": 1,
-        "Value": "Draft",
-        "Parameterized": false
+        "operation": 1,
+        "right": {
+          "kind": "value",
+          "value": "Draft"
+        },
+        "parameterized": true
       }
     ]
   },
   "Sorts": [
     {
-      "Field": "Sum(InvoiceItems.LineTotal)",
+      "Field": {
+        "kind": "function",
+        "function": "Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "InvoiceItems.LineTotal"
+          }
+        ]
+      },
       "Direction": 1
     }
   ],

@@ -14,6 +14,10 @@ public static class IDbQueryableExtension
         public static IDbQueryable ThenBy(IDbQueryable source, Expression selection) { return source; }
         public static IDbQueryable OrderByDescending(IDbQueryable source, Expression selection) { return source; }
         public static IDbQueryable ThenByDescending(IDbQueryable source, Expression selection) { return source; }
+        public static IDbQueryable OrderByField(IDbQueryable source, IFieldDto field) { return source; }
+        public static IDbQueryable OrderByDescendingField(IDbQueryable source, IFieldDto field) { return source; }
+        public static IDbQueryable ThenByField(IDbQueryable source, IFieldDto field) { return source; }
+        public static IDbQueryable ThenByDescendingField(IDbQueryable source, IFieldDto field) { return source; }
     }
 
     public static IDbQueryable Select(this IDbQueryable source, params string[] fields)
@@ -46,6 +50,15 @@ public static class IDbQueryableExtension
         => source.CreateOrderQueryable(MethodBase.GetCurrentMethod()!.Name, fields);
     public static IDbQueryable ThenByDescending<TSource>(this IDbQueryable source, params string[] fields) where TSource : DataRecord
         => source.CreateOrderQueryable(MethodBase.GetCurrentMethod()!.Name, fields);
+
+    internal static IDbQueryable OrderByField(this IDbQueryable source, IFieldDto field)
+        => source.CreateOrderFieldQueryable(nameof(DbQueryableDummy.OrderByField), field);
+    internal static IDbQueryable OrderByDescendingField(this IDbQueryable source, IFieldDto field)
+        => source.CreateOrderFieldQueryable(nameof(DbQueryableDummy.OrderByDescendingField), field);
+    internal static IDbQueryable ThenByField(this IDbQueryable source, IFieldDto field)
+        => source.CreateOrderFieldQueryable(nameof(DbQueryableDummy.ThenByField), field);
+    internal static IDbQueryable ThenByDescendingField(this IDbQueryable source, IFieldDto field)
+        => source.CreateOrderFieldQueryable(nameof(DbQueryableDummy.ThenByDescendingField), field);
 
     public static IDbQueryable Skip(this IDbQueryable source, int count)
         => source.CreateQuery(MethodBase.GetCurrentMethod()!, Expression.Constant(count));
@@ -138,6 +151,10 @@ public static class IDbQueryableExtension
         Expression<Func<IRecordParameter, string[]>> lambda = (e) => fields;
         return source.CreateQuery(typeof(DbQueryableDummy).GetMethod(methodName)!, Expression.Quote(lambda));
     }
+    private static IDbQueryable CreateOrderFieldQueryable(this IDbQueryable source, string methodName, IFieldDto field)
+        => source.CreateQuery(
+            typeof(DbQueryableDummy).GetMethod(methodName)!,
+            Expression.Constant(field, typeof(IFieldDto)));
 
     private static Task<T> ExecuteScalarAsync<T>(IDbQueryable source, CancellationToken cancellationToken)
         => ExecuteScalarAsync<T>(

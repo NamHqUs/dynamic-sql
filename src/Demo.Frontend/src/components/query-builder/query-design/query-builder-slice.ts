@@ -74,7 +74,7 @@ export type QueryDefinition = {
   columns: QueryColumn[];
   groupBy: string[];
   filters: QueryFilterGroup;
-  sorts: { field: string; direction: string }[];
+  sorts: { field: string; direction: string; expression?: QueryExpression }[];
   page: number | null;
   pageSize: number | null;
   includeArchive: boolean;
@@ -83,7 +83,7 @@ export type QueryDefinition = {
 export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns"> & {
   name?: string;
   filter: ApiQueryFilterGroup | null;
-  sorts: { field: string; direction: number }[];
+  sorts: { field: string | QueryExpression; direction: number }[];
   fields: { field: QueryExpression; alias: string | null }[];
 };
 
@@ -163,9 +163,30 @@ export function createApiQuery(definition: QueryDefinition) {
     })),
     page: noPaging ? null : query.page,
     pageSize: noPaging ? null : query.pageSize,
-    sorts: sorts.map((sort) => ({ ...sort, direction: sort.direction === "desc" ? 1 : 0 })),
+    sorts: sorts.map(({ field, expression, direction }) => ({
+      field: expression ?? field,
+      direction: direction === "desc" ? 1 : 0,
+    })),
     filter: createApiFilter(filters),
   };
+}
+
+function expressionToText(expression: QueryExpression): string {
+  switch (expression.kind) {
+    case "field":
+      return expression.field;
+    case "value":
+      return `<${expression.value}>`;
+    case "binary": {
+      const [left, right] = expression.arguments;
+      const formatOperand = (operand: QueryExpression) => operand.kind === "binary"
+        ? `(${expressionToText(operand)})`
+        : expressionToText(operand);
+      return `${formatOperand(left)} ${expression.operator} ${formatOperand(right)}`;
+    }
+    case "function":
+      return `${expression.function}[${expression.arguments.map(expressionToText).join(", ")}]`;
+  }
 }
 
 function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
@@ -211,7 +232,15 @@ function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
     })),
     groupBy: query.groupBy ?? [],
     filters: query.filter ? restoreGroup(query.filter) : { logicalOperation: 0, filters: [] },
-    sorts: query.sorts.map((sort) => ({ ...sort, direction: sort.direction === 1 ? "desc" : "asc" })),
+    sorts: query.sorts.map((sort) => typeof sort.field === "string"
+      ? { ...sort, direction: sort.direction === 1 ? "desc" : "asc" }
+      : sort.field.kind === "field"
+        ? { field: sort.field.field, direction: sort.direction === 1 ? "desc" : "asc" }
+        : {
+          field: expressionToText(sort.field),
+          expression: sort.field,
+          direction: sort.direction === 1 ? "desc" : "asc",
+        }),
     page: query.page,
     pageSize: query.pageSize,
     includeArchive: query.includeArchive,

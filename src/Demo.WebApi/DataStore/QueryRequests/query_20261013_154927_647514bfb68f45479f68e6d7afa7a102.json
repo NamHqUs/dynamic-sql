@@ -3,46 +3,62 @@
   "Entity": "Customers",
   "Fields": [
     {
-      "Field": {
+      "field": {
         "kind": "field",
         "field": "Segment"
       },
-      "Alias": null
+      "alias": null
     },
     {
-      "Field": {
+      "field": {
         "kind": "field",
         "field": "Region"
       },
-      "Alias": null
+      "alias": null
     },
     {
-      "Field": {
-        "kind": "field",
-        "field": "Count()"
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
       },
-      "Alias": "InvoiceCount"
+      "alias": "InvoiceCount"
     },
     {
-      "Field": {
-        "kind": "field",
-        "field": "Sum(Invoices.TotalAmount)"
+      "field": {
+        "kind": "function",
+        "function": "Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Invoices.TotalAmount"
+          }
+        ]
       },
-      "Alias": "Revenue"
+      "alias": "Revenue"
     }
   ],
+  "GroupBy": [],
   "Filter": {
     "logicalOperation": 0,
     "filters": [
       {
-        "LogicalOperator": 0,
-        "Field": {
+        "logicalOperator": 0,
+        "left": {
           "kind": "field",
           "field": "Invoices.Status"
         },
-        "Operation": 1,
-        "Value": "Draft",
-        "Parameterized": false
+        "operation": 1,
+        "right": {
+          "kind": "value",
+          "value": "Draft"
+        },
+        "parameterized": true
       }
     ]
   },

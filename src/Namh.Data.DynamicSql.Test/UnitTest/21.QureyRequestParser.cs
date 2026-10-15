@@ -1,3 +1,6 @@
+using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
+using NUnit.Framework.Constraints;
+
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
 [TestFixture]
@@ -5,86 +8,90 @@ internal class _21_QureyRequestParser : TestBase
 {
 
     [Test]
-    public void TestCases()
+    public void TextToFunctionFieldDto_Arguments()
     {
-        List<ProjectionField> fields =
-        [
-            new ProjectionField(new FieldDto("Name")),
-            new ProjectionField(
-                new FunctionFieldDto(
-                    "SUM",
-                    [new FieldDto("InvoiceItems.Quantity")]),
-                "UnitsSold"),
-            new ProjectionField(
-                new FunctionFieldDto(
-                    "SUM",
-                    [
-                        new GroupFieldDto(
-                        [
-                            new FieldDto("InvoiceItems.LineTotal"),
-                            new BinaryFieldDto(
-                                "-",
-                                new GroupFieldDto(
-                                [
-                                    new FieldDto("InvoiceItems.Quantity"),
-                                    new BinaryFieldDto(
-                                        "*",
-                                        new FieldDto("CostPrice"))
-                                ]))
-                        ])
-                    ]),
-                "GrossProfit"),
-            new ProjectionField(
-                new FunctionFieldDto(
-                    "ROUND",
-                    [
-                        new GroupFieldDto(
-                        [
-                            new FunctionFieldDto(
-                                "SUM",
-                                [
-                                    new GroupFieldDto(
-                                    [
-                                        new FieldDto("InvoiceItems.LineTotal"),
-                                        new BinaryFieldDto(
-                                            "-",
-                                            new GroupFieldDto(
-                                            [
-                                                new FieldDto("InvoiceItems.Quantity"),
-                                                new BinaryFieldDto(
-                                                    "*",
-                                                    new FieldDto("CostPrice"))
-                                            ]))
-                                    ])
-                                ]),
-                            new BinaryFieldDto("*", new ConstFieldDto("100.0m")),
-                            new BinaryFieldDto(
-                                "/",
-                                new FunctionFieldDto(
-                                    "NULLIF",
-                                    [
-                                        new FunctionFieldDto("SUM", [new FieldDto("InvoiceItems.LineTotal")]),
-                                        new ConstFieldDto(0)
-                                    ]))
-                        ]),
-                        new ConstFieldDto(2)
-                    ]),
-                "MarginPercent")
-        ];
+        var text = "Round[Id, <2>]";
+        var field = (FunctionFieldDto)FieldDtoParser.Parse(text);
 
-        var fieldsText = string.Join(", ", fields.Select(field => field.ToText()));
-        var parsedFields = ProjectionField.FromTextList(fieldsText);
-        Assert.That(parsedFields.Select(field => field.ToText()), Is.EqualTo(fields.Select(field => field.ToText())));
+        var expectedField = new FunctionFieldDto("Round", [
+            new FieldDto("Id"),
+            new ConstFieldDto(2)
+        ]);
 
-        foreach (var field in fields)
-        {
-            var text = field.ToText();
-            var field2 = ProjectionField.FromText(text);
-            var text2 = field2.ToText();
-            AssertEquivalent(field.Field, field2.Field);
-            Assert.That(field2.Alias, Is.EqualTo(field.Alias));
-            Assert.That(text, Is.EqualTo(text2));
-        }
+        Assert.That(field.ToText(), Is.EqualTo(text));
+        AssertEquivalent(expectedField, field);
+    }
+
+    [Test]
+    public void TextToFunctionFieldDto_GroupArgument()
+    {
+        var text = "Round[Id + <2>]";
+        var field = (FunctionFieldDto)FieldDtoParser.Parse(text);
+
+        var expectedField = new FunctionFieldDto("Round", [
+            new GroupFieldDto( [
+                    new FieldDto("Id"),
+                    new BinaryFieldDto("+", new ConstFieldDto(2))
+            ])
+        ]);
+
+        Assert.That(field.ToText(), Is.EqualTo(text));
+        AssertEquivalent(expectedField, field);
+    }
+
+    [Test]
+    public void TextToFunctionFieldDto_Mested()
+    {
+        var text = "Round[Sum[Id + Age], <2>]";
+        var field = (FunctionFieldDto)FieldDtoParser.Parse(text);
+
+        var expectedField = new FunctionFieldDto("Round", [
+            new FunctionFieldDto("Sum", [
+                new GroupFieldDto( [
+                    new FieldDto("Id"),
+                    new BinaryFieldDto("+", new FieldDto("Age"))
+                ])
+            ]),
+            new ConstFieldDto(2)
+        ]);
+
+        Assert.That(field.ToText(), Is.EqualTo(text));
+        AssertEquivalent(expectedField, field);
+    }
+
+    [Test]
+    public void TextToGroupFieldDto()
+    {
+        var text = "Id + Age";
+        var field = (GroupFieldDto)FieldDtoParser.Parse(text);
+
+        var expectedField = new GroupFieldDto([
+                new FieldDto("Id"),
+                new BinaryFieldDto("+", new FieldDto("Age"))
+            ]);
+
+        Assert.That(field.ToText(), Is.EqualTo(text));
+        AssertEquivalent(expectedField, field);
+    }
+
+    [Test]
+    public void TextToGroupFieldDto_Nested()
+    {
+        var text = "Id + (Age * Sum[Salary])";
+        var field = (GroupFieldDto)FieldDtoParser.Parse(text);
+
+        var expectedField = new GroupFieldDto([
+                new FieldDto("Id"),
+                new BinaryFieldDto("+", new GroupFieldDto([
+                    new FieldDto("Age"),
+                    new BinaryFieldDto("*", new FunctionFieldDto("Sum", [
+                        new FieldDto("Salary")
+                    ]))
+                ]))
+            ]);
+
+        Assert.That(field.ToText(), Is.EqualTo(text));
+        AssertEquivalent(expectedField, field);
     }
 
     private static void AssertEquivalent(IFieldDto expected, IFieldDto actual)

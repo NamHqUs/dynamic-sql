@@ -3,46 +3,68 @@
   "Entity": "Invoices",
   "Fields": [
     {
-      "Field": {
+      "field": {
         "kind": "field",
         "field": "Month"
       },
-      "Alias": null
+      "alias": null
     },
     {
-      "Field": {
-        "kind": "field",
-        "field": "Count()"
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
       },
-      "Alias": "InvoiceCount"
+      "alias": "InvoiceCount"
     },
     {
-      "Field": {
-        "kind": "field",
-        "field": "Sum(TotalAmount)"
+      "field": {
+        "kind": "function",
+        "function": "Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "TotalAmount"
+          }
+        ]
       },
-      "Alias": "Revenue"
+      "alias": "Revenue"
     },
     {
-      "Field": {
-        "kind": "field",
-        "field": "Average(TotalAmount)"
+      "field": {
+        "kind": "function",
+        "function": "Average",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "TotalAmount"
+          }
+        ]
       },
-      "Alias": "AverageOrderValue"
+      "alias": "AverageOrderValue"
     }
   ],
+  "GroupBy": [],
   "Filter": {
     "logicalOperation": 0,
     "filters": [
       {
-        "LogicalOperator": 0,
-        "Field": {
+        "logicalOperator": 0,
+        "left": {
           "kind": "field",
           "field": "Status"
         },
-        "Operation": 1,
-        "Value": "Draft",
-        "Parameterized": false
+        "operation": 1,
+        "right": {
+          "kind": "value",
+          "value": "Draft"
+        },
+        "parameterized": true
       }
     ]
   },

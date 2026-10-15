@@ -132,9 +132,14 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
     private SqlExpression ParseFunctionExpression(TableExpression tableContext, FunctionFieldDto expression, int depth)
     {
         var name = expression.FunctionName.ToUpperInvariant();
+        if (name == "COUNT" &&
+            (expression.Arguments.Length == 0 ||
+             expression.Arguments is [FieldDto { FieldName: "*" }]))
+            return new AggregateExpression(tableContext, "Count(*)", true);
+
         var valid = name switch
         {
-            "SUM" => expression.Arguments.Length == 1,
+            "COUNT" or "SUM" or "AVG" or "AVERAGE" => expression.Arguments.Length == 1,
             "ROUND" or "NULLIF" => expression.Arguments.Length == 2,
             _ => false
         };
@@ -145,7 +150,8 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         var arguments = expression.Arguments
             .Select(argument => ParseQueryExpression(tableContext, argument, depth + 1))
             .ToArray();
-        return new FunctionSqlExpression(name!, arguments, typeof(decimal));
+        var sqlName = name == "AVERAGE" ? "AVG" : name;
+        return new FunctionSqlExpression(sqlName, arguments, typeof(decimal));
     }
 
     private static decimal ToDecimal(object value)

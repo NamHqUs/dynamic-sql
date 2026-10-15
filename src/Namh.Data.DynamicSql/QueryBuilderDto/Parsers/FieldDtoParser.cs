@@ -1,7 +1,9 @@
 #pragma warning disable IDE0130
-namespace Namh.Data.DynamicSql;
+using Namh.Data.DynamicSql;
 
-internal static class FieldDtoParser
+namespace Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
+
+public static class FieldDtoParser
 {
     public static IFieldDto Parse(string text)
     {

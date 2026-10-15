@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
 [TestFixture]
@@ -13,8 +11,8 @@ public class _14_QueryRequestTests : TestBase
             Entity = "User",
             Fields =
             [
-                ProjectionField.FromText("Name"),
-                ProjectionField.FromText("Manager.Name | ManagerName")
+                ProjectionDto.FromText("Name"),
+                ProjectionDto.FromText("Manager.Name | ManagerName")
             ],
             Filter = new FilterDto(
                 LogicalOperator.And,
@@ -25,7 +23,7 @@ public class _14_QueryRequestTests : TestBase
                     new ConstFieldDto(18))),
             Sorts =
             [
-                new SortDto("Name")
+                new SortDto(new FieldDto("Name"))
             ],
             Page = 1,
             PageSize = 10
@@ -47,8 +45,8 @@ public class _14_QueryRequestTests : TestBase
             Entity = "User",
             Fields =
             [
-                ProjectionField.FromText("Name"),
-                ProjectionField.FromText("Average(Age)")
+                ProjectionDto.FromText("Name"),
+                ProjectionDto.FromText("Average(Age)")
             ],
             Filter = new FilterDto(
                 LogicalOperator.And,
@@ -74,7 +72,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDto
         {
             Entity = "User",
-            Fields = [ProjectionField.FromText("Name")],
+            Fields = [ProjectionDto.FromText("Name")],
             Filter = new FilterDto(
                 LogicalOperator.And,
                 new FilterItemDto(
@@ -122,10 +120,10 @@ public class _14_QueryRequestTests : TestBase
             Entity = "User",
             Fields =
             [
-                ProjectionField.FromText("Name"),
-                ProjectionField.FromText("Count() | InvoiceCount"),
-                ProjectionField.FromText("Sum(Age) | Revenue"),
-                ProjectionField.FromText("Average(Age) | AverageOrderValue")
+                ProjectionDto.FromText("Name"),
+                ProjectionDto.FromText("Count() | InvoiceCount"),
+                ProjectionDto.FromText("Sum(Age) | Revenue"),
+                ProjectionDto.FromText("Average(Age) | AverageOrderValue")
             ]
         };
 
@@ -143,6 +141,53 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
+    public void DefinitionSupportsBracketAggregateFunctions()
+    {
+        var definition = new QueryDto
+        {
+            Entity = "User",
+            Fields =
+            [
+                ProjectionDto.FromText("Name"),
+                ProjectionDto.FromText("Count[Id] | InvoiceCount"),
+                ProjectionDto.FromText("Sum[Age] | TotalAge"),
+                ProjectionDto.FromText("Average[Age] | AverageAge")
+            ]
+        };
+
+        var sql = _db.Query(definition).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("GROUP BY"));
+        Assert.That(sql, Does.Match(@"(?i)\bCOUNT\s*\("));
+        Assert.That(sql, Does.Match(@"(?i)\bSUM\s*\("));
+        Assert.That(sql, Does.Match(@"(?i)\bAVG\s*\("));
+    }
+
+    [Test]
+    public void DefinitionSupportsWildcardAndEmptyCountArguments()
+    {
+        var definition = new QueryDto
+        {
+            Entity = "User",
+            Fields =
+            [
+                ProjectionDto.FromText("Name"),
+                ProjectionDto.FromText("Count[*] | WildcardCount"),
+                ProjectionDto.FromText("Count[] | EmptyCount")
+            ]
+        };
+
+        var query = _db.Query(definition);
+        var sql = query.ToSql().CommandText;
+        var records = query.ToList();
+
+        Assert.That(sql, Does.Match(@"(?i)\bCOUNT\s*\(\s*\*\s*\)"));
+        Assert.That(records, Is.Not.Empty);
+        Assert.That(records.All(record => Convert.ToInt64(record["WildcardCount"]) == 1), Is.True);
+        Assert.That(records.All(record => Convert.ToInt64(record["EmptyCount"]) == 1), Is.True);
+    }
+
+    [Test]
     public void DefinitionSortsByCollectionAggregate()
     {
         var definition = new QueryDto
@@ -150,19 +195,52 @@ public class _14_QueryRequestTests : TestBase
             Entity = "User",
             Fields =
             [
-                ProjectionField.FromText("Name"),
-                ProjectionField.FromText("Sum(Members.Age)")
+                ProjectionDto.FromText("Name"),
+                ProjectionDto.FromText("Sum(Members.Age)")
             ],
-            Sorts = [new SortDto("Sum(Members.Age)")]
+            Sorts = [new SortDto(new FunctionFieldDto("Sum", [new FieldDto("Members.Age")]))]
         };
 
         var sql = _db.Query(definition).ToSql();
         var records = _db.Query(definition).ToList();
 
-        Assert.That(sql.CommandText, Does.Contain("ORDER BY Sum ("));
+        Assert.That(sql.CommandText, Does.Contain("ORDER BY SUM ("));
         Assert.That(sql.CommandText, Does.Not.Contain("ORDER BY (\n    SELECT"));
         Assert.That(records.Select(record => record["Name"]),
             Is.EqualTo(new object?[] { "Charlie", "Eve", "Frank", "Bob", "David", "Alice" }));
+    }
+
+    [Test]
+    public void JsonDefinitionSupportsStructuredSortExpressions()
+    {
+        const string json = """
+            {
+              "entity": "User",
+              "sorts": [{
+                "field": {
+                  "kind": "function",
+                  "function": "Sum",
+                  "arguments": [{ "kind": "field", "field": "Age" }]
+                },
+                "direction": 1
+              }]
+            }
+            """;
+
+        var definition = QueryDto.FromJson(json);
+        var sort = definition.Sorts.Single();
+        var sql = _db.Query(definition).ToSql().CommandText;
+        var serialized = System.Text.Json.JsonSerializer.Serialize(
+            definition,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        var roundTrippedSort = QueryDto.FromJson(serialized).Sorts.Single();
+
+        Assert.That(sort.Field, Is.TypeOf<FunctionFieldDto>());
+        Assert.That(sort.Direction, Is.EqualTo(QuerySortDirection.Descending));
+        Assert.That(roundTrippedSort.Field, Is.TypeOf<FunctionFieldDto>());
+        Assert.That(roundTrippedSort.Direction, Is.EqualTo(QuerySortDirection.Descending));
+        Assert.That(sql, Does.Contain("ORDER BY SUM ("));
+        Assert.That(sql, Does.Contain("DESC"));
     }
 
     [Test]
@@ -218,7 +296,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDto
         {
             Entity = "User",
-            Fields = [ProjectionField.FromText("Id"), ProjectionField.FromText("Name")],
+            Fields = [ProjectionDto.FromText("Id"), ProjectionDto.FromText("Name")],
             Filter = new FilterDto(
                 LogicalOperator.And,
                 new FilterDto(
@@ -245,7 +323,7 @@ public class _14_QueryRequestTests : TestBase
                         new FieldDto("Age"),
                         BinaryOperator.GreaterThan,
                         new ConstFieldDto(18)))),
-            Sorts = [new SortDto("Name")],
+            Sorts = [new SortDto(new FieldDto("Name"))],
             Page = 1,
             PageSize = 25,
             IncludeArchive = true

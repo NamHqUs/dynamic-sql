@@ -1,5 +1,5 @@
 using Namh.Data.DynamicSql;
-using Namh.Data.DynamicSql.QueryDtoParsing;
+using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 using System.Linq.Expressions;
 using System.Text.Json;
 
@@ -42,14 +42,13 @@ internal static class DbQueryFromQueryDto
 
         foreach (var sortGroup in definition.Sorts.Select((sort, index) => (sort, index)))
         {
-            var fields = new[] { sortGroup.sort.Field };
             query = sortGroup.index == 0
                 ? sortGroup.sort.Direction == QuerySortDirection.Ascending
-                    ? query.OrderBy(fields)
-                    : query.OrderByDescending(fields)
+                    ? query.OrderByField(sortGroup.sort.Field)
+                    : query.OrderByDescendingField(sortGroup.sort.Field)
                 : sortGroup.sort.Direction == QuerySortDirection.Ascending
-                    ? query.ThenBy(fields)
-                    : query.ThenByDescending(fields);
+                    ? query.ThenByField(sortGroup.sort.Field)
+                    : query.ThenByDescendingField(sortGroup.sort.Field);
         }
 
         if (definition.Page is not null || definition.PageSize is not null)

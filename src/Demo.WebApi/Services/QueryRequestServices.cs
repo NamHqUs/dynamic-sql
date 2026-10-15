@@ -1,4 +1,5 @@
 using Namh.Data.DynamicSql;
+using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 using System.Text.Json;
 using System.Globalization;
 
@@ -60,21 +61,10 @@ public static class QueryRequestServices
         var fieldText = values.GetValueOrDefault("Fields");
         var fields = !string.IsNullOrWhiteSpace(fieldText) && fieldText.TrimStart().StartsWith('[')
             ? ParseJsonFields(fieldText, parsedEntity)
-            : ProjectionField.FromTextList(fieldText ?? string.Empty);
+            : ProjectionDto.FromTextList(fieldText ?? string.Empty);
         var groupBy = ParseList(values.GetValueOrDefault("GroupBy"), item => item);
-        var sorts = ParseList(values.GetValueOrDefault("Sorts"), item =>
-        {
-            var parts = item.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length is < 1 or > 2)
-                throw new FormatException($"Invalid sort definition [{item}].");
-            var direction = parts.Length == 1 ? QuerySortDirection.Ascending : parts[1].ToUpperInvariant() switch
-            {
-                "ASC" => QuerySortDirection.Ascending,
-                "DESC" => QuerySortDirection.Descending,
-                _ => throw new FormatException($"Invalid sort direction [{parts[1]}].")
-            };
-            return new SortDto(parts[0], direction);
-        });
+        var sorts = ParseSorts(values.GetValueOrDefault("Sorts"));
+
         var filterText = values.GetValueOrDefault("Filters");
         var filter = string.IsNullOrWhiteSpace(filterText)
             ? null
@@ -180,7 +170,7 @@ public static class QueryRequestServices
         return result;
     }
 
-    private static ProjectionField ParseLegacyProjection(JsonElement column)
+    private static ProjectionDto ParseLegacyProjection(JsonElement column)
     {
         var alias = TryGetProperty(column, "Alias", out var aliasElement)
             ? aliasElement.ValueKind switch
@@ -199,7 +189,7 @@ public static class QueryRequestServices
                     : throw new InvalidDataException("A saved projection must contain a field or expression.");
         var json = JsonSerializer.Serialize(new { field, alias });
 
-        return JsonSerializer.Deserialize<ProjectionField>(json, JsonOptions())
+        return JsonSerializer.Deserialize<ProjectionDto>(json, JsonOptions())
             ?? throw new InvalidDataException("A saved projection field is empty.");
     }
 
@@ -222,7 +212,74 @@ public static class QueryRequestServices
             ? []
             : value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Select(parse).ToList();
 
-    private static List<ProjectionField> ParseJsonFields(string text, string entity)
+    private static List<SortDto> ParseSorts(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? []
+            : SplitTopLevel(value, ',').Select(item =>
+            {
+                var sortText = item.Trim();
+                var direction = QuerySortDirection.Ascending;
+                if (sortText.EndsWith(" ASC", StringComparison.OrdinalIgnoreCase))
+                {
+                    sortText = sortText[..^4].TrimEnd();
+                }
+                else if (sortText.EndsWith(" DESC", StringComparison.OrdinalIgnoreCase))
+                {
+                    sortText = sortText[..^5].TrimEnd();
+                    direction = QuerySortDirection.Descending;
+                }
+
+                if (string.IsNullOrWhiteSpace(sortText))
+                    throw new FormatException($"Invalid sort definition [{item}].");
+
+                return new SortDto(FieldDtoParser.Parse(sortText), direction);
+            }).ToList();
+
+    private static List<string> SplitTopLevel(string text, char delimiter)
+    {
+        var parts = new List<string>();
+        var start = 0;
+        var parentheses = 0;
+        var brackets = 0;
+        var constraints = 0;
+
+        for (var index = 0; index < text.Length; index++)
+        {
+            switch (text[index])
+            {
+                case '(':
+                    parentheses++;
+                    break;
+                case ')':
+                    parentheses--;
+                    break;
+                case '[':
+                    brackets++;
+                    break;
+                case ']':
+                    brackets--;
+                    break;
+                case '<':
+                    constraints++;
+                    break;
+                case '>':
+                    if (constraints > 0)
+                        constraints--;
+                    break;
+            }
+
+            if (text[index] == delimiter && parentheses == 0 && brackets == 0 && constraints == 0)
+            {
+                parts.Add(text[start..index].Trim());
+                start = index + 1;
+            }
+        }
+
+        parts.Add(text[start..].Trim());
+        return parts.Where(part => part.Length > 0).ToList();
+    }
+
+    private static List<ProjectionDto> ParseJsonFields(string text, string entity)
     {
         using var document = JsonDocument.Parse(text);
         return QueryDto.FromJson(JsonSerializer.Serialize(new
