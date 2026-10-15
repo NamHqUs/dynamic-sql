@@ -152,18 +152,43 @@ group.MapGet("{fileName}", (string fileName) =>
     QueryRequestServices.LoadQueryRequest(fileName) is { } request
         ? Results.Ok(request)
         : Results.NotFound());
-group.MapPost("/", (QueryDto query) =>
+group.MapPost("/", (System.Text.Json.JsonElement payload, Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions> jsonOptions) =>
 {
-    var saved = QueryRequestServices.SaveQueryRequest(query);
+    var (query, requestText) = ParseQueryRequestSavePayload(payload, jsonOptions.Value.SerializerOptions);
+    var saved = QueryRequestServices.SaveQueryRequest(query, requestText: requestText);
     return Results.Created($"/query-request/{saved.FileName}", saved);
 });
-group.MapPut("{fileName}", (string fileName, QueryDto query) =>
-    QueryRequestServices.UpdateQueryRequest(fileName, query) is { } request
+group.MapPut("{fileName}", (
+    string fileName,
+    System.Text.Json.JsonElement payload,
+    Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions> jsonOptions) =>
+{
+    var (query, requestText) = ParseQueryRequestSavePayload(payload, jsonOptions.Value.SerializerOptions);
+    return QueryRequestServices.UpdateQueryRequest(fileName, query, requestText) is { } request
         ? Results.Ok(request)
-        : Results.NotFound());
+        : Results.NotFound();
+});
 group.MapDelete("{fileName}", (string fileName) =>
     QueryRequestServices.DeleteQueryRequest(fileName) ? Results.NoContent() : Results.NotFound());
 
 app.Run();
+
+static (QueryDto Query, string? RequestText) ParseQueryRequestSavePayload(
+    System.Text.Json.JsonElement payload,
+    System.Text.Json.JsonSerializerOptions serializerOptions)
+{
+    var queryElement = payload.TryGetProperty("query", out var wrappedQuery) ? wrappedQuery : payload;
+    var query = System.Text.Json.JsonSerializer.Deserialize<QueryDto>(queryElement.GetRawText(), serializerOptions)
+        ?? throw new System.Text.Json.JsonException("The query request cannot be empty.");
+    var requestText = payload.TryGetProperty("requestText", out var textElement)
+        ? textElement.ValueKind switch
+        {
+            System.Text.Json.JsonValueKind.Null => null,
+            System.Text.Json.JsonValueKind.String => textElement.GetString(),
+            _ => throw new System.Text.Json.JsonException("Request text must be a string or null.")
+        }
+        : null;
+    return (query, requestText);
+}
 
 sealed record QueryRequestTextRequest(string? Text, string? Entity);

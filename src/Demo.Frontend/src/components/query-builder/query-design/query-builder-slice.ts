@@ -90,6 +90,7 @@ export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "colum
 export type StoredQueryRequest = {
   fileName: string;
   query: ApiQueryRequest;
+  requestText?: string | null;
 };
 
 function createApiFilter(group: QueryFilterGroup): ApiQueryFilterGroup | null {
@@ -395,7 +396,10 @@ export const fetchSavedQueryRequests = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const payload = await requestJson(apiUrls.queryRequests.list);
-      if (!Array.isArray(payload) || payload.some((item) => !item || typeof item.fileName !== "string" || !item.query)) {
+      if (!Array.isArray(payload) || payload.some((item) => !item
+        || typeof item.fileName !== "string"
+        || !item.query
+        || (item.requestText !== undefined && item.requestText !== null && typeof item.requestText !== "string"))) {
         return rejectWithValue("Query request API must return saved requests.");
       }
       return payload as StoredQueryRequest[];
@@ -407,13 +411,18 @@ export const fetchSavedQueryRequests = createAsyncThunk(
 
 export const saveQueryRequest = createAsyncThunk(
   "queryBuilder/saveRequest",
-  async ({ fileName, name, definition }: { fileName?: string; name: string; definition: QueryDefinition }, { rejectWithValue }) => {
+  async ({ fileName, name, definition, requestText }: {
+    fileName?: string;
+    name: string;
+    definition: QueryDefinition;
+    requestText?: string;
+  }, { rejectWithValue }) => {
     try {
       const url = fileName ? apiUrls.queryRequests.byFileName(fileName) : apiUrls.queryRequests.list;
       const payload = await requestJson(url, {
         method: fileName ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...createApiQuery(definition), name }),
+        body: JSON.stringify({ ...createApiQuery(definition), name, ...(requestText !== undefined ? { requestText } : {}) }),
       });
       if (!payload || typeof payload.fileName !== "string" || !payload.query) {
         return rejectWithValue("Query request API returned an invalid saved request.");
@@ -487,6 +496,7 @@ const queryBuilderSlice = createSlice({
         state.result = action.payload;
         state.resultView = "data";
         state.queryStatus = "succeeded";
+        state.queryError = "";
       })
       .addCase(executeQuery.rejected, (state, action) => {
         state.queryStatus = "failed";
@@ -500,6 +510,7 @@ const queryBuilderSlice = createSlice({
         state.result = action.payload;
         state.resultView = "data";
         state.queryStatus = "succeeded";
+        state.queryError = "";
       })
       .addCase(executeQueryFromText.rejected, (state, action) => {
         state.queryStatus = "failed";
@@ -545,9 +556,13 @@ const queryBuilderSlice = createSlice({
         state.savedRequestsError = String(action.payload || action.error.message || "Unable to load saved query requests.");
       })
       .addCase(saveQueryRequest.fulfilled, (state, action) => {
-        const index = state.savedRequests.findIndex((item) => item.fileName === action.payload.fileName);
-        if (index >= 0) state.savedRequests[index] = action.payload;
-        else state.savedRequests.unshift(action.payload);
+        const savedRequest = {
+          ...action.payload,
+          requestText: action.payload.requestText ?? action.meta.arg.requestText ?? null,
+        };
+        const index = state.savedRequests.findIndex((item) => item.fileName === savedRequest.fileName);
+        if (index >= 0) state.savedRequests[index] = savedRequest;
+        else state.savedRequests.unshift(savedRequest);
       })
       .addCase(deleteQueryRequest.fulfilled, (state, action) => {
         state.savedRequests = state.savedRequests.filter((item) => item.fileName !== action.payload);

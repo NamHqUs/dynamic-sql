@@ -1,104 +1,107 @@
 {
-  "Name": "1.Monthly revenue and invoice volume",
-  "Entity": "Invoices",
-  "Fields": [
-    {
-      "field": {
-        "kind": "function",
-        "function": "Year",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "InvoiceDate"
-          }
-        ]
-      },
-      "alias": "Year"
-    },
-    {
-      "field": {
-        "kind": "function",
-        "function": "Month",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "InvoiceDate"
-          }
-        ]
-      },
-      "alias": "Month"
-    },
-    {
-      "field": {
-        "kind": "function",
-        "function": "Count",
-        "arguments": []
-      },
-      "alias": "InvoiceCount"
-    },
-    {
-      "field": {
-        "kind": "function",
-        "function": "Sum",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "TotalAmount"
-          }
-        ]
-      },
-      "alias": "Revenue"
-    },
-    {
-      "field": {
-        "kind": "function",
-        "function": "Average",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "TotalAmount"
-          }
-        ]
-      },
-      "alias": "AverageOrderValue"
-    }
-  ],
-  "GroupBy": [],
-  "Filter": {
-    "logicalOperation": 0,
-    "filters": [
+  "Query": {
+    "Name": "1.Monthly revenue and invoice volume",
+    "Entity": "Invoices",
+    "Fields": [
       {
-        "logicalOperator": 0,
-        "left": {
-          "kind": "field",
-          "field": "Status"
+        "field": {
+          "kind": "function",
+          "function": "Year",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "InvoiceDate"
+            }
+          ]
         },
-        "operation": 1,
-        "right": {
-          "kind": "value",
-          "value": "Draft"
+        "alias": "Year"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Month",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "InvoiceDate"
+            }
+          ]
         },
-        "parameterized": true
+        "alias": "Month"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Count",
+          "arguments": []
+        },
+        "alias": "InvoiceCount"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "TotalAmount"
+            }
+          ]
+        },
+        "alias": "Revenue"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Average",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "TotalAmount"
+            }
+          ]
+        },
+        "alias": "AverageOrderValue"
       }
-    ]
-  },
-  "Sorts": [
-    {
-      "Field": {
-        "kind": "field",
-        "field": "Year"
-      },
-      "Direction": 1
+    ],
+    "GroupBy": [],
+    "Filter": {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Status"
+          },
+          "operation": 1,
+          "right": {
+            "kind": "value",
+            "value": "Draft"
+          },
+          "parameterized": true
+        }
+      ]
     },
-    {
-      "Field": {
-        "kind": "field",
-        "field": "Month"
+    "Sorts": [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "Year"
+        },
+        "Direction": 1
       },
-      "Direction": 1
-    }
-  ],
-  "Page": null,
-  "PageSize": 50,
-  "IncludeArchive": false
+      {
+        "Field": {
+          "kind": "field",
+          "field": "Month"
+        },
+        "Direction": 1
+      }
+    ],
+    "Page": null,
+    "PageSize": 50,
+    "IncludeArchive": false
+  },
+  "RequestText": "Name: 1.Monthly revenue and invoice volume\nEntity: Invoices\nFields: Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, Count() | InvoiceCount, \nSum(TotalAmount) | Revenue, \nAverage(TotalAmount) | AverageOrderValue\nFilters: Status \u003C\u003E \u003CDraft\u003E\nSorts: Year DESC, Month DESC\nPage: \nPageSize: 50\nIncludeArchive: False"
 }

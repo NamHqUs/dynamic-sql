@@ -269,11 +269,22 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       setRequestName(value);
       cachedRequestName = value;
     }
-    setRequestStructureDraft((current) => current.split(/\r?\n/).map((line, lineIndex) => {
-      if (lineIndex !== index) return line;
-      const separator = line.indexOf(":");
-      return `${line.slice(0, separator + 1)} ${value}`;
-    }).join("\n"));
+    setRequestStructureDraft((current) => {
+      const lines = current.split(/\r?\n/);
+      const fieldLine = lines[index];
+      const fieldSeparator = fieldLine?.indexOf(":") ?? -1;
+      if (fieldSeparator < 0) return current;
+      const nextFieldIndex = lines.findIndex((candidate, lineIndex) =>
+        lineIndex > index && candidate.indexOf(":") >= 0,
+      );
+      const fieldEndIndex = nextFieldIndex < 0 ? lines.length : nextFieldIndex;
+      lines.splice(
+        index,
+        fieldEndIndex - index,
+        `${fieldLine.slice(0, fieldSeparator + 1)} ${value}`,
+      );
+      return lines.join("\n");
+    });
   };
 
   const applyRequestStructure = async (keepResolving = false) => {
@@ -390,8 +401,21 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     updateDefinition(nextDefinition);
     updateSavedRequestBaseline(saved.fileName, nextName, nextDefinition);
     setRequestMessage("");
-    if (activeRequestTab === "structure") {
-      void loadRequestStructure(fromApiQuery(saved.query), nextName);
+    if (typeof saved.requestText === "string") {
+      setRequestStructureDraft(saved.requestText);
+      setRequestStructureOriginal(saved.requestText);
+      setRequestStructureDefinition(JSON.stringify(nextDefinition));
+      setRequestStructureStatus("succeeded");
+      setRequestStructureError("");
+    } else {
+      setRequestStructureDraft("");
+      setRequestStructureOriginal("");
+      setRequestStructureDefinition(null);
+      setRequestStructureStatus("idle");
+      setRequestStructureError("");
+      if (activeRequestTab === "structure") {
+        void loadRequestStructure(nextDefinition, nextName);
+      }
     }
   };
 
@@ -431,14 +455,25 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     setSavedMessage("");
     setSavedMessageIsError(false);
     setRequestMessage("");
+    let requestText: string | undefined;
     if (planTextDirty && !(await applyRequestStructure(true))) {
       setIsResolvingPlanChanges(false);
       return false;
+    }
+    if (requestStructureStatus === "succeeded" && (
+      activeRequestTab === "structure"
+      || requestStructureDefinition === JSON.stringify(definitionRef.current)
+    )) {
+      requestText = requestStructureDraft;
+    }
+    if (requestText !== undefined) {
+      requestText = requestText.replace(/^Name:.*$/m, `Name: ${requestName.trim()}`);
     }
     const resultAction = await dispatch(saveQueryRequest({
       fileName: selectedFileName || undefined,
       name: requestName.trim(),
       definition: definitionRef.current,
+      requestText,
     }));
     setIsResolvingPlanChanges(false);
     if (saveQueryRequest.fulfilled.match(resultAction)) {
@@ -448,6 +483,12 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       setRequestName(savedName);
       cachedRequestName = savedName;
       updateSavedRequestBaseline(resultAction.payload.fileName, savedName, definitionRef.current);
+      if (requestText !== undefined) {
+        setRequestStructureDraft(requestText);
+        setRequestStructureOriginal(requestText);
+        setRequestStructureDefinition(JSON.stringify(definitionRef.current));
+        setRequestStructureStatus("succeeded");
+      }
       setSavedMessageIsError(false);
       setSavedMessage("Query request saved.");
       return true;

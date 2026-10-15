@@ -1,166 +1,175 @@
 {
-  "Name": "5. Gross margin by product",
-  "Entity": "Products",
-  "Fields": [
-    {
-      "Field": {
-        "kind": "field",
-        "field": "Name"
-      },
-      "Alias": null
-    },
-    {
-      "Alias": "UnitsSold",
-      "Field": {
-        "Kind": "function",
-        "Function": "SUM",
-        "Arguments": [
-          {
-            "Kind": "field",
-            "Field": "InvoiceItems.Quantity"
-          }
-        ]
-      }
-    },
-    {
-      "Alias": "GrossProfit",
-      "Field": {
-        "Kind": "function",
-        "Function": "SUM",
-        "Arguments": [
-          {
-            "Kind": "binary",
-            "Operator": "-",
-            "Arguments": [
-              {
-                "Kind": "field",
-                "Field": "InvoiceItems.LineTotal"
-              },
-              {
-                "Kind": "binary",
-                "Operator": "*",
-                "Arguments": [
-                  {
-                    "Kind": "field",
-                    "Field": "InvoiceItems.Quantity"
-                  },
-                  {
-                    "Kind": "field",
-                    "Field": "CostPrice"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "Alias": "MarginPercent",
-      "Field": {
-        "Kind": "function",
-        "Function": "ROUND",
-        "Arguments": [
-          {
-            "Kind": "binary",
-            "Operator": "/",
-            "Arguments": [
-              {
-                "Kind": "binary",
-                "Operator": "*",
-                "Arguments": [
-                  {
-                    "Kind": "function",
-                    "Function": "SUM",
-                    "Arguments": [
-                      {
-                        "Kind": "binary",
-                        "Operator": "-",
-                        "Arguments": [
-                          {
-                            "Kind": "field",
-                            "Field": "InvoiceItems.LineTotal"
-                          },
-                          {
-                            "Kind": "binary",
-                            "Operator": "*",
-                            "Arguments": [
-                              {
-                                "Kind": "field",
-                                "Field": "InvoiceItems.Quantity"
-                              },
-                              {
-                                "Kind": "field",
-                                "Field": "CostPrice"
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "Kind": "value",
-                    "Value": 100.0
-                  }
-                ]
-              },
-              {
-                "Kind": "function",
-                "Function": "NULLIF",
-                "Arguments": [
-                  {
-                    "Kind": "function",
-                    "Function": "SUM",
-                    "Arguments": [
-                      {
-                        "Kind": "field",
-                        "Field": "InvoiceItems.LineTotal"
-                      }
-                    ]
-                  },
-                  {
-                    "Kind": "value",
-                    "Value": 0
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "Kind": "value",
-            "Value": 2
-          }
-        ]
-      }
-    }
-  ],
-  "GroupBy": [
-    "Id",
-    "Name"
-  ],
-  "Filter": {
-    "logicalOperation": 0,
-    "filters": [
+  "Query": {
+    "Name": "5. Gross margin by product",
+    "Entity": "Products",
+    "Fields": [
       {
-        "LogicalOperator": 0,
+        "field": {
+          "kind": "field",
+          "field": "Name"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "InvoiceItems.Quantity"
+            }
+          ]
+        },
+        "alias": "UnitsSold"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "binary",
+              "operator": "-",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "InvoiceItems.LineTotal"
+                },
+                {
+                  "kind": "binary",
+                  "operator": "*",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "InvoiceItems.Quantity"
+                    },
+                    {
+                      "kind": "field",
+                      "field": "CostPrice"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "alias": "GrossProfit"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "binary",
+              "operator": "/",
+              "arguments": [
+                {
+                  "kind": "binary",
+                  "operator": "*",
+                  "arguments": [
+                    {
+                      "kind": "function",
+                      "function": "SUM",
+                      "arguments": [
+                        {
+                          "kind": "binary",
+                          "operator": "-",
+                          "arguments": [
+                            {
+                              "kind": "field",
+                              "field": "InvoiceItems.LineTotal"
+                            },
+                            {
+                              "kind": "binary",
+                              "operator": "*",
+                              "arguments": [
+                                {
+                                  "kind": "field",
+                                  "field": "InvoiceItems.Quantity"
+                                },
+                                {
+                                  "kind": "field",
+                                  "field": "CostPrice"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "value",
+                      "value": 100
+                    }
+                  ]
+                },
+                {
+                  "kind": "function",
+                  "function": "NULLIF",
+                  "arguments": [
+                    {
+                      "kind": "function",
+                      "function": "SUM",
+                      "arguments": [
+                        {
+                          "kind": "field",
+                          "field": "InvoiceItems.LineTotal"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "value",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
+        "alias": "MarginPercent"
+      }
+    ],
+    "GroupBy": [
+      "Id",
+      "Name"
+    ],
+    "Filter": {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "InvoiceItems.Invoice.Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Paid"
+          },
+          "parameterized": true
+        }
+      ]
+    },
+    "Sorts": [
+      {
         "Field": {
           "kind": "field",
-          "field": "InvoiceItems.Invoice.Status"
+          "field": "GrossProfit"
         },
-        "Operation": 0,
-        "Value": "Paid",
-        "Parameterized": false
+        "Direction": 1
       }
-    ]
+    ],
+    "Page": 1,
+    "PageSize": 50,
+    "IncludeArchive": false
   },
-  "Sorts": [
-    {
-      "Field": "GrossProfit",
-      "Direction": 1
-    }
-  ],
-  "Page": 1,
-  "PageSize": 50,
-  "IncludeArchive": false
+  "RequestText": "Name: 5. Gross margin by product\nEntity: Products\nFields: Name, SUM(InvoiceItems.Quantity) | UnitsSold, \nSUM(InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)) | GrossProfit, \nROUND(\n  (SUM((InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice))) * \u003C100\u003E) \n     / NULLIF(SUM(InvoiceItems.LineTotal), \u003C0\u003E), \n  \u003C2\u003E) | MarginPercent\nGroupBy: Id, Name\nFilters: InvoiceItems.Invoice.Status = \u003CPaid\u003E\nSorts: GrossProfit DESC\nPage: 1\nPageSize: 50\nIncludeArchive: False"
 }

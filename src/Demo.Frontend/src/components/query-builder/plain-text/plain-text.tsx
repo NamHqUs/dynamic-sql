@@ -22,16 +22,30 @@ export default function PlainText({
   disabled,
   onFieldChange,
 }: PlainTextProps) {
-  const fields = text.split(/\r?\n/).map((line, index) => {
+  const fields: { label: string; value: string; index: number }[] = [];
+  text.split(/\r?\n/).forEach((line, index) => {
     const separator = line.indexOf(":");
-    return separator < 0
-      ? { label: "", value: line, index }
-      : {
-        label: line.slice(0, separator).trim(),
-        value: line.slice(separator + 1).replace(/^ /, ""),
-        index,
-      };
-  }).filter((field) => field.label);
+    if (separator < 0) {
+      const previousField = fields[fields.length - 1];
+      if (previousField) previousField.value += `\n${line}`;
+      return;
+    }
+    fields.push({
+      label: line.slice(0, separator).trim(),
+      value: line.slice(separator + 1).replace(/^ /, ""),
+      index,
+    });
+  });
+
+  const syncHighlightScroll = (element: HTMLInputElement | HTMLTextAreaElement) => {
+    const highlight = element.parentElement?.querySelector<HTMLDivElement>(
+      ".query-request-structure-highlight",
+    );
+    if (highlight) {
+      highlight.scrollLeft = element.scrollLeft;
+      highlight.scrollTop = element.scrollTop;
+    }
+  };
 
   return (
     <div id={id} className="query-request-structure" role="tabpanel" aria-labelledby={labelledBy}>
@@ -75,10 +89,48 @@ export default function PlainText({
                   onChange={(event) => onFieldChange(index, event.target.checked ? "True" : "False")}
                   disabled={disabled}
                 />
+              ) : ["Fields", "Filters", "Sorts"].includes(label) ? (
+                <div className={`query-request-structure-input-container${label === "Fields" || label === "Filters" ? " query-request-structure-input-container-multiline" : ""}`}>
+                  <div className="query-request-structure-highlight" aria-hidden="true">
+                    {value.split(/(\b[A-Za-z_]\w*(?=\s*\())/g).map((part, partIndex) => (
+                      partIndex % 2 === 1
+                        ? <span className="query-request-structure-function" key={partIndex}>{part}</span>
+                        : part
+                    ))}
+                  </div>
+                  {label === "Fields" || label === "Filters" ? (
+                    <textarea
+                      className="query-request-structure-input query-request-structure-input-highlighted query-request-structure-input-multiline"
+                      aria-label={label}
+                      rows={3}
+                      spellCheck={false}
+                      ref={(element) => {
+                        if (!element) return;
+                        element.style.height = "auto";
+                        element.style.height = `${element.scrollHeight}px`;
+                      }}
+                      value={value}
+                      onChange={(event) => onFieldChange(index, event.target.value)}
+                      onScroll={(event) => syncHighlightScroll(event.currentTarget)}
+                      disabled={disabled}
+                    />
+                  ) : (
+                    <input
+                      className="query-request-structure-input query-request-structure-input-highlighted"
+                      aria-label={label}
+                      spellCheck={false}
+                      value={value}
+                      onChange={(event) => onFieldChange(index, event.target.value)}
+                      onScroll={(event) => syncHighlightScroll(event.currentTarget)}
+                      disabled={disabled}
+                    />
+                  )}
+                </div>
               ) : (
                 <input
                   className="query-request-structure-input"
                   aria-label={label}
+                  spellCheck={false}
                   value={value}
                   onChange={(event) => onFieldChange(index, event.target.value)}
                   disabled={disabled}

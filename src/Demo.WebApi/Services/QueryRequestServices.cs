@@ -9,29 +9,32 @@ public static class QueryRequestServices
 {
     private static readonly string _StorePath = Path.Combine(Environment.CurrentDirectory, "DataStore", "QueryRequests");
 
-    public sealed record StoredQueryRequest(string FileName, QueryDto Query);
+    public sealed record StoredQueryRequest(string FileName, QueryDto Query, string? RequestText = null);
 
     public static List<StoredQueryRequest> ListQueryRequests()
     {
         EnsureStore();
         return Directory.EnumerateFiles(_StorePath, "*.json")
             .OrderByDescending(Path.GetFileName)
-            .Select(filePath => new StoredQueryRequest(Path.GetFileName(filePath)!, ReadQuery(filePath)))
+            .Select(ReadQuery)
             .ToList();
     }
 
-    public static StoredQueryRequest SaveQueryRequest(QueryDto query, string? fileName = null)
+    public static StoredQueryRequest SaveQueryRequest(
+        QueryDto query,
+        string? fileName = null,
+        string? requestText = null)
     {
         fileName??= CreateRandonFileName();
         var filePath = GetPath(fileName);
-        WriteQuery(filePath, query);
-        return new StoredQueryRequest(fileName, query);
+        WriteQuery(filePath, query, requestText);
+        return new StoredQueryRequest(fileName, query, requestText);
     }
 
     public static StoredQueryRequest? LoadQueryRequest(string fileName)
     {
         var filePath = GetPath(fileName);
-        return File.Exists(filePath) ? new StoredQueryRequest(fileName, ReadQuery(filePath)) : null;
+        return File.Exists(filePath) ? ReadQuery(filePath) : null;
     }
 
     public static string GetQueryRequestString(QueryDto query)
@@ -39,18 +42,24 @@ public static class QueryRequestServices
 
     public static QueryDto ParseQueryRequestString(string text, string entity)
     {
-        var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None)
-            .Select(line =>
+        var lines = new List<(string Key, string Value)>();
+        foreach (var line in text.Split(["\r\n", "\n"], StringSplitOptions.None))
+        {
+            var separator = line.IndexOf(':');
+            if (separator < 1)
             {
-                var separator = line.IndexOf(':');
-                if (separator < 1)
+                if (lines.Count == 0)
                     throw new FormatException($"Invalid query request line [{line}].");
-                var value = line[(separator + 1)..];
-                if (value.StartsWith(' '))
-                    value = value[1..];
-                return (Key: line[..separator].Trim(), Value: value);
-            })
-            .ToList();
+                var previous = lines[^1];
+                lines[^1] = (previous.Key, $"{previous.Value}\n{line}");
+                continue;
+            }
+
+            var value = line[(separator + 1)..];
+            if (value.StartsWith(' '))
+                value = value[1..];
+            lines.Add((line[..separator].Trim(), value));
+        }
         if (lines.GroupBy(item => item.Key, StringComparer.OrdinalIgnoreCase).Any(group => group.Count() > 1))
             throw new FormatException("Query request fields must not be repeated.");
         var values = lines.ToDictionary(item => item.Key, item => item.Value, StringComparer.OrdinalIgnoreCase);
@@ -112,14 +121,14 @@ public static class QueryRequestServices
         return ParseQueryRequestString(text, entities[0]!);
     }
 
-    public static StoredQueryRequest? UpdateQueryRequest(string fileName, QueryDto query)
+    public static StoredQueryRequest? UpdateQueryRequest(string fileName, QueryDto query, string? requestText = null)
     {
         var filePath = GetPath(fileName);
         if (!File.Exists(filePath))
             return null;
 
-        WriteQuery(filePath, query);
-        return new StoredQueryRequest(fileName, query);
+        WriteQuery(filePath, query, requestText);
+        return new StoredQueryRequest(fileName, query, requestText);
     }
 
     public static bool DeleteQueryRequest(string fileName)
@@ -141,16 +150,21 @@ public static class QueryRequestServices
     private static void EnsureStore()
         => Directory.CreateDirectory(_StorePath);
 
-    private static QueryDto ReadQuery(string filePath)
+    private static StoredQueryRequest ReadQuery(string filePath)
     {
         var json = File.ReadAllText(filePath);
-        var result = JsonSerializer.Deserialize<QueryDto>(json, JsonOptions())
-            ?? throw new InvalidDataException($"Query request file '{Path.GetFileName(filePath)}' is empty.");
-
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
-        if (!TryGetProperty(root, "Fields", out _) &&
-            TryGetProperty(root, "Columns", out var legacyColumns))
+        var queryElement = TryGetProperty(root, "Query", out var storedQuery) ? storedQuery : root;
+        var requestText = TryGetProperty(root, "RequestText", out var requestTextElement)
+            && requestTextElement.ValueKind == JsonValueKind.String
+                ? requestTextElement.GetString()
+                : null;
+        var result = JsonSerializer.Deserialize<QueryDto>(queryElement.GetRawText(), JsonOptions())
+            ?? throw new InvalidDataException($"Query request file '{Path.GetFileName(filePath)}' is empty.");
+
+        if (!TryGetProperty(queryElement, "Fields", out _) &&
+            TryGetProperty(queryElement, "Columns", out var legacyColumns))
         {
             result = new QueryDto
             {
@@ -167,7 +181,7 @@ public static class QueryRequestServices
         }
 
         Console.WriteLine($"\n{new('-', 8)}Loaded query request from '{Path.GetFileName(filePath)}': \n{result}");
-        return result;
+        return new StoredQueryRequest(Path.GetFileName(filePath)!, result, requestText);
     }
 
     private static ProjectionDto ParseLegacyProjection(JsonElement column)
@@ -197,8 +211,10 @@ public static class QueryRequestServices
         => element.TryGetProperty(name, out value) ||
             element.TryGetProperty(char.ToLowerInvariant(name[0]) + name[1..], out value);
 
-    private static void WriteQuery(string filePath, QueryDto query)
-        => File.WriteAllText(filePath, JsonSerializer.Serialize(query, JsonOptions(writeIndented: true)));
+    private static void WriteQuery(string filePath, QueryDto query, string? requestText)
+        => File.WriteAllText(filePath, JsonSerializer.Serialize(
+            new { Query = query, RequestText = requestText },
+            JsonOptions(writeIndented: true)));
 
     private static JsonSerializerOptions JsonOptions(bool writeIndented = false)
         => new()
