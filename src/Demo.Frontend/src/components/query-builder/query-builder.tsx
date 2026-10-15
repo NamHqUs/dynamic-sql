@@ -155,6 +155,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const [requestStructureDefinition, setRequestStructureDefinition] = useState<string | null>(null);
   const [requestStructureStatus, setRequestStructureStatus] = useState<"idle" | "loading" | "succeeded" | "failed">("idle");
   const [requestStructureError, setRequestStructureError] = useState("");
+  const [planTextTextareaHeights, setPlanTextTextareaHeights] = useState({ Fields: 80, Filters: 80 });
   const [isResolvingPlanChanges, setIsResolvingPlanChanges] = useState(false);
   const panel = useResizablePanel("query-builder");
   const planTextDirty = requestStructureStatus === "succeeded" && requestStructureDraft !== requestStructureOriginal;
@@ -555,42 +556,51 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
             disabled={isResolvingPlanChanges}
             onSelectRequest={(fileName) => void selectSavedRequest(fileName)}
           />
-        <div className="query-request-editor">
+        <div className={`query-request-editor${activeRequestTab === "structure" ? " query-request-editor-plan-text" : ""}`}>
           <PanelSplitter panel={panel} label="saved requests panel" />
           {requestMessage && <p className={`query-message${requestMessage.includes("Unable") ? " error" : ""}`} role="status">{requestMessage}</p>}
-          <div className="query-request-tabs" role="tablist" aria-label="Query request views">
-            <button
-              className={`query-request-tab${activeRequestTab === "design" ? " active" : ""}`}
-              id="query-request-design-tab"
-              type="button"
-              role="tab"
-              aria-selected={activeRequestTab === "design"}
-              aria-controls="query-request-design-panel"
-              onClick={() => void requestPlanTextNavigation(() => setActiveRequestTab("design"))}
-              disabled={isResolvingPlanChanges}
+          <div className="query-request-tab-header">
+            <div className="query-request-tabs" role="tablist" aria-label="Query request views">
+              <button
+                className={`query-request-tab${activeRequestTab === "design" ? " active" : ""}`}
+                id="query-request-design-tab"
+                type="button"
+                role="tab"
+                aria-selected={activeRequestTab === "design"}
+                aria-controls="query-request-design-panel"
+                onClick={() => void requestPlanTextNavigation(() => setActiveRequestTab("design"))}
+                disabled={isResolvingPlanChanges}
+              >
+                <Icon name="grid" size={14} />
+                Query design
+              </button>
+              <button
+                className={`query-request-tab${activeRequestTab === "structure" ? " active" : ""}`}
+                id="query-request-structure-tab"
+                type="button"
+                role="tab"
+                aria-selected={activeRequestTab === "structure"}
+                aria-controls="query-request-structure-panel"
+                onClick={() => {
+                  if (activeRequestTab === "structure" && requestStructureStatus !== "failed") return;
+                  setActiveRequestTab("structure");
+                  if (requestStructureStatus !== "succeeded" || requestStructureDefinition !== JSON.stringify(definition)) {
+                    void loadRequestStructure();
+                  }
+                }}
+                disabled={isResolvingPlanChanges}
+              >
+                <Icon name="code" size={14} />
+                Plan text
+              </button>
+            </div>
+            <span
+              className={`query-request-loading${requestStructureStatus === "loading" ? " is-visible" : ""}`}
+              role="status"
+              aria-hidden={requestStructureStatus !== "loading"}
             >
-              <Icon name="grid" size={14} />
-              Query design
-            </button>
-            <button
-              className={`query-request-tab${activeRequestTab === "structure" ? " active" : ""}`}
-              id="query-request-structure-tab"
-              type="button"
-              role="tab"
-              aria-selected={activeRequestTab === "structure"}
-              aria-controls="query-request-structure-panel"
-              onClick={() => {
-                if (activeRequestTab === "structure" && requestStructureStatus !== "failed") return;
-                setActiveRequestTab("structure");
-                if (requestStructureStatus !== "succeeded" || requestStructureDefinition !== JSON.stringify(definition)) {
-                  void loadRequestStructure();
-                }
-              }}
-              disabled={isResolvingPlanChanges}
-            >
-              <Icon name="code" size={14} />
-              Plan text
-            </button>
+              Loading request structure…
+            </span>
           </div>
           {activeRequestTab === "design" ? (
             <div id="query-request-design-panel" className="query-design-area" role="tabpanel" aria-labelledby="query-request-design-tab">
@@ -617,6 +627,11 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
               error={requestStructureError}
               text={requestStructureDraft}
               disabled={isResolvingPlanChanges}
+              textareaHeights={planTextTextareaHeights}
+              onTextareaHeightChange={(field, height) => setPlanTextTextareaHeights((current) => ({
+                ...current,
+                [field]: height,
+              }))}
               onFieldChange={updateRequestStructureField}
               functionNames={functionNames}
               functionNamesStatus={functionNamesStatus}

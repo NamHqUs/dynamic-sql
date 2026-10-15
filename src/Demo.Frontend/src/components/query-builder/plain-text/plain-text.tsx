@@ -1,6 +1,8 @@
 import "./plain-text.css";
 import { MetadataEntity } from "../query-design/query-builder-slice";
 
+type MultilineField = "Fields" | "Filters";
+
 type PlainTextProps = {
   id: string;
   labelledBy: string;
@@ -9,6 +11,8 @@ type PlainTextProps = {
   error: string;
   text: string;
   disabled: boolean;
+  textareaHeights: Record<MultilineField, number>;
+  onTextareaHeightChange: (field: MultilineField, height: number) => void;
   onFieldChange: (index: number, value: string) => void;
   functionNames: string[];
   functionNamesStatus: "idle" | "loading" | "succeeded" | "failed";
@@ -23,6 +27,8 @@ export default function PlainText({
   error,
   text,
   disabled,
+  textareaHeights,
+  onTextareaHeightChange,
   onFieldChange,
   functionNames,
   functionNamesStatus,
@@ -66,7 +72,6 @@ export default function PlainText({
 
   return (
     <div id={id} className="query-request-structure" role="tabpanel" aria-labelledby={labelledBy}>
-      {status === "loading" && <p className="query-message query-request-structure-loading" role="status">Loading request structure…</p>}
       {status === "failed" && <p className="query-message error" role="alert">{error}</p>}
       {functionNamesStatus === "failed" && (
         <p className="query-message error" role="alert">Function highlighting unavailable: {functionNamesError}</p>
@@ -123,9 +128,11 @@ export default function PlainText({
                       className="query-request-structure-input query-request-structure-input-highlighted query-request-structure-input-multiline"
                       aria-label={label}
                       spellCheck={false}
+                      style={{ height: `${textareaHeights[label]}px` }}
                       value={value}
                       onChange={(event) => onFieldChange(index, event.target.value)}
                       onScroll={(event) => syncHighlightScroll(event.currentTarget)}
+                      onMouseUp={(event) => onTextareaHeightChange(label, event.currentTarget.offsetHeight)}
                       disabled={fieldsAreDisabled}
                     />
                   ) : (
