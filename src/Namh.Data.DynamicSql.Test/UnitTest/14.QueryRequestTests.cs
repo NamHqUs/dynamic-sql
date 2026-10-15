@@ -8,7 +8,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionBuildsParameterizedSql()
     {
-        var definition = new QueryRequest
+        var definition = new QueryDto
         {
             Entity = "User",
             Fields =
@@ -25,7 +25,7 @@ public class _14_QueryRequestTests : TestBase
                     new ConstFieldDto(18))),
             Sorts =
             [
-                new QuerySort("Name")
+                new SortDto("Name")
             ],
             Page = 1,
             PageSize = 10
@@ -42,7 +42,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void AggregateFilterUsesHavingInsteadOfScalarSubquery()
     {
-        var definition = new QueryRequest
+        var definition = new QueryDto
         {
             Entity = "User",
             Fields =
@@ -71,7 +71,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionExecutesWithProjectionAndFilter()
     {
-        var definition = new QueryRequest
+        var definition = new QueryDto
         {
             Entity = "User",
             Fields = [ProjectionField.FromText("Name")],
@@ -93,7 +93,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionExecutesFilterWithFieldReferenceOnRight()
     {
-        var definition = new QueryRequest
+        var definition = new QueryDto
         {
             Entity = "User",
             Filter = new FilterDto(
@@ -117,7 +117,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionSupportsAggregateOnRootEntity()
     {
-        var definition = new QueryRequest
+        var definition = new QueryDto
         {
             Entity = "User",
             Fields =
@@ -145,7 +145,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionSortsByCollectionAggregate()
     {
-        var definition = new QueryRequest
+        var definition = new QueryDto
         {
             Entity = "User",
             Fields =
@@ -153,7 +153,7 @@ public class _14_QueryRequestTests : TestBase
                 ProjectionField.FromText("Name"),
                 ProjectionField.FromText("Sum(Members.Age)")
             ],
-            Sorts = [new QuerySort("Sum(Members.Age)")]
+            Sorts = [new SortDto("Sum(Members.Age)")]
         };
 
         var sql = _db.Query(definition).ToSql();
@@ -168,7 +168,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionConnectsStructuredFiltersWithLogicalOperators()
     {
-        var definition = new QueryRequest
+        var definition = new QueryDto
         {
             Entity = "User",
             Filter = new FilterDto(
@@ -202,7 +202,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionRejectsInvalidPaging()
     {
-        var definition = new QueryRequest
+        var definition = new QueryDto
         {
             Entity = "User",
             Page = 0,
@@ -215,7 +215,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionFormatsAsReadableText()
     {
-        var definition = new QueryRequest
+        var definition = new QueryDto
         {
             Entity = "User",
             Fields = [ProjectionField.FromText("Id"), ProjectionField.FromText("Name")],
@@ -245,7 +245,7 @@ public class _14_QueryRequestTests : TestBase
                         new FieldDto("Age"),
                         BinaryOperator.GreaterThan,
                         new ConstFieldDto(18)))),
-            Sorts = [new QuerySort("Name")],
+            Sorts = [new SortDto("Name")],
             Page = 1,
             PageSize = 25,
             IncludeArchive = true
@@ -266,7 +266,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionFormatsEmptyValuesAsBlank()
     {
-        var definition = new QueryRequest { Entity = "User" };
+        var definition = new QueryDto { Entity = "User" };
 
         var expected = string.Join(Environment.NewLine,
             "Entity: User",
@@ -299,7 +299,7 @@ public class _14_QueryRequestTests : TestBase
             }
             """;
 
-        var definition = System.Text.Json.JsonSerializer.Deserialize<QueryRequest>(
+        var definition = System.Text.Json.JsonSerializer.Deserialize<QueryDto>(
             json,
             new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
@@ -315,14 +315,14 @@ public class _14_QueryRequestTests : TestBase
         var serialized = System.Text.Json.JsonSerializer.Serialize(definition, options);
         Assert.That(serialized, Does.Contain("\"left\":{\"kind\":\"field\",\"field\":\"Name\"}"));
         Assert.That(serialized, Does.Contain("\"right\":{\"kind\":\"value\",\"value\":\"Alice\"}"));
-        var roundTrip = System.Text.Json.JsonSerializer.Deserialize<QueryRequest>(serialized, options)!;
+        var roundTrip = System.Text.Json.JsonSerializer.Deserialize<QueryDto>(serialized, options)!;
         Assert.That(((FieldDto)((FilterItemDto)roundTrip.Filter!.Filters.Single()).Left).FieldName, Is.EqualTo("Name"));
     }
 
     [Test]
     public void DefinitionTextUsesFieldDtoLiteralSyntax()
     {
-        var definition = QueryRequest.FromJson(
+        var definition = QueryDto.FromJson(
             """{"entity":"User","filter":{"logicalOperation":0,"filters":[{"logicalOperator":0,"field":{"kind":"field","field":"Name"},"operation":0,"value":"Alice Smith","parameterized":true}]}}""");
 
         Assert.That(definition.ToString(), Does.Contain("Filters: Name = <Alice Smith>"));
@@ -331,7 +331,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionJsonSupportsLegacyStringFilterFields()
     {
-        var definition = QueryRequest.FromJson(
+        var definition = QueryDto.FromJson(
             """{"entity":"User","filter":{"logicalOperation":0,"filters":[{"logicalOperator":0,"field":"Name","operation":0,"value":"Alice"}]}}""");
 
         Assert.That(((FieldDto)((FilterItemDto)definition.Filter!.Filters.Single()).Left).FieldName, Is.EqualTo("Name"));
@@ -371,15 +371,15 @@ public class _14_QueryRequestTests : TestBase
     {
         const string json = """{"entity":"User","filter":"Name like"}""";
 
-        Assert.Throws<FormatException>(() => QueryRequest.FromJson(json));
+        Assert.Throws<FormatException>(() => QueryDto.FromJson(json));
         Assert.Throws<FormatException>(() =>
-            QueryRequest.FromJson("""{"entity":"User","filter":"Age > (12 + OtherAge)"}"""));
+            QueryDto.FromJson("""{"entity":"User","filter":"Age > (12 + OtherAge)"}"""));
     }
 
     [Test]
     public void JsonDefinitionAcceptsUnquotedStringFilterValues()
     {
-        var definition = QueryRequest.FromJson(
+        var definition = QueryDto.FromJson(
             """{"entity":"User","filter":"Name == Alice"}""");
 
         var sql = _db.Query(definition).ToSql();
@@ -392,7 +392,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void JsonDefinitionParsesEscapedSingleQuotesInFilterValues()
     {
-        var definition = QueryRequest.FromJson("""{"entity":"User","filter":"Name == 'O''Neil'"}""");
+        var definition = QueryDto.FromJson("""{"entity":"User","filter":"Name == 'O''Neil'"}""");
         var filter = (FilterItemDto)definition.Filter!.Filters[0];
 
         Assert.That(((ConstFieldDto)filter.Right!).Value, Is.EqualTo("O'Neil"));
@@ -401,10 +401,10 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void FilterTextRoundTripsDtoOperandsAndLogicalGroups()
     {
-        var definition = QueryRequest.FromJson(
+        var definition = QueryDto.FromJson(
             """{"entity":"User","filter":"Name = \"Alice Smith\" AND (Age >= 18 OR Name = [Manager.Name])"}""");
         var text = definition.Filter!.ToText();
-        var roundTrip = QueryRequest.FromJson(
+        var roundTrip = QueryDto.FromJson(
             System.Text.Json.JsonSerializer.Serialize(new { entity = "User", filter = text }));
         var outerFilters = ((FilterDto)roundTrip.Filter!).Filters;
         var fieldReferenceFilter = (FilterItemDto)((FilterDto)outerFilters[1]).Filters[1];
@@ -431,14 +431,14 @@ public class _14_QueryRequestTests : TestBase
 
         foreach (var (text, value) in cases)
         {
-            var definition = QueryRequest.FromJson(
+            var definition = QueryDto.FromJson(
                 System.Text.Json.JsonSerializer.Serialize(new { entity = "User", filter = text }));
             var filter = (FilterItemDto)definition.Filter!.Filters.Single();
 
             Assert.That(((ConstFieldDto)filter.Right!).Value, Is.EqualTo(value), text);
         }
 
-        var nullRightDefinition = QueryRequest.FromJson(
+        var nullRightDefinition = QueryDto.FromJson(
             """{"entity":"User","filter":"Name = <NULL>"}""");
         Assert.That(
             ((FilterItemDto)nullRightDefinition.Filter!.Filters.Single()).Right,

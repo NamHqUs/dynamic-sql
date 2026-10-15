@@ -8,6 +8,6 @@ public enum QuerySortDirection
     Descending
 }
 
-public sealed record QuerySort(
+public sealed record SortDto(
     string Field,
     QuerySortDirection Direction = QuerySortDirection.Ascending);

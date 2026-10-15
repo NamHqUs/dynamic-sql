@@ -204,7 +204,7 @@ public sealed class _16_QueryExpressionTests
         }
         using var db = new DynamicSqlContext(connection, Metadata, new SqliteDialect());
 
-        var definition = JsonSerializer.Deserialize<QueryRequest>(
+        var definition = JsonSerializer.Deserialize<QueryDto>(
             json,
             new JsonSerializerOptions(JsonSerializerDefaults.Web))
             ?? throw new InvalidOperationException("The query request JSON did not produce a definition.");
@@ -236,7 +236,7 @@ public sealed class _16_QueryExpressionTests
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         using var db = new DynamicSqlContext(connection, Metadata, new SqliteDialect());
-        var request = new QueryRequest
+        var request = new QueryDto
         {
             Entity = "Products",
             Fields =

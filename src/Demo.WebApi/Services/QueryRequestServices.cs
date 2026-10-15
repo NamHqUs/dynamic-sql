@@ -8,7 +8,7 @@ public static class QueryRequestServices
 {
     private static readonly string _StorePath = Path.Combine(Environment.CurrentDirectory, "DataStore", "QueryRequests");
 
-    public sealed record StoredQueryRequest(string FileName, QueryRequest Query);
+    public sealed record StoredQueryRequest(string FileName, QueryDto Query);
 
     public static List<StoredQueryRequest> ListQueryRequests()
     {
@@ -19,7 +19,7 @@ public static class QueryRequestServices
             .ToList();
     }
 
-    public static StoredQueryRequest SaveQueryRequest(QueryRequest query, string? fileName = null)
+    public static StoredQueryRequest SaveQueryRequest(QueryDto query, string? fileName = null)
     {
         fileName??= CreateRandonFileName();
         var filePath = GetPath(fileName);
@@ -33,10 +33,10 @@ public static class QueryRequestServices
         return File.Exists(filePath) ? new StoredQueryRequest(fileName, ReadQuery(filePath)) : null;
     }
 
-    public static string GetQueryRequestString(QueryRequest query)
+    public static string GetQueryRequestString(QueryDto query)
         => query.ToString();
 
-    public static QueryRequest ParseQueryRequestString(string text, string entity)
+    public static QueryDto ParseQueryRequestString(string text, string entity)
     {
         var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None)
             .Select(line =>
@@ -73,12 +73,12 @@ public static class QueryRequestServices
                 "DESC" => QuerySortDirection.Descending,
                 _ => throw new FormatException($"Invalid sort direction [{parts[1]}].")
             };
-            return new QuerySort(parts[0], direction);
+            return new SortDto(parts[0], direction);
         });
         var filterText = values.GetValueOrDefault("Filters");
         var filter = string.IsNullOrWhiteSpace(filterText)
             ? null
-            : QueryRequest.FromJson(JsonSerializer.Serialize(new
+            : QueryDto.FromJson(JsonSerializer.Serialize(new
             {
                 entity = parsedEntity,
                 filter = ConvertFilterExpression(filterText)
@@ -89,7 +89,7 @@ public static class QueryRequestServices
         if (page is < 1 || pageSize is < 1)
             throw new FormatException("Page and PageSize must be greater than zero.");
 
-        return new QueryRequest
+        return new QueryDto
         {
             Entity = parsedEntity,
             Fields = fields,
@@ -104,7 +104,7 @@ public static class QueryRequestServices
         };
     }
 
-    public static QueryRequest ParseQueryRequestString(string text)
+    public static QueryDto ParseQueryRequestString(string text)
     {
         var entities = text.Split(["\r\n", "\n"], StringSplitOptions.None)
             .Select(line =>
@@ -122,7 +122,7 @@ public static class QueryRequestServices
         return ParseQueryRequestString(text, entities[0]!);
     }
 
-    public static StoredQueryRequest? UpdateQueryRequest(string fileName, QueryRequest query)
+    public static StoredQueryRequest? UpdateQueryRequest(string fileName, QueryDto query)
     {
         var filePath = GetPath(fileName);
         if (!File.Exists(filePath))
@@ -151,10 +151,10 @@ public static class QueryRequestServices
     private static void EnsureStore()
         => Directory.CreateDirectory(_StorePath);
 
-    private static QueryRequest ReadQuery(string filePath)
+    private static QueryDto ReadQuery(string filePath)
     {
         var json = File.ReadAllText(filePath);
-        var result = JsonSerializer.Deserialize<QueryRequest>(json, JsonOptions())
+        var result = JsonSerializer.Deserialize<QueryDto>(json, JsonOptions())
             ?? throw new InvalidDataException($"Query request file '{Path.GetFileName(filePath)}' is empty.");
 
         using var document = JsonDocument.Parse(json);
@@ -162,7 +162,7 @@ public static class QueryRequestServices
         if (!TryGetProperty(root, "Fields", out _) &&
             TryGetProperty(root, "Columns", out var legacyColumns))
         {
-            result = new QueryRequest
+            result = new QueryDto
             {
                 Name = result.Name,
                 Entity = result.Entity,
@@ -207,7 +207,7 @@ public static class QueryRequestServices
         => element.TryGetProperty(name, out value) ||
             element.TryGetProperty(char.ToLowerInvariant(name[0]) + name[1..], out value);
 
-    private static void WriteQuery(string filePath, QueryRequest query)
+    private static void WriteQuery(string filePath, QueryDto query)
         => File.WriteAllText(filePath, JsonSerializer.Serialize(query, JsonOptions(writeIndented: true)));
 
     private static JsonSerializerOptions JsonOptions(bool writeIndented = false)
@@ -225,7 +225,7 @@ public static class QueryRequestServices
     private static List<ProjectionField> ParseJsonFields(string text, string entity)
     {
         using var document = JsonDocument.Parse(text);
-        return QueryRequest.FromJson(JsonSerializer.Serialize(new
+        return QueryDto.FromJson(JsonSerializer.Serialize(new
         {
             entity,
             fields = document.RootElement

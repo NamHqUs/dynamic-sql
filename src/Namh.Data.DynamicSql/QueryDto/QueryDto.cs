@@ -1,23 +1,21 @@
-using Namh.Data.DynamicSql.QueryRequestParsing;
-
 #pragma warning disable IDE0130
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
-public sealed class QueryRequest
+public sealed class QueryDto
 {
     public string? Name { get; init; }
     public required string Entity { get; init; }
     public List<ProjectionField> Fields { get; init; } = [];
     public List<string> GroupBy { get; init; } = [];
     public FilterDto? Filter { get; init; }
-    public List<QuerySort> Sorts { get; init; } = [];
+    public List<SortDto> Sorts { get; init; } = [];
     public int? Page { get; init; }
     public int? PageSize { get; init; }
     public bool IncludeArchive { get; init; }
 
-    public static QueryRequest FromJson(string json)
-        => QueryRequestJsonParser.Parse(json);
+    public static QueryDto FromJson(string json)
+        => QueryDtoParsing.QueryDtoParser.Parse(json);
 
     public override string ToString()
         => string.Join(Environment.NewLine,
@@ -34,7 +32,7 @@ public sealed class QueryRequest
                 $"IncludeArchive: {IncludeArchive}"
             }.Where(line => line is not null)!);
 
-    private static string FormatSort(QuerySort sort)
+    private static string FormatSort(SortDto sort)
         => $"{sort.Field} {sort.Direction switch
         {
             QuerySortDirection.Ascending => "ASC",

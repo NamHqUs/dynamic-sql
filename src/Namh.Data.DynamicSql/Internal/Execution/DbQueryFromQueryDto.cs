@@ -1,14 +1,15 @@
-using Namh.Data.DynamicSql.QueryRequestParsing;
+using Namh.Data.DynamicSql;
+using Namh.Data.DynamicSql.QueryDtoParsing;
 using System.Linq.Expressions;
 using System.Text.Json;
 
-namespace Namh.Data.DynamicSql;
+namespace Namh.Data.DynamicSql.Internal.Execution;
 
-internal static class QueryRequestHelper
+internal static class DbQueryFromQueryDto
 {
     public static IDbQueryable BuildQueryable(DynamicSqlContext context, string json)
-        => BuildQueryable(context, QueryRequestJsonParser.Parse(json));
-    public static IDbQueryable BuildQueryable(DynamicSqlContext context, QueryRequest definition)
+        => BuildQueryable(context, QueryDtoParser.Parse(json));
+    public static IDbQueryable BuildQueryable(DynamicSqlContext context, QueryDto definition)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);

@@ -48,8 +48,8 @@ group.MapDelete("/{entityName}", (string entityName) =>
 });
 
 group = app.MapGroup("/dynamic-query").WithTags("Dynamic Query Services");
-group.MapPost("/query/to-string", (QueryRequest query) => DynamicQueryServices.GetSqlQueryStringAsync(query));
-group.MapPost("/query", (QueryRequest query) => DynamicQueryServices.ExecuteQueryAsync(query));
+group.MapPost("/query/to-string", (QueryDto query) => DynamicQueryServices.GetSqlQueryStringAsync(query));
+group.MapPost("/query", (QueryDto query) => DynamicQueryServices.ExecuteQueryAsync(query));
 group.MapPost("/query/to-string-from-text", async (HttpRequest request) =>
 {
     var text = await new StreamReader(request.Body).ReadToEndAsync();
@@ -85,7 +85,7 @@ group.MapPost("/query/from-text", async (HttpRequest request) =>
 
 group = app.MapGroup("/query-request").WithTags("Query Request Services");
 group.MapGet("/", () => QueryRequestServices.ListQueryRequests());
-group.MapPost("/to-string", (QueryRequest query) => Results.Text(QueryRequestServices.GetQueryRequestString(query)));
+group.MapPost("/to-string", (QueryDto query) => Results.Text(QueryRequestServices.GetQueryRequestString(query)));
 group.MapPost("/parse", (QueryRequestTextRequest request) =>
 {
     if (string.IsNullOrWhiteSpace(request.Text) || string.IsNullOrWhiteSpace(request.Entity))
@@ -110,12 +110,12 @@ group.MapGet("{fileName}", (string fileName) =>
     QueryRequestServices.LoadQueryRequest(fileName) is { } request
         ? Results.Ok(request)
         : Results.NotFound());
-group.MapPost("/", (QueryRequest query) =>
+group.MapPost("/", (QueryDto query) =>
 {
     var saved = QueryRequestServices.SaveQueryRequest(query);
     return Results.Created($"/query-request/{saved.FileName}", saved);
 });
-group.MapPut("{fileName}", (string fileName, QueryRequest query) =>
+group.MapPut("{fileName}", (string fileName, QueryDto query) =>
     QueryRequestServices.UpdateQueryRequest(fileName, query) is { } request
         ? Results.Ok(request)
         : Results.NotFound());

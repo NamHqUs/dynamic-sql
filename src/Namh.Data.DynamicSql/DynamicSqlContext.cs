@@ -24,10 +24,10 @@ public class DynamicSqlContext(
     }
 
     public IDbQueryable QueryJson(string json)
-        => QueryRequestHelper.BuildQueryable(this, json);
+        => DbQueryFromQueryDto.BuildQueryable(this, json);
 
-    public IDbQueryable Query(QueryRequest queryRequest)
-        => QueryRequestHelper.BuildQueryable(this, queryRequest);
+    public IDbQueryable Query(QueryDto queryRequest)
+        => DbQueryFromQueryDto.BuildQueryable(this, queryRequest);
 
 
     public void Dispose()

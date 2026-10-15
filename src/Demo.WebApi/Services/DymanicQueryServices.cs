@@ -6,7 +6,7 @@ namespace Demo.WebApi.Services;
 
 public static class DynamicQueryServices
 {
-    public static string GetSqlQueryStringAsync(QueryRequest query)
+    public static string GetSqlQueryStringAsync(QueryDto query)
     {
         Console.WriteLine($"\n{query}\n");
         var dbConnection = DbProviderFactory.GetDbConnection();
@@ -15,7 +15,7 @@ public static class DynamicQueryServices
         return result.CommandText;
     }
 
-    public static async Task<TableDataDto> ExecuteQueryAsync(QueryRequest query)
+    public static async Task<TableDataDto> ExecuteQueryAsync(QueryDto query)
     {
         Console.WriteLine($"\n{query}\n");
         var dbConnection = DbProviderFactory.GetDbConnection();

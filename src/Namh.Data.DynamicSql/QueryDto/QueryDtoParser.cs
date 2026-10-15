@@ -1,16 +1,17 @@
 using Namh.Data.DynamicSql;
+using Namh.Data.DynamicSql.QueryRequestParsing;
 using System.Text.Json;
 
-namespace Namh.Data.DynamicSql.QueryRequestParsing;
+namespace Namh.Data.DynamicSql.QueryDtoParsing;
 
-internal static class QueryRequestJsonParser
+internal static class QueryDtoParser
 {
-    public static QueryRequest Parse(string json)
+    public static QueryDto Parse(string json)
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
 
-        return new QueryRequest
+        return new QueryDto
         {
             Entity = root.GetProperty("entity").GetString()
                 ?? throw new JsonException("The entity value cannot be null."),
@@ -41,13 +42,13 @@ internal static class QueryRequestJsonParser
         };
     }
 
-    private static QuerySort ParseSort(JsonElement element)
+    private static SortDto ParseSort(JsonElement element)
     {
         var value = element.GetString()
             ?? throw new JsonException("A sort must be a string.");
         var descending = value.StartsWith("-", StringComparison.Ordinal);
 
-        return new QuerySort(
+        return new SortDto(
             descending ? value[1..] : value,
             descending ? QuerySortDirection.Descending : QuerySortDirection.Ascending);
     }
