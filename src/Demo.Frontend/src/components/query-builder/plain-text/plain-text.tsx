@@ -61,18 +61,20 @@ export default function PlainText({
       "gi",
     )
     : null;
+  const fieldsAreVisible = status === "succeeded" || (status === "loading" && text.length > 0);
+  const fieldsAreDisabled = disabled || status === "loading";
 
   return (
     <div id={id} className="query-request-structure" role="tabpanel" aria-labelledby={labelledBy}>
-      {status === "loading" && <p className="query-message">Loading request structure…</p>}
+      {status === "loading" && <p className="query-message query-request-structure-loading" role="status">Loading request structure…</p>}
       {status === "failed" && <p className="query-message error" role="alert">{error}</p>}
       {functionNamesStatus === "failed" && (
         <p className="query-message error" role="alert">Function highlighting unavailable: {functionNamesError}</p>
       )}
-      {status === "succeeded" && (
+      {fieldsAreVisible && (
         <div className="query-request-structure-content">
           {error && <p className="query-message error" role="alert">{error}</p>}
-          {fields.map(({ label, value, index }) => (
+          {fields.filter(({ label }) => label.toLowerCase() !== "groupby").map(({ label, value, index }) => (
             <div className="query-request-structure-line" key={label}>
               <span className="query-request-structure-key">{label}:</span>
               {label === "Entity" ? (
@@ -89,7 +91,7 @@ export default function PlainText({
                       onFieldChange(fieldsLine.index, selectedEntity.fields.map((field) => field.name).join(", "));
                     }
                   }}
-                  disabled={disabled}
+                  disabled={fieldsAreDisabled}
                 >
                   {value && !metadata.some((entity) => entity.name === value) && (
                     <option value={value}>{value}</option>
@@ -105,7 +107,7 @@ export default function PlainText({
                   aria-label={label}
                   checked={value.trim().toLowerCase() === "true"}
                   onChange={(event) => onFieldChange(index, event.target.checked ? "True" : "False")}
-                  disabled={disabled}
+                  disabled={fieldsAreDisabled}
                 />
               ) : ["Fields", "Filters", "Sorts"].includes(label) ? (
                 <div className={`query-request-structure-input-container${label === "Fields" || label === "Filters" ? " query-request-structure-input-container-multiline" : ""}`}>
@@ -120,17 +122,11 @@ export default function PlainText({
                     <textarea
                       className="query-request-structure-input query-request-structure-input-highlighted query-request-structure-input-multiline"
                       aria-label={label}
-                      rows={3}
                       spellCheck={false}
-                      ref={(element) => {
-                        if (!element) return;
-                        element.style.height = "auto";
-                        element.style.height = `${element.scrollHeight}px`;
-                      }}
                       value={value}
                       onChange={(event) => onFieldChange(index, event.target.value)}
                       onScroll={(event) => syncHighlightScroll(event.currentTarget)}
-                      disabled={disabled}
+                      disabled={fieldsAreDisabled}
                     />
                   ) : (
                     <input
@@ -140,7 +136,7 @@ export default function PlainText({
                       value={value}
                       onChange={(event) => onFieldChange(index, event.target.value)}
                       onScroll={(event) => syncHighlightScroll(event.currentTarget)}
-                      disabled={disabled}
+                      disabled={fieldsAreDisabled}
                     />
                   )}
                 </div>
@@ -151,7 +147,7 @@ export default function PlainText({
                   spellCheck={false}
                   value={value}
                   onChange={(event) => onFieldChange(index, event.target.value)}
-                  disabled={disabled}
+                  disabled={fieldsAreDisabled}
                 />
               )}
             </div>

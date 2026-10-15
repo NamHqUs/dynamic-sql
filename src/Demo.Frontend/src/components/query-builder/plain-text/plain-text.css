@@ -1,5 +1,6 @@
-.query-request-structure { min-height: 280px; max-height: 620px; overflow: auto; border: 0; border-radius: 10px; background: transparent; }
+.query-request-structure { position: relative; min-height: 280px; overflow: visible; border: 0; border-radius: 10px; background: transparent; }
 .query-request-structure-content { padding: 0 22px 20px 0; }
+.query-request-structure-loading { position: absolute; top: 0; right: 0; margin: 0; text-align: right; }
 .query-request-structure-line { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: center; padding: 5px 0; border-bottom: 1px solid #252a36; font: 12px/1.6 "DM Mono", monospace; }
 .query-request-structure-key { color: #b9a5ff; text-align: left; white-space: nowrap; }
 .query-request-structure-entity { width: 100%; max-width: 320px; box-sizing: border-box; padding: 7px 9px; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; font-size: 12px; outline: 0; }
@@ -10,11 +11,11 @@
 .query-request-structure-input-container-multiline .query-request-structure-highlight { white-space: pre-wrap; overflow-wrap: break-word; }
 .query-request-structure-function { color: #b9a5ff; }
 .query-request-structure-input-highlighted { position: relative; z-index: 1; box-sizing: border-box; color: transparent; caret-color: #e5e9f1; -webkit-text-fill-color: transparent; }
-.query-request-structure-input-multiline { display: block; resize: none; overflow-y: hidden; white-space: pre-wrap; overflow-wrap: break-word; }
+.query-request-structure-input-multiline { display: block; height: 120px; resize: none; overflow-y: auto; white-space: pre-wrap; overflow-wrap: break-word; }
 .query-request-structure-checkbox { justify-self: start; width: 14px; height: 14px; margin: 0; accent-color: #8064e8; cursor: pointer; }
 .query-request-structure-checkbox:disabled { cursor: default; }
 .query-request-structure-input:focus { border-bottom-color: #8064e8; background: #191a2826; }
 @media (max-width: 760px) {
   .query-request-structure-line { grid-template-columns: 105px minmax(0, 1fr); gap: 8px; font-size: 11px; }
-  .query-request-structure-content { padding: 15px; }
+  .query-request-structure-content { padding: 0 15px 15px; }
 }

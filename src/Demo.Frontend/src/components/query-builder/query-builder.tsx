@@ -409,8 +409,6 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       setRequestStructureStatus("succeeded");
       setRequestStructureError("");
     } else {
-      setRequestStructureDraft("");
-      setRequestStructureOriginal("");
       setRequestStructureDefinition(null);
       setRequestStructureStatus("idle");
       setRequestStructureError("");
