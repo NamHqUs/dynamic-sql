@@ -35,6 +35,9 @@ flowchart LR
     J --> N[SqlQuery<br/>ToSql / diagnostics]
 ```
 
+[Open the interactive SVG diagram](artifacts/query-architecture.svg) (mouse
+wheel to zoom, drag to pan).
+
 ### Pipeline responsibilities
 
 1. **Input** accepts C# expression trees over `IRecordParameter` and
