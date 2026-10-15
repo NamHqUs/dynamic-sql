@@ -8,6 +8,7 @@ import { createApiQuery, deleteQueryRequest, executeQuery, executeQueryFromText,
 import PlainText from "./plain-text/plain-text";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
+import SavedQueries from "./saved-queries/saved-queries";
 import "./query-builder.css";
 
 type QueryBuilderProps = {
@@ -158,12 +159,6 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const panel = useResizablePanel("query-builder");
   const planTextDirty = requestStructureStatus === "succeeded" && requestStructureDraft !== requestStructureOriginal;
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
-  const sortedSavedRequests = useMemo(() => [...savedRequests].sort((left, right) => {
-    const leftName = left.query.name || left.fileName.replace(/\.json$/i, "");
-    const rightName = right.query.name || right.fileName.replace(/\.json$/i, "");
-    return leftName.localeCompare(rightName, undefined, { numeric: true, sensitivity: "base" })
-      || left.fileName.localeCompare(right.fileName, undefined, { numeric: true, sensitivity: "base" });
-  }), [savedRequests]);
   const selectedSavedRequest = savedRequests.find((item) => item.fileName === selectedFileName);
   const defaultNewDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
   const hasUnsavedQueryChanges = (currentDefinition: QueryDefinition) => {
@@ -512,22 +507,14 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
 
       <section className={`query-builder-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>
         <div className="query-request-workspace">
-        <aside className="query-request-list split-panel">
-          <div className="metadata-list-head">
-            <span className="section-kicker">SAVED QUERY REQUESTS</span>
-            <span className="tab-number">{savedRequests.length}</span>
-          </div>
-          {savedRequestsStatus === "loading" && <p className="query-message">Loading requests…</p>}
-          {savedRequestsStatus === "failed" && <p className="query-message error" role="alert">{savedRequestsError}</p>}
-          {savedRequestsStatus !== "loading" && sortedSavedRequests.map((saved) => (
-            <button className={`query-request-item${saved.fileName === selectedFileName ? " active" : ""}`} key={saved.fileName} onClick={() => void selectSavedRequest(saved.fileName)} disabled={isResolvingPlanChanges}>
-              <strong>{saved.query.name || saved.fileName.replace(/\.json$/i, "")}</strong>
-              <small>{saved.query.entity} · {saved.query.fields.length} columns</small>
-              <Icon name="chevron" size={14} />
-            </button>
-          ))}
-          {savedRequestsStatus !== "loading" && !savedRequests.length && <p className="query-message">No saved requests.</p>}
-        </aside>
+          <SavedQueries
+            requests={savedRequests}
+            status={savedRequestsStatus}
+            error={savedRequestsError}
+            selectedFileName={selectedFileName}
+            disabled={isResolvingPlanChanges}
+            onSelectRequest={(fileName) => void selectSavedRequest(fileName)}
+          />
         <div className="query-request-editor">
           <PanelSplitter panel={panel} label="saved requests panel" />
           {requestMessage && <p className={`query-message${requestMessage.includes("Unable") ? " error" : ""}`} role="status">{requestMessage}</p>}
