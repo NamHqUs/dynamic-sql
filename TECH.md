@@ -10,20 +10,20 @@ internal implementation details.
 ```mermaid
 flowchart LR
     A[Input] --> A1[C# expression API]
-    A --> A2[JSON QueryRequestDto]
+    A --> A2[JSON QueryDto]
     A --> A3[Runtime metadata]
     A1 --> B[IDbQueryable expression tree]
-    A2 --> B2[QueryRequestExtensions]
+    A2 --> B2[DbQueryFromQueryDto]
     B2 --> B
-    A3 --> C[QueryContext]
-    B --> C
+    B --> F[SqlQueryCompiler]
 
     subgraph Core[Internal query compiler]
         C[QueryContext<br/>metadata, relations, aliases, parameters]
-        C --> D[QueryVisitor and clause visitors]
+        F --> C
+        F --> D[QueryVisitor and clause visitors]
+        C --> D
         D --> E[SqlExpression IR]
-        E --> F[SqlQueryCompiler]
-        F --> G[SqlStatementGenerator]
+        E --> G[SqlStatementGenerator]
     end
 
     H[ISqlDialect<br/>SQL Server / SQLite / PostgreSQL] --> G
@@ -38,16 +38,16 @@ flowchart LR
 ### Pipeline responsibilities
 
 1. **Input** accepts C# expression trees over `IRecordParameter` and
-   `IDbQueryable`, JSON `QueryRequestDto` values, and runtime metadata
+   `IDbQueryable`, JSON `QueryDto` values, and runtime metadata
    (`Entity`, `Field`, and `Relation`).
 2. **Process the interface input** uses public query extensions to build a
    normal expression tree. JSON definitions are converted into the same
-   expression surface by `QueryRequestExtensions`.
-3. **Visit and expression (IR)** creates a dialect-independent
-   `SqlExpression` tree. `QueryContext` resolves metadata and relations,
-   assigns aliases, applies archive filters, and collects parameters.
-4. **Translate into the target SQL statement** is implemented internally by
-   `SqlQueryCompiler`, which visits the expression and passes the IR to
+   expression surface by `DbQueryFromQueryDto`.
+3. **Visit and build the IR** creates a dialect-independent `SqlExpression`
+   tree. `SqlQueryCompiler` runs `QueryVisitor` and its clause visitors;
+   `QueryContext` resolves metadata and relations, assigns aliases, applies
+   archive filters, and collects parameters.
+4. **Render the SQL statement** passes the resulting IR to
    `SqlStatementGenerator`. `ISqlDialect` owns quoting, table rendering,
    concatenation, booleans, and paging.
 5. **Read from the database and return to the client** is handled by
@@ -62,6 +62,26 @@ flowchart LR
 The visitors never own a dialect. They create an intermediate representation
 that can be rendered for SQL Server, SQLite, PostgreSQL, or another dialect.
 
+### JSON `QueryDto` compilation path
+
+`QueryDto` is the JSON/API transport model, not the compiler IR. Its path uses
+the same expression visitors and SQL generator as the C# query API:
+
+```text
+QueryDto
+    -> DbQueryFromQueryDto.BuildQueryable
+    -> IDbQueryable expression tree
+    -> SqlQueryCompiler
+    -> QueryVisitor and clause visitors
+    -> TableExpression / SqlExpression IR
+    -> SqlStatementGenerator(ISqlDialect)
+    -> SQL command text + DbParameters
+```
+
+`DbQueryFromQueryDto` maps DTO fields, filters, sorting, and paging onto the
+normal query API. It does not create SQL or bypass the visitors. The compiler
+then translates the resulting expression tree to IR before SQL rendering.
+
 ## Projects
 
 ```text
@@ -73,7 +93,7 @@ src/Namh.Data.DynamicSql/Internal
     SqlStatementGenerator, ADO.NET execution, and result mapping
 
 src/Namh.Data.DynamicSql.Model
-    Entity, Field, Relation, QueryRequestDto, and JSON filter models
+    Entity, Field, Relation, QueryDto, and JSON filter models
 
 src/Namh.Data.DynamicSql.Test
     NUnit tests, metadata fixtures, provider tests, and SQL diagnostics tests
@@ -119,10 +139,10 @@ It provides:
 `DataValue` overloads make comparisons and expressions possible without
 materializing a CLR entity.
 
-### `QueryRequest`
+### `QueryDto`
 
 The JSON transport model contains entity, projection fields, filters, sorting,
-and paging. Each `ProjectionField` carries a structured field expression and
+and paging. Each `ProjectionDto` carries a structured field expression and
 optional alias, and is translated into the same query pipeline used by C#
 expressions.
 
@@ -132,7 +152,7 @@ child filters with `And` or `Or`. Field expressions use the same tagged JSON
 format as projection fields; constants are tagged value expressions. Legacy
 `field`/`value` filter JSON and string field names remain readable.
 
-`QueryRequestJsonParser` is responsible for:
+`QueryDtoParser` is responsible for:
 
 - JSON property parsing
 - Projection fields and aliases
@@ -219,7 +239,7 @@ The IR must not depend on `ISqlDialect`.
 | --- | --- | --- |
 | Query root | `IDbQueryable` | Deferred query and expression-tree root |
 | C# field input | `IRecordParameter` / `DataValue` | Dynamic fields, parameters, trusted raw SQL, and related queries |
-| JSON input | `QueryRequestDto`, `GroupFilterDto`, `QuerySortDto` | Serializable query transport, including page and page size |
+| JSON input | `QueryDto`, `FilterDto`, `SortDto` | Serializable query transport, including page and page size |
 | Metadata | `IMetaProvider`, `Entity`, `Field`, `Relation` | Runtime schema and relationship resolution |
 | Compiler IR | Internal `SqlExpression` hierarchy | Provider-independent query representation |
 | SQL target | `ISqlDialect` | SQL Server, SQLite, PostgreSQL, or a custom provider |
