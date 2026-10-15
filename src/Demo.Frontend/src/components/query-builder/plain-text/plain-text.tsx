@@ -10,6 +10,9 @@ type PlainTextProps = {
   text: string;
   disabled: boolean;
   onFieldChange: (index: number, value: string) => void;
+  functionNames: string[];
+  functionNamesStatus: "idle" | "loading" | "succeeded" | "failed";
+  functionNamesError: string;
 };
 
 export default function PlainText({
@@ -21,6 +24,9 @@ export default function PlainText({
   text,
   disabled,
   onFieldChange,
+  functionNames,
+  functionNamesStatus,
+  functionNamesError,
 }: PlainTextProps) {
   const fields: { label: string; value: string; index: number }[] = [];
   text.split(/\r?\n/).forEach((line, index) => {
@@ -46,11 +52,23 @@ export default function PlainText({
       highlight.scrollTop = element.scrollTop;
     }
   };
+  const functionPattern = functionNames.length
+    ? new RegExp(
+      `\\b(${functionNames
+        .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .sort((left, right) => right.length - left.length)
+        .join("|")})(?=\\s*\\()`,
+      "gi",
+    )
+    : null;
 
   return (
     <div id={id} className="query-request-structure" role="tabpanel" aria-labelledby={labelledBy}>
       {status === "loading" && <p className="query-message">Loading request structure…</p>}
       {status === "failed" && <p className="query-message error" role="alert">{error}</p>}
+      {functionNamesStatus === "failed" && (
+        <p className="query-message error" role="alert">Function highlighting unavailable: {functionNamesError}</p>
+      )}
       {status === "succeeded" && (
         <div className="query-request-structure-content">
           {error && <p className="query-message error" role="alert">{error}</p>}
@@ -92,7 +110,7 @@ export default function PlainText({
               ) : ["Fields", "Filters", "Sorts"].includes(label) ? (
                 <div className={`query-request-structure-input-container${label === "Fields" || label === "Filters" ? " query-request-structure-input-container-multiline" : ""}`}>
                   <div className="query-request-structure-highlight" aria-hidden="true">
-                    {value.split(/(\b[A-Za-z_]\w*(?=\s*\())/g).map((part, partIndex) => (
+                    {(functionPattern ? value.split(functionPattern) : [value]).map((part, partIndex) => (
                       partIndex % 2 === 1
                         ? <span className="query-request-structure-function" key={partIndex}>{part}</span>
                         : part
