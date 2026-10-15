@@ -17,6 +17,7 @@ type QueryBuilderProps = {
 let cachedDefinition: QueryDefinition | null = null;
 let cachedSelectedFileName = "";
 let cachedRequestName = "";
+let cachedSavedRequestBaseline: { fileName: string; serialized: string } | null = null;
 
 export function resetQueryBuilderCache() {
   cachedDefinition = null;
@@ -90,7 +91,7 @@ function isAvailableFieldPath(entity: MetadataEntity, metadata: MetadataEntity[]
 }
 
 function isProjectionColumnAvailable(column: string, entity: MetadataEntity, metadata: MetadataEntity[]): boolean {
-  if (entity.fields.some((field) => field.name === column) || column === "Count()") return true;
+  if (isAvailableFieldPath(entity, metadata, column) || column === "Count()") return true;
 
   const wrappedAggregate = column.match(/^(Sum|Max|Min|Average)\(([^()]*)\)$/);
   if (wrappedAggregate) return isAvailableFieldPath(entity, metadata, wrappedAggregate[2]);
@@ -109,7 +110,7 @@ function isExpressionAvailable(expression: QueryExpression, entity: MetadataEnti
     case "field":
       return isAvailableFieldPath(entity, metadata, expression.field);
     case "value":
-      return Number.isFinite(expression.value);
+      return typeof expression.value === "string" || Number.isFinite(expression.value);
     case "binary":
     case "function":
       return expression.arguments.every((argument) => isExpressionAvailable(argument, entity, metadata));
@@ -143,6 +144,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const definitionRef = useRef(definition);
   const [selectedFileName, setSelectedFileName] = useState(cachedSelectedFileName);
   const [requestName, setRequestName] = useState(cachedRequestName);
+  const savedRequestBaselineRef = useRef(cachedSavedRequestBaseline);
   const [requestMessage, setRequestMessage] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
   const [savedMessageIsError, setSavedMessageIsError] = useState(false);
@@ -164,17 +166,31 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   }), [savedRequests]);
   const selectedSavedRequest = savedRequests.find((item) => item.fileName === selectedFileName);
   const defaultNewDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
-  const hasUnsavedChanges = selectedFileName
-    ? !selectedSavedRequest
-      || serializeQueryRequest(requestName.trim(), definition) !== serializeQueryRequest(
-        selectedSavedRequest.query.name || selectedSavedRequest.fileName.replace(/\.json$/i, ""),
-        fromApiQuery(selectedSavedRequest.query),
-      )
-    : serializeQueryRequest(requestName.trim(), definition) !== serializeQueryRequest("", defaultNewDefinition);
+  const hasUnsavedQueryChanges = (currentDefinition: QueryDefinition) => {
+    const currentRequest = serializeQueryRequest(requestName.trim(), currentDefinition);
+    if (!selectedFileName) {
+      return currentRequest !== serializeQueryRequest("", defaultNewDefinition);
+    }
+    const baseline = savedRequestBaselineRef.current?.fileName === selectedFileName
+      ? savedRequestBaselineRef.current.serialized
+      : selectedSavedRequest
+        ? serializeQueryRequest(
+          selectedSavedRequest.query.name || selectedSavedRequest.fileName.replace(/\.json$/i, ""),
+          fromApiQuery(selectedSavedRequest.query),
+        )
+        : null;
+    return baseline === null || currentRequest !== baseline;
+  };
+  const hasUnsavedChanges = hasUnsavedQueryChanges(definition);
   const updateDefinition = (nextDefinition: QueryDefinition) => {
     cachedDefinition = nextDefinition;
     definitionRef.current = nextDefinition;
     setDefinition(nextDefinition);
+  };
+  const updateSavedRequestBaseline = (fileName: string, name: string, nextDefinition: QueryDefinition) => {
+    const baseline = { fileName, serialized: serializeQueryRequest(name.trim(), nextDefinition) };
+    savedRequestBaselineRef.current = baseline;
+    cachedSavedRequestBaseline = baseline;
   };
 
   useEffect(() => {
@@ -318,15 +334,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   };
 
   const requestQueryChangeNavigation = async (continueNavigation: () => void) => {
-    const currentDefinition = definitionRef.current;
-    const hasUnsavedQueryChanges = selectedFileName
-      ? !selectedSavedRequest
-        || serializeQueryRequest(requestName.trim(), currentDefinition) !== serializeQueryRequest(
-          selectedSavedRequest.query.name || selectedSavedRequest.fileName.replace(/\.json$/i, ""),
-          fromApiQuery(selectedSavedRequest.query),
-        )
-      : serializeQueryRequest(requestName.trim(), currentDefinition) !== serializeQueryRequest("", defaultNewDefinition);
-    if (!planTextDirty && !hasUnsavedQueryChanges) {
+    if (!planTextDirty && !hasUnsavedQueryChanges(definitionRef.current)) {
       continueNavigation();
       return;
     }
@@ -383,7 +391,9 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     const nextName = saved.query.name || saved.fileName.replace(/\.json$/i, "");
     setRequestName(nextName);
     cachedRequestName = nextName;
-    updateDefinition(fromApiQuery(saved.query));
+    const nextDefinition = fromApiQuery(saved.query);
+    updateDefinition(nextDefinition);
+    updateSavedRequestBaseline(saved.fileName, nextName, nextDefinition);
     setRequestMessage("");
     if (activeRequestTab === "structure") {
       void loadRequestStructure(fromApiQuery(saved.query), nextName);
@@ -400,6 +410,8 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     setRequestName("");
     cachedSelectedFileName = "";
     cachedRequestName = "";
+    savedRequestBaselineRef.current = null;
+    cachedSavedRequestBaseline = null;
     setRequestMessage("");
     setRequestStructureError("");
     const nextDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
@@ -440,6 +452,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       const savedName = resultAction.payload.query.name || requestName.trim();
       setRequestName(savedName);
       cachedRequestName = savedName;
+      updateSavedRequestBaseline(resultAction.payload.fileName, savedName, definitionRef.current);
       setSavedMessageIsError(false);
       setSavedMessage("Query request saved.");
       return true;

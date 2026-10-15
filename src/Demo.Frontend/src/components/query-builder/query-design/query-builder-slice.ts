@@ -20,7 +20,7 @@ export type MetadataEntity = {
 
 export type QueryExpression =
   | { kind: "field"; field: string }
-  | { kind: "value"; value: number }
+  | { kind: "value"; value: string | number }
   | { kind: "binary"; operator: "+" | "-" | "*" | "/"; arguments: [QueryExpression, QueryExpression] }
   | { kind: "function"; function: "SUM" | "ROUND" | "NULLIF"; arguments: QueryExpression[] };
 
