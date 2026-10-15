@@ -88,7 +88,7 @@
         "kind": "field",
         "field": "Year"
       },
-      "Direction": 0
+      "Direction": 1
     },
     {
       "Field": {

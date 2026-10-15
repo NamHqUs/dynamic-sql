@@ -22,6 +22,7 @@ public static class DynamicQueryServices
         var result = await context.Query(query).ToListWithTotalRecordsAsync();
 
         var logger = loggerFactory.CreateLogger(nameof(DynamicQueryServices));
+        logger.LogInformation("\n{query}\n", query);
         logger.LogInformation("Dynamic query returned {TotalRecords} total records.", result.TotalRecords);
 
         return new TableDataDto(
