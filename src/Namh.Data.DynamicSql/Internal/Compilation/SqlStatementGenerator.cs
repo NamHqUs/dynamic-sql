@@ -130,6 +130,13 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             ValueExpression value => RenderValue(value.Value),
 
+            CurrentDateTimeSqlExpression => dialect.RenderCurrentDateTime(),
+
+            DateDifferenceInDaysSqlExpression dateDifference =>
+                dialect.RenderDateDifferenceInDays(
+                    RenderExpression(dateDifference.StartDate),
+                    RenderExpression(dateDifference.EndDate)),
+
             BinarySqlExpression binary => $"({(binary.StringConcat
                 ? dialect.RenderStringConcatenation(RenderExpression(binary.Left), RenderExpression(binary.Right))
                 : $"{RenderExpression(binary.Left)} {binary.Operator} {RenderExpression(binary.Right)}")})",

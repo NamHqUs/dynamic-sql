@@ -304,7 +304,8 @@ values are parameterized by the query pipeline.
 
 Calculated projections use a structured expression tree rather than SQL text.
 Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
-`*`, `/`), and `function` (`SUM`, `ROUND`, `NULLIF`):
+`*`, `/`), and `function` (`COUNT`, `SUM`, `AVG`, `ROUND`, `NULLIF`,
+`DATEDIFF`, `GETDATE`):
 
 ```json
 {
@@ -342,7 +343,9 @@ Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
 Related field references use metadata relation paths, so the query compiler
 creates the necessary joins. Numeric expression values are parameterized.
 Function names and operators are validated; arbitrary SQL is not accepted in
-calculated projections.
+calculated projections. `DATEDIFF` currently supports day boundaries using
+`DATEDIFF[DAY[], startDate, endDate]`, and `GETDATE[]` returns the provider's
+current local date and time.
 
 ## SQL diagnostics
 

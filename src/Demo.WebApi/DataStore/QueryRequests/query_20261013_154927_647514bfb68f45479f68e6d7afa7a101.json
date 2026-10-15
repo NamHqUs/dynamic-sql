@@ -4,10 +4,20 @@
   "Fields": [
     {
       "field": {
-        "kind": "field",
-        "field": "Month"
+        "kind": "function",
+        "function": "FORMAT",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "InvoiceDate"
+          },
+          {
+            "kind": "value",
+            "value": "yyyy-MM"
+          }
+        ]
       },
-      "alias": null
+      "alias": "Month"
     },
     {
       "field": {
@@ -70,7 +80,10 @@
   },
   "Sorts": [
     {
-      "Field": "Month",
+      "Field": {
+        "kind": "field",
+        "field": "Month"
+      },
       "Direction": 1
     }
   ],

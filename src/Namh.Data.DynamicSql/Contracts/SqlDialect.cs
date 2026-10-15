@@ -14,6 +14,9 @@ public interface ISqlDialect
     string RenderTakePrefix(int count);
     string RenderPaging(int? skip, int? take);
     string FormatParameterValue(object? value);
+    string RenderCurrentDateTime() => "CURRENT_TIMESTAMP";
+    string RenderDateDifferenceInDays(string startDate, string endDate)
+        => $"DATEDIFF(day, {startDate}, {endDate})";
 
     string RenderPaging(int? skip, int? take, bool hasOrderBy)
         => RenderPaging(skip, take);
@@ -44,6 +47,7 @@ public sealed class SqlServerDialect : ISqlDialect
 
     public string RenderTakePrefix(int count) => $"TOP {count} ";
     public string FormatParameterValue(object? value) => SqlDialect.FormatParameterValue(value);
+    public string RenderCurrentDateTime() => "GETDATE()";
 
     public string RenderPaging(int? skip, int? take)
         => skip is null
@@ -111,6 +115,9 @@ public sealed class SqliteDialect(string? schema = null) : ISqlDialect
 
     public string RenderTakePrefix(int count) => string.Empty;
     public string FormatParameterValue(object? value) => SqlDialect.FormatParameterValue(value);
+    public string RenderCurrentDateTime() => "datetime('now', 'localtime')";
+    public string RenderDateDifferenceInDays(string startDate, string endDate)
+        => $"CAST(julianday(date({endDate})) - julianday(date({startDate})) AS INTEGER)";
 
     public string RenderPaging(int? skip, int? take)
     {
@@ -139,6 +146,8 @@ public sealed class PostgresDialect(string schema = "public") : ISqlDialect
 
     public string RenderTakePrefix(int count) => string.Empty;
     public string FormatParameterValue(object? value) => SqlDialect.FormatParameterValue(value);
+    public string RenderDateDifferenceInDays(string startDate, string endDate)
+        => $"CAST({endDate} AS DATE) - CAST({startDate} AS DATE)";
 
     public string RenderPaging(int? skip, int? take)
     {

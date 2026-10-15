@@ -49,7 +49,8 @@ group.MapDelete("/{entityName}", (string entityName) =>
 
 group = app.MapGroup("/dynamic-query").WithTags("Dynamic Query Services");
 group.MapPost("/query/to-string", (QueryDto query) => DynamicQueryServices.GetSqlQueryStringAsync(query));
-group.MapPost("/query", (QueryDto query) => DynamicQueryServices.ExecuteQueryAsync(query));
+group.MapPost("/query", (QueryDto query, ILoggerFactory loggerFactory) =>
+    DynamicQueryServices.ExecuteQueryAsync(query, loggerFactory));
 group.MapPost("/query/to-string-from-text", async (HttpRequest request) =>
 {
     var text = await new StreamReader(request.Body).ReadToEndAsync();
@@ -66,12 +67,14 @@ group.MapPost("/query/to-string-from-text", async (HttpRequest request) =>
         return Results.BadRequest(error.Message);
     }
 });
-group.MapPost("/query/from-text", async (HttpRequest request) =>
+group.MapPost("/query/from-text", async (HttpRequest request, ILoggerFactory loggerFactory) =>
 {
     var text = await new StreamReader(request.Body).ReadToEndAsync();
     try
     {
-        return Results.Ok(await DynamicQueryServices.ExecuteQueryAsync(QueryRequestServices.ParseQueryRequestString(text)));
+        return Results.Ok(await DynamicQueryServices.ExecuteQueryAsync(
+            QueryRequestServices.ParseQueryRequestString(text),
+            loggerFactory));
     }
     catch (FormatException error)
     {

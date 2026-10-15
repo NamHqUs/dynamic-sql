@@ -1,9 +1,26 @@
 ﻿using Microsoft.Data.Sqlite;
 using System.Data;
 
-public class SqliteDbProvider(string cnString) : DbProviderBase
+public class SqliteDbProvider : DbProviderBase
 {
-    private static IDbConnection? _dbConnection;    // Cache the connection to avoid creating multiple connections to the in-memory database
+    private readonly string _connectionString;
+    private readonly bool _isInMemory;
+    private readonly object _keepAliveLock = new();
+    private SqliteConnection? _keepAliveConnection;
+
+    public SqliteDbProvider(string cnString)
+    {
+        var connectionStringBuilder = new SqliteConnectionStringBuilder(cnString);
+        _isInMemory = connectionStringBuilder.DataSource == ":memory:";
+        if (_isInMemory)
+        {
+            connectionStringBuilder.DataSource = $"DynamicSqlDemo_{Guid.NewGuid():N}";
+            connectionStringBuilder.Mode = SqliteOpenMode.Memory;
+            connectionStringBuilder.Cache = SqliteCacheMode.Shared;
+        }
+
+        _connectionString = connectionStringBuilder.ToString();
+    }
 
     protected override string? SqlScriptCheckIfDbExists
         => "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'Customers')";
@@ -12,13 +29,19 @@ public class SqliteDbProvider(string cnString) : DbProviderBase
 
     protected override IDbConnection CreateDbConnection()
     {
-        if (_dbConnection == null)
+        if (_isInMemory)
         {
-            var cn = new SqliteConnection(cnString);
-            cn.Open();
-            _dbConnection = cn;
+            lock (_keepAliveLock)
+            {
+                if (_keepAliveConnection is null)
+                {
+                    _keepAliveConnection = new SqliteConnection(_connectionString);
+                    _keepAliveConnection.Open();
+                }
+            }
         }
-        return _dbConnection;
+
+        return new SqliteConnection(_connectionString);
     }
 
 }

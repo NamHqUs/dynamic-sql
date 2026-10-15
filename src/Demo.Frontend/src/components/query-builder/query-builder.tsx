@@ -145,6 +145,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const [requestName, setRequestName] = useState(cachedRequestName);
   const [requestMessage, setRequestMessage] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
+  const [savedMessageIsError, setSavedMessageIsError] = useState(false);
   const [activeRequestTab, setActiveRequestTab] = useState<"design" | "structure">("design");
   const [requestStructureDraft, setRequestStructureDraft] = useState("");
   const [requestStructureOriginal, setRequestStructureOriginal] = useState("");
@@ -251,6 +252,12 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   };
 
   const updateRequestStructureField = (index: number, value: string) => {
+    const line = requestStructureDraft.split(/\r?\n/)[index];
+    const separator = line?.indexOf(":") ?? -1;
+    if (separator >= 0 && line.slice(0, separator).trim() === "Name") {
+      setRequestName(value);
+      cachedRequestName = value;
+    }
     setRequestStructureDraft((current) => current.split(/\r?\n/).map((line, lineIndex) => {
       if (lineIndex !== index) return line;
       const separator = line.indexOf(":");
@@ -274,7 +281,8 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       updateDefinition(nextDefinition);
       setRequestStructureOriginal(requestStructureDraft);
       setRequestStructureDefinition(JSON.stringify(nextDefinition));
-      setRequestMessage("Query structure applied.");
+      setSavedMessageIsError(false);
+      setSavedMessage("Query structure applied.");
       if (!keepResolving) setIsResolvingPlanChanges(false);
       return true;
     } else {
@@ -310,12 +318,6 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   };
 
   const requestQueryChangeNavigation = async (continueNavigation: () => void) => {
-    let planTextResolved = false;
-    await requestPlanTextNavigation(() => {
-      planTextResolved = true;
-    });
-    if (!planTextResolved) return;
-
     const currentDefinition = definitionRef.current;
     const hasUnsavedQueryChanges = selectedFileName
       ? !selectedSavedRequest
@@ -324,7 +326,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           fromApiQuery(selectedSavedRequest.query),
         )
       : serializeQueryRequest(requestName.trim(), currentDefinition) !== serializeQueryRequest("", defaultNewDefinition);
-    if (!hasUnsavedQueryChanges) {
+    if (!planTextDirty && !hasUnsavedQueryChanges) {
       continueNavigation();
       return;
     }
@@ -332,14 +334,22 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     const action = await showMessageBox({
       eyebrow: "UNSAVED QUERY REQUEST",
       title: "Save changes before continuing?",
-      message: "Your current query request has unsaved changes.",
+      message: planTextDirty
+        ? "Your current query request or plan text has unsaved changes."
+        : "Your current query request has unsaved changes.",
       actions: [
         { value: "cancel", label: "Cancel", variant: "secondary" },
         { value: "discard", label: "Discard", variant: "danger" },
         { value: "save", label: "Save", variant: "primary" },
       ],
     });
-    if (action === "discard") continueNavigation();
+    if (action === "discard") {
+      if (planTextDirty) {
+        setRequestStructureDraft(requestStructureOriginal);
+        setRequestStructureError("");
+      }
+      continueNavigation();
+    }
     else if (action === "save" && await saveRequest()) continueNavigation();
   };
 
@@ -361,7 +371,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
 
   useEffect(() => {
     if (!savedMessage) return;
-    const timeout = window.setTimeout(() => setSavedMessage(""), 3000);
+    const timeout = window.setTimeout(() => setSavedMessage(""), 5000);
     return () => window.clearTimeout(timeout);
   }, [savedMessage]);
 
@@ -407,10 +417,12 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
 
   const saveRequest = async () => {
     if (!requestName.trim()) {
-      setRequestMessage("A name is required for the query request.");
+      setSavedMessageIsError(true);
+      setSavedMessage("A name is required for the query request.");
       return false;
     }
     setSavedMessage("");
+    setSavedMessageIsError(false);
     setRequestMessage("");
     if (planTextDirty && !(await applyRequestStructure(true))) {
       setIsResolvingPlanChanges(false);
@@ -428,6 +440,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       const savedName = resultAction.payload.query.name || requestName.trim();
       setRequestName(savedName);
       cachedRequestName = savedName;
+      setSavedMessageIsError(false);
       setSavedMessage("Query request saved.");
       return true;
     } else {
@@ -473,7 +486,14 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           </button>
           <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>New Query</button>
           <div className="query-save-action">
-            <p className="query-save-notification" role="status">{savedMessage}</p>
+            {savedMessage && (
+              <p
+                className={`query-save-notification${savedMessageIsError ? " error" : ""}`}
+                role={savedMessageIsError ? "alert" : "status"}
+              >
+                {savedMessage}
+              </p>
+            )}
             <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges || (!hasUnsavedChanges && !planTextDirty)} title="Save Query">Save Query</button>
           </div>
         </div>

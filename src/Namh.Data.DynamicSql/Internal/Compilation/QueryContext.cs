@@ -132,6 +132,22 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
     private SqlExpression ParseFunctionExpression(TableExpression tableContext, FunctionFieldDto expression, int depth)
     {
         var name = expression.FunctionName.ToUpperInvariant();
+        if (name == "GETDATE" && expression.Arguments.Length == 0)
+            return new CurrentDateTimeSqlExpression();
+
+        if (name == "DATEDIFF")
+        {
+            if (expression.Arguments is not
+                [FunctionFieldDto datePart, var startDate, var endDate] ||
+                !string.Equals(datePart.FunctionName, "DAY", StringComparison.OrdinalIgnoreCase) ||
+                datePart.Arguments.Length != 0)
+                throw new FormatException("DATEDIFF supports the form DATEDIFF[DAY[], startDate, endDate].");
+
+            return new DateDifferenceInDaysSqlExpression(
+                ParseQueryExpression(tableContext, startDate, depth + 1),
+                ParseQueryExpression(tableContext, endDate, depth + 1));
+        }
+
         if (name == "COUNT" &&
             (expression.Arguments.Length == 0 ||
              expression.Arguments is [FieldDto { FieldName: "*" }]))

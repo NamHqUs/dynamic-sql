@@ -7,21 +7,22 @@ public static class DynamicQueryServices
 {
     public static string GetSqlQueryStringAsync(QueryDto query)
     {
-        Console.WriteLine($"\n{query}\n");
         var dbConnection = DbProviderFactory.GetDbConnection();
-        var context = new DynamicSqlContext(dbConnection, MetadataServices.GetMetaProvider());
+        using var context = new DynamicSqlContext(dbConnection, MetadataServices.GetMetaProvider());
         var result = context.Query(query).ToSql();
         return result.CommandText;
     }
 
-    public static async Task<TableDataDto> ExecuteQueryAsync(QueryDto query)
+    public static async Task<TableDataDto> ExecuteQueryAsync(
+        QueryDto query,
+        ILoggerFactory loggerFactory)
     {
-        Console.WriteLine($"\n{query}\n");
         var dbConnection = DbProviderFactory.GetDbConnection();
-        var context = new DynamicSqlContext(dbConnection, MetadataServices.GetMetaProvider());
+        using var context = new DynamicSqlContext(dbConnection, MetadataServices.GetMetaProvider());
         var result = await context.Query(query).ToListWithTotalRecordsAsync();
 
-        Console.WriteLine($"\nTotal Records: {result.TotalRecords}\n");
+        var logger = loggerFactory.CreateLogger(nameof(DynamicQueryServices));
+        logger.LogInformation("Dynamic query returned {TotalRecords} total records.", result.TotalRecords);
 
         return new TableDataDto(
             Name: query.Entity,

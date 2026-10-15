@@ -1,6 +1,7 @@
 .query-page-heading { align-items: end; }
 .query-save-action { position: relative; }
 .query-save-notification { position: absolute; right: 0; bottom: calc(100% + 4px); margin: 0; color: var(--green); font-size: 11px; line-height: 14px; text-align: right; white-space: nowrap; }
+.query-save-notification.error { padding: 5px 8px; border: 1px solid #7b3a43; border-radius: 5px; background: #321a20; color: #ffd5da; font-size: 12px; line-height: 16px; }
 .query-message { color: var(--muted); font-size: 12px; }
 .query-message { margin: 18px 0 0; }
 .query-message.error { color: #f0a6ae; }
