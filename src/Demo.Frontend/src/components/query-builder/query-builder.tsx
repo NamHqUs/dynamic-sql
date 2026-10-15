@@ -261,7 +261,14 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const applyRequestStructure = async (keepResolving = false) => {
     setIsResolvingPlanChanges(true);
     setRequestStructureError("");
-    const resultAction = await dispatch(parseQueryRequestString({ text: requestStructureDraft, entity: definition.entity }));
+    const entityLine = requestStructureDraft.split(/\r?\n/).find((line) => {
+      const separator = line.indexOf(":");
+      return separator >= 0 && line.slice(0, separator).trim() === "Entity";
+    });
+    const requestEntity = entityLine
+      ? entityLine.slice(entityLine.indexOf(":") + 1).trim()
+      : definition.entity;
+    const resultAction = await dispatch(parseQueryRequestString({ text: requestStructureDraft, entity: requestEntity }));
     if (parseQueryRequestString.fulfilled.match(resultAction)) {
       const nextDefinition = fromApiQuery(resultAction.payload);
       updateDefinition(nextDefinition);
@@ -385,11 +392,15 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     cachedRequestName = "";
     setRequestMessage("");
     setRequestStructureError("");
-    updateDefinition(createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []));
+    const nextDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
+    updateDefinition(nextDefinition);
     setRequestStructureDraft("");
     setRequestStructureOriginal("");
     setRequestStructureDefinition(null);
     setRequestStructureStatus("idle");
+    if (activeRequestTab === "structure") {
+      void loadRequestStructure(nextDefinition, "");
+    }
   };
 
   const createNewRequest = () => requestQueryChangeNavigation(startNewRequest);
@@ -543,10 +554,10 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
             <PlainText
               id="query-request-structure-panel"
               labelledBy="query-request-structure-tab"
+              metadata={metadata}
               status={requestStructureStatus}
               error={requestStructureError}
               text={requestStructureDraft}
-              dirty={planTextDirty}
               disabled={isResolvingPlanChanges}
               onFieldChange={updateRequestStructureField}
             />

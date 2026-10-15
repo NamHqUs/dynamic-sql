@@ -1,12 +1,13 @@
 import "./plain-text.css";
+import { MetadataEntity } from "../query-design/query-builder-slice";
 
 type PlainTextProps = {
   id: string;
   labelledBy: string;
+  metadata: MetadataEntity[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string;
   text: string;
-  dirty: boolean;
   disabled: boolean;
   onFieldChange: (index: number, value: string) => void;
 };
@@ -14,10 +15,10 @@ type PlainTextProps = {
 export default function PlainText({
   id,
   labelledBy,
+  metadata,
   status,
   error,
   text,
-  dirty,
   disabled,
   onFieldChange,
 }: PlainTextProps) {
@@ -38,13 +39,33 @@ export default function PlainText({
       {status === "failed" && <p className="query-message error" role="alert">{error}</p>}
       {status === "succeeded" && (
         <div className="query-request-structure-content">
-          {dirty && <div className="query-request-structure-actions">Plan text has unapplied changes.</div>}
           {error && <p className="query-message error" role="alert">{error}</p>}
           {fields.map(({ label, value, index }) => (
             <div className="query-request-structure-line" key={label}>
               <span className="query-request-structure-key">{label}:</span>
               {label === "Entity" ? (
-                <span className="query-request-structure-entity">{value}</span>
+                <select
+                  className="query-request-structure-entity"
+                  aria-label={label}
+                  value={value}
+                  onChange={(event) => {
+                    const entityName = event.target.value;
+                    const selectedEntity = metadata.find((entity) => entity.name === entityName);
+                    onFieldChange(index, entityName);
+                    const fieldsLine = fields.find((field) => field.label === "Fields");
+                    if (selectedEntity && fieldsLine) {
+                      onFieldChange(fieldsLine.index, selectedEntity.fields.map((field) => field.name).join(", "));
+                    }
+                  }}
+                  disabled={disabled}
+                >
+                  {value && !metadata.some((entity) => entity.name === value) && (
+                    <option value={value}>{value}</option>
+                  )}
+                  {metadata.map((entity) => (
+                    <option value={entity.name} key={entity.name}>{entity.name}</option>
+                  ))}
+                </select>
               ) : label === "IncludeArchive" ? (
                 <input
                   className="query-request-structure-checkbox"
