@@ -489,9 +489,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     <>
       <section className="page-heading query-page-heading">
         <div>
-          <div className="eyebrow">WORKSPACE / QUERY BUILDER</div>
-          <h1>Build a query</h1>
-          <p>Choose metadata fields, define filters, and preview the result from the connected API.</p>
+          <h2>Query Builder</h2>
         </div>
         <div className="heading-actions">
           <button className="button danger" type="button" onClick={removeRequest} disabled={!selectedFileName || isResolvingPlanChanges} title="Delete query request" aria-label="Delete query request">

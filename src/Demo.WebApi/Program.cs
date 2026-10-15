@@ -1,4 +1,5 @@
 using Demo.WebApi.Services;
+using Demo.WebApi.Dto;
 using Namh.Data.DynamicSql;
 using System.Text.Json.Serialization;
 
@@ -17,6 +18,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<DataType>());
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<FieldType>());
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<RelationType>());
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<FunctionArgumentKind>());
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<FunctionArgumentDefaultKind>());
 });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -45,6 +48,42 @@ group.MapDelete("/{entityName}", (string entityName) =>
 {
     MetadataServices.DeleteMetadata(entityName);
     return Results.NoContent();
+});
+group.MapGet("/functions", () => FunctionDefinitionServices.GetFunctionDefinitions());
+group.MapPost("/functions", (FunctionDefinitionDto definition) =>
+{
+    try
+    {
+        return Results.Created($"/metadata/functions/{Uri.EscapeDataString(definition.Name)}",
+            FunctionDefinitionServices.CreateFunctionDefinition(definition));
+    }
+    catch (ArgumentException error)
+    {
+        return Results.BadRequest(error.Message);
+    }
+    catch (InvalidOperationException error)
+    {
+        return Results.Conflict(error.Message);
+    }
+});
+group.MapPut("/functions/{functionName}", (string functionName, FunctionDefinitionDto definition) =>
+{
+    try
+    {
+        return Results.Ok(FunctionDefinitionServices.UpdateFunctionDefinition(functionName, definition));
+    }
+    catch (ArgumentException error)
+    {
+        return Results.BadRequest(error.Message);
+    }
+    catch (InvalidOperationException error)
+    {
+        return Results.Conflict(error.Message);
+    }
+    catch (KeyNotFoundException error)
+    {
+        return Results.NotFound(error.Message);
+    }
 });
 
 group = app.MapGroup("/dynamic-query").WithTags("Dynamic Query Services");

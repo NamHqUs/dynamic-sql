@@ -218,9 +218,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
     <>
       <section className="page-heading metadata-page-heading">
         <div>
-          <div className="eyebrow">WORKSPACE / METADATA BUILDER</div>
-          <h1>Design entity metadata</h1>
-          <p>Shape the fields and relationships that power your dynamic queries.</p>
+          <h2>Design entity metadata</h2>
         </div>
         <div className="heading-actions">
           <button className="button secondary" onClick={reset}><Icon name="reset" size={14} /> Reset</button>

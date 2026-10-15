@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import Icon from "./components/icon/icon";
 import DataSources from "./components/data-sources/data-sources";
 import QueryBuilder from "./components/query-builder/query-builder";
+import SqlFunctions from "./components/sql-functions/sql-functions";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
 import { MessageBoxProvider } from "./components/message-box/message-box";
 import { store } from "./store/store";
@@ -12,25 +13,33 @@ import "./styles.css";
 function App() {
   const [page, setPage] = useState("sources");
   const [metadataVisited, setMetadataVisited] = useState(false);
+  const [sqlFunctionsVisited, setSqlFunctionsVisited] = useState(false);
   const queryBuilderNavigationGuard = useRef<((continueNavigation: () => void) => void) | null>(null);
   const metadataNavigationGuard = useRef<((continueNavigation: () => void) => void) | null>(null);
+  const sqlFunctionsNavigationGuard = useRef<((continueNavigation: () => void) => void) | null>(null);
   const updateQueryBuilderNavigationGuard = useCallback((guard: ((continueNavigation: () => void) => void) | null) => {
     queryBuilderNavigationGuard.current = guard;
   }, []);
   const updateMetadataNavigationGuard = useCallback((guard: ((continueNavigation: () => void) => void) | null) => {
     metadataNavigationGuard.current = guard;
   }, []);
+  const updateSqlFunctionsNavigationGuard = useCallback((guard: ((continueNavigation: () => void) => void) | null) => {
+    sqlFunctionsNavigationGuard.current = guard;
+  }, []);
 
   const navigate = (nextPage: string) => {
     if (nextPage === page) return;
     const continueNavigation = () => {
       if (nextPage === "metadata") setMetadataVisited(true);
+      if (nextPage === "sql-functions") setSqlFunctionsVisited(true);
       setPage(nextPage);
     };
     if (page === "builder" && queryBuilderNavigationGuard.current) {
       queryBuilderNavigationGuard.current(continueNavigation);
     } else if (page === "metadata" && metadataNavigationGuard.current) {
       metadataNavigationGuard.current(continueNavigation);
+    } else if (page === "sql-functions" && sqlFunctionsNavigationGuard.current) {
+      sqlFunctionsNavigationGuard.current(continueNavigation);
     } else {
       continueNavigation();
     }
@@ -40,12 +49,13 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         <div className="brand"><span className="brand-mark"><Icon name="database" size={18} /></span><span>Dynamic<span className="brand-accent">SQL</span></span><span className="brand-divider" /><span className="brand-product">Studio</span></div>
-        <nav className="topnav"><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigate("sources")}><Icon name="database" /> Data sources</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigate("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigate("builder")}><Icon name="grid" /> Query builder</button></nav>
+        <nav className="topnav"><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigate("sources")}><Icon name="database" /> Data sources</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigate("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "sql-functions" ? "nav-item active" : "nav-item"} onClick={() => navigate("sql-functions")}><Icon name="code" /> SQL functions</button><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigate("builder")}><Icon name="grid" /> Query builder</button></nav>
         <div className="top-actions"><span className="live-dot" /> Local demo <button className="avatar">N</button></div>
       </header>
 
       {page === "sources" ? <DataSources /> : null}
       {metadataVisited && <div hidden={page !== "metadata"}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
+      {sqlFunctionsVisited && <div hidden={page !== "sql-functions"}><SqlFunctions onNavigationGuardChange={updateSqlFunctionsNavigationGuard} /></div>}
       {page === "builder" ? <QueryBuilder onNavigationGuardChange={updateQueryBuilderNavigationGuard} /> : null}
       <footer><span><span className="footer-mark">✦</span> DynamicSQL engine</span><span>Metadata-driven queries · Client preview</span></footer>
     </main>

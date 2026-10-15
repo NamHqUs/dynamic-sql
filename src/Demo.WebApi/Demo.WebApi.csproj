@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <Folder Include="DataStore\Metadata\" />
+    <Folder Include="DataStore\FunctionDefinitions\" />
   </ItemGroup>
 
 </Project>

@@ -28,9 +28,7 @@ export default function DataSources() {
     <>
       <section className="page-heading">
         <div>
-          <div className="eyebrow">WORKSPACE / DATA SOURCES</div>
-          <h1>Database tables</h1>
-          <p>Browse tables exposed by the connected database and inspect their records.</p>
+          <h2>Database tables</h2>
         </div>
       </section>
       <section className={`database-browser split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>

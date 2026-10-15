@@ -11,6 +11,8 @@ export const apiUrls = {
     list: `${backendApiUrl}/metadata`,
     byName: (entityName: string) => `${backendApiUrl}/metadata/${encodeURIComponent(entityName)}`,
     reset: `${backendApiUrl}/metadata/reset`,
+    functions: `${backendApiUrl}/metadata/functions`,
+    functionByName: (functionName: string) => `${backendApiUrl}/metadata/functions/${encodeURIComponent(functionName)}`,
   },
   dynamicQuery: {
     execute: `${backendApiUrl}/dynamic-query/query`,
