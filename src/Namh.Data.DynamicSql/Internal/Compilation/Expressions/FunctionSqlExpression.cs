@@ -1,10 +1,17 @@
 namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
 internal sealed class FunctionSqlExpression(
-    string name,
-    IReadOnlyList<SqlExpression> arguments,
-    Type type) : SqlExpression(type)
+    FunctionDefinition definition,
+    IReadOnlyList<FunctionSqlArgument?> arguments) : SqlExpression(definition.ResultType)
 {
-    public string Name { get; } = name;
-    public IReadOnlyList<SqlExpression> Arguments { get; } = arguments;
+    public FunctionDefinition Definition { get; } = definition;
+    public IReadOnlyList<FunctionSqlArgument?> Arguments { get; } = arguments;
 }
+
+internal abstract record FunctionSqlArgument;
+
+internal sealed record FunctionSqlExpressionArgument(SqlExpression Expression) : FunctionSqlArgument;
+
+internal sealed record FunctionSqlTokenArgument(string Token) : FunctionSqlArgument;
+
+internal sealed record FunctionSqlTypeArgument(SqlTypeDefinition SqlType) : FunctionSqlArgument;

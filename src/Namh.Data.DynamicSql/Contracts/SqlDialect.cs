@@ -6,6 +6,8 @@ namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 public interface ISqlDialect
 {
+    string Key
+        => throw new NotSupportedException("A custom SQL dialect must provide a dialect identifier.");
     string QuoteIdentifier(string identifier);
     string RenderTable(Entity entity);
     string RenderBoolean(bool value);
@@ -32,6 +34,8 @@ public interface ISqlDialect
 
 public sealed class SqlServerDialect : ISqlDialect
 {
+    public string Key => "SqlServer";
+
     public string QuoteIdentifier(string identifier)
         => $"[{identifier.Replace("]", "]]")}]";
 
@@ -98,6 +102,8 @@ public sealed class SqlServerDialect : ISqlDialect
 
 public sealed class SqliteDialect(string? schema = null) : ISqlDialect
 {
+    public string Key => "Sqlite";
+
     public string QuoteIdentifier(string identifier)
         => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
@@ -131,6 +137,8 @@ public sealed class SqliteDialect(string? schema = null) : ISqlDialect
 
 public sealed class PostgresDialect(string schema = "public") : ISqlDialect
 {
+    public string Key => "Postgres";
+
     public string QuoteIdentifier(string identifier)
         => $"\"{identifier.Replace("\"", "\"\"")}\"";
 

@@ -5,12 +5,21 @@
     {
       "field": {
         "kind": "function",
-        "function": "STRFTIME",
+        "function": "Year",
         "arguments": [
           {
-            "kind": "value",
-            "value": "%Y-%m"
-          },
+            "kind": "field",
+            "field": "InvoiceDate"
+          }
+        ]
+      },
+      "alias": "Year"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Month",
+        "arguments": [
           {
             "kind": "field",
             "field": "InvoiceDate"
@@ -74,6 +83,13 @@
     ]
   },
   "Sorts": [
+    {
+      "Field": {
+        "kind": "field",
+        "field": "Year"
+      },
+      "Direction": 0
+    },
     {
       "Field": {
         "kind": "field",

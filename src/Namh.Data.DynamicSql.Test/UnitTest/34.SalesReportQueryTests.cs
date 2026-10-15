@@ -13,12 +13,12 @@ internal sealed class _34_SalesReportQueryTests : TestBase
             Entity = "Invoices",
             Fields =
             [
-                ProjectionDto.FromText("STRFTIME[<%Y-%m>, InvoiceDate] | Month"),
+                ProjectionDto.FromText("DateFormat[InvoiceDate, <%Y-%m>] | Month"),
                 ProjectionDto.FromText("COUNT[] | InvoiceCount"),
                 ProjectionDto.FromText("SUM[TotalAmount] | Revenue"),
                 ProjectionDto.FromText("AVG[TotalAmount] | AverageOrderValue")
             ],
-            GroupBy = ["STRFTIME[<%Y-%m>, InvoiceDate]"],
+            GroupBy = ["DateFormat[InvoiceDate, <%Y-%m>]"],
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
             Sorts = [Sort("Month")]
         }, 3);
@@ -99,7 +99,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("PaymentMethod"),
                 ProjectionDto.FromText("COUNT[] | PaidInvoices"),
                 ProjectionDto.FromText(
-                    "AVG[DATEDIFF[DAY[], InvoiceDate, PaidOn]] | AverageDaysToPay"),
+                    "AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay"),
                 ProjectionDto.FromText("SUM[TotalAmount] | Collected")
             ],
             GroupBy = ["PaymentMethod"],
@@ -186,13 +186,13 @@ internal sealed class _34_SalesReportQueryTests : TestBase
             Entity = "Invoices",
             Fields =
             [
-                ProjectionDto.FromText("STRFTIME[<%Y-%m>, InvoiceDate] | Month"),
+                ProjectionDto.FromText("DateFormat[InvoiceDate, <%Y-%m>] | Month"),
                 ProjectionDto.FromText("SUM[DiscountAmount] | Discounts"),
                 ProjectionDto.FromText("SUM[TotalAmount] | NetRevenue"),
                 ProjectionDto.FromText(
                     "ROUND[SUM[DiscountAmount] * <100> / NULLIF[SUM[TotalAmount], <0>], <2>] | DiscountRate")
             ],
-            GroupBy = ["STRFTIME[<%Y-%m>, InvoiceDate]"],
+            GroupBy = ["DateFormat[InvoiceDate, <%Y-%m>]"],
             Sorts = [Sort("Month")]
         }, 4);
 
@@ -202,11 +202,11 @@ internal sealed class _34_SalesReportQueryTests : TestBase
             Entity = "Invoices",
             Fields =
             [
-                ProjectionDto.FromText("STRFTIME[<%w>, InvoiceDate] | Weekday"),
+                ProjectionDto.FromText("DateFormat[InvoiceDate, <%w>] | Weekday"),
                 ProjectionDto.FromText("COUNT[] | Orders"),
                 ProjectionDto.FromText("SUM[TotalAmount] | Revenue")
             ],
-            GroupBy = ["STRFTIME[<%w>, InvoiceDate]"],
+            GroupBy = ["DateFormat[InvoiceDate, <%w>]"],
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, null);
@@ -263,10 +263,10 @@ internal sealed class _34_SalesReportQueryTests : TestBase
             Entity = "Invoices",
             Fields =
             [
-                ProjectionDto.FromText("STRFTIME[<%Y-%m>, InvoiceDate] | Month"),
+                ProjectionDto.FromText("DateFormat[InvoiceDate, <%Y-%m>] | Month"),
                 ProjectionDto.FromText("SUM[TotalAmount] | Revenue")
             ],
-            GroupBy = ["STRFTIME[<%Y-%m>, InvoiceDate]"],
+            GroupBy = ["DateFormat[InvoiceDate, <%Y-%m>]"],
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Month")]
         }, 2);

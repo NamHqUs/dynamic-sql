@@ -46,9 +46,8 @@ internal sealed class _22_DateDifferenceQueryTests
                 new(new FieldDto("Customer.Name")),
                 new(new FieldDto("InvoiceDate")),
                 new(
-                    new FunctionFieldDto("DATEDIFF",
+                    new FunctionFieldDto("DateSub",
                     [
-                        new FunctionFieldDto("DAY", []),
                         new FieldDto("DueDate"),
                         new FunctionFieldDto("GETDATE", [])
                     ]),

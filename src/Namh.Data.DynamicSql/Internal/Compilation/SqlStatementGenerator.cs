@@ -130,13 +130,6 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             ValueExpression value => RenderValue(value.Value),
 
-            CurrentDateTimeSqlExpression => dialect.RenderCurrentDateTime(),
-
-            DateDifferenceInDaysSqlExpression dateDifference =>
-                dialect.RenderDateDifferenceInDays(
-                    RenderExpression(dateDifference.StartDate),
-                    RenderExpression(dateDifference.EndDate)),
-
             BinarySqlExpression binary => $"({(binary.StringConcat
                 ? dialect.RenderStringConcatenation(RenderExpression(binary.Left), RenderExpression(binary.Right))
                 : $"{RenderExpression(binary.Left)} {binary.Operator} {RenderExpression(binary.Right)}")})",
@@ -158,10 +151,45 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 : $"({RenderAggregate(aggregate)})",
 
             FunctionSqlExpression function =>
-                $"{function.Name}({string.Join(", ", function.Arguments.Select(RenderExpression))})",
+                RenderFunction(function),
 
             _ => throw new NotSupportedException($"Unsupported SQL expression {expression.GetType().Name}")
         };
+
+    private string RenderFunction(FunctionSqlExpression function)
+    {
+        var arguments = function.Arguments
+            .Select(argument => argument switch
+            {
+                FunctionSqlExpressionArgument expression => RenderExpression(expression.Expression),
+                FunctionSqlTokenArgument token => token.Token,
+                FunctionSqlTypeArgument sqlType => sqlType.SqlType.GetSqlType(dialect.Key),
+                null => null,
+                _ => throw new NotSupportedException(
+                    $"Unsupported function argument type [{argument.GetType().Name}].")
+            })
+            .ToArray();
+        var template = function.Definition.GetSqlTemplate(dialect.Key);
+        var sql = new StringBuilder(template.Length);
+
+        for (var index = 0; index < template.Length; index++)
+        {
+            if (template[index] != '{')
+            {
+                sql.Append(template[index]);
+                continue;
+            }
+
+            var close = template.IndexOf('}', index + 1);
+            var argumentIndex = int.Parse(template.AsSpan(index + 1, close - index - 1));
+            sql.Append(arguments[argumentIndex - 1]
+                ?? throw new FormatException(
+                    $"SQL template for function [{function.Definition.Name}] references an omitted argument."));
+            index = close;
+        }
+
+        return sql.ToString();
+    }
 
     private string RenderAggregate(AggregateExpression aggregate)
     {
@@ -172,6 +200,9 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
     private string RenderAggregateSelect(AggregateExpression aggregate)
     {
+        if (aggregate.FunctionExpression is not null)
+            return RenderExpression(aggregate.FunctionExpression);
+
         var sql = aggregate.SelectSql;
         var result = new StringBuilder(sql.Length);
 

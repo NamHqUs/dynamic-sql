@@ -30,18 +30,8 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
             ?.Item is SqlExpression projection)
             return projection;
 
-        if (TryParseAggregate(fieldPath, out var wrappedAggregate, out var wrappedAggregateFieldPath))
-        {
-            var wrappedFieldSeparator = wrappedAggregateFieldPath.LastIndexOf('.');
-            var wrappedRelationPath = wrappedFieldSeparator < 0 ? null : wrappedAggregateFieldPath[..wrappedFieldSeparator];
-            var wrappedFieldName = wrappedAggregateFieldPath[(wrappedFieldSeparator + 1)..];
-            var wrappedJoinedData = ParseRelationPath(tableContext, wrappedRelationPath);
-            var wrappedAggregateEntity = wrappedJoinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
-            wrappedAggregateEntity.GetField(wrappedFieldName);
-
-            var wrappedLastTable = ApplyJoin(tableContext, wrappedJoinedData);
-            return new AggregateExpression(wrappedLastTable, $"{wrappedAggregate}(@{wrappedFieldName})", true);
-        }
+        if (TryParseAggregateFunction(fieldPath, out var wrappedAggregate))
+            return ParseFunctionExpression(tableContext, wrappedAggregate, 0);
 
         var i = fieldPath.LastIndexOf('.');
         var relationPath = i < 0 ? null : fieldPath[..i];
@@ -49,19 +39,11 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
 
         var joinedData = ParseRelationPath(tableContext, relationPath);
 
-        if (string.Equals(fieldName, "Count()", StringComparison.OrdinalIgnoreCase))
+        if (TryParseAggregateFunction(fieldName, out var aggregateFunction))
         {
             var lastTable = ApplyJoinAggregate(tableContext, joinedData);
-            return new AggregateExpression(lastTable, "Count(*)", !joinedData.Any());
-        }
-
-        if (TryParseAggregate(fieldName, out var aggregate, out var aggregateField))
-        {
-            var aggregateEntity = joinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
-            aggregateEntity.GetField(aggregateField);
-
-            var lastTable = ApplyJoinAggregate(tableContext, joinedData);
-            return new AggregateExpression(lastTable, $"{aggregate}(@{aggregateField})", !joinedData.Any());
+            var function = (FunctionSqlExpression)ParseFunctionExpression(lastTable, aggregateFunction, 0);
+            return new AggregateExpression(lastTable, function, !joinedData.Any());
         }
 
         var lastEntity = joinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
@@ -135,48 +117,86 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
 
     private SqlExpression ParseFunctionExpression(TableExpression tableContext, FunctionFieldDto expression, int depth)
     {
-        var name = expression.FunctionName.ToUpperInvariant();
-        if (name == "GETDATE" && expression.Arguments.Length == 0)
-            return new CurrentDateTimeSqlExpression();
-
-        if (name == "DATEDIFF")
-        {
-            if (expression.Arguments is not
-                [FunctionFieldDto datePart, var startDate, var endDate] ||
-                !string.Equals(datePart.FunctionName, "DAY", StringComparison.OrdinalIgnoreCase) ||
-                datePart.Arguments.Length != 0)
-                throw new FormatException("DATEDIFF supports the form DATEDIFF(DAY(), startDate, endDate).");
-
-            return new DateDifferenceInDaysSqlExpression(
-                ParseQueryExpression(tableContext, startDate, depth + 1),
-                ParseQueryExpression(tableContext, endDate, depth + 1));
-        }
-
-        if (name == "COUNT" &&
-            (expression.Arguments.Length == 0 ||
-             expression.Arguments is [FieldDto { FieldName: "*" }]))
-            return new AggregateExpression(tableContext, "Count(*)", true);
-
-        if (name is "MAX" or "MIN" && expression.Arguments is [FieldDto field])
-            return ParseFieldExpression(tableContext, new FieldDto($"{name}({field.FieldName})"));
-
-        var valid = name switch
-        {
-            "COUNT" or "SUM" or "AVG" or "AVERAGE" => expression.Arguments.Length == 1,
-            "ROUND" or "NULLIF" => expression.Arguments.Length == 2,
-            "STRFTIME" => expression.Arguments is
-                [ConstFieldDto { Value: "%Y-%m" or "%w" }, _],
-            _ => false
-        };
-
-        if (!valid)
+        var definition = metaProvider.GetFunction(expression.FunctionName);
+        var suppliedArguments = expression.Arguments
+            ?? throw new FormatException("A function's arguments cannot be null.");
+        var minimumArgumentCount = definition.Arguments.Count(argument => !argument.Optional);
+        if (suppliedArguments.Length < minimumArgumentCount ||
+            suppliedArguments.Length > definition.Arguments.Count)
             throw new FormatException($"Unsupported function or argument count [{expression.FunctionName}].");
 
-        var arguments = expression.Arguments
-            .Select(argument => ParseQueryExpression(tableContext, argument, depth + 1))
-            .ToArray();
-        var sqlName = name == "AVERAGE" ? "AVG" : name;
-        return new FunctionSqlExpression(sqlName, arguments, typeof(decimal));
+        var arguments = new FunctionSqlArgument?[definition.Arguments.Count];
+        for (var index = 0; index < definition.Arguments.Count; index++)
+        {
+            var argumentDefinition = definition.Arguments[index];
+            arguments[index] = index < suppliedArguments.Length
+                ? ParseFunctionArgument(tableContext, argumentDefinition, suppliedArguments[index], depth + 1)
+                : ParseDefaultFunctionArgument(tableContext, argumentDefinition, depth + 1);
+        }
+
+        return new FunctionSqlExpression(definition, arguments);
+    }
+
+    private FunctionSqlArgument ParseFunctionArgument(
+        TableExpression tableContext,
+        FunctionArgumentDefinition definition,
+        IFieldDto expression,
+        int depth)
+    {
+        if (expression is null)
+            throw new FormatException($"Function argument [{definition.Name}] cannot be null.");
+
+        return definition.Kind switch
+        {
+            FunctionArgumentKind.QueryExpression =>
+                new FunctionSqlExpressionArgument(ParseQueryExpression(tableContext, expression, depth)),
+
+            FunctionArgumentKind.QueryExpressionOrSqlToken when expression is FieldDto field &&
+                definition.AllowedTokens.Contains(field.FieldName, StringComparer.OrdinalIgnoreCase) =>
+                new FunctionSqlTokenArgument(field.FieldName),
+
+            FunctionArgumentKind.QueryExpressionOrSqlToken =>
+                new FunctionSqlExpressionArgument(ParseQueryExpression(tableContext, expression, depth)),
+
+            FunctionArgumentKind.Constant when expression is ConstFieldDto constant &&
+                definition.AllowedConstants.Contains(constant.Value) =>
+                new FunctionSqlExpressionArgument(ParseValueExpression(constant)),
+
+            FunctionArgumentKind.Constant =>
+                throw new FormatException($"Invalid constant for function argument [{definition.Name}]."),
+
+            FunctionArgumentKind.SqlType when expression is ConstFieldDto { Value: string typeName } &&
+                definition.AllowedTypes.Contains(typeName, StringComparer.OrdinalIgnoreCase) =>
+                new FunctionSqlTypeArgument(metaProvider.GetSqlType(typeName)),
+
+            FunctionArgumentKind.SqlType =>
+                throw new FormatException($"Invalid logical SQL type for function argument [{definition.Name}]."),
+
+            _ => throw new FormatException($"Unsupported function argument kind [{definition.Kind}].")
+        };
+    }
+
+    private FunctionSqlArgument? ParseDefaultFunctionArgument(
+        TableExpression tableContext,
+        FunctionArgumentDefinition definition,
+        int depth)
+    {
+        if (definition.DefaultValue is not { } defaultValue)
+            return null;
+
+        return defaultValue.Kind switch
+        {
+            FunctionArgumentDefaultKind.Constant =>
+                new FunctionSqlExpressionArgument(
+                    ParseQueryExpression(tableContext, new ConstFieldDto(defaultValue.Value), depth)),
+            FunctionArgumentDefaultKind.SqlToken when defaultValue.Value is string token &&
+                definition.AllowedTokens.Contains(token, StringComparer.OrdinalIgnoreCase) =>
+                new FunctionSqlTokenArgument(token),
+            FunctionArgumentDefaultKind.LogicalType when defaultValue.Value is string typeName &&
+                definition.AllowedTypes.Contains(typeName, StringComparer.OrdinalIgnoreCase) =>
+                new FunctionSqlTypeArgument(metaProvider.GetSqlType(typeName)),
+            _ => throw new FormatException($"Invalid default for function argument [{definition.Name}].")
+        };
     }
 
     private static decimal ToDecimal(object value)
@@ -208,32 +228,23 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         }
     }
 
-    private static bool TryParseAggregate(
-        string fieldName,
-        out string aggregate,
-        out string aggregateField)
+    private bool TryParseAggregateFunction(string fieldName, out FunctionFieldDto function)
     {
-        aggregate = string.Empty;
-        aggregateField = string.Empty;
-
-        var openParenthesis = fieldName.IndexOf('(');
-        if (openParenthesis <= 0 || !fieldName.EndsWith(')'))
+        function = null!;
+        if (!fieldName.Contains('(') || !fieldName.EndsWith(')'))
             return false;
 
-        var function = fieldName[..openParenthesis].Trim();
-        if (!string.Equals(function, "Sum", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(function, "Max", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(function, "Min", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(function, "Average", StringComparison.OrdinalIgnoreCase))
+        if (FieldDtoParser.Parse(fieldName) is not FunctionFieldDto parsedFunction ||
+            !metaProvider.TryGetFunction(parsedFunction.FunctionName, out var definition) ||
+            definition is not { IsAggregate: true })
+            return false;
+        if (parsedFunction.Arguments.Any(argument =>
+            argument is not FieldDto field ||
+            field.FieldName.Contains('(') ||
+            field.FieldName.Contains(')')))
             return false;
 
-        aggregateField = fieldName[(openParenthesis + 1)..^1].Trim();
-        if (aggregateField.Length == 0 || aggregateField.Contains('(') || aggregateField.Contains(')'))
-            return false;
-
-        aggregate = string.Equals(function, "Average", StringComparison.OrdinalIgnoreCase)
-            ? "AVG"
-            : function;
+        function = parsedFunction;
         return true;
     }
 

@@ -18,7 +18,7 @@ internal class _33_DemoTest : TestBase
     {
         /// 6. Outstanding receivables and aging
         /// SELECT i.InvoiceNumber, c.Name, i.InvoiceDate, i.DueDate, i.TotalAmount,
-        /// DATEDIFF(DAY, i.DueDate, GETDATE()) AS DaysOverdue
+        /// DateSub(i.DueDate, GETDATE()) AS DaysOverdue
         /// FROM Invoices i JOIN Customers c ON c.Id = i.CustomerId
         /// WHERE i.Status = 'Sent' ORDER BY DaysOverdue DESC;
         /// 
@@ -33,8 +33,7 @@ internal class _33_DemoTest : TestBase
                 new (new FieldDto("InvoiceDate")),
                 new (new FieldDto("DueDate")),
                 new (new FieldDto("TotalAmount")),
-                new (new FunctionFieldDto("DATEDIFF", [
-                    new FunctionFieldDto("DAY", []),
+                new (new FunctionFieldDto("DateSub", [
                     new FieldDto("DueDate"),
                     new FunctionFieldDto("GETDATE", []),
                     ]), "DaysOverdue")

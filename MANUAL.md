@@ -305,7 +305,8 @@ values are parameterized by the query pipeline.
 Calculated projections use a structured expression tree rather than SQL text.
 Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
 `*`, `/`), and `function` (`COUNT`, `SUM`, `AVG`, `ROUND`, `NULLIF`,
-`DATEDIFF`, `GETDATE`):
+`DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`,
+`DateFormat`, `GETDATE`):
 
 ```json
 {
@@ -342,10 +343,98 @@ Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
 
 Related field references use metadata relation paths, so the query compiler
 creates the necessary joins. Numeric expression values are parameterized.
-Function names and operators are validated; arbitrary SQL is not accepted in
-calculated projections. `DATEDIFF` currently supports day boundaries using
-`DATEDIFF(DAY(), startDate, endDate)`, and `GETDATE()` returns the provider's
-current local date and time.
+Function calls are validated against definitions in the metadata provider.
+The default provider includes the built-in functions shown above. Applications can add or override definitions with `FunctionDefinition`.
+Each definition specifies its UI-facing arguments, result type, and either a
+generic SQL template or templates keyed by the dialect's stable string
+identifier (`ISqlDialect.Key`). A dialect-specific template takes precedence;
+the generic template is used when no provider override is defined. Functions
+whose syntax is provider-specific can omit the generic template and fail
+explicitly when used with an unsupported dialect. Templates are trusted
+metadata, not query input. They use 1-based argument placeholders
+(`{1}`, `{2}`, ...), while query values remain parameterized.
+`FunctionDefinition.Description` is required and provides UI-friendly help
+text for each function, and `FunctionDefinition.Arguments` describes its
+inputs. Built-in
+date helpers use readable names while their templates use each provider's
+native SQL:
+
+```csharp
+var daysBetween = new FunctionFieldDto("DateSub",
+[
+    new FieldDto("InvoiceDate"),
+    new FieldDto("PaidOn")
+]);
+
+var dueInTwoMonths = new FunctionFieldDto("MonthAdd",
+[
+    new FieldDto("DueDate"),
+    new ConstFieldDto(2)
+]);
+
+var monthLabel = new FunctionFieldDto("DateFormat",
+[
+    new FieldDto("InvoiceDate"),
+    new ConstFieldDto("%Y-%m")
+]);
+```
+
+`DateSub(startDate, endDate)` returns elapsed whole days;
+`MonthSub` and `YearSub` return calendar-boundary differences. `DateAdd`,
+`MonthAdd`, and `YearAdd` add the specified number of units to a date.
+`DateFormat` is currently SQLite-specific and supports `%Y-%m` (year-month)
+and `%w` (weekday number). The provider-specific SQL remains internal; for
+example, `DateSub` uses `DATEDIFF(day, ...)` on SQL Server.
+
+`SqlTypeDefinition` uses the same provider-keyed override and generic fallback
+pattern for logical SQL types. `IMetaProvider.GetFunctions()` and
+`GetSqlTypes()` expose the registered definitions for applications that build
+a function-selection UI.
+
+Adding a database provider does not require changes to a fixed dialect enum.
+Implement `ISqlDialect` with a unique `Key`, then supply or override metadata
+definitions for functions and logical SQL types whose syntax differs. For
+example, an Oracle-specific function can be registered as:
+
+```csharp
+var toDate = new FunctionDefinition(
+    name: "TO_DATE",
+    arguments: [FunctionArgumentDefinition.QueryExpression("value")],
+    resultType: typeof(DateTime),
+    description: "Parses a date from a string.",
+    sqlTemplates: new Dictionary<string, string>
+    {
+        ["Oracle"] = "TO_DATE({1}, 'YYYY-MM-DD')"
+    });
+
+var metadata = new MetaProvider(entities, functions: [toDate]);
+```
+
+For example, an application can expose a one-argument `TODAY(value)` wrapper
+and keep the SQL type fixed in the definition:
+
+```csharp
+var today = new FunctionDefinition(
+    name: "TODAY",
+    arguments: [FunctionArgumentDefinition.QueryExpression("value")],
+    resultType: typeof(DateTime),
+    description: "Returns the date portion of a value.",
+    sqlTemplates: new Dictionary<string, string>
+    {
+        ["SqlServer"] = "CAST({1} AS DATE)",
+        ["Sqlite"] = "CAST({1} AS DATE)",
+        ["Postgres"] = "CAST({1} AS DATE)"
+    });
+
+var metadata = new MetaProvider(entities, functions: [today]);
+using var context = new DynamicSqlContext(connection, metadata, dialect);
+```
+
+The function call still receives an expression DTO, such as
+`new FunctionFieldDto("TODAY", [new FieldDto("InvoiceDate")])`. Nested
+functions and arithmetic expressions can be supplied as arguments. Built-in
+date function templates map friendly function names to provider-specific SQL,
+and `GETDATE()` renders the provider's current date and time.
 
 ## SQL diagnostics
 

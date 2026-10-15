@@ -40,13 +40,8 @@
     {
       "field": {
         "kind": "function",
-        "function": "DATEDIFF",
+        "function": "DateSub",
         "arguments": [
-          {
-            "kind": "function",
-            "function": "DAY",
-            "arguments": []
-          },
           {
             "kind": "field",
             "field": "DueDate"
