@@ -1,6 +1,7 @@
 ﻿using Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 using Namh.Data.DynamicSql.Internal.Compilation.Utilities;
 using Namh.Data.DynamicSql.Internal.Execution;
+using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -80,7 +81,9 @@ class ClauseVisitor(QueryContext queryContext)
             case nameof(IDbQueryableExtension.GroupBy):
                 foreach (var field in (string[])((ConstantExpression)methodCall.Arguments[1]).Value!)
                 {
-                    var expression = QueryContext.ParseFieldPath(tableContext, field);
+                    var expression = QueryContext.ParseQueryExpression(
+                        tableContext,
+                        FieldDtoParser.Parse(field));
                     if (expression.ContainsGroupedAggregate())
                         throw new FormatException("Group-by fields cannot contain aggregate expressions.");
                     tableContext.GroupByExpressions.Add(expression);

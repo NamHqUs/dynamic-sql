@@ -5,15 +5,15 @@
     {
       "field": {
         "kind": "function",
-        "function": "FORMAT",
+        "function": "STRFTIME",
         "arguments": [
+          {
+            "kind": "value",
+            "value": "%Y-%m"
+          },
           {
             "kind": "field",
             "field": "InvoiceDate"
-          },
-          {
-            "kind": "value",
-            "value": "yyyy-MM"
           }
         ]
       },
@@ -23,12 +23,7 @@
       "field": {
         "kind": "function",
         "function": "Count",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ]
+        "arguments": []
       },
       "alias": "InvoiceCount"
     },

@@ -1,5 +1,6 @@
 ﻿using Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 using Namh.Data.DynamicSql.Internal.Compilation.Models;
+using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 
 namespace Namh.Data.DynamicSql.Internal.Compilation;
 
@@ -101,9 +102,12 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
             : ParseFieldPath(tableContext, expression.FieldName);
 
     private SqlExpression ParseValueExpression(ConstFieldDto expression)
-        => expression.Value is null
-            ? throw new FormatException("A value query expression requires a numeric value.")
-            : new ValueExpression(AddDbParameter(ToDecimal(expression.Value), true), typeof(decimal));
+        => expression.Value switch
+        {
+            string value => new ValueExpression(AddDbParameter(value, true), typeof(string)),
+            null => throw new FormatException("A value query expression requires a numeric value."),
+            var value => new ValueExpression(AddDbParameter(ToDecimal(value), true), typeof(decimal))
+        };
 
     private SqlExpression ParseGroupExpression(TableExpression tableContext, IFieldDto[] fields, int depth)
     {
@@ -157,6 +161,8 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         {
             "COUNT" or "SUM" or "AVG" or "AVERAGE" => expression.Arguments.Length == 1,
             "ROUND" or "NULLIF" => expression.Arguments.Length == 2,
+            "STRFTIME" => expression.Arguments is
+                [ConstFieldDto { Value: "%Y-%m" or "%w" }, _],
             _ => false
         };
 
