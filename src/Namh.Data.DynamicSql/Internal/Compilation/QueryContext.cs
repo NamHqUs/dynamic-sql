@@ -145,7 +145,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
                 [FunctionFieldDto datePart, var startDate, var endDate] ||
                 !string.Equals(datePart.FunctionName, "DAY", StringComparison.OrdinalIgnoreCase) ||
                 datePart.Arguments.Length != 0)
-                throw new FormatException("DATEDIFF supports the form DATEDIFF[DAY[], startDate, endDate].");
+                throw new FormatException("DATEDIFF supports the form DATEDIFF(DAY(), startDate, endDate).");
 
             return new DateDifferenceInDaysSqlExpression(
                 ParseQueryExpression(tableContext, startDate, depth + 1),
@@ -156,6 +156,9 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
             (expression.Arguments.Length == 0 ||
              expression.Arguments is [FieldDto { FieldName: "*" }]))
             return new AggregateExpression(tableContext, "Count(*)", true);
+
+        if (name is "MAX" or "MIN" && expression.Arguments is [FieldDto field])
+            return ParseFieldExpression(tableContext, new FieldDto($"{name}({field.FieldName})"));
 
         var valid = name switch
         {

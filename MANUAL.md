@@ -344,7 +344,7 @@ Related field references use metadata relation paths, so the query compiler
 creates the necessary joins. Numeric expression values are parameterized.
 Function names and operators are validated; arbitrary SQL is not accepted in
 calculated projections. `DATEDIFF` currently supports day boundaries using
-`DATEDIFF[DAY[], startDate, endDate]`, and `GETDATE[]` returns the provider's
+`DATEDIFF(DAY(), startDate, endDate)`, and `GETDATE()` returns the provider's
 current local date and time.
 
 ## SQL diagnostics

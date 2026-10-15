@@ -10,7 +10,7 @@ internal class _21_QureyRequestParser : TestBase
     [Test]
     public void TextToFunctionFieldDto_Arguments()
     {
-        var text = "Round[Id, <2>]";
+        var text = "Round(Id, <2>)";
         var field = (FunctionFieldDto)FieldDtoParser.Parse(text);
 
         var expectedField = new FunctionFieldDto("Round", [
@@ -25,7 +25,7 @@ internal class _21_QureyRequestParser : TestBase
     [Test]
     public void TextToFunctionFieldDto_GroupArgument()
     {
-        var text = "Round[Id + <2>]";
+        var text = "Round(Id + <2>)";
         var field = (FunctionFieldDto)FieldDtoParser.Parse(text);
 
         var expectedField = new FunctionFieldDto("Round", [
@@ -42,7 +42,7 @@ internal class _21_QureyRequestParser : TestBase
     [Test]
     public void TextToFunctionFieldDto_Mested()
     {
-        var text = "Round[Sum[Id + Age], <2>]";
+        var text = "Round(Sum(Id + Age), <2>)";
         var field = (FunctionFieldDto)FieldDtoParser.Parse(text);
 
         var expectedField = new FunctionFieldDto("Round", [
@@ -57,6 +57,14 @@ internal class _21_QureyRequestParser : TestBase
 
         Assert.That(field.ToText(), Is.EqualTo(text));
         AssertEquivalent(expectedField, field);
+    }
+
+    [Test]
+    public void TextToFunctionFieldDto_LegacyBracketSyntax()
+    {
+        var field = (FunctionFieldDto)FieldDtoParser.Parse("Round[Sum[Id], <2>]");
+
+        Assert.That(field.ToText(), Is.EqualTo("Round(Sum(Id), <2>)"));
     }
 
     [Test]
@@ -77,7 +85,7 @@ internal class _21_QureyRequestParser : TestBase
     [Test]
     public void TextToGroupFieldDto_Nested()
     {
-        var text = "Id + (Age * Sum[Salary])";
+        var text = "Id + (Age * Sum(Salary))";
         var field = (GroupFieldDto)FieldDtoParser.Parse(text);
 
         var expectedField = new GroupFieldDto([

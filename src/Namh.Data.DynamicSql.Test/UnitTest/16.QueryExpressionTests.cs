@@ -218,7 +218,7 @@ public sealed class _16_QueryExpressionTests
         Assert.That(sql.Parameters.Select(parameter => parameter.Value),
             Is.EquivalentTo(new object?[] { 100m, 0m, 2m }));
         Assert.That(definition.ToString(), Does.Contain("GroupBy: Id, Name"));
-        Assert.That(definition.ToString(), Does.Contain("ROUND["));
+        Assert.That(definition.ToString(), Does.Contain("ROUND("));
 
         var queryResult = await db.Query(definition).ToListWithTotalRecordsAsync();
         var records = queryResult.Records;

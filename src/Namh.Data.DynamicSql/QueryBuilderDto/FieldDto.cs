@@ -27,7 +27,7 @@ public record BinaryFieldDto(string Oper, IFieldDto Field) : IFieldDto
 }
 public record FunctionFieldDto(string FunctionName, IFieldDto[] Arguments) : IFieldDto
 {
-    public string ToText(Dictionary<string, object>? tags = null) => $"{FunctionName}[{string.Join(", ", Arguments.Select(a => a.ToText(tags)))}]";
+    public string ToText(Dictionary<string, object>? tags = null) => $"{FunctionName}({string.Join(", ", Arguments.Select(a => a.ToText(tags)))})";
 }
 public record GroupFieldDto(IFieldDto[] Fields) : IFieldDto
 {

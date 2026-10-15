@@ -10,6 +10,16 @@ public static class FieldDtoParser
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         text = text.Trim();
 
+        if (TryGetFunctionCall(text, out var opening))
+        {
+            var argumentsText = text[(opening + 1)..^1];
+            var arguments = SplitTopLevel(argumentsText, ',')
+                .Where(argument => !string.IsNullOrWhiteSpace(argument))
+                .Select(Parse)
+                .ToArray();
+            return new FunctionFieldDto(text[..opening].Trim(), arguments);
+        }
+
         if (IsWrappedBy(text, '(', ')'))
         {
             return new GroupFieldDto(ParseSequence(text[1..^1]).ToArray());
@@ -21,21 +31,33 @@ public static class FieldDtoParser
             return new ConstFieldDto(ParseConstant(value));
         }
 
-        var openingBracket = text.IndexOf('[');
-        if (openingBracket > 0 && IsWrappedBy(text[openingBracket..], '[', ']'))
-        {
-            var argumentsText = text[(openingBracket + 1)..^1];
-            var arguments = SplitTopLevel(argumentsText, ',')
-                .Where(argument => !string.IsNullOrWhiteSpace(argument))
-                .Select(Parse)
-                .ToArray();
-            return new FunctionFieldDto(text[..openingBracket].Trim(), arguments);
-        }
-
         var sequence = ParseSequence(text);
         return sequence.Count == 1
             ? sequence[0]
             : new GroupFieldDto(sequence.ToArray());
+    }
+
+    private static bool TryGetFunctionCall(string text, out int opening)
+    {
+        var openingParenthesis = text.IndexOf('(');
+        var openingBracket = text.IndexOf('[');
+
+        if (openingParenthesis > 0 &&
+            text[..openingParenthesis].All(character => !char.IsWhiteSpace(character)) &&
+            IsWrappedBy(text[openingParenthesis..], '(', ')'))
+        {
+            opening = openingParenthesis;
+            return true;
+        }
+
+        if (openingBracket > 0 && IsWrappedBy(text[openingBracket..], '[', ']'))
+        {
+            opening = openingBracket;
+            return true;
+        }
+
+        opening = -1;
+        return false;
     }
 
     private static object? ParseConstant(string value)
@@ -78,7 +100,7 @@ public static class FieldDtoParser
 
         if (IsWrappedBy(text, '(', ')') ||
             (text[0] == '<' && text[^1] == '>') ||
-            (text.IndexOf('[') > 0 && IsWrappedBy(text[text.IndexOf('[')..], '[', ']')))
+            TryGetFunctionCall(text, out _))
         {
             return Parse(text);
         }

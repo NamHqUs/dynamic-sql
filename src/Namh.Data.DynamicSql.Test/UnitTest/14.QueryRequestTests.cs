@@ -50,7 +50,7 @@ public class _14_QueryRequestTests : TestBase
             Fields =
             [
                 ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Average(Age)")
+                ProjectionDto.FromText("Average(Age) | AverageAge")
             ],
             Filter = new FilterDto(
                 LogicalOperator.And,
@@ -200,7 +200,7 @@ public class _14_QueryRequestTests : TestBase
             Fields =
             [
                 ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Sum(Members.Age)")
+                ProjectionDto.FromText("Sum(Members.Age) | TotalMemberAge")
             ],
             Sorts = [new SortDto(new FunctionFieldDto("Sum", [new FieldDto("Members.Age")]))]
         };
