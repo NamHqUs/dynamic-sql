@@ -355,9 +355,13 @@ metadata, not query input. They use 1-based argument placeholders
 (`{1}`, `{2}`, ...), while query values remain parameterized.
 `FunctionDefinition.Description` is required and provides UI-friendly help
 text for each function, and `FunctionDefinition.Arguments` describes its
-inputs. Built-in
-date helpers use readable names while their templates use each provider's
-native SQL:
+inputs. Each argument has a name and a `DataType`; all arguments accept query
+expressions, including constants. A default value makes an argument optional.
+The special default `*` is emitted as a SQL token; other defaults must match
+the declared data type. Templates can refer to arguments by 1-based position
+(`{1}`, `{2}`, ...) or by name (`{value}`); query values remain parameterized.
+Built-in date helpers use readable names while their templates use each
+provider's native SQL:
 
 ```csharp
 var daysBetween = new FunctionFieldDto("DateSub",
@@ -382,8 +386,7 @@ var monthLabel = new FunctionFieldDto("DateFormat",
 `DateSub(startDate, endDate)` returns elapsed whole days;
 `MonthSub` and `YearSub` return calendar-boundary differences. `DateAdd`,
 `MonthAdd`, and `YearAdd` add the specified number of units to a date.
-`DateFormat` is currently SQLite-specific and supports `%Y-%m` (year-month)
-and `%w` (weekday number). The provider-specific SQL remains internal; for
+`DateFormat` is currently SQLite-specific. The provider-specific SQL remains internal; for
 example, `DateSub` uses `DATEDIFF(day, ...)` on SQL Server.
 
 `SqlTypeDefinition` uses the same provider-keyed override and generic fallback
@@ -399,7 +402,7 @@ example, an Oracle-specific function can be registered as:
 ```csharp
 var toDate = new FunctionDefinition(
     name: "TO_DATE",
-    arguments: [FunctionArgumentDefinition.QueryExpression("value")],
+    arguments: [new FunctionArgumentDefinition("value", DataType.String)],
     resultType: typeof(DateTime),
     description: "Parses a date from a string.",
     sqlTemplates: new Dictionary<string, string>
@@ -416,7 +419,7 @@ and keep the SQL type fixed in the definition:
 ```csharp
 var today = new FunctionDefinition(
     name: "TODAY",
-    arguments: [FunctionArgumentDefinition.QueryExpression("value")],
+    arguments: [new FunctionArgumentDefinition("value", DataType.Datetime)],
     resultType: typeof(DateTime),
     description: "Returns the date portion of a value.",
     sqlTemplates: new Dictionary<string, string>

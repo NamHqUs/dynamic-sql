@@ -1,0 +1,19 @@
+{
+  "Name": "Month",
+  "Arguments": [
+    {
+      "Name": "date",
+      "DataType": 0,
+      "DefaultValue": null
+    }
+  ],
+  "ResultType": "string",
+  "CanDelete": false,
+  "IsAggregate": false,
+  "Description": "Extracts the month part from a date.",
+  "DefaultSqlTemplate": null,
+  "SqlTemplates": {
+    "SqlServer": "MONTH({1})",
+    "Sqlite": "STRFTIME(\u0027%m\u0027, {1})"
+  }
+}

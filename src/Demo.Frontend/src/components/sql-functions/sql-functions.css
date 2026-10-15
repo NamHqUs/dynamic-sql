@@ -1,26 +1,4 @@
 .function-workspace { min-height: 640px; display: grid; grid-template-columns: var(--panel-width, 260px) minmax(0, 1fr); overflow: hidden; background: linear-gradient(135deg, #11141c, #0f1218); border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 14px 40px #00000018; }
-.function-list { background: #0e1117; border-right: 1px solid var(--line); padding: 22px 12px; }
-.function-form { padding: 25px 28px 35px; }
-.function-form label { display: grid; gap: 8px; color: #aeb6c5; font-size: 11px; font-weight: 600; }
-.function-form input, .function-form select, .function-form textarea { width: 100%; min-width: 0; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; outline: 0; padding: 9px 10px; font: 11px "DM Mono", monospace; }
-.function-form textarea { resize: vertical; line-height: 1.5; }
-.function-form input:focus, .function-form select:focus, .function-form textarea:focus { border-color: #7054d4; }
-.function-description { grid-column: 1 / -1; }
-.function-checkbox, .function-optional { display: flex !important; align-items: center; gap: 9px !important; }
-.function-checkbox input, .function-optional input { width: 14px; accent-color: #8064e8; }
-.function-argument-card { padding: 13px; margin-top: 12px; border: 1px solid #2a3140; border-radius: 6px; background: #141821; }
-.function-argument-heading { display: flex; align-items: center; justify-content: space-between; color: #dce1eb; font-size: 11px; }
-.function-argument-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 12px; }
-.function-argument-wide { grid-column: 1 / -1; }
-.function-template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
-@media (max-width: 1000px) {
-  .function-argument-grid { grid-template-columns: 1fr 1fr; }
-  .function-template-grid { grid-template-columns: 1fr; }
-}
 @media (max-width: 760px) {
   .function-workspace { grid-template-columns: 1fr; }
-  .function-list { border-right: 0; border-bottom: 1px solid var(--line); }
-  .function-argument-grid { grid-template-columns: 1fr; }
-  .function-description, .function-argument-wide { grid-column: auto; }
-  .function-form { padding: 20px 16px 28px; }
 }

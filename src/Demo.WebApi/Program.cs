@@ -18,8 +18,6 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<DataType>());
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<FieldType>());
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<RelationType>());
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<FunctionArgumentKind>());
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<FunctionArgumentDefaultKind>());
 });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -79,6 +77,18 @@ group.MapPut("/functions/{functionName}", (string functionName, FunctionDefiniti
     catch (InvalidOperationException error)
     {
         return Results.Conflict(error.Message);
+    }
+    catch (KeyNotFoundException error)
+    {
+        return Results.NotFound(error.Message);
+    }
+});
+group.MapDelete("/functions/{functionName}", (string functionName) =>
+{
+    try
+    {
+        FunctionDefinitionServices.DeleteFunctionDefinition(functionName);
+        return Results.NoContent();
     }
     catch (KeyNotFoundException error)
     {

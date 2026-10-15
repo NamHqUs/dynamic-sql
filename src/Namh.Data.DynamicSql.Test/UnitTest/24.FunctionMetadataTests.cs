@@ -23,15 +23,15 @@ public sealed class _24_FunctionMetadataTests
             name: "SUBTRACT",
             arguments:
             [
-                FunctionArgumentDefinition.QueryExpression("left"),
-                FunctionArgumentDefinition.QueryExpression("right")
+                new("left", DataType.Number),
+                new("right", DataType.Number)
             ],
             resultType: typeof(decimal),
             description: "Subtracts one expression from another.",
             sqlTemplates: new Dictionary<string, string>
             {
                 ["SqlServer"] = "SUB({1}, {2})",
-                ["Sqlite"] = "({1} - {2})",
+                ["Sqlite"] = "({left} - {2})",
                 ["Postgres"] = "({2} - {1})"
             });
         var call = new FunctionFieldDto("SUBTRACT", [new FieldDto("Amount"), new ConstFieldDto(2)]);
@@ -53,7 +53,7 @@ public sealed class _24_FunctionMetadataTests
     {
         var today = new FunctionDefinition(
             name: "TODAY",
-            arguments: [FunctionArgumentDefinition.QueryExpression("value")],
+            arguments: [new("value", DataType.Datetime)],
             resultType: typeof(DateTime),
             description: "Returns the date portion of a value.",
             sqlTemplates: new Dictionary<string, string>
@@ -85,11 +85,8 @@ public sealed class _24_FunctionMetadataTests
             name: "ADD",
             arguments:
             [
-                FunctionArgumentDefinition.QueryExpression("left"),
-                FunctionArgumentDefinition.QueryExpression(
-                    "right",
-                    optional: true,
-                    defaultValue: FunctionArgumentDefault.Constant(12))
+                new("left", DataType.Number),
+                new("right", DataType.Number, 12m)
             ],
             resultType: typeof(decimal),
             description: "Adds two numeric expressions.",
@@ -128,39 +125,40 @@ public sealed class _24_FunctionMetadataTests
     }
 
     [Test]
-    public void LogicalTypeArgumentUsesMetadataMappingForCurrentDialect()
+    public void ArgumentDefaultUsesItsDeclaredDataType()
     {
-        var cast = new FunctionDefinition(
-            name: "CAST_TO_MONEY",
+        var add = new FunctionDefinition(
+            name: "ADD_DEFAULT",
             arguments:
             [
-                FunctionArgumentDefinition.QueryExpression("value"),
-                FunctionArgumentDefinition.SqlType("type", ["Money"])
+                new("value", DataType.Number),
+                new("amount", DataType.Number, 4m)
             ],
             resultType: typeof(decimal),
-            description: "Converts a value to the selected logical SQL type.",
+            description: "Adds a typed default amount.",
             sqlTemplates: new Dictionary<string, string>
             {
-                ["SqlServer"] = "CAST({1} AS {2})",
-                ["Sqlite"] = "CAST({1} AS {2})",
-                ["Postgres"] = "CAST({1} AS {2})"
+                ["SqlServer"] = "({value} + {amount})",
+                ["Sqlite"] = "({value} + {amount})",
+                ["Postgres"] = "({value} + {amount})"
             });
-        var moneyType = new SqlTypeDefinition("Money", new Dictionary<string, string>
-        {
-            ["SqlServer"] = "decimal(19,4)",
-            ["Sqlite"] = "NUMERIC",
-            ["Postgres"] = "numeric(19,4)"
-        });
 
         var sql = GenerateSql(
-            new FunctionFieldDto("CAST_TO_MONEY", [new FieldDto("Amount"), new ConstFieldDto("Money")]),
-            [cast],
-            new SqliteDialect(),
-            [moneyType]);
+            new FunctionFieldDto("ADD_DEFAULT", [new FieldDto("Amount")]),
+            [add],
+            new SqliteDialect());
 
-        Assert.That(sql.CommandText, Does.Match(
-            @"CAST\s*\(\s*t0\.""Amount""\s+AS\s+NUMERIC\s*\)"));
-        Assert.That(sql.Parameters, Is.Empty);
+        Assert.That(sql.CommandText, Does.Contain("(t0.\"Amount\" + @p0)"));
+        Assert.That(sql.Parameters.Single().Value, Is.EqualTo(4m));
+    }
+
+    [Test]
+    public void ArgumentDefaultMustMatchItsDeclaredDataType()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new FunctionArgumentDefinition("enabled", DataType.Boolean, "true"));
+        Assert.That(new FunctionArgumentDefinition("value", DataType.Number, "*").Optional, Is.True);
+        Assert.That(new FunctionArgumentDefinition("value", DataType.Number).Optional, Is.False);
     }
 
     [Test]
@@ -168,7 +166,7 @@ public sealed class _24_FunctionMetadataTests
     {
         var customFunction = new FunctionDefinition(
             name: "TODAY",
-            arguments: [FunctionArgumentDefinition.QueryExpression("value")],
+            arguments: [new("value", DataType.Datetime)],
             resultType: typeof(DateTime),
             sqlTemplates: new Dictionary<string, string>
             {
@@ -274,7 +272,7 @@ public sealed class _24_FunctionMetadataTests
     {
         var custom = new FunctionDefinition(
             name: "SQLSERVER_ONLY",
-            arguments: [FunctionArgumentDefinition.QueryExpression("value")],
+            arguments: [new("value", DataType.Number)],
             resultType: typeof(decimal),
             description: "A SQL Server-only test function.",
             sqlTemplates: new Dictionary<string, string>
@@ -294,7 +292,7 @@ public sealed class _24_FunctionMetadataTests
     {
         var toDate = new FunctionDefinition(
             name: "TO_DATE",
-            arguments: [FunctionArgumentDefinition.QueryExpression("value")],
+            arguments: [new("value", DataType.Number)],
             resultType: typeof(DateTime),
             description: "Parses a date value.",
             sqlTemplates: new Dictionary<string, string>
@@ -321,7 +319,7 @@ public sealed class _24_FunctionMetadataTests
         Assert.Throws<ArgumentException>(() =>
             new FunctionDefinition(
                 name: "INVALID",
-                arguments: [FunctionArgumentDefinition.QueryExpression("value")],
+                arguments: [new("value", DataType.Number)],
                 resultType: typeof(decimal),
                 description: "An invalid template test function.",
                 sqlTemplates: new Dictionary<string, string>
@@ -331,7 +329,7 @@ public sealed class _24_FunctionMetadataTests
 
         var twice = new FunctionDefinition(
             name: "TWICE",
-            arguments: [FunctionArgumentDefinition.QueryExpression("value")],
+            arguments: [new("value", DataType.Number)],
             resultType: typeof(decimal),
             description: "Doubles a numeric value.",
             sqlTemplates: new Dictionary<string, string>

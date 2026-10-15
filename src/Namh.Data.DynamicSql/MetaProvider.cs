@@ -54,18 +54,7 @@ public class MetaProvider : IMetaProvider
             _sqlTypes[sqlType.Name] = sqlType;
 
         foreach (var function in customFunctions)
-        {
-            foreach (var argument in function.Arguments.Where(argument => argument.Kind == FunctionArgumentKind.SqlType))
-            foreach (var typeName in argument.AllowedTypes)
-            {
-                if (!_sqlTypes.ContainsKey(typeName))
-                    throw new ArgumentException(
-                        $"Function [{function.Name}] references undefined logical SQL type [{typeName}].",
-                        nameof(functions));
-            }
-
             _functions[function.Name] = function;
-        }
     }
 
     public Entity Get(string entityName)

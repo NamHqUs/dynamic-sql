@@ -181,7 +181,13 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             }
 
             var close = template.IndexOf('}', index + 1);
-            var argumentIndex = int.Parse(template.AsSpan(index + 1, close - index - 1));
+            var placeholder = template.Substring(index + 1, close - index - 1);
+            var argumentIndex = int.TryParse(placeholder, out var numericIndex)
+                ? numericIndex
+                : function.Definition.Arguments
+                    .Select((argument, argumentIndex) => (argument, argumentIndex))
+                    .First(pair => string.Equals(placeholder, pair.argument.Name, StringComparison.OrdinalIgnoreCase))
+                    .argumentIndex + 1;
             sql.Append(arguments[argumentIndex - 1]
                 ?? throw new FormatException(
                     $"SQL template for function [{function.Definition.Name}] references an omitted argument."));

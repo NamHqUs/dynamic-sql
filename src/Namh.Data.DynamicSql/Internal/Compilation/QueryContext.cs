@@ -87,6 +87,8 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         => expression.Value switch
         {
             string value => new ValueExpression(AddDbParameter(value, true), typeof(string)),
+            bool value => new ValueExpression(AddDbParameter(value, true), typeof(bool)),
+            DateTime value => new ValueExpression(AddDbParameter(value, true), typeof(DateTime)),
             null => throw new FormatException("A value query expression requires a numeric value."),
             var value => new ValueExpression(AddDbParameter(ToDecimal(value), true), typeof(decimal))
         };
@@ -146,34 +148,9 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         if (expression is null)
             throw new FormatException($"Function argument [{definition.Name}] cannot be null.");
 
-        return definition.Kind switch
-        {
-            FunctionArgumentKind.QueryExpression =>
-                new FunctionSqlExpressionArgument(ParseQueryExpression(tableContext, expression, depth)),
-
-            FunctionArgumentKind.QueryExpressionOrSqlToken when expression is FieldDto field &&
-                definition.AllowedTokens.Contains(field.FieldName, StringComparer.OrdinalIgnoreCase) =>
-                new FunctionSqlTokenArgument(field.FieldName),
-
-            FunctionArgumentKind.QueryExpressionOrSqlToken =>
-                new FunctionSqlExpressionArgument(ParseQueryExpression(tableContext, expression, depth)),
-
-            FunctionArgumentKind.Constant when expression is ConstFieldDto constant &&
-                definition.AllowedConstants.Contains(constant.Value) =>
-                new FunctionSqlExpressionArgument(ParseValueExpression(constant)),
-
-            FunctionArgumentKind.Constant =>
-                throw new FormatException($"Invalid constant for function argument [{definition.Name}]."),
-
-            FunctionArgumentKind.SqlType when expression is ConstFieldDto { Value: string typeName } &&
-                definition.AllowedTypes.Contains(typeName, StringComparer.OrdinalIgnoreCase) =>
-                new FunctionSqlTypeArgument(metaProvider.GetSqlType(typeName)),
-
-            FunctionArgumentKind.SqlType =>
-                throw new FormatException($"Invalid logical SQL type for function argument [{definition.Name}]."),
-
-            _ => throw new FormatException($"Unsupported function argument kind [{definition.Kind}].")
-        };
+        return expression is FieldDto { FieldName: "*" }
+            ? new FunctionSqlTokenArgument("*")
+            : new FunctionSqlExpressionArgument(ParseQueryExpression(tableContext, expression, depth));
     }
 
     private FunctionSqlArgument? ParseDefaultFunctionArgument(
@@ -184,19 +161,10 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         if (definition.DefaultValue is not { } defaultValue)
             return null;
 
-        return defaultValue.Kind switch
-        {
-            FunctionArgumentDefaultKind.Constant =>
-                new FunctionSqlExpressionArgument(
-                    ParseQueryExpression(tableContext, new ConstFieldDto(defaultValue.Value), depth)),
-            FunctionArgumentDefaultKind.SqlToken when defaultValue.Value is string token &&
-                definition.AllowedTokens.Contains(token, StringComparer.OrdinalIgnoreCase) =>
-                new FunctionSqlTokenArgument(token),
-            FunctionArgumentDefaultKind.LogicalType when defaultValue.Value is string typeName &&
-                definition.AllowedTypes.Contains(typeName, StringComparer.OrdinalIgnoreCase) =>
-                new FunctionSqlTypeArgument(metaProvider.GetSqlType(typeName)),
-            _ => throw new FormatException($"Invalid default for function argument [{definition.Name}].")
-        };
+        return defaultValue is "*"
+            ? new FunctionSqlTokenArgument("*")
+            : new FunctionSqlExpressionArgument(
+                ParseQueryExpression(tableContext, new ConstFieldDto(defaultValue), depth));
     }
 
     private static decimal ToDecimal(object value)

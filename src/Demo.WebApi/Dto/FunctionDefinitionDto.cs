@@ -8,6 +8,7 @@ public sealed class FunctionDefinitionDto
     public string Name { get; set; } = "";
     public List<FunctionArgumentDefinitionDto> Arguments { get; set; } = [];
     public string ResultType { get; set; } = "";
+    public bool CanDelete { get; set; }
     public bool IsAggregate { get; set; }
     public string Description { get; set; } = "";
     public string? DefaultSqlTemplate { get; set; }
@@ -22,36 +23,10 @@ public sealed class FunctionDefinitionDto
 
         var arguments = Arguments.Select(argument =>
         {
-            if (argument.AllowedTokens is null || argument.AllowedTypes is null || argument.AllowedConstants is null)
-                throw new ArgumentException($"Allowed values for argument [{argument.Name}] cannot be null.");
-            if (argument.DefaultKind is null && argument.DefaultValue is not null)
-                throw new ArgumentException($"Argument [{argument.Name}] has a default value without a default kind.");
-
-            var allowedConstants = argument.AllowedConstants.Select(ToValue).ToArray();
-            var defaultValue = argument.DefaultKind switch
-            {
-                null => null,
-                FunctionArgumentDefaultKind.Constant when argument.DefaultValue is { } value =>
-                    FunctionArgumentDefault.Constant(ToValue(value)),
-                FunctionArgumentDefaultKind.SqlToken when argument.DefaultValue is { } value =>
-                    FunctionArgumentDefault.SqlToken(ToStringValue(value, "SQL token")),
-                FunctionArgumentDefaultKind.LogicalType when argument.DefaultValue is { } value =>
-                    FunctionArgumentDefault.LogicalType(ToStringValue(value, "logical type")),
-                _ => throw new ArgumentException($"A value is required for the default of argument [{argument.Name}].")
-            };
-
-            return argument.Kind switch
-            {
-                FunctionArgumentKind.Constant => FunctionArgumentDefinition.Constant(
-                    argument.Name, allowedConstants, argument.Optional, defaultValue),
-                FunctionArgumentKind.QueryExpression => FunctionArgumentDefinition.QueryExpression(
-                    argument.Name, argument.Optional, defaultValue),
-                FunctionArgumentKind.QueryExpressionOrSqlToken => FunctionArgumentDefinition.QueryExpressionOrSqlToken(
-                    argument.Name, argument.AllowedTokens, argument.Optional, defaultValue),
-                FunctionArgumentKind.SqlType => FunctionArgumentDefinition.SqlType(
-                    argument.Name, argument.AllowedTypes, argument.Optional, defaultValue),
-                _ => throw new ArgumentException($"Unsupported argument kind [{argument.Kind}].")
-            };
+            var defaultValue = argument.DefaultValue is { } value
+                ? ToValue(value, argument.DataType)
+                : null;
+            return new FunctionArgumentDefinition(argument.Name, argument.DataType, defaultValue);
         }).ToArray();
 
         return new FunctionDefinition(
@@ -71,15 +46,10 @@ public sealed class FunctionDefinitionDto
             Arguments = definition.Arguments.Select(argument => new FunctionArgumentDefinitionDto
             {
                 Name = argument.Name,
-                Kind = argument.Kind,
-                AllowedTokens = argument.AllowedTokens.ToList(),
-                AllowedTypes = argument.AllowedTypes.ToList(),
-                AllowedConstants = argument.AllowedConstants.Select(value => JsonSerializer.SerializeToElement(value)).ToList(),
-                Optional = argument.Optional,
-                DefaultKind = argument.DefaultValue?.Kind,
+                DataType = argument.DataType,
                 DefaultValue = argument.DefaultValue is null
                     ? null
-                    : JsonSerializer.SerializeToElement(argument.DefaultValue!.Value)
+                    : JsonSerializer.SerializeToElement(argument.DefaultValue)
             }).ToList(),
             ResultType = ResultTypes.First(mapping => mapping.Value == definition.ResultType).Key,
             IsAggregate = definition.IsAggregate,
@@ -88,22 +58,19 @@ public sealed class FunctionDefinitionDto
             SqlTemplates = new Dictionary<string, string>(definition.SqlTemplates, StringComparer.OrdinalIgnoreCase)
         };
 
-    private static object? ToValue(JsonElement value)
-        => value.ValueKind switch
+    private static object ToValue(JsonElement value, DataType dataType)
+        => value.ValueKind == JsonValueKind.String && value.GetString() == "*"
+            ? "*"
+            : dataType switch
         {
-            JsonValueKind.String => value.GetString(),
-            JsonValueKind.Number when value.TryGetInt64(out var integer) => integer,
-            JsonValueKind.Number => value.GetDecimal(),
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Null => null,
-            _ => throw new ArgumentException("Function constant values must be JSON strings, numbers, booleans, or null.")
+            DataType.String when value.ValueKind == JsonValueKind.String => value.GetString()!,
+            DataType.Number when value.ValueKind == JsonValueKind.Number => value.GetDecimal(),
+            DataType.Datetime when value.ValueKind == JsonValueKind.String &&
+                value.TryGetDateTime(out var dateTime) => dateTime,
+            DataType.Boolean when value.ValueKind is JsonValueKind.True or JsonValueKind.False =>
+                value.GetBoolean(),
+            _ => throw new ArgumentException($"The default value must match argument data type [{dataType}].")
         };
-
-    private static string ToStringValue(JsonElement value, string description)
-        => value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString())
-            ? value.GetString()!
-            : throw new ArgumentException($"The default {description} must be a non-empty string.");
 
     private static readonly IReadOnlyDictionary<string, Type> ResultTypes =
         new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
@@ -121,11 +88,6 @@ public sealed class FunctionDefinitionDto
 public sealed class FunctionArgumentDefinitionDto
 {
     public string Name { get; set; } = "";
-    public FunctionArgumentKind Kind { get; set; }
-    public List<string> AllowedTokens { get; set; } = [];
-    public List<string> AllowedTypes { get; set; } = [];
-    public List<JsonElement> AllowedConstants { get; set; } = [];
-    public bool Optional { get; set; }
-    public FunctionArgumentDefaultKind? DefaultKind { get; set; }
+    public DataType DataType { get; set; }
     public JsonElement? DefaultValue { get; set; }
 }

@@ -17,7 +17,12 @@ public static class FunctionDefinitionServices
         => new MetaProvider([], CustomDefinitions.Values)
             .GetFunctions()
             .OrderBy(definition => definition.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(FunctionDefinitionDto.FromFunctionDefinition)
+            .Select(definition =>
+            {
+                var dto = FunctionDefinitionDto.FromFunctionDefinition(definition);
+                dto.CanDelete = CustomDefinitions.ContainsKey(definition.Name);
+                return dto;
+            })
             .ToList();
 
     public static IReadOnlyCollection<FunctionDefinition> GetCustomFunctionDefinitions()
@@ -32,7 +37,9 @@ public static class FunctionDefinitionServices
 
         SaveDefinition(definition);
         CustomDefinitions.Add(definition.Name, definition);
-        return FunctionDefinitionDto.FromFunctionDefinition(definition);
+        var response = FunctionDefinitionDto.FromFunctionDefinition(definition);
+        response.CanDelete = true;
+        return response;
     }
 
     public static FunctionDefinitionDto UpdateFunctionDefinition(string functionName, FunctionDefinitionDto dto)
@@ -47,7 +54,20 @@ public static class FunctionDefinitionServices
 
         SaveDefinition(definition);
         CustomDefinitions[definition.Name] = definition;
-        return FunctionDefinitionDto.FromFunctionDefinition(definition);
+        var response = FunctionDefinitionDto.FromFunctionDefinition(definition);
+        response.CanDelete = true;
+        return response;
+    }
+
+    public static void DeleteFunctionDefinition(string functionName)
+    {
+        if (!CustomDefinitions.TryGetValue(functionName, out var definition))
+            throw new KeyNotFoundException($"Custom function '{functionName}' was not found.");
+
+        var nameHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(definition.Name.ToUpperInvariant())));
+        var filePath = Path.Combine(FunctionDefinitionsPath, $"{nameHash}.json");
+        File.Delete(filePath);
+        CustomDefinitions.Remove(definition.Name);
     }
 
     private static FunctionDefinition BuildDefinition(FunctionDefinitionDto dto)

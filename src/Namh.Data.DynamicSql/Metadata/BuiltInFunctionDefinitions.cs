@@ -16,7 +16,7 @@ internal static class BuiltInFunctionDefinitions
                 }),
             new ("Day", resultType: typeof(string),
                 description: "Extracts the day part from a date.", 
-                arguments: [FunctionArgumentDefinition.QueryExpression("extractDate")],
+                arguments: [new("extractDate", DataType.Datetime)],
                 sqlTemplates: new Dictionary<string, string>
                 {
                     ["SqlServer"] = "DAY({1})",
@@ -25,7 +25,7 @@ internal static class BuiltInFunctionDefinitions
 
              new ("Month", resultType: typeof(string),
                 description: "Extracts the month part from a date.", 
-                arguments: [FunctionArgumentDefinition.QueryExpression("extractDate")],
+                arguments: [new("extractDate", DataType.Datetime)],
                 sqlTemplates: new Dictionary<string, string>
                 {
                     ["SqlServer"] = "MONTH({1})",
@@ -33,7 +33,7 @@ internal static class BuiltInFunctionDefinitions
                 }),
              new ("Year", resultType: typeof(string),
                 description: "Extracts the year part from a date.", 
-                arguments: [FunctionArgumentDefinition.QueryExpression("extractDate")],
+                arguments: [new("extractDate", DataType.Datetime)],
                 sqlTemplates: new Dictionary<string, string>
                 {
                     ["SqlServer"] = "YEAR({1})",
@@ -42,8 +42,8 @@ internal static class BuiltInFunctionDefinitions
             new(
                 "DateSub",
                 [
-                    FunctionArgumentDefinition.QueryExpression("startDate"),
-                    FunctionArgumentDefinition.QueryExpression("endDate")
+                    new("startDate", DataType.Datetime),
+                    new("endDate", DataType.Datetime)
                 ],
                 typeof(int),
                 sqlTemplates: new Dictionary<string, string>
@@ -65,50 +65,46 @@ internal static class BuiltInFunctionDefinitions
                 "Adds the specified number of years to a date or date-time."),
             Create("COUNT",
                 [
-                    FunctionArgumentDefinition.QueryExpressionOrSqlToken(
-                        "value",
-                        ["*"],
-                        optional: true,
-                        defaultValue: FunctionArgumentDefault.SqlToken("*"))
+                    new("value", DataType.Number, "*")
                 ],
                 typeof(long),
                 "COUNT({1})",
                 isAggregate: true,
                 description: "Counts rows or non-null values."),
-            Create("SUM", [FunctionArgumentDefinition.QueryExpression("expression")],
+            Create("SUM", [new("expression", DataType.Number)],
                 typeof(decimal), "SUM({1})", isAggregate: true,
                 description: "Returns the sum of numeric values."),
-            Create("AVG", [FunctionArgumentDefinition.QueryExpression("expression")],
+            Create("AVG", [new("expression", DataType.Number)],
                 typeof(decimal), "AVG({1})", isAggregate: true,
                 description: "Returns the average of numeric values."),
-            Create("AVERAGE", [FunctionArgumentDefinition.QueryExpression("expression")],
+            Create("AVERAGE", [new("expression", DataType.Number)],
                 typeof(decimal), "AVG({1})", isAggregate: true,
                 description: "Returns the average of numeric values."),
-            Create("MAX", [FunctionArgumentDefinition.QueryExpression("expression")],
+            Create("MAX", [new("expression", DataType.Number)],
                 typeof(decimal), "MAX({1})", isAggregate: true,
                 description: "Returns the maximum value."),
-            Create("MIN", [FunctionArgumentDefinition.QueryExpression("expression")],
+            Create("MIN", [new("expression", DataType.Number)],
                 typeof(decimal), "MIN({1})", isAggregate: true,
                 description: "Returns the minimum value."),
             Create("ROUND",
                 [
-                    FunctionArgumentDefinition.QueryExpression("value"),
-                    FunctionArgumentDefinition.QueryExpression("digits")
+                    new("value", DataType.Number),
+                    new("digits", DataType.Number)
                 ],
                 typeof(decimal), "ROUND({1}, {2})",
                 description: "Rounds a number to the specified number of decimal places."),
             Create("NULLIF",
                 [
-                    FunctionArgumentDefinition.QueryExpression("value"),
-                    FunctionArgumentDefinition.QueryExpression("otherValue")
+                    new("value", DataType.Number),
+                    new("otherValue", DataType.Number)
                 ],
                 typeof(decimal), "NULLIF({1}, {2})",
                 description: "Returns null when the two values are equal; otherwise returns the first value."),
             new(
                 "DateFormat",
                 [
-                    FunctionArgumentDefinition.QueryExpression("value"),
-                    FunctionArgumentDefinition.Constant("format", ["%Y-%m", "%w"])
+                    new("value", DataType.Datetime),
+                    new("format", DataType.String)
                 ],
                 typeof(string),
                 sqlTemplates: new Dictionary<string, string>
@@ -195,8 +191,8 @@ internal static class BuiltInFunctionDefinitions
         return new FunctionDefinition(
             name,
             [
-                FunctionArgumentDefinition.QueryExpression("startDate"),
-                FunctionArgumentDefinition.QueryExpression("endDate")
+                new("startDate", DataType.Datetime),
+                new("endDate", DataType.Datetime)
             ],
             typeof(int),
             description,
@@ -217,8 +213,8 @@ internal static class BuiltInFunctionDefinitions
         return new FunctionDefinition(
             name,
             [
-                FunctionArgumentDefinition.QueryExpression("value"),
-                FunctionArgumentDefinition.QueryExpression("amount")
+                new("value", DataType.Datetime),
+                new("amount", DataType.Number)
             ],
             typeof(DateTime),
             description,

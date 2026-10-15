@@ -1,0 +1,5 @@
+.function-list { background: #0e1117; border-right: 1px solid var(--line); padding: 22px 12px; }
+
+@media (max-width: 760px) {
+  .function-list { border-right: 0; border-bottom: 1px solid var(--line); }
+}

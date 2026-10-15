@@ -4,144 +4,36 @@ using System.Collections.ObjectModel;
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
-public enum FunctionArgumentKind
-{
-    Constant,
-    QueryExpression,
-    QueryExpressionOrSqlToken,
-    SqlType
-}
-
-public enum FunctionArgumentDefaultKind
-{
-    Constant,
-    SqlToken,
-    LogicalType
-}
-
-public sealed record FunctionArgumentDefault
-{
-    private FunctionArgumentDefault(FunctionArgumentDefaultKind kind, object? value)
-    {
-        Kind = kind;
-        Value = value;
-    }
-
-    public FunctionArgumentDefaultKind Kind { get; }
-    public object? Value { get; }
-
-    public static FunctionArgumentDefault Constant(object? value)
-        => new(FunctionArgumentDefaultKind.Constant, value);
-
-    public static FunctionArgumentDefault SqlToken(string value)
-        => string.IsNullOrWhiteSpace(value)
-            ? throw new ArgumentException("A SQL token is required.", nameof(value))
-            : new(FunctionArgumentDefaultKind.SqlToken, value);
-
-    public static FunctionArgumentDefault LogicalType(string value)
-        => string.IsNullOrWhiteSpace(value)
-            ? throw new ArgumentException("A logical type is required.", nameof(value))
-            : new(FunctionArgumentDefaultKind.LogicalType, value);
-}
-
 public sealed record FunctionArgumentDefinition
 {
-    private FunctionArgumentDefinition(
-        string name,
-        FunctionArgumentKind kind,
-        IReadOnlyList<string> allowedTokens,
-        IReadOnlyList<string> allowedTypes,
-        IReadOnlyList<object?> allowedConstants,
-        bool optional,
-        FunctionArgumentDefault? defaultValue)
+    public FunctionArgumentDefinition(string name, DataType dataType, object? defaultValue = null)
     {
-        ArgumentNullException.ThrowIfNull(allowedTokens);
-        ArgumentNullException.ThrowIfNull(allowedTypes);
-        ArgumentNullException.ThrowIfNull(allowedConstants);
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("An argument name is required.", nameof(name));
-        if (!optional && defaultValue is not null)
-            throw new ArgumentException("A required argument cannot have a default.", nameof(defaultValue));
-        if (defaultValue is { Kind: FunctionArgumentDefaultKind.Constant, Value: null })
-            throw new ArgumentException("A constant default value cannot be null.", nameof(defaultValue));
-        if (kind == FunctionArgumentKind.Constant && allowedConstants.Count == 0)
-            throw new ArgumentException("A constant argument must declare at least one allowed value.", nameof(allowedConstants));
-        if (allowedConstants.Any(value => value is null))
-            throw new ArgumentException("Allowed constant values cannot contain null.", nameof(allowedConstants));
-        if (kind == FunctionArgumentKind.QueryExpressionOrSqlToken && allowedTokens.Count == 0)
-            throw new ArgumentException("A SQL-token argument must declare at least one allowed token.", nameof(allowedTokens));
-        if (kind == FunctionArgumentKind.SqlType && allowedTypes.Count == 0)
-            throw new ArgumentException("A SQL-type argument must declare at least one logical type.", nameof(allowedTypes));
-        if (!IsValidDefault(kind, allowedTokens, allowedTypes, allowedConstants, defaultValue))
-            throw new ArgumentException("The default is not allowed for this argument definition.", nameof(defaultValue));
+        if (!Enum.IsDefined(dataType))
+            throw new ArgumentOutOfRangeException(nameof(dataType));
+        if (defaultValue is not null && defaultValue is not "*" && !IsDefaultValueType(dataType, defaultValue))
+            throw new ArgumentException($"The default value must match argument data type [{dataType}].", nameof(defaultValue));
 
         Name = name;
-        Kind = kind;
-        AllowedTokens = Array.AsReadOnly(allowedTokens.ToArray());
-        AllowedTypes = Array.AsReadOnly(allowedTypes.ToArray());
-        AllowedConstants = Array.AsReadOnly(allowedConstants.ToArray());
-        Optional = optional;
+        DataType = dataType;
         DefaultValue = defaultValue;
     }
 
     public string Name { get; }
-    public FunctionArgumentKind Kind { get; }
-    public IReadOnlyList<string> AllowedTokens { get; }
-    public IReadOnlyList<string> AllowedTypes { get; }
-    public IReadOnlyList<object?> AllowedConstants { get; }
-    public bool Optional { get; }
-    public FunctionArgumentDefault? DefaultValue { get; }
+    public DataType DataType { get; }
+    public object? DefaultValue { get; }
+    public bool Optional => DefaultValue is not null;
 
-    public static FunctionArgumentDefinition Constant(
-        string name,
-        IReadOnlyList<object?> allowedValues,
-        bool optional = false,
-        FunctionArgumentDefault? defaultValue = null)
-        => new(name, FunctionArgumentKind.Constant, [], [], allowedValues, optional, defaultValue);
-
-    public static FunctionArgumentDefinition QueryExpression(
-        string name,
-        bool optional = false,
-        FunctionArgumentDefault? defaultValue = null)
-        => new(name, FunctionArgumentKind.QueryExpression, [], [], [], optional, defaultValue);
-
-    public static FunctionArgumentDefinition QueryExpressionOrSqlToken(
-        string name,
-        IReadOnlyList<string> allowedTokens,
-        bool optional = false,
-        FunctionArgumentDefault? defaultValue = null)
-        => new(name, FunctionArgumentKind.QueryExpressionOrSqlToken, allowedTokens, [], [], optional, defaultValue);
-
-    public static FunctionArgumentDefinition SqlType(
-        string name,
-        IReadOnlyList<string> allowedTypes,
-        bool optional = false,
-        FunctionArgumentDefault? defaultValue = null)
-        => new(name, FunctionArgumentKind.SqlType, [], allowedTypes, [], optional, defaultValue);
-
-    private static bool IsValidDefault(
-        FunctionArgumentKind kind,
-        IReadOnlyList<string> allowedTokens,
-        IReadOnlyList<string> allowedTypes,
-        IReadOnlyList<object?> allowedConstants,
-        FunctionArgumentDefault? defaultValue)
-    {
-        if (defaultValue is null)
-            return true;
-
-        return (kind, defaultValue.Kind, defaultValue.Value) switch
+    private static bool IsDefaultValueType(DataType dataType, object value)
+        => dataType switch
         {
-            (FunctionArgumentKind.Constant, FunctionArgumentDefaultKind.Constant, var value) =>
-                allowedConstants.Contains(value),
-            (FunctionArgumentKind.QueryExpression, FunctionArgumentDefaultKind.Constant, _) => true,
-            (FunctionArgumentKind.QueryExpressionOrSqlToken, FunctionArgumentDefaultKind.Constant, _) => true,
-            (FunctionArgumentKind.QueryExpressionOrSqlToken, FunctionArgumentDefaultKind.SqlToken, string token) =>
-                allowedTokens.Contains(token, StringComparer.OrdinalIgnoreCase),
-            (FunctionArgumentKind.SqlType, FunctionArgumentDefaultKind.LogicalType, string type) =>
-                allowedTypes.Contains(type, StringComparer.OrdinalIgnoreCase),
+            DataType.String => value is string,
+            DataType.Number => value is byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal,
+            DataType.Datetime => value is DateTime,
+            DataType.Boolean => value is bool,
             _ => false
         };
-    }
 }
 
 public sealed class FunctionDefinition
@@ -186,7 +78,7 @@ public sealed class FunctionDefinition
         IsAggregate = isAggregate;
         Description = description;
         if (defaultSqlTemplate is not null)
-            ValidateTemplate(defaultSqlTemplate, arguments.Count, "default");
+            ValidateTemplate(defaultSqlTemplate, arguments, "default");
         DefaultSqlTemplate = defaultSqlTemplate;
 
         var templates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -196,7 +88,7 @@ public sealed class FunctionDefinition
                 throw new ArgumentException("Dialect template keys cannot be empty.", nameof(sqlTemplates));
             if (string.IsNullOrWhiteSpace(template))
                 throw new ArgumentException($"The SQL template for [{dialect}] cannot be empty.", nameof(sqlTemplates));
-            ValidateTemplate(template, arguments.Count, dialect);
+            ValidateTemplate(template, arguments, dialect);
             templates.Add(dialect, template);
         }
 
@@ -217,7 +109,10 @@ public sealed class FunctionDefinition
             : DefaultSqlTemplate
                 ?? throw new FormatException($"Function [{Name}] has no SQL template for dialect [{dialect}].");
 
-    private static void ValidateTemplate(string template, int argumentCount, string dialect)
+    private static void ValidateTemplate(
+        string template,
+        IReadOnlyList<FunctionArgumentDefinition> arguments,
+        string dialect)
     {
         for (var index = 0; index < template.Length; index++)
         {
@@ -227,10 +122,15 @@ public sealed class FunctionDefinition
                 continue;
 
             var close = template.IndexOf('}', index + 1);
-            if (close < 0 ||
-                !int.TryParse(template.AsSpan(index + 1, close - index - 1), out var argumentIndex) ||
-                argumentIndex < 1 ||
-                argumentIndex > argumentCount)
+            if (close < 0)
+                throw new ArgumentException($"The SQL template for [{dialect}] contains an invalid argument placeholder.");
+
+            var placeholder = template.Substring(index + 1, close - index - 1);
+            var isIndex = int.TryParse(placeholder, out var argumentIndex) &&
+                argumentIndex >= 1 && argumentIndex <= arguments.Count;
+            var isName = arguments.Any(argument =>
+                string.Equals(placeholder, argument.Name, StringComparison.OrdinalIgnoreCase));
+            if (!isIndex && !isName)
                 throw new ArgumentException($"The SQL template for [{dialect}] contains an invalid argument placeholder.");
 
             index = close;

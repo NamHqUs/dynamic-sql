@@ -1,19 +1,12 @@
-export type FunctionArgumentKind =
-  | "Constant"
-  | "QueryExpression"
-  | "QueryExpressionOrSqlToken"
-  | "SqlType";
+export const functionArgumentDataTypes = ["String", "Number", "Datetime", "Boolean"] as const;
+export type FunctionArgumentDataType = typeof functionArgumentDataTypes[number];
 
-export type FunctionArgumentDefaultKind = "Constant" | "SqlToken" | "LogicalType";
+export const functionDatabaseTypes = ["Sqlite", "SqlServer", "Postgres"] as const;
+export type FunctionDatabaseType = typeof functionDatabaseTypes[number];
 
 export type FunctionArgumentDefinition = {
   name: string;
-  kind: FunctionArgumentKind;
-  allowedTokens: string[];
-  allowedTypes: string[];
-  allowedConstants: unknown[];
-  optional: boolean;
-  defaultKind: FunctionArgumentDefaultKind | null;
+  dataType: FunctionArgumentDataType;
   defaultValue: unknown;
 };
 
@@ -21,6 +14,7 @@ export type FunctionDefinition = {
   name: string;
   arguments: FunctionArgumentDefinition[];
   resultType: string;
+  canDelete?: boolean;
   isAggregate: boolean;
   description: string;
   defaultSqlTemplate: string | null;
@@ -29,35 +23,37 @@ export type FunctionDefinition = {
 
 export type EditableFunctionArgument = FunctionArgumentDefinition & {
   id: string;
-  allowedTokensText: string;
-  allowedTypesText: string;
-  allowedConstantsText: string;
   defaultValueText: string;
+};
+
+export type EditableFunctionTemplate = {
+  id: string;
+  databaseType: FunctionDatabaseType;
+  rawSqlTemplate: string;
 };
 
 export type EditableFunctionDefinition = Omit<FunctionDefinition, "arguments" | "sqlTemplates"> & {
   arguments: EditableFunctionArgument[];
   sqlTemplates: Record<string, string>;
-  sqlTemplatesText: string;
+  sqlTemplateRows: EditableFunctionTemplate[];
 };
+
+let nextArgumentId = 1;
+let nextTemplateId = 1;
 
 export const emptyFunctionArgument = (): EditableFunctionArgument => ({
   id: `argument-${nextArgumentId++}`,
   name: "",
-  kind: "QueryExpression",
-  allowedTokens: [],
-  allowedTypes: [],
-  allowedConstants: [],
-  optional: false,
-  defaultKind: null,
+  dataType: "String",
   defaultValue: null,
-  allowedTokensText: "",
-  allowedTypesText: "",
-  allowedConstantsText: "[]",
   defaultValueText: "",
 });
 
-let nextArgumentId = 1;
+export const emptyFunctionTemplate = (databaseType: FunctionDatabaseType): EditableFunctionTemplate => ({
+  id: `template-${nextTemplateId++}`,
+  databaseType,
+  rawSqlTemplate: "",
+});
 
 export const emptyFunction = (): EditableFunctionDefinition => ({
   name: "",
@@ -65,24 +61,48 @@ export const emptyFunction = (): EditableFunctionDefinition => ({
   resultType: "string",
   isAggregate: false,
   description: "",
-  defaultSqlTemplate: "",
+  defaultSqlTemplate: null,
   sqlTemplates: {},
-  sqlTemplatesText: "{}",
+  sqlTemplateRows: [
+    emptyFunctionTemplate("Sqlite"),
+    emptyFunctionTemplate("SqlServer"),
+    emptyFunctionTemplate("Postgres"),
+  ],
 });
 
 export function toEditableFunction(definition: FunctionDefinition): EditableFunctionDefinition {
+  const templateRows = Object.entries(definition.sqlTemplates)
+    .filter(([databaseType]) => isFunctionDatabaseType(databaseType))
+    .map(([databaseType, rawSqlTemplate]) => ({
+      ...emptyFunctionTemplate(databaseType as FunctionDatabaseType),
+      rawSqlTemplate,
+    }));
+
+  if (!templateRows.length && definition.defaultSqlTemplate) {
+    templateRows.push(
+      emptyFunctionTemplate("Sqlite"),
+      emptyFunctionTemplate("SqlServer"),
+      emptyFunctionTemplate("Postgres"),
+    );
+    for (const row of templateRows) row.rawSqlTemplate = definition.defaultSqlTemplate;
+  }
+
   return {
     ...definition,
-    defaultSqlTemplate: definition.defaultSqlTemplate || "",
     arguments: definition.arguments.map((argument) => ({
-      id: `argument-${nextArgumentId++}`,
       ...argument,
-      allowedTokensText: argument.allowedTokens.join(", "),
-      allowedTypesText: argument.allowedTypes.join(", "),
-      allowedConstantsText: JSON.stringify(argument.allowedConstants, null, 2),
-      defaultValueText: argument.defaultKind === null ? "" : JSON.stringify(argument.defaultValue),
+      id: `argument-${nextArgumentId++}`,
+      defaultValueText: argument.defaultValue == null
+        ? ""
+        : typeof argument.defaultValue === "string"
+          ? argument.defaultValue
+          : String(argument.defaultValue),
     })),
     sqlTemplates: { ...definition.sqlTemplates },
-    sqlTemplatesText: JSON.stringify(definition.sqlTemplates, null, 2),
+    sqlTemplateRows: templateRows,
   };
+}
+
+function isFunctionDatabaseType(databaseType: string): databaseType is FunctionDatabaseType {
+  return functionDatabaseTypes.some((supportedType) => supportedType === databaseType);
 }
