@@ -20,7 +20,10 @@ public class _14_QueryRequestTests : TestBase
                     LogicalOperator.And,
                     new FieldDto("Age"),
                     BinaryOperator.GreaterThan,
-                    new ConstFieldDto(18))),
+                    new ConstFieldDto(18))
+                {
+                    Parameterized = true
+                }),
             Sorts =
             [
                 new SortDto(new FieldDto("Name"))
@@ -33,8 +36,9 @@ public class _14_QueryRequestTests : TestBase
 
         Assert.That(sql.CommandText, Does.Contain("SELECT"));
         Assert.That(sql.CommandText, Does.Contain("ORDER BY"));
-        Assert.That(sql.CommandText, Does.Contain("FETCH NEXT 10 ROWS ONLY"));
-        Assert.That(sql.CommandText, Does.Contain("Age"));
+        Assert.That(sql.CommandText, Does.Contain("LIMIT 10 OFFSET 0"));
+        Assert.That(sql.CommandText, Does.Contain("@p0"));
+        Assert.That(sql.Parameters.Select(parameter => parameter.Value), Is.EqualTo(new object?[] { 18 }));
     }
 
     [Test]
@@ -60,8 +64,8 @@ public class _14_QueryRequestTests : TestBase
 
         var sql = _db.Query(definition).ToSql().CommandText;
 
-        Assert.That(sql, Does.Contain("GROUP BY t0.[Name]"));
-        Assert.That(sql, Does.Contain("HAVING (AVG (t0.[Age]) >"));
+        Assert.That(sql, Does.Contain("GROUP BY t0.\"Name\""));
+        Assert.That(sql, Does.Contain("HAVING (AVG (t0.\"Age\") >"));
         Assert.That(sql, Does.Not.Contain("WHERE (("));
         Assert.That(sql, Does.Not.Contain("SELECT AVG"));
     }
