@@ -3,7 +3,7 @@ using Namh.Data.DynamicSql;
 
 namespace Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 
-public static class FieldDtoParser
+internal static class FieldDtoParser
 {
     public static IFieldDto Parse(string text)
     {

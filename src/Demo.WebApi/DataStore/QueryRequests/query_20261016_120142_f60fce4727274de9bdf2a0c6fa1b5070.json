@@ -1,0 +1,60 @@
+{
+  "Query": {
+    "Name": "7. Paid collection time by payment method",
+    "Entity": "Invoices",
+    "Fields": [
+      {
+        "field": {
+          "kind": "field",
+          "field": "PaymentMethod"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Count",
+          "arguments": []
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "DateSub",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "InvoiceDate"
+            },
+            {
+              "kind": "function",
+              "function": "GETDATE",
+              "arguments": []
+            }
+          ]
+        },
+        "alias": "DaysOverdue"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "TotalAmount"
+            }
+          ]
+        },
+        "alias": "Collected"
+      }
+    ],
+    "Filter": null,
+    "Sorts": [],
+    "Page": 1,
+    "PageSize": 50,
+    "IncludeArchive": false
+  },
+  "RequestText": "Name: 7. Paid collection time by payment method\nEntity: Invoices\nFields: PaymentMethod, Count() , DateSub(InvoiceDate, GETDATE()) | DaysOverdue, Sum(TotalAmount) | Collected\nFilters: \nSorts: \nPage: 1\nPageSize: 50\nIncludeArchive: False"
+}

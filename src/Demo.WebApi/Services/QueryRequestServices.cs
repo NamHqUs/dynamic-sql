@@ -70,7 +70,7 @@ public static class QueryRequestServices
         var fieldText = values.GetValueOrDefault("Fields");
         var fields = !string.IsNullOrWhiteSpace(fieldText) && fieldText.TrimStart().StartsWith('[')
             ? ParseJsonFields(fieldText, parsedEntity)
-            : ProjectionDto.FromTextList(fieldText ?? string.Empty);
+            : QueryDtoParser.ParseProjections(fieldText ?? string.Empty);
         var sorts = ParseSorts(values.GetValueOrDefault("Sorts"));
 
         var filterText = values.GetValueOrDefault("Filters");
@@ -245,7 +245,7 @@ public static class QueryRequestServices
                 if (string.IsNullOrWhiteSpace(sortText))
                     throw new FormatException($"Invalid sort definition [{item}].");
 
-                return new SortDto(FieldDtoParser.Parse(sortText), direction);
+                return new SortDto(QueryDtoParser.ParseField(sortText), direction);
             }).ToList();
 
     private static List<string> SplitTopLevel(string text, char delimiter)

@@ -1,5 +1,6 @@
 using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 using NUnit.Framework.Constraints;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
@@ -11,7 +12,7 @@ internal class _21_QureyRequestParser : TestBase
     public void TextToFunctionFieldDto_Arguments()
     {
         var text = "Round(Id, <2>)";
-        var field = (FunctionFieldDto)FieldDtoParser.Parse(text);
+        var field = (FunctionFieldDto)QueryDtoParser.ParseField(text);
 
         var expectedField = new FunctionFieldDto("Round", [
             new FieldDto("Id"),
@@ -26,7 +27,7 @@ internal class _21_QureyRequestParser : TestBase
     public void TextToFunctionFieldDto_GroupArgument()
     {
         var text = "Round(Id + <2>)";
-        var field = (FunctionFieldDto)FieldDtoParser.Parse(text);
+        var field = (FunctionFieldDto)QueryDtoParser.ParseField(text);
 
         var expectedField = new FunctionFieldDto("Round", [
             new GroupFieldDto( [
@@ -43,7 +44,7 @@ internal class _21_QureyRequestParser : TestBase
     public void TextToFunctionFieldDto_Mested()
     {
         var text = "Round(Sum(Id + Age), <2>)";
-        var field = (FunctionFieldDto)FieldDtoParser.Parse(text);
+        var field = (FunctionFieldDto)QueryDtoParser.ParseField(text);
 
         var expectedField = new FunctionFieldDto("Round", [
             new FunctionFieldDto("Sum", [
@@ -62,7 +63,7 @@ internal class _21_QureyRequestParser : TestBase
     [Test]
     public void TextToFunctionFieldDto_LegacyBracketSyntax()
     {
-        var field = (FunctionFieldDto)FieldDtoParser.Parse("Round[Sum[Id], <2>]");
+        var field = (FunctionFieldDto)QueryDtoParser.ParseProjections("Round[Sum[Id], <2>]")[0].Field;
 
         Assert.That(field.ToText(), Is.EqualTo("Round(Sum(Id), <2>)"));
     }
@@ -71,7 +72,7 @@ internal class _21_QureyRequestParser : TestBase
     public void TextToGroupFieldDto()
     {
         var text = "Id + Age";
-        var field = (GroupFieldDto)FieldDtoParser.Parse(text);
+        var field = (GroupFieldDto)QueryDtoParser.ParseField(text);
 
         var expectedField = new GroupFieldDto([
                 new FieldDto("Id"),
@@ -86,7 +87,7 @@ internal class _21_QureyRequestParser : TestBase
     public void TextToGroupFieldDto_Nested()
     {
         var text = "Id + (Age * Sum(Salary))";
-        var field = (GroupFieldDto)FieldDtoParser.Parse(text);
+        var field = (GroupFieldDto)QueryDtoParser.ParseField(text);
 
         var expectedField = new GroupFieldDto([
                 new FieldDto("Id"),

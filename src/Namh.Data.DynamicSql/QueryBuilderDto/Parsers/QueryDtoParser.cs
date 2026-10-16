@@ -37,6 +37,10 @@ public static class QueryDtoParser
         };
     }
 
+    public static IFieldDto ParseField(string plainText) => FieldDtoParser.Parse(plainText);
+    public static List<ProjectionDto> ParseProjections(string plainText) => ProjectionDtoParser.Parse(plainText);
+    public static FilterDto ParseFilter(string plainText) => FilterDtoParser.Parse(plainText);
+
     private static SortDto ParseSort(JsonElement element)
     {
         if (element.ValueKind == JsonValueKind.String)

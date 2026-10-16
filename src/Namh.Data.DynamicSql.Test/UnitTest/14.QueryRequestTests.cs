@@ -1,3 +1,5 @@
+using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
+
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
 [TestFixture]
@@ -9,21 +11,8 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDto
         {
             Entity = "User",
-            Fields =
-            [
-                ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Manager.Name | ManagerName")
-            ],
-            Filter = new FilterDto(
-                LogicalOperator.And,
-                new FilterItemDto(
-                    LogicalOperator.And,
-                    new FieldDto("Age"),
-                    BinaryOperator.GreaterThan,
-                    new ConstFieldDto(18))
-                {
-                    Parameterized = true
-                }),
+            Fields = QueryDtoParser.ParseProjections("Name, Manager.Name | ManagerName"),
+            Filter = QueryDtoParser.ParseFilter("Age > 18"),
             Sorts =
             [
                 new SortDto(new FieldDto("Name"))
@@ -47,18 +36,8 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDto
         {
             Entity = "User",
-            Fields =
-            [
-                ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Average(Age) | AverageAge")
-            ],
-            Filter = new FilterDto(
-                LogicalOperator.And,
-                new FilterItemDto(
-                    LogicalOperator.And,
-                    new FieldDto("Average(Age)"),
-                    BinaryOperator.GreaterThan,
-                    new ConstFieldDto(12))),
+            Fields = QueryDtoParser.ParseProjections("Name, Average(Age) | AverageAge"),
+            Filter = QueryDtoParser.ParseFilter("Average(Age) > 12"),
             PageSize = 50
         };
 
@@ -76,14 +55,8 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDto
         {
             Entity = "User",
-            Fields = [ProjectionDto.FromText("Name")],
-            Filter = new FilterDto(
-                LogicalOperator.And,
-                new FilterItemDto(
-                    LogicalOperator.And,
-                    new FieldDto("Name"),
-                    BinaryOperator.Equals,
-                    new ConstFieldDto("Alice")))
+            Fields = QueryDtoParser.ParseProjections("Name"),
+            Filter = QueryDtoParser.ParseFilter("Name = 'Alice'"),
         };
 
         var records = _db.Query(definition).ToList();
@@ -122,13 +95,8 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDto
         {
             Entity = "User",
-            Fields =
-            [
-                ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Count() | InvoiceCount"),
-                ProjectionDto.FromText("Sum(Age) | Revenue"),
-                ProjectionDto.FromText("Average(Age) | AverageOrderValue")
-            ]
+            Fields = QueryDtoParser.ParseProjections("Name, Count() | InvoiceCount, Sum(Age) | Revenue, Average(Age) | AverageOrderValue"),
+            Filter = null
         };
 
         var sql = _db.Query(definition).ToSql();
@@ -150,13 +118,8 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDto
         {
             Entity = "User",
-            Fields =
-            [
-                ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Count[Id] | InvoiceCount"),
-                ProjectionDto.FromText("Sum[Age] | TotalAge"),
-                ProjectionDto.FromText("Average[Age] | AverageAge")
-            ]
+            Fields = QueryDtoParser.ParseProjections("Name, Count[Id] | InvoiceCount, Sum[Age] | TotalAge, Average[Age] | AverageAge"),
+            Filter = null
         };
 
         var sql = _db.Query(definition).ToSql().CommandText;
@@ -173,12 +136,8 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDto
         {
             Entity = "User",
-            Fields =
-            [
-                ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Count[*] | WildcardCount"),
-                ProjectionDto.FromText("Count[] | EmptyCount")
-            ]
+            Fields = QueryDtoParser.ParseProjections("Name, Count[*] | WildcardCount, Count[] | EmptyCount"),
+            Filter = null
         };
 
         var query = _db.Query(definition);
@@ -197,11 +156,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDto
         {
             Entity = "User",
-            Fields =
-            [
-                ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Sum(Members.Age) | TotalMemberAge")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Name, Sum(Members.Age) | TotalMemberAge"),
             Sorts = [new SortDto(new FunctionFieldDto("Sum", [new FieldDto("Members.Age")]))]
         };
 
@@ -300,7 +255,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDto
         {
             Entity = "User",
-            Fields = [ProjectionDto.FromText("Id"), ProjectionDto.FromText("Name")],
+            Fields = QueryDtoParser.ParseProjections("Id, Name"),
             Filter = new FilterDto(
                 LogicalOperator.And,
                 new FilterDto(

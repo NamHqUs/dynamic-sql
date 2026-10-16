@@ -26,9 +26,7 @@ internal static class DbQueryFromQueryDto
             foreach (var field in definition.Fields)
             {
                 var alias = string.IsNullOrWhiteSpace(field.Alias)
-                    ? field.Field is FieldDto simpleField
-                        ? simpleField.FieldName
-                        : throw new FormatException("Calculated projection fields require an alias.")
+                    ? field.Field.ToText()
                     : field.Alias;
                 selection[alias] = field.Field;
             }

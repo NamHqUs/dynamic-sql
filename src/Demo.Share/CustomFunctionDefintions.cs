@@ -35,18 +35,6 @@ public class CustomFunctionDefintions
             ["Postgres"] = "CAST(EXTRACT(YEAR FROM {1}) AS INTEGER)"
         }),
 
-        new (
-            "Average",
-            [new("number", DataType.Number)],
-            DataType.Number,
-            sqlTemplates: new Dictionary<string, string>
-            {
-                ["SqlServer"] = "AVG({1})",
-                ["Sqlite"] = "AVG({1})",
-                ["Postgres"] = "AVG({1})"
-            },
-            description: "Returns the average of numeric values.",
-            isAggregate: true),
 
         CreateDateDifference("DateSub", "day",
             "Returns the number of elapsed whole days from startDate to endDate."),
@@ -62,6 +50,19 @@ public class CustomFunctionDefintions
             "Returns the number of calendar-year boundaries from startDate to endDate."),
         CreateDateAdjustment("YearAdd", "year", "years",
             "Adds the specified number of years to a date or date-time."),
+
+        new (
+            "Average",
+            [new("number", DataType.Number)],
+            DataType.Number,
+            sqlTemplates: new Dictionary<string, string>
+            {
+                ["SqlServer"] = "AVG({1})",
+                ["Sqlite"] = "AVG({1})",
+                ["Postgres"] = "AVG({1})"
+            },
+            description: "Returns the average of numeric values.",
+            isAggregate: true),
     ];
 
     private static FunctionDefinition CreateDateDifference(

@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 
-public sealed class FilterDtoParser
+internal sealed class FilterDtoParser
 {
     private readonly List<Token> _tokens;
     private int _position;

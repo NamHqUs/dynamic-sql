@@ -11,13 +11,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "1. Monthly revenue and invoice volume",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("DateFormat[InvoiceDate, <%Y-%m>] | Month"),
-                ProjectionDto.FromText("COUNT[] | InvoiceCount"),
-                ProjectionDto.FromText("SUM[TotalAmount] | Revenue"),
-                ProjectionDto.FromText("AVG[TotalAmount] | AverageOrderValue")
-            ],
+            Fields = QueryDtoParser.ParseProjections("DateFormat[InvoiceDate, <%Y-%m>] | Month, COUNT[] | InvoiceCount, SUM[TotalAmount] | Revenue, AVG[TotalAmount] | AverageOrderValue"),
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
             Sorts = [Sort("Month")]
         }, 3, "DateFormat[InvoiceDate, <%Y-%m>]");
@@ -26,13 +20,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "2. Revenue by customer segment and region",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("Customer.Segment"),
-                ProjectionDto.FromText("Customer.Region"),
-                ProjectionDto.FromText("COUNT[] | InvoiceCount"),
-                ProjectionDto.FromText("SUM[TotalAmount] | Revenue")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Customer.Segment, Customer.Region, COUNT[] | InvoiceCount, SUM[TotalAmount] | Revenue"),
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, null, "Customer.Segment", "Customer.Region");
@@ -41,13 +29,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "3. Top customers by lifetime value",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("Customer.Id"),
-                ProjectionDto.FromText("Customer.Name"),
-                ProjectionDto.FromText("COUNT[] | Orders"),
-                ProjectionDto.FromText("SUM[TotalAmount] | LifetimeValue")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Customer.Id, Customer.Name, COUNT[] | Orders, SUM[TotalAmount] | LifetimeValue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("LifetimeValue", QuerySortDirection.Descending)],
             PageSize = 10
@@ -57,13 +39,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "4. Best-selling products by units and revenue",
             Entity = "Products",
-            Fields =
-            [
-                ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Category"),
-                ProjectionDto.FromText("SUM[InvoiceItems.Quantity] | UnitsSold"),
-                ProjectionDto.FromText("SUM[InvoiceItems.LineTotal] | Revenue")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Name, Category, SUM[InvoiceItems.Quantity] | UnitsSold, SUM[InvoiceItems.LineTotal] | Revenue"),
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, 9, "Id", "Name", "Category");
@@ -72,15 +48,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "5. Gross margin by product",
             Entity = "Products",
-            Fields =
-            [
-                ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("SUM[InvoiceItems.Quantity] | UnitsSold"),
-                ProjectionDto.FromText(
-                    "SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit"),
-                ProjectionDto.FromText(
-                    "ROUND[SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] * <100> / NULLIF[SUM[InvoiceItems.LineTotal], <0>], <2>] | MarginPercent")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Name, SUM[InvoiceItems.Quantity] | UnitsSold, SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit, ROUND[SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] * <100> / NULLIF[SUM[InvoiceItems.LineTotal], <0>], <2>] | MarginPercent"),
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("GrossProfit", QuerySortDirection.Descending)]
         }, 9, "Id", "Name");
@@ -89,14 +57,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "7. Paid collection time by payment method",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("PaymentMethod"),
-                ProjectionDto.FromText("COUNT[] | PaidInvoices"),
-                ProjectionDto.FromText(
-                    "AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay"),
-                ProjectionDto.FromText("SUM[TotalAmount] | Collected")
-            ],
+            Fields = QueryDtoParser.ParseProjections("PaymentMethod, COUNT[] | PaidInvoices, AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay, SUM[TotalAmount] | Collected"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid")
         }, 3, "PaymentMethod");
 
@@ -104,13 +65,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "8. Sales-channel performance",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("SalesChannel"),
-                ProjectionDto.FromText("COUNT[] | Orders"),
-                ProjectionDto.FromText("SUM[TotalAmount] | Revenue"),
-                ProjectionDto.FromText("AVG[TotalAmount] | AverageOrderValue")
-            ],
+            Fields = QueryDtoParser.ParseProjections("SalesChannel, COUNT[] | Orders, SUM[TotalAmount] | Revenue, AVG[TotalAmount] | AverageOrderValue"),
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, 3, "SalesChannel");
@@ -119,12 +74,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "9. Product attach and cross-sell pairs",
             Entity = "InvoiceItems",
-            Fields =
-            [
-                ProjectionDto.FromText("InvoiceId"),
-                ProjectionDto.FromText("ProductId"),
-                ProjectionDto.FromText("Product.Name | Product")
-            ],
+            Fields = QueryDtoParser.ParseProjections("InvoiceId, ProductId, Product.Name | Product"),
             Sorts = [Sort("InvoiceId"), Sort("ProductId")]
         }, 57);
 
@@ -132,12 +82,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "10. Customers with repeat purchases",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("Customer.Name"),
-                ProjectionDto.FromText("COUNT[] | OrderCount"),
-                ProjectionDto.FromText("Max(InvoiceDate) | LastOrderDate")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Customer.Name, COUNT[] | OrderCount, Max(InvoiceDate) | LastOrderDate"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("LastOrderDate", QuerySortDirection.Descending)]
         }, 10, "Customer.Id", "Customer.Name");
@@ -146,13 +91,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "11. Customers with no paid order",
             Entity = "Customers",
-            Fields =
-            [
-                ProjectionDto.FromText("Id"),
-                ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Segment"),
-                ProjectionDto.FromText("Region")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Id, Name, Segment, Region"),
             Sorts = [Sort("Name")]
         }, 10);
 
@@ -160,14 +99,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "12. Low-stock products and inventory value",
             Entity = "Products",
-            Fields =
-            [
-                ProjectionDto.FromText("Name"),
-                ProjectionDto.FromText("Category"),
-                ProjectionDto.FromText("StockQuantity"),
-                ProjectionDto.FromText("ReorderLevel"),
-                ProjectionDto.FromText("StockQuantity * CostPrice | InventoryCost")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Name, Category, StockQuantity, ReorderLevel, StockQuantity * CostPrice | InventoryCost"),
             Filter = Filter("StockQuantity", BinaryOperator.LessThanOrEqual, new FieldDto("ReorderLevel")),
             Sorts = [Sort("StockQuantity")]
         }, 0);
@@ -176,14 +108,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "13. Discount impact by month",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("DateFormat[InvoiceDate, <%Y-%m>] | Month"),
-                ProjectionDto.FromText("SUM[DiscountAmount] | Discounts"),
-                ProjectionDto.FromText("SUM[TotalAmount] | NetRevenue"),
-                ProjectionDto.FromText(
-                    "ROUND[SUM[DiscountAmount] * <100> / NULLIF[SUM[TotalAmount], <0>], <2>] | DiscountRate")
-            ],
+            Fields = QueryDtoParser.ParseProjections("DateFormat[InvoiceDate, <%Y-%m>] | Month, SUM[DiscountAmount] | Discounts, SUM[TotalAmount] | NetRevenue, ROUND[SUM[DiscountAmount] * <100> / NULLIF[SUM[TotalAmount], <0>], <2>] | DiscountRate"),
             Sorts = [Sort("Month")]
         }, 4, "DateFormat[InvoiceDate, <%Y-%m>]");
 
@@ -191,12 +116,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "14. Revenue by weekday",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("DateFormat[InvoiceDate, <%w>] | Weekday"),
-                ProjectionDto.FromText("COUNT[] | Orders"),
-                ProjectionDto.FromText("SUM[TotalAmount] | Revenue")
-            ],
+            Fields = QueryDtoParser.ParseProjections("DateFormat[InvoiceDate, <%w>] | Weekday, COUNT[] | Orders, SUM[TotalAmount] | Revenue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, null, "DateFormat[InvoiceDate, <%w>]");
@@ -205,12 +125,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "15. Invoice status funnel",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("Status"),
-                ProjectionDto.FromText("COUNT[] | InvoiceCount"),
-                ProjectionDto.FromText("SUM[TotalAmount] | PipelineValue")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Status, COUNT[] | InvoiceCount, SUM[TotalAmount] | PipelineValue"),
             Sorts = [Sort("PipelineValue", QuerySortDirection.Descending)]
         }, 3, "Status");
 
@@ -218,14 +133,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "16. Average basket composition",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("InvoiceNumber"),
-                ProjectionDto.FromText("Customer.Name"),
-                ProjectionDto.FromText("COUNT[Items.Id] | LineCount"),
-                ProjectionDto.FromText("SUM[Items.Quantity] | Units"),
-                ProjectionDto.FromText("TotalAmount")
-            ],
+            Fields = QueryDtoParser.ParseProjections("InvoiceNumber, Customer.Name, COUNT[Items.Id] | LineCount, SUM[Items.Quantity] | Units, TotalAmount"),
             Sorts = [Sort("TotalAmount", QuerySortDirection.Descending)]
         }, 20, "Id", "InvoiceNumber", "Customer.Name", "TotalAmount");
 
@@ -233,13 +141,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "17. Category revenue and profitability",
             Entity = "Products",
-            Fields =
-            [
-                ProjectionDto.FromText("Category"),
-                ProjectionDto.FromText("SUM[InvoiceItems.LineTotal] | Revenue"),
-                ProjectionDto.FromText(
-                    "SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Category, SUM[InvoiceItems.LineTotal] | Revenue, SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit"),
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, 4, "Category");
@@ -248,11 +150,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "18. Monthly revenue trend with prior month",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("DateFormat[InvoiceDate, <%Y-%m>] | Month"),
-                ProjectionDto.FromText("SUM[TotalAmount] | Revenue")
-            ],
+            Fields = QueryDtoParser.ParseProjections("DateFormat[InvoiceDate, <%Y-%m>] | Month, SUM[TotalAmount] | Revenue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Month")]
         }, 2, "DateFormat[InvoiceDate, <%Y-%m>]");
@@ -261,33 +159,16 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         {
             Name = "19. Customer recency, frequency, and monetary value",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("Customer.Name"),
-                ProjectionDto.FromText("Max(InvoiceDate) | LastPurchase"),
-                ProjectionDto.FromText("COUNT[] | Frequency"),
-                ProjectionDto.FromText("SUM[TotalAmount] | MonetaryValue")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Customer.Name, Max(InvoiceDate) | LastPurchase, COUNT[] | Frequency, SUM[TotalAmount] | MonetaryValue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
-            Sorts =
-            [
-                Sort("LastPurchase", QuerySortDirection.Descending),
-                Sort("MonetaryValue", QuerySortDirection.Descending)
-            ]
+            Sorts = [Sort("LastPurchase", QuerySortDirection.Descending), Sort("MonetaryValue", QuerySortDirection.Descending)]
         }, 10, "Customer.Id", "Customer.Name");
 
         yield return Case(20, "UnpaidRevenueExposureByCustomer", new QueryDto
         {
             Name = "20. Unpaid revenue exposure by customer",
             Entity = "Invoices",
-            Fields =
-            [
-                ProjectionDto.FromText("Customer.Name"),
-                ProjectionDto.FromText("Customer.Segment"),
-                ProjectionDto.FromText("COUNT[] | OpenInvoices"),
-                ProjectionDto.FromText("SUM[TotalAmount] | AmountDue"),
-                ProjectionDto.FromText("Min(DueDate) | OldestDueDate")
-            ],
+            Fields = QueryDtoParser.ParseProjections("Customer.Name, Customer.Segment, COUNT[] | OpenInvoices, SUM[TotalAmount] | AmountDue, Min(DueDate) | OldestDueDate"),
             Filter = Filter("Status", BinaryOperator.Equals, "Sent"),
             Sorts = [Sort("AmountDue", QuerySortDirection.Descending)]
         }, 6, "Customer.Id", "Customer.Name", "Customer.Segment");
@@ -351,7 +232,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         var paidCustomerIds = _db.Query(new QueryDto
         {
             Entity = "Invoices",
-            Fields = [ProjectionDto.FromText("CustomerId")],
+            Fields = QueryDtoParser.ParseProjections("CustomerId"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid")
         }).ToList()
             .Select(record => Convert.ToInt32(record["CustomerId"]))
