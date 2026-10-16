@@ -64,8 +64,8 @@ function pruneFilters(group: QueryFilterGroup, entity: MetadataEntity, metadata:
     ...group,
     filters: group.filters.flatMap((node): QueryFilterNode[] => {
       if ("filters" in node) return [pruneFilters(node, entity, metadata)];
-      return isAvailableFieldPath(entity, metadata, node.field)
-        && (!node.rightField || isAvailableFieldPath(entity, metadata, node.rightField))
+      return isProjectionColumnAvailable(node.field, entity, metadata)
+        && (!node.rightField || isProjectionColumnAvailable(node.rightField, entity, metadata))
         ? [node]
         : [];
     }),
@@ -387,7 +387,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     return () => window.clearTimeout(timeout);
   }, [savedMessage]);
 
-  const loadSavedRequest = (fileName: string) => {
+  const loadSavedRequest = async (fileName: string) => {
     const saved = savedRequests.find((item) => item.fileName === fileName);
     if (!saved) return;
     setSelectedFileName(saved.fileName);
@@ -395,10 +395,24 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     const nextName = saved.query.name || saved.fileName.replace(/\.json$/i, "");
     setRequestName(nextName);
     cachedRequestName = nextName;
-    const nextDefinition = fromApiQuery(saved.query);
+    let nextDefinition = fromApiQuery(saved.query);
+    let restoreError = "";
+    if (typeof saved.requestText === "string") {
+      setIsResolvingPlanChanges(true);
+      const resultAction = await dispatch(parseQueryRequestString({
+        text: saved.requestText,
+        entity: saved.query.entity,
+      }));
+      if (parseQueryRequestString.fulfilled.match(resultAction)) {
+        nextDefinition = fromApiQuery(resultAction.payload);
+      } else {
+        restoreError = `Unable to restore the saved Plan text: ${String(resultAction.payload || "query request parsing failed.")}`;
+      }
+      setIsResolvingPlanChanges(false);
+    }
     updateDefinition(nextDefinition);
     updateSavedRequestBaseline(saved.fileName, nextName, nextDefinition);
-    setRequestMessage("");
+    setRequestMessage(restoreError);
     if (typeof saved.requestText === "string") {
       setRequestStructureDraft(saved.requestText);
       setRequestStructureOriginal(saved.requestText);

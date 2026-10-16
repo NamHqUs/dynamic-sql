@@ -49,9 +49,7 @@ export type QueryFilterGroup = {
   note?: string;
 };
 
-type ApiFilterOperand =
-  | { kind: "field"; field: string }
-  | { kind: "value"; value: unknown };
+type ApiFilterOperand = QueryExpression | { kind: "value"; value: unknown };
 
 type ApiQueryFilterItem = {
   logicalOperator?: number | null;
@@ -190,22 +188,40 @@ function expressionToText(expression: QueryExpression): string {
   }
 }
 
+function filterOperandToText(operand: ApiFilterOperand | string): string {
+  if (typeof operand === "string") return operand;
+
+  switch (operand.kind) {
+    case "field":
+      return operand.field;
+    case "value":
+      return `<${String(operand.value ?? "")}>`;
+    case "binary": {
+      const [left, right] = operand.arguments;
+      const formatOperand = (argument: QueryExpression) => argument.kind === "binary"
+        ? `(${filterOperandToText(argument)})`
+        : filterOperandToText(argument);
+      return `${formatOperand(left)} ${operand.operator} ${formatOperand(right)}`;
+    }
+    case "function":
+      return `${operand.function}(${operand.arguments.map(filterOperandToText).join(", ")})`;
+  }
+}
+
 function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
   const restoreGroup = (group: ApiQueryFilterGroup): QueryFilterGroup => ({
     ...group,
     filters: group.filters.map((node): QueryFilterNode => {
       if ("filters" in node) return restoreGroup(node);
       const left = node.left ?? node.field;
-      const field = typeof left === "string"
-        ? left
-        : left?.kind === "field"
-          ? left.field
-          : "";
+      const field = left === undefined ? "" : filterOperandToText(left);
       const right = node.right;
-      const rightField = right && typeof right === "object" && right.kind === "field"
-        ? right.field
+      const rightField = right && typeof right === "object" && "kind" in right && right.kind !== "value"
+        ? filterOperandToText(right)
         : undefined;
-      const value = right && typeof right === "object" && right.kind === "value"
+      const value = rightField
+        ? ""
+        : right && typeof right === "object" && "kind" in right && right.kind === "value"
         ? String(right.value ?? "")
         : "right" in node
           ? String(right ?? "")
