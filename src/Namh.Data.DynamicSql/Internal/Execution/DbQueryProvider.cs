@@ -15,7 +15,7 @@ class DbQueryProvider(
     string entityName,
     bool includeArchive) : IDbQueryProvider
 {
-    public readonly Entity Entity = metaProvider.Get(entityName);
+    public readonly Entity Entity = metaProvider.GetEntity(entityName);
 
     public IDbQueryable CreateQuery(Expression expression)
         => new DbQueryable(this, expression);

@@ -199,7 +199,7 @@ public sealed class _16_QueryExpressionTests
                 """;
             command.ExecuteNonQuery();
         }
-        using var db = new DynamicSqlContext(connection, Metadata, new SqliteDialect());
+        using var db = new DynamicSqlContext(connection, Metadata);
 
         var definition = JsonSerializer.Deserialize<QueryDto>(
             json,
@@ -233,7 +233,7 @@ public sealed class _16_QueryExpressionTests
     public void QueryExpressionRejectsUnsupportedFunctions()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
-        using var db = new DynamicSqlContext(connection, Metadata, new SqliteDialect());
+        using var db = new DynamicSqlContext(connection, Metadata);
         var request = new QueryDto
         {
             Entity = "Products",

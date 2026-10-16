@@ -8,7 +8,7 @@ public class _11_MetadataExceptionTests
     {
         var provider = new MetaProvider([]);
 
-        var exception = Assert.Throws<EntityNotFoundException>(() => provider.Get("User"));
+        var exception = Assert.Throws<EntityNotFoundException>(() => provider.GetEntity("User"));
 
         Assert.That(exception!.EntityName, Is.EqualTo("User"));
         Assert.That(exception.Message, Is.EqualTo("Entity [User] was not found."));

@@ -2,10 +2,20 @@ namespace Namh.Data.DynamicSql.Internal.Compilation.Expressions;
 
 internal sealed class FunctionSqlExpression(
     FunctionDefinition definition,
-    IReadOnlyList<FunctionSqlArgument?> arguments) : SqlExpression(definition.ResultType)
+    IReadOnlyList<FunctionSqlArgument?> arguments) : SqlExpression(ToClrType(definition.ResultType))
 {
     public FunctionDefinition Definition { get; } = definition;
     public IReadOnlyList<FunctionSqlArgument?> Arguments { get; } = arguments;
+
+    private static Type ToClrType(DataType dataType)
+        => dataType switch
+        {
+            DataType.String => typeof(string),
+            DataType.Number => typeof(decimal),
+            DataType.Datetime => typeof(DateTime),
+            DataType.Boolean => typeof(bool),
+            _ => throw new ArgumentOutOfRangeException(nameof(dataType), dataType, "Unsupported function result data type.")
+        };
 }
 
 internal abstract record FunctionSqlArgument;
@@ -13,5 +23,3 @@ internal abstract record FunctionSqlArgument;
 internal sealed record FunctionSqlExpressionArgument(SqlExpression Expression) : FunctionSqlArgument;
 
 internal sealed record FunctionSqlTokenArgument(string Token) : FunctionSqlArgument;
-
-internal sealed record FunctionSqlTypeArgument(SqlTypeDefinition SqlType) : FunctionSqlArgument;

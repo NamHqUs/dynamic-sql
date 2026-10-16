@@ -163,7 +163,6 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             {
                 FunctionSqlExpressionArgument expression => RenderExpression(expression.Expression),
                 FunctionSqlTokenArgument token => token.Token,
-                FunctionSqlTypeArgument sqlType => sqlType.SqlType.GetSqlType(dialect.Key),
                 null => null,
                 _ => throw new NotSupportedException(
                     $"Unsupported function argument type [{argument.GetType().Name}].")

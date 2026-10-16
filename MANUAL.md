@@ -342,14 +342,15 @@ Related field references use metadata relation paths, so the query compiler
 creates the necessary joins. Numeric expression values are parameterized.
 Function calls are validated against definitions in the metadata provider.
 The default provider includes the built-in functions shown above. Applications can add or override definitions with `FunctionDefinition`.
-Each definition specifies its UI-facing arguments, result type, and either a
-generic SQL template or templates keyed by the dialect's stable string
-identifier (`ISqlDialect.Key`). A dialect-specific template takes precedence;
-the generic template is used when no provider override is defined. Functions
-whose syntax is provider-specific can omit the generic template and fail
-explicitly when used with an unsupported dialect. Templates are trusted
-metadata, not query input. They use 1-based argument placeholders
+Each definition specifies its UI-facing arguments, result type, and SQL
+templates keyed by the dialect's stable string identifier (`ISqlDialect.Key`).
+Every supported dialect must have a template; calling a function with an
+unsupported dialect fails explicitly. Templates are trusted metadata, not
+query input. They use 1-based argument placeholders
 (`{1}`, `{2}`, ...), while query values remain parameterized.
+The result type is a logical `DataType` (`String`, `Number`, `Datetime`, or
+`Boolean`), not a CLR numeric precision such as `int` or `double`; the engine
+maps it to an internal CLR expression type when needed.
 `FunctionDefinition.Description` is required and provides UI-friendly help
 text for each function, and `FunctionDefinition.Arguments` describes its
 inputs. Each argument has a name and a `DataType`; all arguments accept query
@@ -386,21 +387,19 @@ var monthLabel = new FunctionFieldDto("DateFormat",
 `DateFormat` is currently SQLite-specific. The provider-specific SQL remains internal; for
 example, `DateSub` uses `DATEDIFF(day, ...)` on SQL Server.
 
-`SqlTypeDefinition` uses the same provider-keyed override and generic fallback
-pattern for logical SQL types. `IMetaProvider.GetFunctions()` and
-`GetSqlTypes()` expose the registered definitions for applications that build
-a function-selection UI.
+`IMetaProvider.GetFunctions()` exposes the registered definitions for
+applications that build a function-selection UI.
 
 Adding a database provider does not require changes to a fixed dialect enum.
 Implement `ISqlDialect` with a unique `Key`, then supply or override metadata
-definitions for functions and logical SQL types whose syntax differs. For
-example, an Oracle-specific function can be registered as:
+definitions for functions whose syntax differs. For example, an
+Oracle-specific function can be registered as:
 
 ```csharp
 var toDate = new FunctionDefinition(
     name: "TO_DATE",
     arguments: [new FunctionArgumentDefinition("value", DataType.String)],
-    resultType: typeof(DateTime),
+    resultType: DataType.Datetime,
     description: "Parses a date from a string.",
     sqlTemplates: new Dictionary<string, string>
     {
@@ -411,13 +410,13 @@ var metadata = new MetaProvider(entities, functions: [toDate]);
 ```
 
 For example, an application can expose a one-argument `TODAY(value)` wrapper
-and keep the SQL type fixed in the definition:
+and keep the SQL cast fixed in the templates:
 
 ```csharp
 var today = new FunctionDefinition(
     name: "TODAY",
     arguments: [new FunctionArgumentDefinition("value", DataType.Datetime)],
-    resultType: typeof(DateTime),
+    resultType: DataType.Datetime,
     description: "Returns the date portion of a value.",
     sqlTemplates: new Dictionary<string, string>
     {

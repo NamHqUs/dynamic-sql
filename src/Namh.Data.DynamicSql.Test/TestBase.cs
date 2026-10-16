@@ -1,3 +1,4 @@
+using Demo.Share;
 using System.Data;
 
 namespace Namh.Data.DynamicSql.Test;
@@ -14,7 +15,7 @@ public class TestBase
     {
         _connection = DefinedData.GetDbConnection(DbServerType.Sqlite);
 
-        IMetaProvider metaProvider = new MetaProvider(DefinedMetadata.Metadata);
+        IMetaProvider metaProvider = new MetaProvider(DefinedMetadata.Metadata, CustomFunctionDefintions.Functions);
         _db = new DynamicSqlContext(_connection, metaProvider);
     }
 

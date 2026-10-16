@@ -11,14 +11,13 @@ public sealed class FunctionDefinitionDto
     public bool CanDelete { get; set; }
     public bool IsAggregate { get; set; }
     public string Description { get; set; } = "";
-    public string? DefaultSqlTemplate { get; set; }
     public Dictionary<string, string> SqlTemplates { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public FunctionDefinition ToFunctionDefinition()
     {
         if (string.IsNullOrWhiteSpace(ResultType))
             throw new ArgumentException("A result type is required.", nameof(ResultType));
-        if (!ResultTypes.TryGetValue(ResultType, out var resultType))
+        if (!TryParseResultType(ResultType, out var resultType))
             throw new ArgumentException($"Unsupported result type [{ResultType}].", nameof(ResultType));
 
         var arguments = Arguments.Select(argument =>
@@ -34,7 +33,6 @@ public sealed class FunctionDefinitionDto
             arguments,
             resultType,
             Description,
-            DefaultSqlTemplate,
             SqlTemplates,
             IsAggregate);
     }
@@ -51,10 +49,9 @@ public sealed class FunctionDefinitionDto
                     ? null
                     : JsonSerializer.SerializeToElement(argument.DefaultValue)
             }).ToList(),
-            ResultType = ResultTypes.First(mapping => mapping.Value == definition.ResultType).Key,
+            ResultType = definition.ResultType.ToString(),
             IsAggregate = definition.IsAggregate,
             Description = definition.Description,
-            DefaultSqlTemplate = definition.DefaultSqlTemplate,
             SqlTemplates = new Dictionary<string, string>(definition.SqlTemplates, StringComparer.OrdinalIgnoreCase)
         };
 
@@ -72,16 +69,21 @@ public sealed class FunctionDefinitionDto
             _ => throw new ArgumentException($"The default value must match argument data type [{dataType}].")
         };
 
-    private static readonly IReadOnlyDictionary<string, Type> ResultTypes =
-        new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
+    private static bool TryParseResultType(string resultType, out DataType dataType)
+        => ResultTypes.TryGetValue(resultType, out dataType);
+
+    private static readonly IReadOnlyDictionary<string, DataType> ResultTypes =
+        new Dictionary<string, DataType>(StringComparer.OrdinalIgnoreCase)
         {
-            ["string"] = typeof(string),
-            ["int"] = typeof(int),
-            ["long"] = typeof(long),
-            ["decimal"] = typeof(decimal),
-            ["double"] = typeof(double),
-            ["bool"] = typeof(bool),
-            ["DateTime"] = typeof(DateTime)
+            ["String"] = DataType.String,
+            ["Number"] = DataType.Number,
+            ["Datetime"] = DataType.Datetime,
+            ["Boolean"] = DataType.Boolean,
+            ["int"] = DataType.Number,
+            ["long"] = DataType.Number,
+            ["decimal"] = DataType.Number,
+            ["double"] = DataType.Number,
+            ["bool"] = DataType.Boolean
         };
 }
 

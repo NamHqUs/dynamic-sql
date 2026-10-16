@@ -238,7 +238,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
                 .Select(e =>
                 {
                     var rel = next.GetRelation(e);
-                    next = metaProvider.Get(rel.RelatedEntity);
+                    next = metaProvider.GetEntity(rel.RelatedEntity);
                     return (rel, next);
                 })
                 .ToList();

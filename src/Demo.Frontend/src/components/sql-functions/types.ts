@@ -1,5 +1,7 @@
 export const functionArgumentDataTypes = ["String", "Number", "Datetime", "Boolean"] as const;
 export type FunctionArgumentDataType = typeof functionArgumentDataTypes[number];
+export const functionResultDataTypes = functionArgumentDataTypes;
+export type FunctionResultDataType = typeof functionResultDataTypes[number];
 
 export const functionDatabaseTypes = ["Sqlite", "SqlServer", "Postgres"] as const;
 export type FunctionDatabaseType = typeof functionDatabaseTypes[number];
@@ -13,11 +15,10 @@ export type FunctionArgumentDefinition = {
 export type FunctionDefinition = {
   name: string;
   arguments: FunctionArgumentDefinition[];
-  resultType: string;
+  resultType: FunctionResultDataType;
   canDelete?: boolean;
   isAggregate: boolean;
   description: string;
-  defaultSqlTemplate: string | null;
   sqlTemplates: Record<string, string>;
 };
 
@@ -58,10 +59,9 @@ export const emptyFunctionTemplate = (databaseType: FunctionDatabaseType): Edita
 export const emptyFunction = (): EditableFunctionDefinition => ({
   name: "",
   arguments: [],
-  resultType: "string",
+  resultType: "String",
   isAggregate: false,
   description: "",
-  defaultSqlTemplate: null,
   sqlTemplates: {},
   sqlTemplateRows: [
     emptyFunctionTemplate("Sqlite"),
@@ -77,15 +77,6 @@ export function toEditableFunction(definition: FunctionDefinition): EditableFunc
       ...emptyFunctionTemplate(databaseType as FunctionDatabaseType),
       rawSqlTemplate,
     }));
-
-  if (!templateRows.length && definition.defaultSqlTemplate) {
-    templateRows.push(
-      emptyFunctionTemplate("Sqlite"),
-      emptyFunctionTemplate("SqlServer"),
-      emptyFunctionTemplate("Postgres"),
-    );
-    for (const row of templateRows) row.rawSqlTemplate = definition.defaultSqlTemplate;
-  }
 
   return {
     ...definition,

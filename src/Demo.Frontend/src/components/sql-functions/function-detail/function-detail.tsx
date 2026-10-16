@@ -7,7 +7,9 @@ import {
   emptyFunctionTemplate,
   functionArgumentDataTypes,
   functionDatabaseTypes,
+  functionResultDataTypes,
   FunctionDatabaseType,
+  FunctionResultDataType,
 } from "../types";
 import "./function-detail.css";
 
@@ -108,8 +110,7 @@ export default function FunctionDetail({
             onClick={onSave}
             disabled={status === "saving" || !dirty}
           >
-            <Icon name="check" size={14} />{" "}
-            {status === "saving" ? "Saving…" : selectedName ? "Save changes" : "Create function"}
+            <Icon name="check" size={14} />{" "}Save changes
           </button>
         </div>
       </div>
@@ -215,9 +216,12 @@ export default function FunctionDetail({
             Result Type
             <select
               value={draft.resultType}
-              onChange={(event) => updateDraft((current) => ({ ...current, resultType: event.target.value }))}
+              onChange={(event) => updateDraft((current) => ({
+                ...current,
+                resultType: event.target.value as FunctionResultDataType,
+              }))}
             >
-              {["string", "int", "long", "decimal", "double", "bool", "DateTime"].map((type) => (
+              {functionResultDataTypes.map((type) => (
                 <option key={type} value={type}>{type}</option>
               ))}
             </select>

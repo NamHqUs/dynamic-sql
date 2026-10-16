@@ -1,3 +1,4 @@
+using Demo.Share;
 using Microsoft.Data.Sqlite;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
@@ -88,7 +89,7 @@ internal sealed class _22_DateDifferenceQueryTests
             command.ExecuteNonQuery();
         }
 
-        using var context = new DynamicSqlContext(connection, Metadata, new SqliteDialect());
+        using var context = new DynamicSqlContext(connection, Metadata, CustomFunctionDefintions.Functions);
         var queryResult = await context.Query(CreateQuery()).ToListWithTotalRecordsAsync();
         var record = queryResult.Records.Single();
 
@@ -102,19 +103,19 @@ internal sealed class _22_DateDifferenceQueryTests
     public void DateDifferenceProjectionUsesProviderSpecificSql()
     {
         using var sqliteConnection = new SqliteConnection("Data Source=:memory:");
-        using var sqliteContext = new DynamicSqlContext(sqliteConnection, Metadata, new SqliteDialect());
+        using var sqliteContext = new DynamicSqlContext(sqliteConnection, Metadata, CustomFunctionDefintions.Functions, new SqliteDialect());
         var sqliteSql = sqliteContext.Query(CreateQuery()).ToSql().CommandText;
         Assert.That(sqliteSql, Does.Match(@"julianday\s*\(\s*date"));
         Assert.That(sqliteSql, Does.Match(@"datetime\s*\(\s*'now',\s*'localtime'\s*\)"));
 
         using var sqlServerConnection = new SqliteConnection("Data Source=:memory:");
-        using var sqlServerContext = new DynamicSqlContext(sqlServerConnection, Metadata, new SqlServerDialect());
+        using var sqlServerContext = new DynamicSqlContext(sqlServerConnection, Metadata, CustomFunctionDefintions.Functions, new SqlServerDialect());
         var sqlServerSql = sqlServerContext.Query(CreateQuery()).ToSql().CommandText;
         Assert.That(sqlServerSql, Does.Match(@"DATEDIFF\s*\(\s*day,"));
         Assert.That(sqlServerSql, Does.Match(@"GETDATE\s*\(\s*\)"));
 
         using var postgresConnection = new SqliteConnection("Data Source=:memory:");
-        using var postgresContext = new DynamicSqlContext(postgresConnection, Metadata, new PostgresDialect());
+        using var postgresContext = new DynamicSqlContext(postgresConnection, Metadata, CustomFunctionDefintions.Functions, new PostgresDialect());
         var postgresSql = postgresContext.Query(CreateQuery()).ToSql().CommandText;
         Assert.That(postgresSql, Does.Match(@"CAST\s*\(.* AS DATE\)\s*-\s*CAST\s*\("));
         Assert.That(postgresSql, Does.Contain("CURRENT_TIMESTAMP"));

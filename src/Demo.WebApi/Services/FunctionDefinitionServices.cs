@@ -10,8 +10,18 @@ public static class FunctionDefinitionServices
 {
     private static readonly string FunctionDefinitionsPath =
         Path.Combine(Environment.CurrentDirectory, "DataStore", "FunctionDefinitions");
-    private static readonly Dictionary<string, FunctionDefinition> CustomDefinitions =
-        LoadDefinitions().ToDictionary(definition => definition.Name, StringComparer.OrdinalIgnoreCase);
+
+    private static readonly Dictionary<string, FunctionDefinition> CustomDefinitions;
+
+    static FunctionDefinitionServices()
+    {
+        var fromCodes = Demo.Share.CustomFunctionDefintions.Functions.ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
+        var fromFile = LoadFromFile().ToDictionary(definition => definition.Name, StringComparer.OrdinalIgnoreCase);
+        
+        foreach (var kvp in fromFile)
+            fromCodes[kvp.Key] = kvp.Value;
+        CustomDefinitions = fromCodes;
+    }
     private static readonly HashSet<string> BuiltInFunctionNames =
         new MetaProvider([]).GetFunctions()
             .Select(definition => definition.Name)
@@ -99,7 +109,7 @@ public static class FunctionDefinitionServices
         return definition;
     }
 
-    private static IEnumerable<FunctionDefinition> LoadDefinitions()
+    private static IEnumerable<FunctionDefinition> LoadFromFile()
     {
         if (!Directory.Exists(FunctionDefinitionsPath))
             return [];
@@ -124,5 +134,4 @@ public static class FunctionDefinitionServices
             new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(filePath, json);
     }
-
 }

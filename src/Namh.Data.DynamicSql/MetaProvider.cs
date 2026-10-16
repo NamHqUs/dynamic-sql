@@ -2,62 +2,39 @@
 
 public interface IMetaProvider
 {
-    Entity Get(string entityName);
+    Entity GetEntity(string entityName);
 
-    FunctionDefinition GetFunction(string functionName)
-        => BuiltInFunctionDefinitions.GetFunction(functionName);
+    FunctionDefinition GetFunction(string functionName);
 
-    IReadOnlyCollection<FunctionDefinition> GetFunctions()
-        => BuiltInFunctionDefinitions.AllFunctions.ToArray();
-
-    bool TryGetFunction(string functionName, out FunctionDefinition? function)
-        => BuiltInFunctionDefinitions.TryGetFunction(functionName, out function);
-
-    SqlTypeDefinition GetSqlType(string logicalTypeName)
-        => BuiltInFunctionDefinitions.GetSqlType(logicalTypeName);
-
-    IReadOnlyCollection<SqlTypeDefinition> GetSqlTypes()
-        => BuiltInFunctionDefinitions.AllSqlTypes.ToArray();
+    bool TryGetFunction(string functionName, out FunctionDefinition? function);
 }
 
 public class MetaProvider : IMetaProvider
 {
     private readonly Dictionary<string, Entity> _entities;
     private readonly Dictionary<string, FunctionDefinition> _functions;
-    private readonly Dictionary<string, SqlTypeDefinition> _sqlTypes;
 
     public MetaProvider(
         IEnumerable<Entity> entities,
-        IEnumerable<FunctionDefinition>? functions = null,
-        IEnumerable<SqlTypeDefinition>? sqlTypes = null)
+        IEnumerable<FunctionDefinition>? functions = null)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
         _entities = entities.ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
         _functions = BuiltInFunctionDefinitions.AllFunctions
             .ToDictionary(function => function.Name, StringComparer.OrdinalIgnoreCase);
-        _sqlTypes = BuiltInFunctionDefinitions.AllSqlTypes
-            .ToDictionary(type => type.Name, StringComparer.OrdinalIgnoreCase);
 
         var customFunctions = functions?.ToArray() ?? [];
-        var customTypes = sqlTypes?.ToArray() ?? [];
         if (customFunctions
             .GroupBy(function => function.Name, StringComparer.OrdinalIgnoreCase)
             .Any(group => group.Count() > 1))
             throw new ArgumentException("Function names must be unique.", nameof(functions));
-        if (customTypes
-            .GroupBy(type => type.Name, StringComparer.OrdinalIgnoreCase)
-            .Any(group => group.Count() > 1))
-            throw new ArgumentException("Logical SQL type names must be unique.", nameof(sqlTypes));
-
-        foreach (var sqlType in customTypes)
-            _sqlTypes[sqlType.Name] = sqlType;
 
         foreach (var function in customFunctions)
             _functions[function.Name] = function;
     }
 
-    public Entity Get(string entityName)
+    public Entity GetEntity(string entityName)
     {
         if (_entities.TryGetValue(entityName, out Entity? entity))
             return entity;
@@ -86,11 +63,12 @@ public class MetaProvider : IMetaProvider
         return false;
     }
 
-    public SqlTypeDefinition GetSqlType(string logicalTypeName)
-        => !string.IsNullOrWhiteSpace(logicalTypeName) && _sqlTypes.TryGetValue(logicalTypeName, out var sqlType)
-            ? sqlType
-            : throw new FormatException($"Unsupported logical SQL type [{logicalTypeName}].");
+    public MetaProvider RegisterFunctions(params FunctionDefinition[] functions)
+    {
+        ArgumentNullException.ThrowIfNull(functions);
 
-    public IReadOnlyCollection<SqlTypeDefinition> GetSqlTypes()
-        => _sqlTypes.Values.ToArray();
+        foreach (var function in functions)
+            _functions[function.Name] = function;
+        return this;
+    }
 }

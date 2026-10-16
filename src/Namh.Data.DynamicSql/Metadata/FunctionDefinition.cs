@@ -43,22 +43,20 @@ public sealed class FunctionDefinition
     public FunctionDefinition(
         string name,
         IReadOnlyList<FunctionArgumentDefinition> arguments,
-        Type resultType,
+        DataType resultType,
         string description,
-        string? defaultSqlTemplate = null,
         IReadOnlyDictionary<string, string>? sqlTemplates = null,
         bool isAggregate = false)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("A function name is required.", nameof(name));
         ArgumentNullException.ThrowIfNull(arguments);
-        ArgumentNullException.ThrowIfNull(resultType);
+        if (!Enum.IsDefined(resultType))
+            throw new ArgumentOutOfRangeException(nameof(resultType));
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException("A function description is required.", nameof(description));
-        if (string.IsNullOrWhiteSpace(defaultSqlTemplate) && (sqlTemplates is null || sqlTemplates.Count == 0))
-            throw new ArgumentException("A default or at least one dialect-specific SQL template is required.");
-        if (defaultSqlTemplate is not null && string.IsNullOrWhiteSpace(defaultSqlTemplate))
-            throw new ArgumentException("The default SQL template cannot be empty.", nameof(defaultSqlTemplate));
+        if (sqlTemplates is null || sqlTemplates.Count == 0)
+            throw new ArgumentException("At least one dialect-specific SQL template is required.");
         if (arguments.Any(argument => argument is null))
             throw new ArgumentException("Function arguments cannot contain null definitions.", nameof(arguments));
         if (arguments.Select(argument => argument.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != arguments.Count)
@@ -77,9 +75,6 @@ public sealed class FunctionDefinition
         ResultType = resultType;
         IsAggregate = isAggregate;
         Description = description;
-        if (defaultSqlTemplate is not null)
-            ValidateTemplate(defaultSqlTemplate, arguments, "default");
-        DefaultSqlTemplate = defaultSqlTemplate;
 
         var templates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (dialect, template) in sqlTemplates ?? new Dictionary<string, string>())
@@ -97,17 +92,17 @@ public sealed class FunctionDefinition
 
     public string Name { get; }
     public IReadOnlyList<FunctionArgumentDefinition> Arguments { get; }
-    public Type ResultType { get; }
+    public DataType ResultType { get; }
     public bool IsAggregate { get; }
     public string Description { get; }
-    public string? DefaultSqlTemplate { get; }
     public IReadOnlyDictionary<string, string> SqlTemplates => _sqlTemplates;
+
+    public override string ToString() => $"{Name}({string.Join(", ", Arguments.Select(arg => $"{arg.Name}: {arg.DataType}"))}) : {ResultType}";
 
     public string GetSqlTemplate(string dialect)
         => _sqlTemplates.TryGetValue(dialect, out var template)
             ? template
-            : DefaultSqlTemplate
-                ?? throw new FormatException($"Function [{Name}] has no SQL template for dialect [{dialect}].");
+            : throw new FormatException($"Function [{Name}] has no SQL template for dialect [{dialect}].");
 
     private static void ValidateTemplate(
         string template,
@@ -136,42 +131,4 @@ public sealed class FunctionDefinition
             index = close;
         }
     }
-}
-
-public sealed class SqlTypeDefinition
-{
-    private readonly IReadOnlyDictionary<string, string> _sqlTypes;
-
-    public SqlTypeDefinition(
-        string name,
-        IReadOnlyDictionary<string, string>? sqlTypes = null,
-        string? defaultSqlType = null)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("A logical SQL type name is required.", nameof(name));
-        if (string.IsNullOrWhiteSpace(defaultSqlType) && (sqlTypes is null || sqlTypes.Count == 0))
-            throw new ArgumentException("A default or at least one dialect-specific SQL type mapping is required.");
-        if (defaultSqlType is not null && string.IsNullOrWhiteSpace(defaultSqlType))
-            throw new ArgumentException("The default SQL type cannot be empty.", nameof(defaultSqlType));
-        if (sqlTypes?.Any(mapping =>
-            string.IsNullOrWhiteSpace(mapping.Key) || string.IsNullOrWhiteSpace(mapping.Value)) == true)
-            throw new ArgumentException("SQL type mappings cannot be empty.", nameof(sqlTypes));
-
-        Name = name;
-        DefaultSqlType = defaultSqlType;
-        var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (dialect, sqlType) in sqlTypes ?? new Dictionary<string, string>())
-            mappings.Add(dialect, sqlType);
-        _sqlTypes = new ReadOnlyDictionary<string, string>(mappings);
-    }
-
-    public string Name { get; }
-    public string? DefaultSqlType { get; }
-    public IReadOnlyDictionary<string, string> SqlTypes => _sqlTypes;
-
-    public string GetSqlType(string dialect)
-        => _sqlTypes.TryGetValue(dialect, out var sqlType)
-            ? sqlType
-            : DefaultSqlType
-                ?? throw new FormatException($"Logical SQL type [{Name}] has no mapping for dialect [{dialect}].");
 }

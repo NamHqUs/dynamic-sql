@@ -33,8 +33,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Namh.Data.DynamicSql\Namh.Data.DynamicSql.csproj" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
 		<PackageReference Include="Npgsql" Version="10.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Demo.Share\Demo.Share.csproj" />
 	</ItemGroup>
 </Project>

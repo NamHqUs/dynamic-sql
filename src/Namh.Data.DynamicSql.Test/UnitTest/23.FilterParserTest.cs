@@ -19,5 +19,6 @@ internal class _23_FilterParserTest : TestBase
         Assert.That(queryText, Does.Contain("Filters: Status <> <Draft> AND Sum(TotalAmount) > <200>"));
 
         var data = _db.Query(query).ToList();
+        Assert.That(data.Count, Is.GreaterThan(0));
     }
 }

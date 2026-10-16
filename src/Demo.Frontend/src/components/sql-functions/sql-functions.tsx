@@ -77,7 +77,6 @@ function toPayload(draft: EditableFunctionDefinition): FunctionDefinition {
     resultType: draft.resultType,
     isAggregate: draft.isAggregate,
     description: draft.description.trim(),
-    defaultSqlTemplate: null,
     sqlTemplates: sqlTemplates as Record<string, string>,
   };
 }

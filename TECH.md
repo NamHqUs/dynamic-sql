@@ -230,8 +230,8 @@ The IR is in `Internal/Compilation/Expressions`. Important types include:
 - `PredicateExpression`: predicates such as `LIKE`.
 - `CompareSqlExpression`: raw comparison operators.
 - `ProjectionExpression`: aliased projection.
-- `FunctionSqlExpression`: metadata-defined function call with expression,
-  SQL-token, or logical-type arguments.
+- `FunctionSqlExpression`: metadata-defined function call with expression or
+  SQL-token arguments.
 - `AggregateExpression`: aggregate metadata and subqueries.
 - `SubqueryExpression`: nested query.
 - `AnyExpression`: `EXISTS` query.
@@ -246,7 +246,7 @@ The IR must not depend on `ISqlDialect`.
 | Query root | `IDbQueryable` | Deferred query and expression-tree root |
 | C# field input | `IRecordParameter` / `DataValue` | Dynamic fields, parameters, trusted raw SQL, and related queries |
 | JSON input | `QueryDto`, `FilterDto`, `SortDto` | Serializable query transport, including page and page size |
-| Metadata | `IMetaProvider`, `Entity`, `Field`, `Relation`, `FunctionDefinition`, `SqlTypeDefinition` | Runtime schema, relationships, function signatures, and logical SQL types |
+| Metadata | `IMetaProvider`, `Entity`, `Field`, `Relation`, `FunctionDefinition` | Runtime schema, relationships, and function signatures |
 | Compiler IR | Internal `SqlExpression` hierarchy | Provider-independent query representation |
 | SQL target | `ISqlDialect` | SQL Server, SQLite, PostgreSQL, or a custom provider |
 | Diagnostic output | `SqlQuery`, `SqlQueryParameter` | SQL text plus parameter values for `ToSql` |
@@ -276,13 +276,11 @@ generated command text and parameter collection directly; it does not use the
 diagnostic formatter.
 
 Function definitions select templates using the dialect's stable string
-identifier. Common functions and SQL types may define a generic fallback;
-provider-specific templates override it by identifier. Templates are trusted metadata; query expression values remain
-parameterized, and logical type arguments are mapped through metadata rather
-than copied from query text. Applications can enumerate definitions with
-`IMetaProvider.GetFunctions()` and `GetSqlTypes()` when building a function
-selection UI. Custom `ISqlDialect` implementations provide their own identifier
-to render metadata-defined functions.
+identifier, and require a template for each supported dialect. Templates are
+trusted metadata; query expression values remain parameterized. Applications
+can enumerate definitions with `IMetaProvider.GetFunctions()` when building a
+function-selection UI. Custom `ISqlDialect` implementations provide their own
+identifier to render metadata-defined functions.
 
 ## `ISqlDialect`
 

@@ -11,8 +11,8 @@ public class DynamicSqlContext(
     private readonly ISqlDialect _sqlDialect = sqlDialect ?? SqlDialect.ForConnection(dbConnection);
     private bool _disposed;
 
-    public DynamicSqlContext(IDbConnection dbConnection, IEnumerable<Entity> entities, ISqlDialect? sqlDialect = null):
-        this(dbConnection, new MetaProvider(entities), sqlDialect)
+    public DynamicSqlContext(IDbConnection dbConnection, IEnumerable<Entity> entities, IEnumerable<FunctionDefinition>? functions = null, ISqlDialect? sqlDialect = null):
+        this(dbConnection, new MetaProvider(entities, functions), sqlDialect)
     {
     }
 

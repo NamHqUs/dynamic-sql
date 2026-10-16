@@ -1,3 +1,4 @@
+using Demo.Share;
 using Microsoft.Data.Sqlite;
 using System.Globalization;
 
@@ -26,7 +27,7 @@ public sealed class _24_FunctionMetadataTests
                 new("left", DataType.Number),
                 new("right", DataType.Number)
             ],
-            resultType: typeof(decimal),
+            resultType: DataType.Number,
             description: "Subtracts one expression from another.",
             sqlTemplates: new Dictionary<string, string>
             {
@@ -49,12 +50,12 @@ public sealed class _24_FunctionMetadataTests
     }
 
     [Test]
-    public void FunctionTemplateCanFixSqlTypeAndAcceptNestedExpression()
+    public void FunctionTemplateCanCastNestedExpression()
     {
         var today = new FunctionDefinition(
             name: "TODAY",
             arguments: [new("value", DataType.Datetime)],
-            resultType: typeof(DateTime),
+            resultType: DataType.Datetime,
             description: "Returns the date portion of a value.",
             sqlTemplates: new Dictionary<string, string>
             {
@@ -88,7 +89,7 @@ public sealed class _24_FunctionMetadataTests
                 new("left", DataType.Number),
                 new("right", DataType.Number, 12m)
             ],
-            resultType: typeof(decimal),
+            resultType: DataType.Number,
             description: "Adds two numeric expressions.",
             sqlTemplates: new Dictionary<string, string>
             {
@@ -134,7 +135,7 @@ public sealed class _24_FunctionMetadataTests
                 new("value", DataType.Number),
                 new("amount", DataType.Number, 4m)
             ],
-            resultType: typeof(decimal),
+            resultType: DataType.Number,
             description: "Adds a typed default amount.",
             sqlTemplates: new Dictionary<string, string>
             {
@@ -162,12 +163,32 @@ public sealed class _24_FunctionMetadataTests
     }
 
     [Test]
+    public void FunctionResultUsesLogicalDataType()
+    {
+        var numericFunction = new FunctionDefinition(
+            "NUMERIC_RESULT",
+            [],
+            DataType.Number,
+            "Returns a numeric value.",
+            sqlTemplates: new Dictionary<string, string> { ["Sqlite"] = "1" });
+
+        Assert.That(numericFunction.ResultType, Is.EqualTo(DataType.Number));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new FunctionDefinition(
+                "INVALID_RESULT",
+                [],
+                (DataType)int.MaxValue,
+                "Has an unsupported result type.",
+                sqlTemplates: new Dictionary<string, string> { ["Sqlite"] = "1" }));
+    }
+
+    [Test]
     public void MetaProviderExposesBuiltInAndCustomFunctionMetadata()
     {
         var customFunction = new FunctionDefinition(
             name: "TODAY",
             arguments: [new("value", DataType.Datetime)],
-            resultType: typeof(DateTime),
+            resultType: DataType.Datetime,
             sqlTemplates: new Dictionary<string, string>
             {
                 ["SqlServer"] = "CAST({1} AS DATE)",
@@ -175,25 +196,18 @@ public sealed class _24_FunctionMetadataTests
                 ["Postgres"] = "CAST({1} AS DATE)"
             },
             description: "Returns the date portion of a value.");
-        var customType = new SqlTypeDefinition("Currency", new Dictionary<string, string>
-        {
-            ["SqlServer"] = "money",
-            ["Sqlite"] = "NUMERIC",
-            ["Postgres"] = "money"
-        });
-        var metadata = new MetaProvider(Metadata, [customFunction], [customType]);
+        var metadata = new MetaProvider(Metadata, [customFunction]);
 
         Assert.That(metadata.GetFunctions().Select(function => function.Name),
             Does.Contain("TODAY").And.Contain("SUM"));
         Assert.That(metadata.GetFunction("today"), Is.SameAs(customFunction));
         Assert.That(customFunction.Description, Is.EqualTo("Returns the date portion of a value."));
-        Assert.That(metadata.GetSqlTypes().Select(type => type.Name), Does.Contain("Currency"));
     }
 
     [Test]
     public void BuiltInDateFunctionsHaveFriendlyNamesDescriptionsAndProviderSql()
     {
-        var functions = new MetaProvider(Metadata).GetFunctions().ToDictionary(
+        var functions = new MetaProvider(Metadata, CustomFunctionDefintions.Functions).GetFunctions().ToDictionary(
             function => function.Name,
             StringComparer.OrdinalIgnoreCase);
 
@@ -201,6 +215,8 @@ public sealed class _24_FunctionMetadataTests
             .And.Contain("DateAdd").And.Contain("MonthAdd").And.Contain("YearAdd").And.Contain("DateFormat"));
         Assert.That(functions.Keys, Does.Not.Contain("DATEDIFF").And.Not.Contain("STRFTIME"));
         Assert.That(functions.Values.All(function => !string.IsNullOrWhiteSpace(function.Description)), Is.True);
+        Assert.That(functions["COUNT"].ResultType, Is.EqualTo(DataType.Number));
+        Assert.That(functions["DateAdd"].ResultType, Is.EqualTo(DataType.Datetime));
 
         var dateAdd = new FunctionFieldDto("DateAdd",
             [new FieldDto("InvoiceDate"), new ConstFieldDto(2)]);
@@ -240,7 +256,7 @@ public sealed class _24_FunctionMetadataTests
 
         using var context = new DynamicSqlContext(
             connection,
-            new MetaProvider(Metadata),
+            new MetaProvider(Metadata, CustomFunctionDefintions.Functions),
             new SqliteDialect());
 
         var cases = new Dictionary<string, DateTime>
@@ -273,7 +289,7 @@ public sealed class _24_FunctionMetadataTests
         var custom = new FunctionDefinition(
             name: "SQLSERVER_ONLY",
             arguments: [new("value", DataType.Number)],
-            resultType: typeof(decimal),
+            resultType: DataType.Number,
             description: "A SQL Server-only test function.",
             sqlTemplates: new Dictionary<string, string>
             {
@@ -288,12 +304,12 @@ public sealed class _24_FunctionMetadataTests
     }
 
     [Test]
-    public void NewDialectUsesGenericBuiltInsAndAcceptsPluginSpecificTemplates()
+    public void NewDialectRequiresPluginSpecificTemplates()
     {
         var toDate = new FunctionDefinition(
             name: "TO_DATE",
             arguments: [new("value", DataType.Number)],
-            resultType: typeof(DateTime),
+            resultType: DataType.Datetime,
             description: "Parses a date value.",
             sqlTemplates: new Dictionary<string, string>
             {
@@ -305,12 +321,11 @@ public sealed class _24_FunctionMetadataTests
             new FunctionFieldDto("TO_DATE", [new FieldDto("Amount")]),
             [toDate],
             oracle);
-        var builtInSumSql = GenerateSql(
-            new FunctionFieldDto("SUM", [new FieldDto("Amount")]),
-            dialect: oracle);
-
         Assert.That(customFunctionSql.CommandText, Does.Match(@"TO_DATE\s*\("));
-        Assert.That(builtInSumSql.CommandText, Does.Match(@"SUM\s*\("));
+        Assert.Throws<FormatException>(() =>
+            GenerateSql(
+                new FunctionFieldDto("SUM", [new FieldDto("Amount")]),
+                dialect: oracle));
     }
 
     [Test]
@@ -320,7 +335,7 @@ public sealed class _24_FunctionMetadataTests
             new FunctionDefinition(
                 name: "INVALID",
                 arguments: [new("value", DataType.Number)],
-                resultType: typeof(decimal),
+                resultType: DataType.Number,
                 description: "An invalid template test function.",
                 sqlTemplates: new Dictionary<string, string>
                 {
@@ -330,7 +345,7 @@ public sealed class _24_FunctionMetadataTests
         var twice = new FunctionDefinition(
             name: "TWICE",
             arguments: [new("value", DataType.Number)],
-            resultType: typeof(decimal),
+            resultType: DataType.Number,
             description: "Doubles a numeric value.",
             sqlTemplates: new Dictionary<string, string>
             {
@@ -344,11 +359,10 @@ public sealed class _24_FunctionMetadataTests
     private static SqlQuery GenerateSql(
         IFieldDto expression,
         IEnumerable<FunctionDefinition>? functions = null,
-        ISqlDialect? dialect = null,
-        IEnumerable<SqlTypeDefinition>? sqlTypes = null)
+        ISqlDialect? dialect = null)
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
-        var metadata = new MetaProvider(Metadata, functions, sqlTypes);
+        var metadata = new MetaProvider(Metadata, functions?? CustomFunctionDefintions.Functions);
         using var context = new DynamicSqlContext(connection, metadata, dialect ?? new SqliteDialect());
 
         return context.Query(new QueryDto
