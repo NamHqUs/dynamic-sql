@@ -11,7 +11,7 @@
 .expression-node.nested { padding: 0; background: transparent; border: 0; }
 .expression-node.root { padding: 0; }
 .expression-node.expression-function-node { padding-left: 12px; border-left: 2px solid #654f9f; border-radius: 0; }
-.expression-node-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+.expression-node-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .expression-collapse-toggle { display: grid; flex: 0 0 22px; place-items: center; width: 22px; height: 22px; padding: 0; color: #8993a5; background: transparent; border: 1px solid transparent; border-radius: 4px; cursor: pointer; }
 .expression-collapse-toggle:hover, .expression-collapse-toggle:focus-visible { color: #ded5ff; border-color: #654f9f; outline: 0; }
 .expression-node-toolbar .expression-dropdown-trigger { min-width: 130px; }
