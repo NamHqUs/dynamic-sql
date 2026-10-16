@@ -89,19 +89,31 @@ function isAvailableFieldPath(entity: MetadataEntity, metadata: MetadataEntity[]
   return Boolean(fieldName && owner?.fields.some((field) => field.name === fieldName));
 }
 
+function isAvailableAggregateField(
+  functionName: string,
+  fieldName: string,
+  entity: MetadataEntity,
+  metadata: MetadataEntity[],
+): boolean {
+  const field = fieldName.trim();
+  return (functionName.toLowerCase() === "count" && (!field || field === "*"))
+    || isAvailableFieldPath(entity, metadata, field);
+}
+
 function isProjectionColumnAvailable(column: string, entity: MetadataEntity, metadata: MetadataEntity[]): boolean {
-  if (isAvailableFieldPath(entity, metadata, column) || column === "Count()") return true;
+  if (isAvailableFieldPath(entity, metadata, column)) return true;
 
-  const wrappedAggregate = column.match(/^(Sum|Max|Min|Average)\(([^()]*)\)$/);
-  if (wrappedAggregate) return isAvailableFieldPath(entity, metadata, wrappedAggregate[2]);
+  const wrappedAggregate = column.match(/^(Count|Sum|Max|Min|Average)\(([^()]*)\)$/i);
+  if (wrappedAggregate) {
+    return isAvailableAggregateField(wrappedAggregate[1], wrappedAggregate[2], entity, metadata);
+  }
 
-  const pathAggregate = column.match(/^(.*)\.(Count\(\)|Sum|Max|Min|Average)\(([^()]*)\)$/);
+  const pathAggregate = column.match(/^(.*)\.(Count|Sum|Max|Min|Average)\(([^()]*)\)$/i);
   if (!pathAggregate) return false;
 
   const aggregateOwner = resolveEntityPath(entity, metadata, pathAggregate[1].split("."));
-  return Boolean(aggregateOwner && (pathAggregate[2] === "Count()"
-    ? !pathAggregate[3]
-    : isAvailableFieldPath(aggregateOwner, metadata, pathAggregate[3])));
+  return Boolean(aggregateOwner
+    && isAvailableAggregateField(pathAggregate[2], pathAggregate[3], aggregateOwner, metadata));
 }
 
 function isExpressionAvailable(expression: QueryExpression, entity: MetadataEntity, metadata: MetadataEntity[]): boolean {
@@ -111,8 +123,12 @@ function isExpressionAvailable(expression: QueryExpression, entity: MetadataEnti
     case "value":
       return typeof expression.value === "string" || Number.isFinite(expression.value);
     case "binary":
-    case "function":
       return expression.arguments.every((argument) => isExpressionAvailable(argument, entity, metadata));
+    case "function":
+      return expression.arguments.every((argument) =>
+        argument.kind === "field" && argument.field === "*"
+          ? expression.function.toLowerCase() === "count"
+          : isExpressionAvailable(argument, entity, metadata));
   }
 }
 

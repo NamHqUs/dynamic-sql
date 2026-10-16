@@ -1,0 +1,77 @@
+{
+  "Query": {
+    "Name": "10. Customers with repeat purchases",
+    "Entity": "Customers",
+    "Fields": [
+      {
+        "field": {
+          "kind": "field",
+          "field": "Name"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
+        },
+        "alias": "OrderCount"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "MAX",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Invoices.InvoiceDate"
+            }
+          ]
+        },
+        "alias": "LastOrderDate"
+      }
+    ],
+    "Filter": {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Invoices.Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Paid"
+          },
+          "parameterized": true
+        },
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Count(Id)"
+          },
+          "operation": 3,
+          "right": {
+            "kind": "value",
+            "value": "1"
+          },
+          "parameterized": true
+        }
+      ]
+    },
+    "Sorts": [],
+    "Page": 1,
+    "PageSize": 50,
+    "IncludeArchive": false
+  },
+  "RequestText": "Name: 10. Customers with repeat purchases\nEntity: Customers\nFields: Name, COUNT(Id) | OrderCount, MAX(Invoices.InvoiceDate) | LastOrderDate\nFilters: Invoices.Status = Paid AND Count(Id) \u003E 1\nSorts: \nPage: 1\nPageSize: 50\nIncludeArchive: False"
+}

@@ -82,8 +82,10 @@ FROM Invoices WHERE Status <> 'Draft' GROUP BY SalesChannel ORDER BY Revenue DES
 
 ```sql
 SELECT p1.Name AS Product, p2.Name AS FrequentlyBoughtWith, COUNT(*) AS OrdersTogether
-FROM InvoiceItems a JOIN InvoiceItems b ON a.InvoiceId = b.InvoiceId AND a.ProductId < b.ProductId
-JOIN Products p1 ON p1.Id = a.ProductId JOIN Products p2 ON p2.Id = b.ProductId
+FROM InvoiceItems a 
+  JOIN InvoiceItems b ON a.InvoiceId = b.InvoiceId AND a.ProductId < b.ProductId
+  JOIN Products p1 ON p1.Id = a.ProductId 
+  JOIN Products p2 ON p2.Id = b.ProductId
 GROUP BY a.ProductId, b.ProductId ORDER BY OrdersTogether DESC;
 ```
 
@@ -91,16 +93,21 @@ GROUP BY a.ProductId, b.ProductId ORDER BY OrdersTogether DESC;
 
 ```sql
 SELECT c.Name, COUNT(i.Id) AS OrderCount, MAX(i.InvoiceDate) AS LastOrderDate
-FROM Customers c JOIN Invoices i ON i.CustomerId = c.Id
-WHERE i.Status = 'Paid' GROUP BY c.Id, c.Name HAVING COUNT(i.Id) > 1;
+FROM Customers c 
+  JOIN Invoices i ON i.CustomerId = c.Id
+WHERE i.Status = 'Paid' 
+GROUP BY c.Id, c.Name 
+HAVING COUNT(i.Id) > 1;
 ```
 
 ## 11. Customers with no paid order
 
 ```sql
-SELECT c.Id, c.Name, c.Segment, c.Region FROM Customers c
-LEFT JOIN Invoices i ON i.CustomerId = c.Id AND i.Status = 'Paid'
-WHERE i.Id IS NULL ORDER BY c.Name;
+SELECT c.Id, c.Name, c.Segment, c.Region 
+FROM Customers c
+  LEFT JOIN Invoices i ON i.CustomerId = c.Id AND i.Status = 'Paid'
+WHERE i.Id IS NULL 
+ORDER BY c.Name;
 ```
 
 ## 12. Low-stock products and inventory value
@@ -108,7 +115,9 @@ WHERE i.Id IS NULL ORDER BY c.Name;
 ```sql
 SELECT Name, Category, StockQuantity, ReorderLevel,
        StockQuantity * CostPrice AS InventoryCost
-FROM Products WHERE StockQuantity <= ReorderLevel ORDER BY StockQuantity;
+FROM Products 
+WHERE StockQuantity <= ReorderLevel 
+ORDER BY StockQuantity;
 ```
 
 ## 13. Discount impact by month
@@ -117,7 +126,9 @@ FROM Products WHERE StockQuantity <= ReorderLevel ORDER BY StockQuantity;
 SELECT strftime('%Y-%m', InvoiceDate) AS Month, SUM(DiscountAmount) AS Discounts,
        SUM(TotalAmount) AS NetRevenue,
        ROUND(SUM(DiscountAmount) * 100.0 / NULLIF(SUM(TotalAmount), 0), 2) AS DiscountRate
-FROM Invoices GROUP BY Month ORDER BY Month;
+FROM Invoices 
+GROUP BY Month 
+ORDER BY Month;
 ```
 
 ## 14. Revenue by weekday

@@ -1,4 +1,5 @@
 import "./plain-text.css";
+import type { ReactNode } from "react";
 import { MetadataEntity } from "../query-design/query-builder-slice";
 
 type MultilineField = "Fields" | "Filters";
@@ -58,15 +59,61 @@ export default function PlainText({
       highlight.scrollTop = element.scrollTop;
     }
   };
-  const functionPattern = functionNames.length
-    ? new RegExp(
-      `\\b(${functionNames
-        .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-        .sort((left, right) => right.length - left.length)
-        .join("|")})(?=\\s*\\()`,
-      "gi",
-    )
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const selectedEntityName = fields.find(({ label }) => label === "Entity")?.value;
+  const selectedEntity = metadata.find((entity) => entity.name === selectedEntityName);
+  const fieldNames = new Set<string>();
+  const addEntityFields = (entity: MetadataEntity, prefix = "", visited = new Set<string>()) => {
+    if (visited.has(entity.name)) return;
+    const nextVisited = new Set(visited).add(entity.name);
+    entity.fields.forEach(({ name }) => fieldNames.add(prefix ? `${prefix}.${name}` : name));
+    entity.relations?.forEach((relation) => {
+      const relatedEntity = metadata.find((candidate) => candidate.name === relation.relatedEntity);
+      if (relatedEntity) addEntityFields(relatedEntity, prefix ? `${prefix}.${relation.name}` : relation.name, nextVisited);
+    });
+  };
+  if (selectedEntity) addEntityFields(selectedEntity);
+
+  const alternatives = (values: string[]) => [...new Set(values)]
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length)
+    .map(escapeRegExp)
+    .join("|");
+  const functionAlternatives = alternatives(functionNames);
+  const fieldAlternatives = alternatives([...fieldNames]);
+  const tokenPatterns = [
+    functionAlternatives && {
+      type: "function",
+      pattern: `(?<![\\w.])(${functionAlternatives})(?=\\s*\\()`,
+    },
+    fieldAlternatives && {
+      type: "field",
+      pattern: `(?<![\\w.])(${fieldAlternatives})(?![\\w.])`,
+    },
+  ].filter((entry): entry is { type: string; pattern: string } => Boolean(entry));
+  const highlightPattern = tokenPatterns.length
+    ? new RegExp(tokenPatterns.map(({ pattern }) => pattern).join("|"), "gi")
     : null;
+  const renderHighlightedText = (value: string) => {
+    if (!highlightPattern) return value;
+
+    const parts: ReactNode[] = [];
+    let previousIndex = 0;
+    highlightPattern.lastIndex = 0;
+    for (const match of value.matchAll(highlightPattern)) {
+      const token = match[0];
+      const matchIndex = match.index ?? 0;
+      const tokenType = tokenPatterns.findIndex((_, index) => Boolean(match[index + 1]));
+      const className = tokenPatterns[tokenType]?.type ?? "field";
+      if (matchIndex > previousIndex) parts.push(value.slice(previousIndex, matchIndex));
+      parts.push(
+        <span className={`query-request-structure-${className}`} key={matchIndex}>{token}</span>,
+      );
+      previousIndex = matchIndex + token.length;
+    }
+    if (previousIndex < value.length) parts.push(value.slice(previousIndex));
+    return parts;
+  };
   const fieldsAreVisible = status === "succeeded" || (status === "loading" && text.length > 0);
   const fieldsAreDisabled = disabled || status === "loading";
 
@@ -117,11 +164,7 @@ export default function PlainText({
               ) : ["Fields", "Filters", "Sorts"].includes(label) ? (
                 <div className={`query-request-structure-input-container${label === "Fields" || label === "Filters" ? " query-request-structure-input-container-multiline" : ""}`}>
                   <div className="query-request-structure-highlight" aria-hidden="true">
-                    {(functionPattern ? value.split(functionPattern) : [value]).map((part, partIndex) => (
-                      partIndex % 2 === 1
-                        ? <span className="query-request-structure-function" key={partIndex}>{part}</span>
-                        : part
-                    ))}
+                    {renderHighlightedText(value)}
                   </div>
                   {label === "Fields" || label === "Filters" ? (
                     <textarea

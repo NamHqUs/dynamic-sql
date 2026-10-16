@@ -1,6 +1,7 @@
-﻿using NUnit.Framework.Internal;
-using Namh.Data.DynamicSql.QueryBuilderDto;
+﻿using Namh.Data.DynamicSql.QueryBuilderDto;
 using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
+using NUnit.Framework.Internal;
+using System.Text.RegularExpressions;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
@@ -78,5 +79,33 @@ internal class _33_DemoTest : TestBase
         Assert.That(data, Has.Count.EqualTo(3));
         Assert.That(data.All(record => record.ContainsKey("Count()")), Is.True);
         Assert.That(data.Select(record => record["PaymentMethod"]).Distinct().Count(), Is.EqualTo(data.Count));
+    }
+    [Test]
+    public void Demo13()
+    {
+        /// 13. Discount impact by month
+        /// SELECT DateFormat(InvoiceDate, '%Y-%m') AS Month, SUM(DiscountAmount) AS Discounts,
+        ///        SUM(TotalAmount) AS NetRevenue,
+        /// ROUND(SUM(DiscountAmount) * 100 / NULLIF(SUM(TotalAmount), 0), 2) AS DiscountRate
+        /// FROM Invoices GROUP BY Month ORDER BY Month;
+
+        QueryDto query = new()
+        {
+            Name = "13. Discount impact by month",
+            Entity = "Invoices",
+            Fields = QueryDtoParser.ParseProjections("DateFormat(InvoiceDate, <%Y-%m>) | Month, SUM(DiscountAmount) | Discounts, SUM(TotalAmount) | NetRevenue, ROUND(SUM(DiscountAmount) * <100> / NULLIF(SUM(TotalAmount), <0>), <2>) | DiscountRate"),
+            Sorts = [new(new FieldDto("Month"))]
+        };
+        var queryable = _db.Query(query);
+        var sql = queryable.ToSql();
+        var data = queryable.ToList();
+
+        Assert.That(sql.CommandText, Does.Contain("GROUP BY"));
+        Assert.That(data, Has.Count.EqualTo(4));
+        Assert.That(data.Select(record => record["Month"]), Is.Ordered);
+        Assert.That(data.All(record =>
+            record.ContainsKey("Discounts")
+            && record.ContainsKey("NetRevenue")
+            && record.ContainsKey("DiscountRate")), Is.True);
     }
 }

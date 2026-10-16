@@ -21,16 +21,22 @@
       {
         "field": {
           "kind": "function",
-          "function": "DateSub",
+          "function": "Average",
           "arguments": [
             {
-              "kind": "field",
-              "field": "InvoiceDate"
-            },
-            {
               "kind": "function",
-              "function": "GETDATE",
-              "arguments": []
+              "function": "DateSub",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "InvoiceDate"
+                },
+                {
+                  "kind": "function",
+                  "function": "GETDATE",
+                  "arguments": []
+                }
+              ]
             }
           ]
         },
@@ -50,11 +56,36 @@
         "alias": "Collected"
       }
     ],
-    "Filter": null,
-    "Sorts": [],
+    "Filter": {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Status"
+          },
+          "operation": 1,
+          "right": {
+            "kind": "value",
+            "value": "Paid"
+          },
+          "parameterized": true
+        }
+      ]
+    },
+    "Sorts": [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "PaymentMethod"
+        },
+        "Direction": 0
+      }
+    ],
     "Page": 1,
     "PageSize": 50,
     "IncludeArchive": false
   },
-  "RequestText": "Name: 7. Paid collection time by payment method\nEntity: Invoices\nFields: PaymentMethod, Count() , DateSub(InvoiceDate, GETDATE()) | DaysOverdue, Sum(TotalAmount) | Collected\nFilters: \nSorts: \nPage: 1\nPageSize: 50\nIncludeArchive: False"
+  "RequestText": "Name: 7. Paid collection time by payment method\nEntity: Invoices\nFields: PaymentMethod, Count() , Average(DateSub(InvoiceDate, GETDATE())) | DaysOverdue, Sum(TotalAmount) | Collected\nFilters: Status \u003C\u003E Paid\nSorts: PaymentMethod\nPage: 1\nPageSize: 50\nIncludeArchive: False"
 }
