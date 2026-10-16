@@ -94,6 +94,10 @@ group.MapDelete("/functions/{functionName}", (string functionName) =>
     {
         return Results.NotFound(error.Message);
     }
+    catch (InvalidOperationException error)
+    {
+        return Results.Conflict(error.Message);
+    }
 });
 
 group = app.MapGroup("/dynamic-query").WithTags("Dynamic Query Services");

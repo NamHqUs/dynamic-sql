@@ -18,7 +18,7 @@ public static partial class MetadataServices
     }
 
     public static IMetaProvider GetMetaProvider()
-        => new MetaProvider(_metadata, FunctionDefinitionServices.GetCustomFunctionDefinitions());
+        => FunctionDefinitionServices.GetMetaProvider(_metadata);
     public static List<Entity> Reset()
     => _metadata = [
         new(

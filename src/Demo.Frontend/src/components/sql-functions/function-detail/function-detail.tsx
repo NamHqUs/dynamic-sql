@@ -99,7 +99,7 @@ export default function FunctionDetail({
               onClick={onDelete}
               disabled={status === "saving"}
             >
-              <Icon name="trash" size={19} />
+              <Icon name="delete" size={19} />
             </button>
           )}
           <button

@@ -12,6 +12,10 @@ public static class FunctionDefinitionServices
         Path.Combine(Environment.CurrentDirectory, "DataStore", "FunctionDefinitions");
     private static readonly Dictionary<string, FunctionDefinition> CustomDefinitions =
         LoadDefinitions().ToDictionary(definition => definition.Name, StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<string> BuiltInFunctionNames =
+        new MetaProvider([]).GetFunctions()
+            .Select(definition => definition.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     public static List<FunctionDefinitionDto> GetFunctionDefinitions()
         => new MetaProvider([], CustomDefinitions.Values)
@@ -27,6 +31,9 @@ public static class FunctionDefinitionServices
 
     public static IReadOnlyCollection<FunctionDefinition> GetCustomFunctionDefinitions()
         => CustomDefinitions.Values.ToArray();
+
+    public static IMetaProvider GetMetaProvider(IEnumerable<Entity> entities)
+        => new MetaProvider(entities, CustomDefinitions.Values);
 
     public static FunctionDefinitionDto CreateFunctionDefinition(FunctionDefinitionDto dto)
     {
@@ -62,7 +69,12 @@ public static class FunctionDefinitionServices
     public static void DeleteFunctionDefinition(string functionName)
     {
         if (!CustomDefinitions.TryGetValue(functionName, out var definition))
-            throw new KeyNotFoundException($"Custom function '{functionName}' was not found.");
+        {
+            if (BuiltInFunctionNames.Contains(functionName))
+                throw new InvalidOperationException($"Built-in function '{functionName}' cannot be deleted.");
+
+            throw new KeyNotFoundException($"Function '{functionName}' was not found.");
+        }
 
         var nameHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(definition.Name.ToUpperInvariant())));
         var filePath = Path.Combine(FunctionDefinitionsPath, $"{nameHash}.json");
@@ -112,4 +124,5 @@ public static class FunctionDefinitionServices
             new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(filePath, json);
     }
+
 }
