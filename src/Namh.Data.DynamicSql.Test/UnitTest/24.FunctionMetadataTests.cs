@@ -1,6 +1,7 @@
 using Demo.Share;
 using Microsoft.Data.Sqlite;
 using System.Globalization;
+using static Namh.Data.DynamicSql.SqlFunctionDefintion;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
@@ -20,7 +21,7 @@ public sealed class _24_FunctionMetadataTests
     [Test]
     public void UserDefinedTemplateUsesActiveDialectAndKeepsExpressionParameters()
     {
-        var subtract = new FunctionDefinition(
+        var subtract = new SqlFunctionDefintion(
             name: "SUBTRACT",
             arguments:
             [
@@ -35,7 +36,7 @@ public sealed class _24_FunctionMetadataTests
                 ["Sqlite"] = "({left} - {2})",
                 ["Postgres"] = "({2} - {1})"
             });
-        var call = new FunctionFieldDto("SUBTRACT", [new FieldDto("Amount"), new ConstFieldDto(2)]);
+        var call = new FunctionFieldDefinition("SUBTRACT", [new FieldDefinition("Amount"), new ConstFieldDefinition(2)]);
 
         var sqlServerSql = GenerateSql(call, [subtract], new SqlServerDialect());
         var sqliteSql = GenerateSql(call, [subtract], new SqliteDialect());
@@ -52,7 +53,7 @@ public sealed class _24_FunctionMetadataTests
     [Test]
     public void FunctionTemplateCanCastNestedExpression()
     {
-        var today = new FunctionDefinition(
+        var today = new SqlFunctionDefintion(
             name: "TODAY",
             arguments: [new("value", DataType.Datetime)],
             resultType: DataType.Datetime,
@@ -63,12 +64,12 @@ public sealed class _24_FunctionMetadataTests
                 ["Sqlite"] = "CAST({1} AS DATE)",
                 ["Postgres"] = "CAST({1} AS DATE)"
             });
-        var expression = new FunctionFieldDto("TODAY",
+        var expression = new FunctionFieldDefinition("TODAY",
         [
-            new GroupFieldDto(
+            new GroupFieldDefintion(
             [
-                new FieldDto("Amount"),
-                new BinaryFieldDto("+", new ConstFieldDto(3))
+                new FieldDefinition("Amount"),
+                new BinaryFieldDefinition("+", new ConstFieldDefinition(3))
             ])
         ]);
 
@@ -82,7 +83,7 @@ public sealed class _24_FunctionMetadataTests
     [Test]
     public void OptionalExpressionDefaultIsParameterized()
     {
-        var add = new FunctionDefinition(
+        var add = new SqlFunctionDefintion(
             name: "ADD",
             arguments:
             [
@@ -99,7 +100,7 @@ public sealed class _24_FunctionMetadataTests
             });
 
         var sql = GenerateSql(
-            new FunctionFieldDto("ADD", [new FieldDto("Amount")]),
+            new FunctionFieldDefinition("ADD", [new FieldDefinition("Amount")]),
             [add],
             new SqliteDialect());
 
@@ -111,13 +112,13 @@ public sealed class _24_FunctionMetadataTests
     public void CountSupportsOmittedWildcardExplicitWildcardAndFieldArguments()
     {
         var countWithoutArgument = GenerateSql(
-            new FunctionFieldDto("COUNT", []),
+            new FunctionFieldDefinition("COUNT", []),
             dialect: new SqliteDialect());
         var countWildcard = GenerateSql(
-            new FunctionFieldDto("COUNT", [new FieldDto("*")]),
+            new FunctionFieldDefinition("COUNT", [new FieldDefinition("*")]),
             dialect: new SqliteDialect());
         var countField = GenerateSql(
-            new FunctionFieldDto("COUNT", [new FieldDto("Id")]),
+            new FunctionFieldDefinition("COUNT", [new FieldDefinition("Id")]),
             dialect: new SqliteDialect());
 
         Assert.That(countWithoutArgument.CommandText, Does.Match(@"COUNT\s*\(\s*\*\s*\)"));
@@ -128,7 +129,7 @@ public sealed class _24_FunctionMetadataTests
     [Test]
     public void ArgumentDefaultUsesItsDeclaredDataType()
     {
-        var add = new FunctionDefinition(
+        var add = new SqlFunctionDefintion(
             name: "ADD_DEFAULT",
             arguments:
             [
@@ -145,7 +146,7 @@ public sealed class _24_FunctionMetadataTests
             });
 
         var sql = GenerateSql(
-            new FunctionFieldDto("ADD_DEFAULT", [new FieldDto("Amount")]),
+            new FunctionFieldDefinition("ADD_DEFAULT", [new FieldDefinition("Amount")]),
             [add],
             new SqliteDialect());
 
@@ -157,15 +158,15 @@ public sealed class _24_FunctionMetadataTests
     public void ArgumentDefaultMustMatchItsDeclaredDataType()
     {
         Assert.Throws<ArgumentException>(() =>
-            new FunctionArgumentDefinition("enabled", DataType.Boolean, "true"));
-        Assert.That(new FunctionArgumentDefinition("value", DataType.Number, "*").Optional, Is.True);
-        Assert.That(new FunctionArgumentDefinition("value", DataType.Number).Optional, Is.False);
+            new SqlFunctionArgumentDefinition("enabled", DataType.Boolean, "true"));
+        Assert.That(new SqlFunctionArgumentDefinition("value", DataType.Number, "*").Optional, Is.True);
+        Assert.That(new SqlFunctionArgumentDefinition("value", DataType.Number).Optional, Is.False);
     }
 
     [Test]
     public void FunctionResultUsesLogicalDataType()
     {
-        var numericFunction = new FunctionDefinition(
+        var numericFunction = new SqlFunctionDefintion(
             "NUMERIC_RESULT",
             [],
             DataType.Number,
@@ -174,7 +175,7 @@ public sealed class _24_FunctionMetadataTests
 
         Assert.That(numericFunction.ResultType, Is.EqualTo(DataType.Number));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new FunctionDefinition(
+            new SqlFunctionDefintion(
                 "INVALID_RESULT",
                 [],
                 (DataType)int.MaxValue,
@@ -185,7 +186,7 @@ public sealed class _24_FunctionMetadataTests
     [Test]
     public void MetaProviderExposesBuiltInAndCustomFunctionMetadata()
     {
-        var customFunction = new FunctionDefinition(
+        var customFunction = new SqlFunctionDefintion(
             name: "TODAY",
             arguments: [new("value", DataType.Datetime)],
             resultType: DataType.Datetime,
@@ -218,8 +219,8 @@ public sealed class _24_FunctionMetadataTests
         Assert.That(functions["COUNT"].ResultType, Is.EqualTo(DataType.Number));
         Assert.That(functions["DateAdd"].ResultType, Is.EqualTo(DataType.Datetime));
 
-        var dateAdd = new FunctionFieldDto("DateAdd",
-            [new FieldDto("InvoiceDate"), new ConstFieldDto(2)]);
+        var dateAdd = new FunctionFieldDefinition("DateAdd",
+            [new FieldDefinition("InvoiceDate"), new ConstFieldDefinition(2)]);
         var sqlServerSql = GenerateSql(dateAdd, dialect: new SqlServerDialect());
         var sqliteSql = GenerateSql(dateAdd, dialect: new SqliteDialect());
         var postgresSql = GenerateSql(dateAdd, dialect: new PostgresDialect());
@@ -232,8 +233,8 @@ public sealed class _24_FunctionMetadataTests
             Does.Match(@"t0\.""InvoiceDate""\s*\+\s*\(\s*@p0\s*\*\s*INTERVAL '1 day'\s*\)"));
 
         var dateFormat = GenerateSql(
-            new FunctionFieldDto("DateFormat",
-                [new FieldDto("InvoiceDate"), new ConstFieldDto("%Y-%m")]),
+            new FunctionFieldDefinition("DateFormat",
+                [new FieldDefinition("InvoiceDate"), new ConstFieldDefinition("%Y-%m")]),
             dialect: new SqliteDialect());
         Assert.That(dateFormat.CommandText,
             Does.Match(@"STRFTIME\s*\(\s*@p0,\s*t0\.""InvoiceDate""\s*\)"));
@@ -267,14 +268,14 @@ public sealed class _24_FunctionMetadataTests
         };
         foreach (var (functionName, expected) in cases)
         {
-            var record = context.Query(new QueryDto
+            var record = context.Query(new QueryDefinition
             {
                 Entity = "Items",
                 Fields =
                 [
-                    new ProjectionDto(
-                        new FunctionFieldDto(functionName,
-                            [new FieldDto("InvoiceDate"), new ConstFieldDto(1)]),
+                    new ProjectionDefinition(
+                        new FunctionFieldDefinition(functionName,
+                            [new FieldDefinition("InvoiceDate"), new ConstFieldDefinition(1)]),
                         "Result")
                 ]
             }).ToList().Single();
@@ -286,7 +287,7 @@ public sealed class _24_FunctionMetadataTests
     [Test]
     public void MissingDialectTemplateFailsExplicitly()
     {
-        var custom = new FunctionDefinition(
+        var custom = new SqlFunctionDefintion(
             name: "SQLSERVER_ONLY",
             arguments: [new("value", DataType.Number)],
             resultType: DataType.Number,
@@ -298,7 +299,7 @@ public sealed class _24_FunctionMetadataTests
 
         Assert.Throws<FormatException>(() =>
             GenerateSql(
-                new FunctionFieldDto("SQLSERVER_ONLY", [new FieldDto("Amount")]),
+                new FunctionFieldDefinition("SQLSERVER_ONLY", [new FieldDefinition("Amount")]),
                 [custom],
                 new SqliteDialect()));
     }
@@ -306,7 +307,7 @@ public sealed class _24_FunctionMetadataTests
     [Test]
     public void NewDialectRequiresPluginSpecificTemplates()
     {
-        var toDate = new FunctionDefinition(
+        var toDate = new SqlFunctionDefintion(
             name: "TO_DATE",
             arguments: [new("value", DataType.Number)],
             resultType: DataType.Datetime,
@@ -318,13 +319,13 @@ public sealed class _24_FunctionMetadataTests
         var oracle = new OraclePluginDialect();
 
         var customFunctionSql = GenerateSql(
-            new FunctionFieldDto("TO_DATE", [new FieldDto("Amount")]),
+            new FunctionFieldDefinition("TO_DATE", [new FieldDefinition("Amount")]),
             [toDate],
             oracle);
         Assert.That(customFunctionSql.CommandText, Does.Match(@"TO_DATE\s*\("));
         Assert.Throws<FormatException>(() =>
             GenerateSql(
-                new FunctionFieldDto("SUM", [new FieldDto("Amount")]),
+                new FunctionFieldDefinition("SUM", [new FieldDefinition("Amount")]),
                 dialect: oracle));
     }
 
@@ -332,7 +333,7 @@ public sealed class _24_FunctionMetadataTests
     public void InvalidFunctionArgumentsAndTemplatePlaceholdersAreRejected()
     {
         Assert.Throws<ArgumentException>(() =>
-            new FunctionDefinition(
+            new SqlFunctionDefintion(
                 name: "INVALID",
                 arguments: [new("value", DataType.Number)],
                 resultType: DataType.Number,
@@ -342,7 +343,7 @@ public sealed class _24_FunctionMetadataTests
                     ["Sqlite"] = "INVALID({2})"
                 }));
 
-        var twice = new FunctionDefinition(
+        var twice = new SqlFunctionDefintion(
             name: "TWICE",
             arguments: [new("value", DataType.Number)],
             resultType: DataType.Number,
@@ -353,22 +354,22 @@ public sealed class _24_FunctionMetadataTests
             });
 
         Assert.Throws<FormatException>(() =>
-            GenerateSql(new FunctionFieldDto("TWICE", []), [twice], new SqliteDialect()));
+            GenerateSql(new FunctionFieldDefinition("TWICE", []), [twice], new SqliteDialect()));
     }
 
     private static SqlQuery GenerateSql(
         IFieldDto expression,
-        IEnumerable<FunctionDefinition>? functions = null,
+        IEnumerable<SqlFunctionDefintion>? functions = null,
         ISqlDialect? dialect = null)
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         var metadata = new MetaProvider(Metadata, functions?? CustomFunctionDefintions.Functions);
         using var context = new DynamicSqlContext(connection, metadata, dialect ?? new SqliteDialect());
 
-        return context.Query(new QueryDto
+        return context.Query(new QueryDefinition
         {
             Entity = "Items",
-            Fields = [new ProjectionDto(expression, "Result")]
+            Fields = [new ProjectionDefinition(expression, "Result")]
         }).ToSql();
     }
 

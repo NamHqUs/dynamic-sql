@@ -1,5 +1,6 @@
-using System.Text.Json;
 using Namh.Data.DynamicSql;
+using System.Text.Json;
+using static Namh.Data.DynamicSql.SqlFunctionDefintion;
 
 namespace Demo.WebApi.Dto;
 
@@ -13,7 +14,7 @@ public sealed class FunctionDefinitionDto
     public string Description { get; set; } = "";
     public Dictionary<string, string> SqlTemplates { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public FunctionDefinition ToFunctionDefinition()
+    public SqlFunctionDefintion ToFunctionDefinition()
     {
         if (string.IsNullOrWhiteSpace(ResultType))
             throw new ArgumentException("A result type is required.", nameof(ResultType));
@@ -25,10 +26,10 @@ public sealed class FunctionDefinitionDto
             var defaultValue = argument.DefaultValue is { } value
                 ? ToValue(value, argument.DataType)
                 : null;
-            return new FunctionArgumentDefinition(argument.Name, argument.DataType, defaultValue);
+            return new SqlFunctionArgumentDefinition(argument.Name, argument.DataType, defaultValue);
         }).ToArray();
 
-        return new FunctionDefinition(
+        return new SqlFunctionDefintion(
             Name,
             arguments,
             resultType,
@@ -37,7 +38,7 @@ public sealed class FunctionDefinitionDto
             IsAggregate);
     }
 
-    public static FunctionDefinitionDto FromFunctionDefinition(FunctionDefinition definition)
+    public static FunctionDefinitionDto FromFunctionDefinition(SqlFunctionDefintion definition)
         => new()
         {
             Name = definition.Name,

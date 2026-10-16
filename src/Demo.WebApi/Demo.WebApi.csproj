@@ -16,8 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DataStore\Metadata\" />
-    <Folder Include="DataStore\FunctionDefinitions\" />
+    <Folder Include="FileStorages\FunctionDefinitions\" />
   </ItemGroup>
 
   <ItemGroup>

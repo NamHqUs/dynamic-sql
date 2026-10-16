@@ -1,7 +1,7 @@
 using Namh.Data.DynamicSql;
-using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 using System.Text.Json;
 using System.Globalization;
+using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
 namespace Demo.WebApi.Services;
 
@@ -9,7 +9,7 @@ public static class QueryRequestServices
 {
     private static readonly string _StorePath = Path.Combine(Environment.CurrentDirectory, "DataStore", "QueryRequests");
 
-    public sealed record StoredQueryRequest(string FileName, QueryDto Query, string? RequestText = null);
+    public sealed record StoredQueryRequest(string FileName, QueryDefinition Query, string? RequestText = null);
 
     public static List<StoredQueryRequest> ListQueryRequests()
     {
@@ -21,7 +21,7 @@ public static class QueryRequestServices
     }
 
     public static StoredQueryRequest SaveQueryRequest(
-        QueryDto query,
+        QueryDefinition query,
         string? fileName = null,
         string? requestText = null)
     {
@@ -37,10 +37,10 @@ public static class QueryRequestServices
         return File.Exists(filePath) ? ReadQuery(filePath) : null;
     }
 
-    public static string GetQueryRequestString(QueryDto query)
+    public static string GetQueryRequestString(QueryDefinition query)
         => query.ToString();
 
-    public static QueryDto ParseQueryRequestString(string text, string entity)
+    public static QueryDefinition ParseQueryRequestString(string text, string entity)
     {
         var lines = new List<(string Key, string Value)>();
         foreach (var line in text.Split(["\r\n", "\n"], StringSplitOptions.None))
@@ -70,13 +70,13 @@ public static class QueryRequestServices
         var fieldText = values.GetValueOrDefault("Fields");
         var fields = !string.IsNullOrWhiteSpace(fieldText) && fieldText.TrimStart().StartsWith('[')
             ? ParseJsonFields(fieldText, parsedEntity)
-            : QueryDtoParser.ParseProjections(fieldText ?? string.Empty);
+            : QueryDefinitionParser.ParseProjections(fieldText ?? string.Empty);
         var sorts = ParseSorts(values.GetValueOrDefault("Sorts"));
 
         var filterText = values.GetValueOrDefault("Filters");
         var filter = string.IsNullOrWhiteSpace(filterText)
             ? null
-            : QueryDto.FromJson(JsonSerializer.Serialize(new
+            : QueryDefinition.FromJson(JsonSerializer.Serialize(new
             {
                 entity = parsedEntity,
                 filter = ConvertFilterExpression(filterText)
@@ -87,7 +87,7 @@ public static class QueryRequestServices
         if (page is < 1 || pageSize is < 1)
             throw new FormatException("Page and PageSize must be greater than zero.");
 
-        return new QueryDto
+        return new QueryDefinition
         {
             Entity = parsedEntity,
             Fields = fields,
@@ -101,7 +101,7 @@ public static class QueryRequestServices
         };
     }
 
-    public static QueryDto ParseQueryRequestString(string text)
+    public static QueryDefinition ParseQueryRequestString(string text)
     {
         var entities = text.Split(["\r\n", "\n"], StringSplitOptions.None)
             .Select(line =>
@@ -119,7 +119,7 @@ public static class QueryRequestServices
         return ParseQueryRequestString(text, entities[0]!);
     }
 
-    public static StoredQueryRequest? UpdateQueryRequest(string fileName, QueryDto query, string? requestText = null)
+    public static StoredQueryRequest? UpdateQueryRequest(string fileName, QueryDefinition query, string? requestText = null)
     {
         var filePath = GetPath(fileName);
         if (!File.Exists(filePath))
@@ -158,13 +158,13 @@ public static class QueryRequestServices
             && requestTextElement.ValueKind == JsonValueKind.String
                 ? requestTextElement.GetString()
                 : null;
-        var result = JsonSerializer.Deserialize<QueryDto>(queryElement.GetRawText(), JsonOptions())
+        var result = JsonSerializer.Deserialize<QueryDefinition>(queryElement.GetRawText(), JsonOptions())
             ?? throw new InvalidDataException($"Query request file '{Path.GetFileName(filePath)}' is empty.");
 
         if (!TryGetProperty(queryElement, "Fields", out _) &&
             TryGetProperty(queryElement, "Columns", out var legacyColumns))
         {
-            result = new QueryDto
+            result = new QueryDefinition
             {
                 Name = result.Name,
                 Entity = result.Entity,
@@ -181,7 +181,7 @@ public static class QueryRequestServices
         return new StoredQueryRequest(Path.GetFileName(filePath)!, result, requestText);
     }
 
-    private static ProjectionDto ParseLegacyProjection(JsonElement column)
+    private static ProjectionDefinition ParseLegacyProjection(JsonElement column)
     {
         var alias = TryGetProperty(column, "Alias", out var aliasElement)
             ? aliasElement.ValueKind switch
@@ -200,7 +200,7 @@ public static class QueryRequestServices
                     : throw new InvalidDataException("A saved projection must contain a field or expression.");
         var json = JsonSerializer.Serialize(new { field, alias });
 
-        return JsonSerializer.Deserialize<ProjectionDto>(json, JsonOptions())
+        return JsonSerializer.Deserialize<ProjectionDefinition>(json, JsonOptions())
             ?? throw new InvalidDataException("A saved projection field is empty.");
     }
 
@@ -208,7 +208,7 @@ public static class QueryRequestServices
         => element.TryGetProperty(name, out value) ||
             element.TryGetProperty(char.ToLowerInvariant(name[0]) + name[1..], out value);
 
-    private static void WriteQuery(string filePath, QueryDto query, string? requestText)
+    private static void WriteQuery(string filePath, QueryDefinition query, string? requestText)
         => File.WriteAllText(filePath, JsonSerializer.Serialize(
             new { Query = query, RequestText = requestText },
             JsonOptions(writeIndented: true)));
@@ -225,7 +225,7 @@ public static class QueryRequestServices
             ? []
             : value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Select(parse).ToList();
 
-    private static List<SortDto> ParseSorts(string? value)
+    private static List<SortDefinition> ParseSorts(string? value)
         => string.IsNullOrWhiteSpace(value)
             ? []
             : SplitTopLevel(value, ',').Select(item =>
@@ -245,7 +245,7 @@ public static class QueryRequestServices
                 if (string.IsNullOrWhiteSpace(sortText))
                     throw new FormatException($"Invalid sort definition [{item}].");
 
-                return new SortDto(QueryDtoParser.ParseField(sortText), direction);
+                return new SortDefinition(QueryDefinitionParser.ParseField(sortText), direction);
             }).ToList();
 
     private static List<string> SplitTopLevel(string text, char delimiter)
@@ -292,10 +292,10 @@ public static class QueryRequestServices
         return parts.Where(part => part.Length > 0).ToList();
     }
 
-    private static List<ProjectionDto> ParseJsonFields(string text, string entity)
+    private static List<ProjectionDefinition> ParseJsonFields(string text, string entity)
     {
         using var document = JsonDocument.Parse(text);
-        return QueryDto.FromJson(JsonSerializer.Serialize(new
+        return QueryDefinition.FromJson(JsonSerializer.Serialize(new
         {
             entity,
             fields = document.RootElement

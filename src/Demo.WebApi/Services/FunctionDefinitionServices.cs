@@ -11,7 +11,7 @@ public static class FunctionDefinitionServices
     private static readonly string FunctionDefinitionsPath =
         Path.Combine(Environment.CurrentDirectory, "DataStore", "FunctionDefinitions");
 
-    private static readonly Dictionary<string, FunctionDefinition> CustomDefinitions;
+    private static readonly Dictionary<string, SqlFunctionDefintion> CustomDefinitions;
 
     static FunctionDefinitionServices()
     {
@@ -39,7 +39,7 @@ public static class FunctionDefinitionServices
             })
             .ToList();
 
-    public static IReadOnlyCollection<FunctionDefinition> GetCustomFunctionDefinitions()
+    public static IReadOnlyCollection<SqlFunctionDefintion> GetCustomFunctionDefinitions()
         => CustomDefinitions.Values.ToArray();
 
     public static IMetaProvider GetMetaProvider(IEnumerable<Entity> entities)
@@ -92,7 +92,7 @@ public static class FunctionDefinitionServices
         CustomDefinitions.Remove(definition.Name);
     }
 
-    private static FunctionDefinition BuildDefinition(FunctionDefinitionDto dto)
+    private static SqlFunctionDefintion BuildDefinition(FunctionDefinitionDto dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
         if (string.IsNullOrWhiteSpace(dto.Name))
@@ -109,7 +109,7 @@ public static class FunctionDefinitionServices
         return definition;
     }
 
-    private static IEnumerable<FunctionDefinition> LoadFromFile()
+    private static IEnumerable<SqlFunctionDefintion> LoadFromFile()
     {
         if (!Directory.Exists(FunctionDefinitionsPath))
             return [];
@@ -124,7 +124,7 @@ public static class FunctionDefinitionServices
             .ToArray();
     }
 
-    private static void SaveDefinition(FunctionDefinition definition)
+    private static void SaveDefinition(SqlFunctionDefintion definition)
     {
         Directory.CreateDirectory(FunctionDefinitionsPath);
         var nameHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(definition.Name.ToUpperInvariant())));

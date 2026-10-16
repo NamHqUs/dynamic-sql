@@ -1,0 +1,13 @@
+﻿using Namh.Data.DynamicSql;
+
+namespace Namh.Data.DynamicSql.Compilation.Expressions;
+
+class TableContextWrapperExpression(TableExpression tableContext, string alias)
+    : TableExpression(CreateEntity(tableContext), alias)
+{
+    private static Entity CreateEntity(TableExpression tableContext)
+        => new(
+            Name: $"Wrap_{tableContext.Entity.Name}",
+            RawSql: $"({tableContext})",
+            Fields: tableContext.ProjectionItems.Select(e => new Field(e.Alias)).ToList());
+}

@@ -37,20 +37,20 @@ internal sealed class _22_DateDifferenceQueryTests
             ])
     ];
 
-    private static QueryDto CreateQuery()
+    private static QueryDefinition CreateQuery()
         => new()
         {
             Entity = "Invoices",
             Fields =
             [
-                new(new FieldDto("InvoiceNumber")),
-                new(new FieldDto("Customer.Name")),
-                new(new FieldDto("InvoiceDate")),
+                new(new FieldDefinition("InvoiceNumber")),
+                new(new FieldDefinition("Customer.Name")),
+                new(new FieldDefinition("InvoiceDate")),
                 new(
-                    new FunctionFieldDto("DateSub",
+                    new FunctionFieldDefinition("DateSub",
                     [
-                        new FieldDto("DueDate"),
-                        new FunctionFieldDto("GETDATE", [])
+                        new FieldDefinition("DueDate"),
+                        new FunctionFieldDefinition("GETDATE", [])
                     ]),
                     "DaysOverdue")
             ],

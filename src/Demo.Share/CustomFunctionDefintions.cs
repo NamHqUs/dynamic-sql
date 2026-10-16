@@ -4,7 +4,7 @@ namespace Demo.Share;
 
 public class CustomFunctionDefintions
 {
-    public static FunctionDefinition[] Functions { get; } = [
+    public static SqlFunctionDefintion[] Functions { get; } = [
         new ("Day", resultType: DataType.Number,
                 description: "Extracts the day part from a date.",
                 arguments: [new("extractDate", DataType.Datetime)],
@@ -65,7 +65,7 @@ public class CustomFunctionDefintions
             isAggregate: true),
     ];
 
-    private static FunctionDefinition CreateDateDifference(
+    private static SqlFunctionDefintion CreateDateDifference(
         string name,
         string datePart,
         string description)
@@ -81,7 +81,7 @@ public class CustomFunctionDefintions
                 ? "(CAST({2} AS DATE) - CAST({1} AS DATE))"
                 : "(EXTRACT(YEAR FROM {2}) - EXTRACT(YEAR FROM {1}))";
 
-        return new FunctionDefinition(
+        return new SqlFunctionDefintion(
             name,
             [
                 new("startDate", DataType.Datetime),
@@ -97,13 +97,13 @@ public class CustomFunctionDefintions
             });
     }
 
-    private static FunctionDefinition CreateDateAdjustment(
+    private static SqlFunctionDefintion CreateDateAdjustment(
         string name,
         string datePart,
         string sqliteModifierUnit,
         string description)
     {
-        return new FunctionDefinition(
+        return new SqlFunctionDefintion(
             name,
             [
                 new("value", DataType.Datetime),

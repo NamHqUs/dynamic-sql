@@ -1,0 +1,26 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
+
+internal sealed class FieldDefinitionJsonConverter : JsonConverter<IFieldDto>
+{
+    public override IFieldDto Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+            return new FieldDefinition(reader.GetString()
+                ?? throw new JsonException("A filter field cannot be null."));
+
+        using var document = JsonDocument.ParseValue(ref reader);
+        return ProjectionDefinitionJsonConverter.ParseField(document.RootElement);
+    }
+
+    public override void Write(
+        Utf8JsonWriter writer,
+        IFieldDto value,
+        JsonSerializerOptions options)
+        => ProjectionDefinitionJsonConverter.WriteField(writer, value);
+}

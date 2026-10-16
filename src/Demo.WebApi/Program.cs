@@ -101,8 +101,8 @@ group.MapDelete("/functions/{functionName}", (string functionName) =>
 });
 
 group = app.MapGroup("/dynamic-query").WithTags("Dynamic Query Services");
-group.MapPost("/query/to-string", (QueryDto query) => DynamicQueryServices.GetSqlQueryStringAsync(query));
-group.MapPost("/query", (QueryDto query, ILoggerFactory loggerFactory) =>
+group.MapPost("/query/to-string", (QueryDefinition query) => DynamicQueryServices.GetSqlQueryStringAsync(query));
+group.MapPost("/query", (QueryDefinition query, ILoggerFactory loggerFactory) =>
     DynamicQueryServices.ExecuteQueryAsync(query, loggerFactory));
 group.MapPost("/query/to-string-from-text", async (HttpRequest request) =>
 {
@@ -141,7 +141,7 @@ group.MapPost("/query/from-text", async (HttpRequest request, ILoggerFactory log
 
 group = app.MapGroup("/query-request").WithTags("Query Request Services");
 group.MapGet("/", () => QueryRequestServices.ListQueryRequests());
-group.MapPost("/to-string", (QueryDto query) => Results.Text(QueryRequestServices.GetQueryRequestString(query)));
+group.MapPost("/to-string", (QueryDefinition query) => Results.Text(QueryRequestServices.GetQueryRequestString(query)));
 group.MapPost("/parse", (QueryRequestTextRequest request) =>
 {
     if (string.IsNullOrWhiteSpace(request.Text) || string.IsNullOrWhiteSpace(request.Entity))
@@ -187,12 +187,12 @@ group.MapDelete("{fileName}", (string fileName) =>
 
 app.Run();
 
-static (QueryDto Query, string? RequestText) ParseQueryRequestSavePayload(
+static (QueryDefinition Query, string? RequestText) ParseQueryRequestSavePayload(
     System.Text.Json.JsonElement payload,
     System.Text.Json.JsonSerializerOptions serializerOptions)
 {
     var queryElement = payload.TryGetProperty("query", out var wrappedQuery) ? wrappedQuery : payload;
-    var query = System.Text.Json.JsonSerializer.Deserialize<QueryDto>(queryElement.GetRawText(), serializerOptions)
+    var query = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(queryElement.GetRawText(), serializerOptions)
         ?? throw new System.Text.Json.JsonException("The query request cannot be empty.");
     var requestText = payload.TryGetProperty("requestText", out var textElement)
         ? textElement.ValueKind switch

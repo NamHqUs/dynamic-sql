@@ -1,7 +1,5 @@
-﻿using Namh.Data.DynamicSql.QueryBuilderDto;
-using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
+﻿using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using NUnit.Framework.Internal;
-using System.Text.RegularExpressions;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
@@ -20,29 +18,29 @@ internal class _33_DemoTest : TestBase
         /// WHERE i.Status = 'Sent' ORDER BY DaysOverdue DESC;
         /// 
 
-        QueryDto qureyBuilder = new()
+        QueryDefinition qureyBuilder = new()
         {
             Name = "6. Outstanding receivables and aging",
             Entity = "Invoices",
             Fields = [
-                new (new FieldDto("InvoiceNumber")),
-                new (new FieldDto("Customer.Name"), "Name"),
-                new (new FieldDto("InvoiceDate")),
-                new (new FieldDto("DueDate")),
-                new (new FieldDto("TotalAmount")),
-                new (new FunctionFieldDto("DateSub", [
-                    new FieldDto("DueDate"),
-                    new FunctionFieldDto("GETDATE", []),
+                new (new FieldDefinition("InvoiceNumber")),
+                new (new FieldDefinition("Customer.Name"), "Name"),
+                new (new FieldDefinition("InvoiceDate")),
+                new (new FieldDefinition("DueDate")),
+                new (new FieldDefinition("TotalAmount")),
+                new (new FunctionFieldDefinition("DateSub", [
+                    new FieldDefinition("DueDate"),
+                    new FunctionFieldDefinition("GETDATE", []),
                     ]), "DaysOverdue")
                 ],
-            Filter = new FilterDto(
+            Filter = new FilterDefinition(
                 LogicalOperator.And,
                 new FilterItemDto(
                     null,
-                    new FieldDto("Status"),
+                    new FieldDefinition("Status"),
                     BinaryOperator.Equals,
-                    new ConstFieldDto("Sent"))),
-            Sorts = [new(new FieldDto("DaysOverdue"), QuerySortDirection.Descending)]
+                    new ConstFieldDefinition("Sent"))),
+            Sorts = [new(new FieldDefinition("DaysOverdue"), QuerySortDirection.Descending)]
         };
 
         var query = _db.Query(qureyBuilder);
@@ -63,12 +61,12 @@ internal class _33_DemoTest : TestBase
         ///        SUM(TotalAmount) AS Collected
         /// FROM Invoices WHERE Status = 'Paid' GROUP BY PaymentMethod;
         
-        QueryDto query = new()
+        QueryDefinition query = new()
         {
             Name = "7. Paid collection time by payment method",
             Entity = "Invoices",
-            Fields = QueryDtoParser.ParseProjections("PaymentMethod, Count(), AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay, Sum(TotalAmount) | Collected"),
-            Filter = QueryDtoParser.ParseFilter("Status = 'Paid'"),
+            Fields = QueryDefinitionParser.ParseProjections("PaymentMethod, Count(), AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay, Sum(TotalAmount) | Collected"),
+            Filter = QueryDefinitionParser.ParseFilter("Status = 'Paid'"),
         };
 
         var queryable = _db.Query(query);
@@ -89,12 +87,12 @@ internal class _33_DemoTest : TestBase
         /// ROUND(SUM(DiscountAmount) * 100 / NULLIF(SUM(TotalAmount), 0), 2) AS DiscountRate
         /// FROM Invoices GROUP BY Month ORDER BY Month;
 
-        QueryDto query = new()
+        QueryDefinition query = new()
         {
             Name = "13. Discount impact by month",
             Entity = "Invoices",
-            Fields = QueryDtoParser.ParseProjections("DateFormat(InvoiceDate, <%Y-%m>) | Month, SUM(DiscountAmount) | Discounts, SUM(TotalAmount) | NetRevenue, ROUND(SUM(DiscountAmount) * <100> / NULLIF(SUM(TotalAmount), <0>), <2>) | DiscountRate"),
-            Sorts = [new(new FieldDto("Month"))]
+            Fields = QueryDefinitionParser.ParseProjections("DateFormat(InvoiceDate, <%Y-%m>) | Month, SUM(DiscountAmount) | Discounts, SUM(TotalAmount) | NetRevenue, ROUND(SUM(DiscountAmount) * <100> / NULLIF(SUM(TotalAmount), <0>), <2>) | DiscountRate"),
+            Sorts = [new(new FieldDefinition("Month"))]
         };
         var queryable = _db.Query(query);
         var sql = queryable.ToSql();

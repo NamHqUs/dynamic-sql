@@ -1,6 +1,4 @@
-using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
-using NUnit.Framework.Constraints;
-using static System.Net.Mime.MediaTypeNames;
+using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
@@ -12,11 +10,11 @@ internal class _21_QureyRequestParser : TestBase
     public void TextToFunctionFieldDto_Arguments()
     {
         var text = "Round(Id, <2>)";
-        var field = (FunctionFieldDto)QueryDtoParser.ParseField(text);
+        var field = (FunctionFieldDefinition)QueryDefinitionParser.ParseField(text);
 
-        var expectedField = new FunctionFieldDto("Round", [
-            new FieldDto("Id"),
-            new ConstFieldDto(2)
+        var expectedField = new FunctionFieldDefinition("Round", [
+            new FieldDefinition("Id"),
+            new ConstFieldDefinition(2)
         ]);
 
         Assert.That(field.ToText(), Is.EqualTo(text));
@@ -27,12 +25,12 @@ internal class _21_QureyRequestParser : TestBase
     public void TextToFunctionFieldDto_GroupArgument()
     {
         var text = "Round(Id + <2>)";
-        var field = (FunctionFieldDto)QueryDtoParser.ParseField(text);
+        var field = (FunctionFieldDefinition)QueryDefinitionParser.ParseField(text);
 
-        var expectedField = new FunctionFieldDto("Round", [
-            new GroupFieldDto( [
-                    new FieldDto("Id"),
-                    new BinaryFieldDto("+", new ConstFieldDto(2))
+        var expectedField = new FunctionFieldDefinition("Round", [
+            new GroupFieldDefintion( [
+                    new FieldDefinition("Id"),
+                    new BinaryFieldDefinition("+", new ConstFieldDefinition(2))
             ])
         ]);
 
@@ -44,16 +42,16 @@ internal class _21_QureyRequestParser : TestBase
     public void TextToFunctionFieldDto_Mested()
     {
         var text = "Round(Sum(Id + Age), <2>)";
-        var field = (FunctionFieldDto)QueryDtoParser.ParseField(text);
+        var field = (FunctionFieldDefinition)QueryDefinitionParser.ParseField(text);
 
-        var expectedField = new FunctionFieldDto("Round", [
-            new FunctionFieldDto("Sum", [
-                new GroupFieldDto( [
-                    new FieldDto("Id"),
-                    new BinaryFieldDto("+", new FieldDto("Age"))
+        var expectedField = new FunctionFieldDefinition("Round", [
+            new FunctionFieldDefinition("Sum", [
+                new GroupFieldDefintion( [
+                    new FieldDefinition("Id"),
+                    new BinaryFieldDefinition("+", new FieldDefinition("Age"))
                 ])
             ]),
-            new ConstFieldDto(2)
+            new ConstFieldDefinition(2)
         ]);
 
         Assert.That(field.ToText(), Is.EqualTo(text));
@@ -63,7 +61,7 @@ internal class _21_QureyRequestParser : TestBase
     [Test]
     public void TextToFunctionFieldDto_LegacyBracketSyntax()
     {
-        var field = (FunctionFieldDto)QueryDtoParser.ParseProjections("Round[Sum[Id], <2>]")[0].Field;
+        var field = (FunctionFieldDefinition)QueryDefinitionParser.ParseProjections("Round[Sum[Id], <2>]")[0].Field;
 
         Assert.That(field.ToText(), Is.EqualTo("Round(Sum(Id), <2>)"));
     }
@@ -72,11 +70,11 @@ internal class _21_QureyRequestParser : TestBase
     public void TextToGroupFieldDto()
     {
         var text = "Id + Age";
-        var field = (GroupFieldDto)QueryDtoParser.ParseField(text);
+        var field = (GroupFieldDefintion)QueryDefinitionParser.ParseField(text);
 
-        var expectedField = new GroupFieldDto([
-                new FieldDto("Id"),
-                new BinaryFieldDto("+", new FieldDto("Age"))
+        var expectedField = new GroupFieldDefintion([
+                new FieldDefinition("Id"),
+                new BinaryFieldDefinition("+", new FieldDefinition("Age"))
             ]);
 
         Assert.That(field.ToText(), Is.EqualTo(text));
@@ -87,14 +85,14 @@ internal class _21_QureyRequestParser : TestBase
     public void TextToGroupFieldDto_Nested()
     {
         var text = "Id + (Age * Sum(Salary))";
-        var field = (GroupFieldDto)QueryDtoParser.ParseField(text);
+        var field = (GroupFieldDefintion)QueryDefinitionParser.ParseField(text);
 
-        var expectedField = new GroupFieldDto([
-                new FieldDto("Id"),
-                new BinaryFieldDto("+", new GroupFieldDto([
-                    new FieldDto("Age"),
-                    new BinaryFieldDto("*", new FunctionFieldDto("Sum", [
-                        new FieldDto("Salary")
+        var expectedField = new GroupFieldDefintion([
+                new FieldDefinition("Id"),
+                new BinaryFieldDefinition("+", new GroupFieldDefintion([
+                    new FieldDefinition("Age"),
+                    new BinaryFieldDefinition("*", new FunctionFieldDefinition("Sum", [
+                        new FieldDefinition("Salary")
                     ]))
                 ]))
             ]);
@@ -107,17 +105,17 @@ internal class _21_QureyRequestParser : TestBase
     {
         switch (expected, actual)
         {
-            case (FieldDto expectedField, FieldDto actualField):
+            case (FieldDefinition expectedField, FieldDefinition actualField):
                 Assert.That(actualField.FieldName, Is.EqualTo(expectedField.FieldName));
                 break;
-            case (ConstFieldDto expectedConstraint, ConstFieldDto actualConstraint):
+            case (ConstFieldDefinition expectedConstraint, ConstFieldDefinition actualConstraint):
                 Assert.That(actualConstraint.Value, Is.EqualTo(expectedConstraint.Value));
                 break;
-            case (BinaryFieldDto expectedBinary, BinaryFieldDto actualBinary):
+            case (BinaryFieldDefinition expectedBinary, BinaryFieldDefinition actualBinary):
                 Assert.That(actualBinary.Oper, Is.EqualTo(expectedBinary.Oper));
                 AssertEquivalent(expectedBinary.Field, actualBinary.Field);
                 break;
-            case (FunctionFieldDto expectedFunction, FunctionFieldDto actualFunction):
+            case (FunctionFieldDefinition expectedFunction, FunctionFieldDefinition actualFunction):
                 Assert.That(actualFunction.FunctionName, Is.EqualTo(expectedFunction.FunctionName));
                 Assert.That(actualFunction.Arguments, Has.Length.EqualTo(expectedFunction.Arguments.Length));
                 for (var i = 0; i < expectedFunction.Arguments.Length; i++)
@@ -125,7 +123,7 @@ internal class _21_QureyRequestParser : TestBase
                     AssertEquivalent(expectedFunction.Arguments[i], actualFunction.Arguments[i]);
                 }
                 break;
-            case (GroupFieldDto expectedGroup, GroupFieldDto actualGroup):
+            case (GroupFieldDefintion expectedGroup, GroupFieldDefintion actualGroup):
                 Assert.That(actualGroup.Fields, Has.Length.EqualTo(expectedGroup.Fields.Length));
                 for (var i = 0; i < expectedGroup.Fields.Length; i++)
                 {
