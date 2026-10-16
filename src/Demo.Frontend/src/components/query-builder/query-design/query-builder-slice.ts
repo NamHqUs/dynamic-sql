@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { apiUrls } from "../../../const/api-urls";
+import type { FunctionDefinition } from "../../sql-functions/types";
 
 export type MetadataField = {
   name: string;
@@ -18,15 +19,11 @@ export type MetadataEntity = {
   relations?: MetadataRelation[];
 };
 
-export type MetadataFunction = {
-  name: string;
-};
-
 export type QueryExpression =
   | { kind: "field"; field: string }
   | { kind: "value"; value: string | number }
   | { kind: "binary"; operator: "+" | "-" | "*" | "/"; arguments: [QueryExpression, QueryExpression] }
-  | { kind: "function"; function: "SUM" | "ROUND" | "NULLIF"; arguments: QueryExpression[] };
+  | { kind: "function"; function: string; arguments: QueryExpression[] };
 
 export type QueryColumn = {
   field: string;
@@ -271,22 +268,29 @@ export const fetchQueryMetadata = createAsyncThunk(
   },
 );
 
-export const fetchFunctionNames = createAsyncThunk(
-  "queryBuilder/fetchFunctionNames",
+export const fetchFunctionDefinitions = createAsyncThunk(
+  "queryBuilder/fetchFunctionDefinitions",
   async (_, { rejectWithValue }) => {
     try {
       const payload = await requestJson(apiUrls.metadata.functions);
       if (!Array.isArray(payload) || payload.some((definition) =>
-        !definition || typeof definition.name !== "string" || !definition.name.trim())) {
-        return rejectWithValue("Function metadata API must return named function definitions.");
+        !definition
+        || typeof definition.name !== "string"
+        || !definition.name.trim()
+        || !Array.isArray(definition.arguments)
+        || definition.arguments.some((argument: unknown) => !argument
+          || typeof argument !== "object"
+          || typeof (argument as { name?: unknown }).name !== "string"
+          || typeof (argument as { dataType?: unknown }).dataType !== "string"))) {
+        return rejectWithValue("Function metadata API must return function definitions with names and arguments.");
       }
-      return (payload as MetadataFunction[]).map((definition) => definition.name);
+      return payload as FunctionDefinition[];
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to load function metadata.");
     }
   },
   {
-    condition: (_, { getState }) => getState().queryBuilder.functionNamesStatus !== "loading",
+    condition: (_, { getState }) => getState().queryBuilder.functionDefinitionsStatus !== "loading",
   },
 );
 
@@ -481,9 +485,10 @@ const queryBuilderSlice = createSlice({
     savedRequests: [] as StoredQueryRequest[],
     savedRequestsStatus: "idle",
     savedRequestsError: "",
+    functionDefinitions: [] as FunctionDefinition[],
+    functionDefinitionsStatus: "idle",
+    functionDefinitionsError: "",
     functionNames: [] as string[],
-    functionNamesStatus: "idle",
-    functionNamesError: "",
   },
   reducers: {
     clearQueryResult(state) {
@@ -512,17 +517,18 @@ const queryBuilderSlice = createSlice({
         state.metadataStatus = "failed";
         state.metadataError = String(action.payload || action.error.message || "Unable to load query metadata.");
       })
-      .addCase(fetchFunctionNames.pending, (state) => {
-        state.functionNamesStatus = "loading";
-        state.functionNamesError = "";
+      .addCase(fetchFunctionDefinitions.pending, (state) => {
+        state.functionDefinitionsStatus = "loading";
+        state.functionDefinitionsError = "";
       })
-      .addCase(fetchFunctionNames.fulfilled, (state, action) => {
-        state.functionNames = action.payload;
-        state.functionNamesStatus = "succeeded";
+      .addCase(fetchFunctionDefinitions.fulfilled, (state, action) => {
+        state.functionDefinitions = action.payload;
+        state.functionNames = action.payload.map((definition) => definition.name);
+        state.functionDefinitionsStatus = "succeeded";
       })
-      .addCase(fetchFunctionNames.rejected, (state, action) => {
-        state.functionNamesStatus = "failed";
-        state.functionNamesError = String(action.payload || action.error.message || "Unable to load function metadata.");
+      .addCase(fetchFunctionDefinitions.rejected, (state, action) => {
+        state.functionDefinitionsStatus = "failed";
+        state.functionDefinitionsError = String(action.payload || action.error.message || "Unable to load function metadata.");
       })
       .addCase(executeQuery.pending, (state) => {
         state.queryStatus = "loading";

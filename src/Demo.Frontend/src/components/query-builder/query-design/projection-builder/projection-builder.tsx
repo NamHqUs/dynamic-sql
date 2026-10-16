@@ -4,9 +4,13 @@ import { MetadataEntity, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
 import ExpressionBuilder, { formatExpression } from "../field-builder/expression-builder";
 import { QueryExpression } from "../query-builder-slice";
+import { FunctionDefinition } from "../../../sql-functions/types";
 
 type ProjectionBuilderProps = {
   metadata: MetadataEntity[];
+  functionDefinitions: FunctionDefinition[];
+  functionDefinitionsStatus: string;
+  functionDefinitionsError: string;
   definition: QueryDefinition;
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
@@ -198,7 +202,7 @@ function FieldCards({
   })}</div>;
 }
 
-export default function ProjectionBuilder({ metadata, definition, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
+export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
   const [editingAliasField, setEditingAliasField] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingExpression, setEditingExpression] = useState<{ field: string | null; expression?: QueryExpression; alias?: string } | null>(null);
@@ -364,6 +368,9 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
           key={editingExpression.field ?? "new-expression"}
           entity={entity}
           metadata={metadata}
+          functionDefinitions={functionDefinitions}
+          functionDefinitionsStatus={functionDefinitionsStatus}
+          functionDefinitionsError={functionDefinitionsError}
           initialExpression={editingExpression.expression}
           initialAlias={editingExpression.alias}
           existingAliases={definition.columns

@@ -4,7 +4,7 @@ import Icon from "../icon/icon";
 import PanelSplitter from "../panel-splitter/panel-splitter";
 import { useResizablePanel } from "../../utils/use-resizable-panel";
 import { useMessageBox } from "../message-box/message-box";
-import { createApiQuery, deleteQueryRequest, executeQuery, executeQueryFromText, fetchFunctionNames, fetchQueryMetadata, fetchSavedQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
+import { createApiQuery, deleteQueryRequest, executeQuery, executeQueryFromText, fetchFunctionDefinitions, fetchQueryMetadata, fetchSavedQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import PlainText from "./plain-text/plain-text";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
@@ -136,7 +136,7 @@ function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity
 export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderProps) {
   const dispatch = useDispatch();
   const showMessageBox = useMessageBox();
-  const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, savedRequests, savedRequestsStatus, savedRequestsError, functionNames, functionNamesStatus, functionNamesError } = useSelector((state) => state.queryBuilder);
+  const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, savedRequests, savedRequestsStatus, savedRequestsError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames } = useSelector((state) => state.queryBuilder);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
   const definitionRef = useRef(definition);
   const [selectedFileName, setSelectedFileName] = useState(cachedSelectedFileName);
@@ -187,7 +187,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
 
   useEffect(() => {
     dispatch(fetchQueryMetadata());
-    dispatch(fetchFunctionNames());
+    dispatch(fetchFunctionDefinitions());
     dispatch(fetchSavedQueryRequests());
   }, [dispatch]);
 
@@ -604,6 +604,9 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
                 metadata={metadata}
                 metadataStatus={metadataStatus}
                 metadataError={metadataError}
+                functionDefinitions={functionDefinitions}
+                functionDefinitionsStatus={functionDefinitionsStatus}
+                functionDefinitionsError={functionDefinitionsError}
                 definition={definition}
                 entity={entity}
                 requestName={requestName}
@@ -630,8 +633,8 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
               }))}
               onFieldChange={updateRequestStructureField}
               functionNames={functionNames}
-              functionNamesStatus={functionNamesStatus}
-              functionNamesError={functionNamesError}
+              functionNamesStatus={functionDefinitionsStatus}
+              functionNamesError={functionDefinitionsError}
             />
           )}
         </div>

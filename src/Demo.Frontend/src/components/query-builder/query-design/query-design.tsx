@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MetadataEntity, QueryDefinition } from "./query-builder-slice";
+import { FunctionDefinition } from "../../sql-functions/types";
 import ProjectionBuilder from "./projection-builder/projection-builder";
 import SortBuilder from "./sort-builder/sort-builder";
 import FilterBuilder from "./filter-builder/filter-builder";
@@ -9,6 +10,9 @@ type QueryDesignProps = {
   metadata: MetadataEntity[];
   metadataStatus: string;
   metadataError: string;
+  functionDefinitions: FunctionDefinition[];
+  functionDefinitionsStatus: string;
+  functionDefinitionsError: string;
   definition: QueryDefinition;
   entity?: MetadataEntity;
   requestName: string;
@@ -20,6 +24,9 @@ export default function QueryDesign({
   metadata,
   metadataStatus,
   metadataError,
+  functionDefinitions,
+  functionDefinitionsStatus,
+  functionDefinitionsError,
   definition,
   entity,
   requestName,
@@ -67,6 +74,9 @@ export default function QueryDesign({
       {entity && <div className="query-builder-body">
         <ProjectionBuilder
           metadata={metadata}
+          functionDefinitions={functionDefinitions}
+          functionDefinitionsStatus={functionDefinitionsStatus}
+          functionDefinitionsError={functionDefinitionsError}
           definition={definition}
           entity={entity}
           onDefinitionChange={onDefinitionChange}
