@@ -280,24 +280,14 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
             entity={entity}
             metadata={metadata}
             value=""
-            placeholder="Sorted field"
+            placeholder="Field"
             placeholderIcon
-            ariaLabel="Sorted field"
+            ariaLabel="Field"
             excludedPaths={definition.sorts.map((sort) => sort.field)}
             onChange={addSort}
           />
         </div>
-        {definition.columns.some((column) => column.expression && column.alias) && (
-          <div className="calculated-sort-options" aria-label="Calculated projection sort options">
-            {definition.columns
-              .filter((column) => column.expression && column.alias && !definition.sorts.some((sort) => sort.field === column.alias))
-              .map((column) => (
-                <button type="button" className="text-button" key={column.field} onClick={() => addSort(column.field)}>
-                  Sort by {column.alias}
-                </button>
-              ))}
-          </div>
-        )}
+       
       </div>
     </div>
   );
