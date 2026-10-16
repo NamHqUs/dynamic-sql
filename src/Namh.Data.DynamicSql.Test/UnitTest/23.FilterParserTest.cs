@@ -12,7 +12,7 @@ internal class _23_FilterParserTest : TestBase
         {
             Entity = "Invoices",
             Fields = ProjectionDto.FromTextList("Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, Count() | InvoiceCount, Sum(TotalAmount) | Revenue, Average(TotalAmount) | AverageOrderValue"),
-            Filter = new FilterDtoParser("Status <> <Draft> And Sum(TotalAmount) > 200").Parse(),
+            Filter = FilterDtoParser.Parse("Status <> <Draft> And Sum(TotalAmount) > 200"),
         };
 
         var queryText = query.ToString();

@@ -24,7 +24,7 @@ public static class QueryDtoParser
                 : [],
             Filter = root.TryGetProperty("filter", out var filter)
                 ? filter.ValueKind == JsonValueKind.String
-                    ? new FilterDtoParser(filter.GetString() ?? string.Empty).Parse()
+                    ? FilterDtoParser.Parse(filter.GetString() ?? string.Empty)
                     : JsonSerializer.Deserialize<FilterDto>(
                         filter,
                         new JsonSerializerOptions(JsonSerializerDefaults.Web))

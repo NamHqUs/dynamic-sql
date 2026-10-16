@@ -7,10 +7,13 @@ public sealed class FilterDtoParser
     private readonly List<Token> _tokens;
     private int _position;
 
-    public FilterDtoParser(string text)
+    public static FilterDto Parse(string text)
+        => new FilterDtoParser(text).Parse();
+
+    private FilterDtoParser(string text)
         => _tokens = Tokenize(text);
 
-    public FilterDto Parse()
+    private FilterDto Parse()
     {
         if (_tokens.Count == 1)
             throw new FormatException("The filter cannot be empty.");
