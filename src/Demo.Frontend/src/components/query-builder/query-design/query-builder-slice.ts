@@ -76,7 +76,6 @@ type ApiQueryFilterGroup = Omit<QueryFilterGroup, "filters"> & {
 export type QueryDefinition = {
   entity: string;
   columns: QueryColumn[];
-  groupBy: string[];
   filters: QueryFilterGroup;
   sorts: { field: string; direction: string; expression?: QueryExpression }[];
   page: number | null;
@@ -235,7 +234,6 @@ function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
       alias: projection.alias,
       ...(projection.field.kind === "field" ? {} : { expression: projection.field }),
     })),
-    groupBy: query.groupBy ?? [],
     filters: query.filter ? restoreGroup(query.filter) : { logicalOperation: 0, filters: [] },
     sorts: query.sorts.map((sort) => typeof sort.field === "string"
       ? { ...sort, direction: sort.direction === 1 ? "desc" : "asc" }

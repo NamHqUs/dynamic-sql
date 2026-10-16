@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 
-internal sealed class FilterDtoParser
+public sealed class FilterDtoParser
 {
     private readonly List<Token> _tokens;
     private int _position;
@@ -56,11 +56,9 @@ internal sealed class FilterDtoParser
         }
 
         var left = Next();
-        if (left.Type is not (TokenType.Identifier or TokenType.Field))
+        if (left.Type is not (TokenType.Identifier or TokenType.Field or TokenType.FieldExpression))
             throw new FormatException($"Expected a filter field, received [{left.Text}].");
-        var leftField = left.Type == TokenType.Field
-            ? new FieldDto(left.Text)
-            : FieldDtoParser.Parse(left.Text);
+        var leftField = new FieldDto(left.Text);
         var operationToken = Next();
         if (operationToken.Type != TokenType.Operator)
             throw new FormatException($"Expected a filter operator, received [{operationToken.Text}].");
@@ -192,6 +190,25 @@ internal sealed class FilterDtoParser
                 }
             }
 
+            if (IsIdentifierStart(text[index]))
+            {
+                var identifierEnd = index + 1;
+                while (identifierEnd < text.Length && IsIdentifierPart(text[identifierEnd]))
+                    identifierEnd++;
+
+                var functionName = text[index..identifierEnd];
+                if (identifierEnd < text.Length &&
+                    text[identifierEnd] == '(' &&
+                    !IsFilterKeyword(functionName) &&
+                    TryFindClosingParenthesis(text, identifierEnd, out var closingParenthesis))
+                {
+                    var expression = text[index..(closingParenthesis + 1)];
+                    tokens.Add(new Token(TokenType.FieldExpression, expression, null));
+                    index = closingParenthesis + 1;
+                    continue;
+                }
+            }
+
             if (index + 1 < text.Length &&
                 new[] { "&&", "||", "==", "!=", ">=", "<=", "<>" }.Contains(text[index..(index + 2)]))
             {
@@ -248,6 +265,70 @@ internal sealed class FilterDtoParser
         tokens.Add(new Token(TokenType.End, string.Empty, null));
         return tokens;
     }
+
+    private static bool TryFindClosingParenthesis(string text, int openingParenthesis, out int closingParenthesis)
+    {
+        var depth = 0;
+        var quote = '\0';
+        var inField = false;
+
+        for (var index = openingParenthesis; index < text.Length; index++)
+        {
+            var character = text[index];
+            if (quote != '\0')
+            {
+                if (character == quote)
+                {
+                    if (index + 1 < text.Length && text[index + 1] == quote)
+                        index++;
+                    else
+                        quote = '\0';
+                }
+                continue;
+            }
+
+            if (inField)
+            {
+                if (character == ']')
+                    inField = false;
+                continue;
+            }
+
+            if (character is '\'' or '"')
+            {
+                quote = character;
+                continue;
+            }
+
+            if (character == '[')
+            {
+                inField = true;
+                continue;
+            }
+
+            if (character == '(')
+                depth++;
+            else if (character == ')' && --depth == 0)
+            {
+                closingParenthesis = index;
+                return true;
+            }
+        }
+
+        closingParenthesis = -1;
+        return false;
+    }
+
+    private static bool IsIdentifierStart(char character)
+        => char.IsLetter(character) || character == '_';
+
+    private static bool IsIdentifierPart(char character)
+        => char.IsLetterOrDigit(character) || character is '_' or '.';
+
+    private static bool IsFilterKeyword(string identifier)
+        => identifier.Equals("and", StringComparison.OrdinalIgnoreCase) ||
+            identifier.Equals("or", StringComparison.OrdinalIgnoreCase) ||
+            identifier.Equals("like", StringComparison.OrdinalIgnoreCase);
 
     private static void AddValueToken(
         string text,

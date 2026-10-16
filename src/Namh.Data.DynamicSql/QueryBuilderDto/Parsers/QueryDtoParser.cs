@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 
-internal static class QueryDtoParser
+public static class QueryDtoParser
 {
     public static QueryDto Parse(string json)
     {
@@ -21,10 +21,6 @@ internal static class QueryDtoParser
                         new JsonSerializerOptions(JsonSerializerDefaults.Web))
                         ?? throw new JsonException("A projection field cannot be null."))
                     .ToList()
-                : [],
-            GroupBy = root.TryGetProperty("groupBy", out var groupBy)
-                ? groupBy.EnumerateArray().Select(item => item.GetString()
-                    ?? throw new JsonException("A group-by field must be a string.")).ToList()
                 : [],
             Filter = root.TryGetProperty("filter", out var filter)
                 ? filter.ValueKind == JsonValueKind.String

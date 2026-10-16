@@ -43,7 +43,6 @@
       "alias": "Revenue"
     }
   ],
-  "GroupBy": [],
   "Filter": {
     "logicalOperation": 0,
     "filters": [

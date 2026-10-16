@@ -278,8 +278,7 @@ Supported properties:
 - `fields`: projection fields; each entry has a `field` expression and an
   optional `alias`. A field expression can be a field path string or a
   structured expression object.
-- `groupBy`: field paths used as explicit group keys.
-- `filter`: field comparisons, `like`, `&&`, `||`, `AND`, `OR`, and parentheses.
+- - `filter`: field comparisons, `like`, `&&`, `||`, `AND`, `OR`, and parentheses.
 - `sorts`: field paths; prefix with `-` for descending order.
 - `page`: one-based page number.
 - `pageSize`: number of rows per page.
@@ -312,7 +311,6 @@ Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
 {
   "entity": "Products",
   "fields": [
-    { "field": { "kind": "field", "field": "Name" } },
     {
       "alias": "GrossProfit",
       "field": {
@@ -336,7 +334,6 @@ Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
       }
     }
   ],
-  "groupBy": ["Id", "Name"],
   "sorts": ["-GrossProfit"]
 }
 ```

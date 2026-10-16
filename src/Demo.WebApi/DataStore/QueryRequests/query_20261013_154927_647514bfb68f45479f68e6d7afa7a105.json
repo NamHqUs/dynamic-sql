@@ -136,10 +136,6 @@
         "alias": "MarginPercent"
       }
     ],
-    "GroupBy": [
-      "Id",
-      "Name"
-    ],
     "Filter": {
       "logicalOperation": 0,
       "filters": [
@@ -171,5 +167,5 @@
     "PageSize": 50,
     "IncludeArchive": false
   },
-  "RequestText": "Name: 5. Gross margin by product\nEntity: Products\nFields: Name, SUM(InvoiceItems.Quantity) | UnitsSold, \nSUM(InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)) | GrossProfit, \nROUND(\n  (SUM((InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice))) * \u003C100\u003E) \n     / NULLIF(SUM(InvoiceItems.LineTotal), \u003C0\u003E), \n  \u003C2\u003E) | MarginPercent\nGroupBy: Id, Name\nFilters: InvoiceItems.Invoice.Status = \u003CPaid\u003E\nSorts: GrossProfit DESC\nPage: 1\nPageSize: 50\nIncludeArchive: False"
+  "RequestText": "Name: 5. Gross margin by product\nEntity: Products\nFields: Name, SUM(InvoiceItems.Quantity) | UnitsSold, \nSUM(InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)) | GrossProfit, \nROUND(\n  (SUM((InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice))) * \u003C100\u003E) \n     / NULLIF(SUM(InvoiceItems.LineTotal), \u003C0\u003E), \n  \u003C2\u003E) | MarginPercent\nFilters: InvoiceItems.Invoice.Status = \u003CPaid\u003E\nSorts: GrossProfit DESC\nPage: 1\nPageSize: 50\nIncludeArchive: False"
 }

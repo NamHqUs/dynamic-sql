@@ -28,7 +28,6 @@ function createDefinition(entity: string, fields: MetadataField[] = []): QueryDe
   return {
     entity,
     columns: fields.map((field) => ({ field: field.name, alias: null })),
-    groupBy: [],
     filters: { logicalOperation: 0, filters: [] },
     sorts: [],
     page: 1,
@@ -56,7 +55,6 @@ function loadDefinition(): QueryDefinition {
 
   return {
     ...cachedDefinition,
-    groupBy: cachedDefinition.groupBy ?? [],
     filters: cachedDefinition.filters,
   };
 }
@@ -128,13 +126,11 @@ function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity
     : isProjectionColumnAvailable(sort.field, entity, metadata)
       || isAvailableFieldPath(entity, metadata, sort.field)
       || columns.some((column) => column.expression && column.alias === sort.field));
-  const groupBy = (definition.groupBy ?? []).filter((field) => isAvailableFieldPath(entity, metadata, field));
   const filters = pruneFilters(definition.filters, entity, metadata);
   const unchanged = columns.length === definition.columns.length
     && sorts.length === definition.sorts.length
-    && groupBy.length === (definition.groupBy ?? []).length
     && JSON.stringify(filters) === JSON.stringify(definition.filters);
-  return unchanged ? definition : { ...definition, columns, sorts, groupBy, filters };
+  return unchanged ? definition : { ...definition, columns, sorts, filters };
 }
 
 export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderProps) {

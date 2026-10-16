@@ -64,7 +64,6 @@
         "alias": "AverageOrderValue"
       }
     ],
-    "GroupBy": [],
     "Filter": {
       "logicalOperation": 0,
       "filters": [
@@ -103,5 +102,5 @@
     "PageSize": 50,
     "IncludeArchive": false
   },
-  "RequestText": "Name: 1.Monthly revenue and invoice volume\nEntity: Invoices\nFields: Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, Count() | InvoiceCount, \nSum(TotalAmount) | Revenue,\nAverage(TotalAmount) | AverageOrderValue\nFilters: Status \u003C\u003E \u003CDraft\u003E\nSorts: Year DESC, Month DESC\nPage: \nPageSize: 50\nIncludeArchive: False"
+  "RequestText": "Name: 1.Monthly revenue and invoice volume\nEntity: Invoices\nFields: Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, Count() | InvoiceCount, \nSum(TotalAmount) | Revenue,\nAverage(TotalAmount) | AverageOrderValue\nFilters: Status \u003C\u003E \u003CDraft\u003E And Sum(TotalAmount) \u003E 200\nSorts: Year DESC, Month DESC\nPage: \nPageSize: 50\nIncludeArchive: False"
 }

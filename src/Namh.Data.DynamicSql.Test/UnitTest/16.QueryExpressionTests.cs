@@ -55,7 +55,7 @@ public sealed class _16_QueryExpressionTests
     ];
 
     [Test]
-    public async Task JsonDefinitionBuildsCalculatedAggregateProjectionWithExplicitGrouping()
+    public async Task JsonDefinitionBuildsCalculatedAggregateProjectionWithFluentGrouping()
     {
         const string json = """
             {
@@ -147,9 +147,6 @@ public sealed class _16_QueryExpressionTests
                   }
                 }
               ],
-              "groupBy": ["Id", "Name"],
-              "page": 1,
-              "pageSize": 50,
               "includeArchive": false,
               "filter": {
                 "logicalOperation": 0,
@@ -208,7 +205,8 @@ public sealed class _16_QueryExpressionTests
             json,
             new JsonSerializerOptions(JsonSerializerDefaults.Web))
             ?? throw new InvalidOperationException("The query request JSON did not produce a definition.");
-        var sql = db.Query(definition).ToSql();
+        var query = db.Query(definition).GroupBy("Id", "Name");
+        var sql = query.ToSql();
 
         Assert.That(sql.CommandText, Does.Match(@"SUM\s*\(\s*\(t1\.""LineTotal"" - \(t1\.""Quantity"" \* t0\.""CostPrice""\)\)\)"));
         Assert.That(sql.CommandText, Does.Match(@"NULLIF\s*\(\s*SUM\s*\(t1\.""LineTotal""\), @p"));
@@ -217,10 +215,10 @@ public sealed class _16_QueryExpressionTests
         Assert.That(sql.CommandText, Does.Match(@"ORDER BY[\s\S]*DESC"));
         Assert.That(sql.Parameters.Select(parameter => parameter.Value),
             Is.EquivalentTo(new object?[] { 100m, 0m, 2m }));
-        Assert.That(definition.ToString(), Does.Contain("GroupBy: Id, Name"));
+        Assert.That(definition.ToString(), Does.Not.Contain("GroupBy"));
         Assert.That(definition.ToString(), Does.Contain("ROUND("));
 
-        var queryResult = await db.Query(definition).ToListWithTotalRecordsAsync();
+        var queryResult = await query.ToListWithTotalRecordsAsync();
         var records = queryResult.Records;
 
         Assert.That(records, Has.Count.EqualTo(1));

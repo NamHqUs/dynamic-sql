@@ -71,7 +71,6 @@ public static class QueryRequestServices
         var fields = !string.IsNullOrWhiteSpace(fieldText) && fieldText.TrimStart().StartsWith('[')
             ? ParseJsonFields(fieldText, parsedEntity)
             : ProjectionDto.FromTextList(fieldText ?? string.Empty);
-        var groupBy = ParseList(values.GetValueOrDefault("GroupBy"), item => item);
         var sorts = ParseSorts(values.GetValueOrDefault("Sorts"));
 
         var filterText = values.GetValueOrDefault("Filters");
@@ -92,7 +91,6 @@ public static class QueryRequestServices
         {
             Entity = parsedEntity,
             Fields = fields,
-            GroupBy = groupBy,
             Filter = filter,
             Sorts = sorts,
             Page = page,
@@ -171,7 +169,6 @@ public static class QueryRequestServices
                 Name = result.Name,
                 Entity = result.Entity,
                 Fields = legacyColumns.EnumerateArray().Select(ParseLegacyProjection).ToList(),
-                GroupBy = result.GroupBy,
                 Filter = result.Filter,
                 Sorts = result.Sorts,
                 Page = result.Page,

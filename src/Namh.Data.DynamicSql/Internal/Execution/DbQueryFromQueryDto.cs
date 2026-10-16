@@ -13,13 +13,9 @@ internal static class DbQueryFromQueryDto
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);
-        ArgumentNullException.ThrowIfNull(definition.GroupBy);
         ArgumentNullException.ThrowIfNull(definition.Fields);
 
         var query = context.Query(definition.Entity, definition.IncludeArchive);
-
-        if (definition.GroupBy.Count > 0)
-            query = query.GroupBy(definition.GroupBy.ToArray());
 
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));

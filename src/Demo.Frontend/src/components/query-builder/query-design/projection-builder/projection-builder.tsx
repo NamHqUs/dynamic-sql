@@ -343,53 +343,21 @@ export default function ProjectionBuilder({ metadata, definition, entity, onDefi
           metadata={metadata}
           value=""
           excludedPaths={definition.columns.map((column) => column.field)}
-          placeholder="Display field"
+          placeholder="Field"
           placeholderIcon
-          ariaLabel="Display field"
+          ariaLabel="Field"
           onChange={addColumn}
         />
+      </div>
+      <div className="projection-actions">
         <button
           type="button"
-          className="field-action expression-add-button"
+          className="text-button"
           onClick={() => setEditingExpression({ field: null })}
         >
-          <span aria-hidden="true">ƒx</span> Add calculation
+          <span aria-hidden="true">ƒx</span>
+          <span className="action-link-text">Calculation</span>
         </button>
-      </div>
-      <div className="group-by-row">
-        <div>
-          <span className="section-kicker">GROUP BY</span>
-          <p className="filter-description">Choose the fields that identify each aggregate row.</p>
-        </div>
-        <div className="group-by-fields">
-          {definition.groupBy.map((field) => (
-            <span className="group-by-chip" key={field}>
-              {field}
-              <button
-                type="button"
-                aria-label={`Remove ${field} from group by`}
-                title={`Remove ${field} from group by`}
-                onClick={() => onDefinitionChange({ ...definition, groupBy: definition.groupBy.filter((item) => item !== field) })}
-              >
-                <Icon name="close" size={11} />
-              </button>
-            </span>
-          ))}
-          <FieldBuilder
-            key={`${entity.name}-group-${definition.groupBy.length}`}
-            entity={entity}
-            metadata={metadata}
-            value=""
-            ariaLabel="Group by field"
-            placeholder="Add group field"
-            allowAggregates={false}
-            excludedPaths={definition.groupBy}
-            onChange={(field) => {
-              if (!definition.groupBy.includes(field))
-                onDefinitionChange({ ...definition, groupBy: [...definition.groupBy, field] });
-            }}
-          />
-        </div>
       </div>
       {editingExpression && (
         <ExpressionBuilder

@@ -42,7 +42,6 @@ export default function QueryDesign({
             onDefinitionChange({
               entity: event.target.value,
               columns: selectedEntity?.fields.map((field) => ({ field: field.name, alias: null })) ?? [],
-              groupBy: [],
               filters: { logicalOperation: 0, filters: [] },
               sorts: [],
               page: 1,

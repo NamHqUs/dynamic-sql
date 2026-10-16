@@ -30,7 +30,6 @@
       "alias": "LifetimeValue"
     }
   ],
-  "GroupBy": [],
   "Filter": {
     "logicalOperation": 0,
     "filters": [

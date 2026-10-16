@@ -18,10 +18,9 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("SUM[TotalAmount] | Revenue"),
                 ProjectionDto.FromText("AVG[TotalAmount] | AverageOrderValue")
             ],
-            GroupBy = ["DateFormat[InvoiceDate, <%Y-%m>]"],
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
             Sorts = [Sort("Month")]
-        }, 3);
+        }, 3, "DateFormat[InvoiceDate, <%Y-%m>]");
 
         yield return Case(2, "RevenueByCustomerSegmentAndRegion", new QueryDto
         {
@@ -34,10 +33,9 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("COUNT[] | InvoiceCount"),
                 ProjectionDto.FromText("SUM[TotalAmount] | Revenue")
             ],
-            GroupBy = ["Customer.Segment", "Customer.Region"],
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
-        }, null);
+        }, null, "Customer.Segment", "Customer.Region");
 
         yield return Case(3, "TopCustomersByLifetimeValue", new QueryDto
         {
@@ -50,11 +48,10 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("COUNT[] | Orders"),
                 ProjectionDto.FromText("SUM[TotalAmount] | LifetimeValue")
             ],
-            GroupBy = ["Customer.Id", "Customer.Name"],
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("LifetimeValue", QuerySortDirection.Descending)],
             PageSize = 10
-        }, 10);
+        }, 10, "Customer.Id", "Customer.Name");
 
         yield return Case(4, "BestSellingProductsByUnitsAndRevenue", new QueryDto
         {
@@ -67,10 +64,9 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("SUM[InvoiceItems.Quantity] | UnitsSold"),
                 ProjectionDto.FromText("SUM[InvoiceItems.LineTotal] | Revenue")
             ],
-            GroupBy = ["Id", "Name", "Category"],
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
-        }, 9);
+        }, 9, "Id", "Name", "Category");
 
         yield return Case(5, "GrossMarginByProduct", new QueryDto
         {
@@ -85,10 +81,9 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText(
                     "ROUND[SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] * <100> / NULLIF[SUM[InvoiceItems.LineTotal], <0>], <2>] | MarginPercent")
             ],
-            GroupBy = ["Id", "Name"],
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("GrossProfit", QuerySortDirection.Descending)]
-        }, 9);
+        }, 9, "Id", "Name");
 
         yield return Case(7, "PaidCollectionTimeByPaymentMethod", new QueryDto
         {
@@ -102,9 +97,8 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                     "AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay"),
                 ProjectionDto.FromText("SUM[TotalAmount] | Collected")
             ],
-            GroupBy = ["PaymentMethod"],
             Filter = Filter("Status", BinaryOperator.Equals, "Paid")
-        }, 3);
+        }, 3, "PaymentMethod");
 
         yield return Case(8, "SalesChannelPerformance", new QueryDto
         {
@@ -117,10 +111,9 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("SUM[TotalAmount] | Revenue"),
                 ProjectionDto.FromText("AVG[TotalAmount] | AverageOrderValue")
             ],
-            GroupBy = ["SalesChannel"],
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
-        }, 3);
+        }, 3, "SalesChannel");
 
         yield return Case(9, "ProductAttachAndCrossSellPairs", new QueryDto
         {
@@ -145,10 +138,9 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("COUNT[] | OrderCount"),
                 ProjectionDto.FromText("Max(InvoiceDate) | LastOrderDate")
             ],
-            GroupBy = ["Customer.Id", "Customer.Name"],
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("LastOrderDate", QuerySortDirection.Descending)]
-        }, 10);
+        }, 10, "Customer.Id", "Customer.Name");
 
         yield return Case(11, "CustomersWithNoPaidOrder", new QueryDto
         {
@@ -192,9 +184,8 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText(
                     "ROUND[SUM[DiscountAmount] * <100> / NULLIF[SUM[TotalAmount], <0>], <2>] | DiscountRate")
             ],
-            GroupBy = ["DateFormat[InvoiceDate, <%Y-%m>]"],
             Sorts = [Sort("Month")]
-        }, 4);
+        }, 4, "DateFormat[InvoiceDate, <%Y-%m>]");
 
         yield return Case(14, "RevenueByWeekday", new QueryDto
         {
@@ -206,10 +197,9 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("COUNT[] | Orders"),
                 ProjectionDto.FromText("SUM[TotalAmount] | Revenue")
             ],
-            GroupBy = ["DateFormat[InvoiceDate, <%w>]"],
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
-        }, null);
+        }, null, "DateFormat[InvoiceDate, <%w>]");
 
         yield return Case(15, "InvoiceStatusFunnel", new QueryDto
         {
@@ -221,9 +211,8 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("COUNT[] | InvoiceCount"),
                 ProjectionDto.FromText("SUM[TotalAmount] | PipelineValue")
             ],
-            GroupBy = ["Status"],
             Sorts = [Sort("PipelineValue", QuerySortDirection.Descending)]
-        }, 3);
+        }, 3, "Status");
 
         yield return Case(16, "AverageBasketComposition", new QueryDto
         {
@@ -237,9 +226,8 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("SUM[Items.Quantity] | Units"),
                 ProjectionDto.FromText("TotalAmount")
             ],
-            GroupBy = ["Id", "InvoiceNumber", "Customer.Name", "TotalAmount"],
             Sorts = [Sort("TotalAmount", QuerySortDirection.Descending)]
-        }, 20);
+        }, 20, "Id", "InvoiceNumber", "Customer.Name", "TotalAmount");
 
         yield return Case(17, "CategoryRevenueAndProfitability", new QueryDto
         {
@@ -252,10 +240,9 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText(
                     "SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit")
             ],
-            GroupBy = ["Category"],
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
-        }, 4);
+        }, 4, "Category");
 
         yield return Case(18, "MonthlyRevenueTrendWithPriorMonth", new QueryDto
         {
@@ -266,10 +253,9 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("DateFormat[InvoiceDate, <%Y-%m>] | Month"),
                 ProjectionDto.FromText("SUM[TotalAmount] | Revenue")
             ],
-            GroupBy = ["DateFormat[InvoiceDate, <%Y-%m>]"],
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Month")]
-        }, 2);
+        }, 2, "DateFormat[InvoiceDate, <%Y-%m>]");
 
         yield return Case(19, "CustomerRecencyFrequencyAndMonetaryValue", new QueryDto
         {
@@ -282,14 +268,13 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("COUNT[] | Frequency"),
                 ProjectionDto.FromText("SUM[TotalAmount] | MonetaryValue")
             ],
-            GroupBy = ["Customer.Id", "Customer.Name"],
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts =
             [
                 Sort("LastPurchase", QuerySortDirection.Descending),
                 Sort("MonetaryValue", QuerySortDirection.Descending)
             ]
-        }, 10);
+        }, 10, "Customer.Id", "Customer.Name");
 
         yield return Case(20, "UnpaidRevenueExposureByCustomer", new QueryDto
         {
@@ -303,16 +288,36 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 ProjectionDto.FromText("SUM[TotalAmount] | AmountDue"),
                 ProjectionDto.FromText("Min(DueDate) | OldestDueDate")
             ],
-            GroupBy = ["Customer.Id", "Customer.Name", "Customer.Segment"],
             Filter = Filter("Status", BinaryOperator.Equals, "Sent"),
             Sorts = [Sort("AmountDue", QuerySortDirection.Descending)]
-        }, 6);
+        }, 6, "Customer.Id", "Customer.Name", "Customer.Segment");
     }
 
     [TestCaseSource(nameof(ReportQueries))]
-    public void QueryDtoExecutesSalesReport(QueryDto definition, int? expectedRowCount)
+    public void QueryDtoExecutesSalesReport(QueryDto definition, int? expectedRowCount, string[] groupBy)
     {
-        var query = _db.Query(definition);
+        var groupedAndPaged = groupBy.Length > 0 && (definition.Page is not null || definition.PageSize is not null);
+        var queryDefinition = groupedAndPaged
+            ? new QueryDto
+            {
+                Name = definition.Name,
+                Entity = definition.Entity,
+                Fields = definition.Fields,
+                Filter = definition.Filter,
+                Sorts = definition.Sorts,
+                IncludeArchive = definition.IncludeArchive
+            }
+            : definition;
+        var query = _db.Query(queryDefinition);
+        if (groupBy.Length > 0)
+            query = query.GroupBy(groupBy);
+        if (groupedAndPaged)
+        {
+            var page = definition.Page ?? 1;
+            var pageSize = definition.PageSize ?? 50;
+            query = query.Skip((page - 1) * pageSize).TakeQuery(pageSize);
+        }
+
         var sql = query.ToSql();
         var records = query.ToList();
 
@@ -377,8 +382,8 @@ internal sealed class _34_SalesReportQueryTests : TestBase
             yield return (products[first], products[second]);
     }
 
-    private static TestCaseData Case(int number, string name, QueryDto query, int? expectedRowCount)
-        => new TestCaseData(query, expectedRowCount)
+    private static TestCaseData Case(int number, string name, QueryDto query, int? expectedRowCount, params string[] groupBy)
+        => new TestCaseData(query, expectedRowCount, groupBy)
             .SetName($"Demo{number}_{name}");
 
     private static FilterDto Filter(string field, BinaryOperator operation, object? value)
