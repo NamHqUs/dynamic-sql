@@ -1,4 +1,4 @@
-using Demo.ServiceContracts.Repositories;
+using Demo.Contracts.Repositories;
 using Demo.Share;
 using Namh.Data.DynamicSql;
 using System.Text.Json;
@@ -19,23 +19,35 @@ public sealed class MetadataFileRepository(FilePathResolver filePathResolver) : 
 
     public IReadOnlyList<Entity> GetAll()
     {
+        var merge = BuiltinMetadata.DefaultMetadata.ToDictionary(
+            entity => entity.Name,
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var entity in GetUserDefined())
+        {
+            if (!merge.TryAdd(entity.Name, entity))
+                throw new InvalidDataException($"User metadata cannot replace built-in entity '{entity.Name}'.");
+        }
+        return merge.Values.ToArray();
+    }
+
+    public IReadOnlyList<Entity> GetUserDefined()
+    {
         var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
         if (!Directory.Exists(dir))
-            return BuiltinMetadata.DefaultMetadata;
+            return [];
 
-        var customeEntities = Directory.EnumerateFiles(dir, "*.json")
+        return Directory.EnumerateFiles(dir, "*.json")
             .Select(file => JsonSerializer.Deserialize<Entity>(File.ReadAllText(file))
                 ?? throw new InvalidOperationException($"Failed to deserialize metadata from '{file}'."))
             .ToArray();
-
-        var merge = BuiltinMetadata.DefaultMetadata.ToDictionary(e => e.Name);
-        foreach (var entity in customeEntities)
-            merge[entity.Name] = entity;
-        return merge.Values.ToArray();
     }
 
     public void Save(Entity entity)
     {
+        if (BuiltinMetadata.DefaultMetadata.Any(builtin =>
+            string.Equals(builtin.Name, entity.Name, StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException($"Built-in entity '{entity.Name}' cannot be changed.");
+
         var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
         Directory.CreateDirectory(dir);
         File.WriteAllText(
@@ -45,6 +57,10 @@ public sealed class MetadataFileRepository(FilePathResolver filePathResolver) : 
 
     public void Delete(string entityName)
     {
+        if (BuiltinMetadata.DefaultMetadata.Any(builtin =>
+            string.Equals(builtin.Name, entityName, StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException($"Built-in entity '{entityName}' cannot be deleted.");
+
         var path = GetPath(entityName);
         if (File.Exists(path))
             File.Delete(path);

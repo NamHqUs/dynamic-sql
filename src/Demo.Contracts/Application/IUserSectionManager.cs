@@ -1,4 +1,4 @@
-﻿namespace Demo.ServiceContracts.Application;
+﻿namespace Demo.Contracts.Application;
 
 public interface IUserSectionManager
 {

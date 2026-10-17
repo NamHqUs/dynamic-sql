@@ -1,10 +1,11 @@
+using Demo.Contracts.Dto;
 using Namh.Data.DynamicSql;
 
-namespace Demo.ServiceContracts.Services;
+namespace Demo.Contracts.Services;
 
 public interface IMetadataService
 {
-    IReadOnlyList<Entity> GetAll();
+    IReadOnlyList<MetadataEntityDto> GetAll();
     Entity Create(Entity entity);
     Entity Update(string entityName, Entity entity);
     void Delete(string entityName);

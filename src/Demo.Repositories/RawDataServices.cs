@@ -1,4 +1,4 @@
-using Demo.ServiceContracts.Repositories;
+using Demo.Contracts.Repositories;
 using System.Data;
 
 namespace Demo.Repositories;

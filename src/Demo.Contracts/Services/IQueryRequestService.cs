@@ -1,7 +1,7 @@
-using Demo.ServiceContracts.Repositories;
+using Demo.Contracts.Repositories;
 using Namh.Data.DynamicSql;
 
-namespace Demo.ServiceContracts.Services;
+namespace Demo.Contracts.Services;
 
 public interface IQueryRequestService
 {

@@ -238,6 +238,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
         <EntityBuilder
           draft={draft}
           selectedName={selectedName}
+          canEdit={!selectedName || Boolean(draft?.canDelete)}
           dirty={dirty}
           status={status}
           message={message}

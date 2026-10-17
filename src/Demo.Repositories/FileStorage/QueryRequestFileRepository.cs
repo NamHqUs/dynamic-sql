@@ -1,4 +1,4 @@
-using Demo.ServiceContracts.Repositories;
+using Demo.Contracts.Repositories;
 using Namh.Data.DynamicSql;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -26,8 +26,16 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
 
     public IReadOnlyList<StoredQueryRequest> GetAll()
     {
+        var builtinQueryRequests = _builtinItems.Select(request => request with { CanDelete = false });
         var customQueryRequests = GetAll(_filePathResolver.GetUserStoreFolder(FOLDER_NAME));
-        return new List<StoredQueryRequest>(_builtinItems).Concat(customQueryRequests).ToList();
+        var builtinFileNames = _builtinItems.Select(request => request.FileName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var conflictingRequest = customQueryRequests.FirstOrDefault(request => builtinFileNames.Contains(request.FileName));
+        if (conflictingRequest is not null)
+            throw new InvalidDataException(
+                $"User query request '{conflictingRequest.FileName}' cannot replace a built-in request.");
+
+        return builtinQueryRequests.Concat(customQueryRequests).ToList();
     }
 
     private IReadOnlyList<StoredQueryRequest> GetAll(string dir)
@@ -41,12 +49,20 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
 
     public StoredQueryRequest? Get(string fileName)
     {
+        if (_builtinItems.Any(request =>
+            string.Equals(request.FileName, fileName, StringComparison.OrdinalIgnoreCase)))
+            return null;
+
         var path = GetPath(fileName);
         return File.Exists(path) ? Read(path) : null;
     }
 
     public void Save(StoredQueryRequest request)
     {
+        if (_builtinItems.Any(builtin =>
+            string.Equals(builtin.FileName, request.FileName, StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException($"Built-in query request '{request.FileName}' cannot be changed.");
+
         var dir = _filePathResolver.GetUserStoreFolder(FOLDER_NAME);
         Directory.CreateDirectory(dir);
         File.WriteAllText(GetPath(request.FileName), JsonSerializer.Serialize(
@@ -56,6 +72,10 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
 
     public bool Delete(string fileName)
     {
+        if (_builtinItems.Any(builtin =>
+            string.Equals(builtin.FileName, fileName, StringComparison.OrdinalIgnoreCase)))
+            return false;
+
         var path = GetPath(fileName);
         if (!File.Exists(path))
             return false;

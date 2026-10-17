@@ -16,7 +16,7 @@ import "./function-detail.css";
 type FunctionDetailProps = {
   draft: EditableFunctionDefinition | null;
   selectedName: string;
-  canDelete: boolean;
+  canEdit: boolean;
   dirty: boolean;
   status: string;
   message: string;
@@ -29,7 +29,7 @@ type FunctionDetailProps = {
 export default function FunctionDetail({
   draft,
   selectedName,
-  canDelete,
+  canEdit,
   dirty,
   status,
   message,
@@ -90,10 +90,10 @@ export default function FunctionDetail({
       <div className="editor-head">
         <div>
           <span className="section-kicker">FUNCTION DEFINITION</span>
-          <h2>{selectedName ? "View or update function" : "Create function"}</h2>
+          <h2>{selectedName ? canEdit ? "View or update function" : "View function" : "Create function"}</h2>
         </div>
         <div className="editor-actions">
-          {selectedName && canDelete && (
+          {selectedName && canEdit && (
             <button
               className="icon-button danger"
               type="button"
@@ -104,19 +104,21 @@ export default function FunctionDetail({
               <Icon name="delete" size={19} />
             </button>
           )}
-          <button
-            className="button primary"
-            type="button"
-            onClick={onSave}
-            disabled={status === "saving" || !dirty}
-          >
-            <Icon name="check" size={14} />{" "}Save changes
-          </button>
+          {canEdit
+            ? <button
+                className="button primary"
+                type="button"
+                onClick={onSave}
+                disabled={status === "saving" || !dirty}
+              >
+                <Icon name="check" size={14} />{" "}Save changes
+              </button>
+            : selectedName && <span className="section-kicker">BUILT-IN · READ-ONLY</span>}
         </div>
       </div>
       {message && <p className="metadata-alert" role="alert">{message}</p>}
 
-      <div className="function-form">
+      <fieldset className="function-form" disabled={!canEdit}>
         <section className="function-signature" aria-label="Function signature">
           <label className="signature-name">
             Function Name
@@ -335,7 +337,7 @@ export default function FunctionDetail({
             </table>
           </div>
         </section>
-      </div>
+      </fieldset>
     </main>
   );
 }

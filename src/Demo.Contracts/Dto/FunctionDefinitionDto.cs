@@ -2,7 +2,7 @@ using Namh.Data.DynamicSql;
 using System.Text.Json;
 using static Namh.Data.DynamicSql.SqlFunctionDefintion;
 
-namespace Demo.ServiceContracts.Dto;
+namespace Demo.Contracts.Dto;
 
 public sealed class FunctionDefinitionDto
 {

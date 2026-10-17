@@ -1,9 +1,12 @@
 using Namh.Data.DynamicSql;
 
-namespace Demo.ServiceContracts.Repositories;
+namespace Demo.Contracts.Repositories;
 
 /// <summary>Represents a saved query definition and its original text, if available.</summary>
-public sealed record StoredQueryRequest(string FileName, QueryDefinition Query, string? RequestText = null);
+public sealed record StoredQueryRequest(string FileName, QueryDefinition Query, string? RequestText = null)
+{
+    public bool CanDelete { get; init; } = true;
+}
 
 public interface IQueryRequestRepository
 {

@@ -1,5 +1,5 @@
-using Demo.ServiceContracts.Repositories;
-using Demo.ServiceContracts.Services;
+using Demo.Contracts.Repositories;
+using Demo.Contracts.Services;
 using Namh.Data.DynamicSql;
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using System.Globalization;

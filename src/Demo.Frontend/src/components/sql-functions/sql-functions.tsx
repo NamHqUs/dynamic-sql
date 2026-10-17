@@ -256,6 +256,9 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
     }
   };
 
+  const canEditSelectedDefinition = !selectedName ||
+    Boolean(definitions.find((definition) => definition.name === selectedName)?.canDelete);
+
   const updateDraft = (update: (current: EditableFunctionDefinition) => EditableFunctionDefinition) => {
     if (!draft) return;
     setDraft(update(draft));
@@ -287,7 +290,7 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
         <FunctionDetail
           draft={draft}
           selectedName={selectedName}
-          canDelete={Boolean(definitions.find((definition) => definition.name === selectedName)?.canDelete)}
+          canEdit={canEditSelectedDefinition}
           dirty={dirty}
           status={status}
           message={message}

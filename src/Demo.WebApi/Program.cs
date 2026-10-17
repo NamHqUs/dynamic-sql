@@ -1,5 +1,5 @@
 using Demo.Repositories;
-using Demo.ServiceContracts.Application;
+using Demo.Contracts.Application;
 using Demo.Services;
 using Demo.WebApi.Application.Middlewares;
 using Namh.Data.DynamicSql;

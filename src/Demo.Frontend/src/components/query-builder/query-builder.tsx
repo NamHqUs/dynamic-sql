@@ -187,6 +187,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     [contextMetadata, definition.entity],
   );
   const selectedSavedRequest = savedRequests.find((item) => item.fileName === selectedFileName);
+  const canModifySelectedRequest = !selectedFileName || selectedSavedRequest?.canDelete === true;
   const defaultNewDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
   const hasUnsavedQueryChanges = (currentDefinition: QueryDefinition) => {
     const currentRequest = serializeQueryRequest(requestName.trim(), currentDefinition);
@@ -394,12 +395,18 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       eyebrow: "UNSAVED QUERY REQUEST",
       title: "Save changes before continuing?",
       message: planTextDirty
-        ? "Your current query request or plan text has unsaved changes."
-        : "Your current query request has unsaved changes.",
+        ? canModifySelectedRequest
+          ? "Your current query request or plan text has unsaved changes."
+          : "This built-in query request is read-only; discard local changes or stay here."
+        : canModifySelectedRequest
+          ? "Your current query request has unsaved changes."
+          : "This built-in query request is read-only; discard local changes or stay here.",
       actions: [
         { value: "cancel", label: "Cancel", variant: "secondary" },
         { value: "discard", label: "Discard", variant: "danger" },
-        { value: "save", label: "Save", variant: "primary" },
+        ...(canModifySelectedRequest
+          ? [{ value: "save", label: "Save", variant: "primary" as const }]
+          : []),
       ],
     });
     if (action === "discard") {
@@ -504,6 +511,10 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const createNewRequest = () => requestQueryChangeNavigation(startNewRequest);
 
   const saveRequest = async () => {
+    if (!canModifySelectedRequest) {
+      setRequestMessage("Built-in query requests are read-only. Create a new query to save changes.");
+      return false;
+    }
     if (!requestName.trim()) {
       setSavedMessageIsError(true);
       setSavedMessage("A name is required for the query request.");
@@ -556,7 +567,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   };
 
   const removeRequest = async () => {
-    if (!selectedFileName) return;
+    if (!selectedFileName || !canModifySelectedRequest) return;
     const action = await showMessageBox({
       eyebrow: "DELETE QUERY REQUEST",
       title: `Delete "${requestName}"?`,
@@ -585,9 +596,11 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           <h2>Query Builder</h2>
         </div>
         <div className="heading-actions">
-          <button className="button danger" type="button" onClick={removeRequest} disabled={!selectedFileName || isResolvingPlanChanges} title="Delete query request" aria-label="Delete query request">
-            <Icon name="trash" size={16} />
-          </button>
+          {selectedFileName && canModifySelectedRequest && (
+            <button className="button danger" type="button" onClick={removeRequest} disabled={isResolvingPlanChanges} title="Delete query request" aria-label="Delete query request">
+              <Icon name="trash" size={16} />
+            </button>
+          )}
           <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>New Query</button>
           <div className="query-save-action">
             {savedMessage && (
@@ -598,7 +611,9 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
                 {savedMessage}
               </p>
             )}
-            <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges || (!hasUnsavedChanges && !planTextDirty)} title="Save Query">Save Query</button>
+            {canModifySelectedRequest && (
+              <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges || (!hasUnsavedChanges && !planTextDirty)} title="Save Query">Save Query</button>
+            )}
           </div>
         </div>
       </section>

@@ -1,5 +1,6 @@
-using Demo.ServiceContracts.Repositories;
-using Demo.ServiceContracts.Services;
+using Demo.Contracts.Dto;
+using Demo.Contracts.Repositories;
+using Demo.Contracts.Services;
 using Namh.Data.DynamicSql;
 
 namespace Demo.Services;
@@ -17,7 +18,15 @@ public sealed class MetadataService : IMetadataService
         _functionDefinitionService = functionDefinitionService;
     }
 
-    public IReadOnlyList<Entity> GetAll() => _metadataRepository.GetAll();
+    public IReadOnlyList<MetadataEntityDto> GetAll()
+    {
+        var userDefinedNames = _metadataRepository.GetUserDefined()
+            .Select(entity => entity.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return _metadataRepository.GetAll()
+            .Select(entity => MetadataEntityDto.FromEntity(entity, userDefinedNames.Contains(entity.Name)))
+            .ToArray();
+    }
 
     public Entity Create(Entity entity)
     {
@@ -33,6 +42,15 @@ public sealed class MetadataService : IMetadataService
     public Entity Update(string entityName, Entity entity)
     {
         ValidateEntity(entity);
+        var userEntities = _metadataRepository.GetUserDefined();
+        if (!userEntities.Any(item => string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase)))
+        {
+            if (_metadataRepository.GetAll().Any(item =>
+                string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException($"Built-in entity '{entityName}' cannot be changed.");
+            throw new KeyNotFoundException($"Entity '{entityName}' was not found.");
+        }
+
         var allItems = _metadataRepository.GetAll().ToList();
         var index = allItems.FindIndex(item => string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase));
         if (index < 0)
@@ -43,13 +61,24 @@ public sealed class MetadataService : IMetadataService
 
         allItems[index] = entity;
         _metadataRepository.Save(entity);
-        if (!string.Equals(entityName, entity.Name, StringComparison.Ordinal))
+        if (!string.Equals(entityName, entity.Name, StringComparison.OrdinalIgnoreCase))
             _metadataRepository.Delete(entityName);
         return entity;
     }
 
     public void Delete(string entityName)
-        => _metadataRepository.Delete(entityName);
+    {
+        if (!_metadataRepository.GetUserDefined()
+            .Any(item => string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase)))
+        {
+            if (_metadataRepository.GetAll().Any(item =>
+                string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException($"Built-in entity '{entityName}' cannot be deleted.");
+            return;
+        }
+
+        _metadataRepository.Delete(entityName);
+    }
 
     public IReadOnlyList<Entity> Reset() => _metadataRepository.Reset();
 

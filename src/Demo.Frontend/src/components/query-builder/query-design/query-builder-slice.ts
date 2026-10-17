@@ -25,6 +25,7 @@ export type MetadataEntity = {
   name: string;
   fields: MetadataField[];
   relations?: MetadataRelation[];
+  canDelete?: boolean;
 };
 
 export type QueryExpression =
@@ -98,6 +99,7 @@ export type StoredQueryRequest = {
   fileName: string;
   query: ApiQueryRequest;
   requestText?: string | null;
+  canDelete: boolean;
 };
 
 function createApiFilter(group: QueryFilterGroup): ApiQueryFilterGroup | null {
@@ -449,6 +451,7 @@ export const fetchSavedQueryRequests = createAsyncThunk(
       const payload = await requestJson(apiUrls.queryRequests.list);
       if (!Array.isArray(payload) || payload.some((item) => !item
         || typeof item.fileName !== "string"
+        || typeof item.canDelete !== "boolean"
         || !item.query
         || (item.requestText !== undefined && item.requestText !== null && typeof item.requestText !== "string"))) {
         return rejectWithValue("Query request API must return saved requests.");

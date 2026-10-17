@@ -8,6 +8,7 @@ import "./entity-builder.css";
 type EntityBuilderProps = {
   draft: EditableEntity | null;
   selectedName: string;
+  canEdit: boolean;
   dirty: boolean;
   status: string;
   message: string;
@@ -20,6 +21,7 @@ type EntityBuilderProps = {
 export default function EntityBuilder({
   draft,
   selectedName,
+  canEdit,
   dirty,
   status,
   message,
@@ -44,10 +46,10 @@ export default function EntityBuilder({
       <div className="editor-head">
         <div>
           <span className="section-kicker">ENTITY DEFINITION</span>
-          <h2>{selectedName ? "Edit entity" : "New entity"}</h2>
+          <h2>{selectedName ? canEdit ? "Edit entity" : "View entity" : "New entity"}</h2>
         </div>
         <div className="editor-actions">
-          {selectedName && (
+          {selectedName && canEdit && (
             <button
               className="icon-button danger"
               type="button"
@@ -57,15 +59,17 @@ export default function EntityBuilder({
               <Icon name="trash" size={19} />
             </button>
           )}
-          <button
-            className="button primary"
-            type="button"
-            onClick={onSave}
-            disabled={status === "saving" || !dirty}
-          >
-            <Icon name="check" size={14} />{" "}
-            {status === "saving" ? "Saving…" : "Save changes"}
-          </button>
+          {canEdit
+            ? <button
+                className="button primary"
+                type="button"
+                onClick={onSave}
+                disabled={status === "saving" || !dirty}
+              >
+                <Icon name="check" size={14} />{" "}
+                {status === "saving" ? "Saving…" : "Save changes"}
+              </button>
+            : <span className="section-kicker">BUILT-IN · READ-ONLY</span>}
         </div>
       </div>
 
@@ -75,7 +79,7 @@ export default function EntityBuilder({
         </p>
       )}
 
-      <div className="metadata-form">
+      <fieldset className="metadata-form" disabled={!canEdit}>
         <div className="metadata-form-grid">
           <label>
             Entity name
@@ -120,7 +124,7 @@ export default function EntityBuilder({
             }))
           }
         />
-      </div>
+      </fieldset>
     </main>
   );
 }

@@ -76,11 +76,14 @@ Swagger UI is at <http://localhost:21210/swagger>; the frontend is at
 
 The demo backend is split into four projects: `Demo.WebApi` hosts the API and
 registers dependencies, `Demo.Services` contains application logic,
-`Demo.ServiceContracts` defines service and repository abstractions, and
+`Demo.Contracts` defines service and repository abstractions, and
 `Demo.Repositories` implements file, in-memory, and database access. Set
 `StorageProvider` in `src/Demo.WebApi/appsettings.json` to `Files` (default) or
 `Memory` to select the metadata, function-definition, and saved-query-request
 store. Database connections remain selected separately through `DbServerType`.
+With file storage, built-in metadata, SQL functions, and saved query requests
+are shared and read-only. User-defined records are stored under
+`FileStorage/UserData/{SectionId}` and can be changed only within that section.
 
 ## License
 
