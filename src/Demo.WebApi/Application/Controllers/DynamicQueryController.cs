@@ -1,7 +1,7 @@
-using System.Text;
 using Demo.ServiceContracts.Services;
 using Microsoft.AspNetCore.Mvc;
 using Namh.Data.DynamicSql;
+using System.Text;
 
 namespace Demo.WebApi.Application.Controllers;
 

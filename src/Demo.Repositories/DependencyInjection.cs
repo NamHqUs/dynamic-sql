@@ -18,15 +18,16 @@ public static class DependencyInjection
         var provider = configuration["StorageProvider"] ?? "Files";
         if (provider.Equals("Files", StringComparison.OrdinalIgnoreCase))
         {
+            services.AddSingleton<FilePathResolver>();
             services.AddSingleton<IMetadataRepository, MetadataFileRepository>();
             services.AddSingleton<IFunctionDefinitionRepository, FunctionDefinitionFileRepository>();
             services.AddSingleton<IQueryRequestRepository, QueryRequestFileRepository>();
         }
         else if (provider.Equals("Memory", StringComparison.OrdinalIgnoreCase))
         {
-            services.AddSingleton<IMetadataRepository, MetadataMemoryRepository>();
-            services.AddSingleton<IFunctionDefinitionRepository, FunctionDefinitionMemoryRepository>();
-            services.AddSingleton<IQueryRequestRepository, QueryRequestMemoryRepository>();
+            //services.AddSingleton<IMetadataRepository, MetadataMemoryRepository>();
+            //services.AddSingleton<IFunctionDefinitionRepository, FunctionDefinitionMemoryRepository>();
+            //services.AddSingleton<IQueryRequestRepository, QueryRequestMemoryRepository>();
         }
         else
         {

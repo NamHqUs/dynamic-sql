@@ -1,8 +1,9 @@
-using System.Text.Json.Serialization;
 using Demo.Repositories;
+using Demo.ServiceContracts.Application;
 using Demo.Services;
 using Demo.WebApi.Application.Middlewares;
 using Namh.Data.DynamicSql;
+using System.Text.Json.Serialization;
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -32,6 +33,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDemoRepositories(builder.Configuration);
 builder.Services.AddDemoServices();
+builder.Services.AddSingleton<IUserSectionManager, UserSectionManager>();
 
 var app = builder.Build();
 app.UseExceptionHandler();

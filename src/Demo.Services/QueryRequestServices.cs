@@ -1,9 +1,9 @@
 using Demo.ServiceContracts.Repositories;
 using Demo.ServiceContracts.Services;
 using Namh.Data.DynamicSql;
-using System.Text.Json;
-using System.Globalization;
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
+using System.Globalization;
+using System.Text.Json;
 
 namespace Demo.Services;
 

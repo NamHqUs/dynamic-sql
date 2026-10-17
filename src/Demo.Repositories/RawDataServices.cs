@@ -1,6 +1,5 @@
-using System.Data;
-using Demo.ServiceContracts.Dto;
 using Demo.ServiceContracts.Repositories;
+using System.Data;
 
 namespace Demo.Repositories;
 

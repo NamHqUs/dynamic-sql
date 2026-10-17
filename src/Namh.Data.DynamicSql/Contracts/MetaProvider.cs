@@ -65,7 +65,7 @@ public class MetaProvider : IMetaProvider
         return false;
     }
 
-    public MetaProvider RegisterFunctions(params SqlFunctionDefintion[] functions)
+    public MetaProvider RegisterFunctions(IEnumerable<SqlFunctionDefintion> functions)
     {
         ArgumentNullException.ThrowIfNull(functions);
 

@@ -10,7 +10,7 @@ public class SqliteDbProvider : DbProviderBase
     private readonly object _keepAliveLock = new();
     private SqliteConnection? _keepAliveConnection;
 
-    public SqliteDbProvider(string cnString)
+    public SqliteDbProvider(string cnString, string[] scriptFiles) : base(scriptFiles)
     {
         var connectionStringBuilder = new SqliteConnectionStringBuilder(cnString);
         _isInMemory = connectionStringBuilder.DataSource == ":memory:";
@@ -26,8 +26,6 @@ public class SqliteDbProvider : DbProviderBase
 
     protected override string? SqlScriptCheckIfDbExists
         => "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'Customers')";
-
-    protected override string[] InitializeDbScriptFileNames => ["db-scripts.sqlite.sql"];
 
     protected override IDbConnection CreateDbConnection()
     {

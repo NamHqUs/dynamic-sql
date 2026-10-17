@@ -1,11 +1,11 @@
+using Namh.Data.DynamicSql;
+using Namh.Data.DynamicSql.Compilation;
+using Namh.Data.DynamicSql.Compilation.Models;
 using System.Data;
-using DbCommand = System.Data.Common.DbCommand;
-using DbConnection = System.Data.Common.DbConnection;
 using System.Linq.Expressions;
 using System.Text;
-using Namh.Data.DynamicSql.Compilation.Models;
-using Namh.Data.DynamicSql.Compilation;
-using Namh.Data.DynamicSql;
+using DbCommand = System.Data.Common.DbCommand;
+using DbConnection = System.Data.Common.DbConnection;
 
 namespace Namh.Data.DynamicSql.Execution;
 

@@ -4,8 +4,7 @@ namespace Demo.ServiceContracts.Repositories;
 
 public interface IFunctionDefinitionRepository
 {
-    IReadOnlyList<SqlFunctionDefintion> GetBuiltInDefinitions();
-    IReadOnlyList<SqlFunctionDefintion> GetCustomDefinitions();
+    IReadOnlyCollection<SqlFunctionDefintion> GetAll();
     void Save(SqlFunctionDefintion definition);
     void Delete(string functionName);
 }

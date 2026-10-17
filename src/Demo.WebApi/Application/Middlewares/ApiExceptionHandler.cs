@@ -1,6 +1,6 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Demo.WebApi.Application.Middlewares;
 

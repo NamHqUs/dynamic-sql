@@ -1,27 +1,43 @@
-using System.Text.Json;
 using Demo.ServiceContracts.Repositories;
+using Demo.Share;
 using Namh.Data.DynamicSql;
+using System.Text.Json;
 
 namespace Demo.Repositories.FileStorage;
 
-public sealed class MetadataFileRepository : IMetadataRepository
+public sealed class MetadataFileRepository(FilePathResolver filePathResolver) : IMetadataRepository
 {
-    private readonly string _directory = Path.Combine(Environment.CurrentDirectory, "DataStore", "Metadata");
+    private const string FOLDER_NAME = "Metadata";
+
+    public IReadOnlyList<Entity> Reset()
+    {
+        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        if (Directory.Exists(dir))
+            Directory.Delete(dir, recursive: true);
+        return GetAll();
+    }
 
     public IReadOnlyList<Entity> GetAll()
     {
-        if (!Directory.Exists(_directory))
-            return [];
+        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        if (!Directory.Exists(dir))
+            return BuiltinMetadata.DefaultMetadata;
 
-        return Directory.EnumerateFiles(_directory, "*.json")
+        var customeEntities = Directory.EnumerateFiles(dir, "*.json")
             .Select(file => JsonSerializer.Deserialize<Entity>(File.ReadAllText(file))
                 ?? throw new InvalidOperationException($"Failed to deserialize metadata from '{file}'."))
             .ToArray();
+
+        var merge = BuiltinMetadata.DefaultMetadata.ToDictionary(e => e.Name);
+        foreach (var entity in customeEntities)
+            merge[entity.Name] = entity;
+        return merge.Values.ToArray();
     }
 
     public void Save(Entity entity)
     {
-        Directory.CreateDirectory(_directory);
+        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        Directory.CreateDirectory(dir);
         File.WriteAllText(
             GetPath(entity.Name),
             JsonSerializer.Serialize(entity, new JsonSerializerOptions { WriteIndented = true }));
@@ -36,8 +52,9 @@ public sealed class MetadataFileRepository : IMetadataRepository
 
     private string GetPath(string name)
     {
-        var path = Path.GetFullPath(Path.Combine(_directory, $"{name}.json"));
-        var root = Path.GetFullPath(_directory) + Path.DirectorySeparatorChar;
+        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        var path = Path.GetFullPath(Path.Combine(dir, $"{name}.json"));
+        var root = Path.GetFullPath(dir) + Path.DirectorySeparatorChar;
         if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Entity name is not a valid file name.", nameof(name));
         return path;

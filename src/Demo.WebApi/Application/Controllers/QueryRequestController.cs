@@ -1,9 +1,9 @@
-using System.Text.Json;
 using Demo.ServiceContracts.Repositories;
 using Demo.ServiceContracts.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Namh.Data.DynamicSql;
+using System.Text.Json;
 
 namespace Demo.WebApi.Application.Controllers;
 

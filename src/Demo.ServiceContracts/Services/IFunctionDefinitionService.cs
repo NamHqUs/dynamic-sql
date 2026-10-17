@@ -5,9 +5,8 @@ namespace Demo.ServiceContracts.Services;
 
 public interface IFunctionDefinitionService
 {
-    IReadOnlyList<FunctionDefinitionDto> GetFunctionDefinitions();
-    IReadOnlyList<SqlFunctionDefintion> GetCustomFunctionDefinitions();
-    FunctionDefinitionDto CreateFunctionDefinition(FunctionDefinitionDto dto);
-    FunctionDefinitionDto UpdateFunctionDefinition(string functionName, FunctionDefinitionDto dto);
-    void DeleteFunctionDefinition(string functionName);
+    IReadOnlyList<FunctionDefinitionDto> GetAll();
+    FunctionDefinitionDto Create(FunctionDefinitionDto dto);
+    FunctionDefinitionDto Update(string functionName, FunctionDefinitionDto dto);
+    void Delete(string functionName);
 }

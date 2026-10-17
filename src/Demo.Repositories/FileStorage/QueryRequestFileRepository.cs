@@ -1,18 +1,39 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Demo.ServiceContracts.Repositories;
 using Namh.Data.DynamicSql;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Demo.Repositories.FileStorage;
 
 public sealed class QueryRequestFileRepository : IQueryRequestRepository
 {
-    private readonly string _directory = Path.Combine(Environment.CurrentDirectory, "DataStore", "QueryRequests");
+    private readonly static object _lock = new();
+    private static List<StoredQueryRequest> _builtinItems = null!;
+    private const string FOLDER_NAME = "QueryRequests";
+    private readonly FilePathResolver _filePathResolver;    
+
+    public QueryRequestFileRepository(FilePathResolver filePathResolver)
+    {
+        _filePathResolver = filePathResolver;
+
+        if (_builtinItems == null)
+            lock (_lock)
+            {
+                var builtinFolder = _filePathResolver.GetBuiltinStoreFolder(FOLDER_NAME);
+                _builtinItems ??= GetAll(builtinFolder).ToList();
+            }
+    }
 
     public IReadOnlyList<StoredQueryRequest> GetAll()
     {
-        Directory.CreateDirectory(_directory);
-        return Directory.EnumerateFiles(_directory, "*.json")
+        var customQueryRequests = GetAll(_filePathResolver.GetUserStoreFolder(FOLDER_NAME));
+        return new List<StoredQueryRequest>(_builtinItems).Concat(customQueryRequests).ToList();
+    }
+
+    private IReadOnlyList<StoredQueryRequest> GetAll(string dir)
+    {
+        Directory.CreateDirectory(dir);
+        return Directory.EnumerateFiles(dir, "*.json")
             .OrderByDescending(Path.GetFileName)
             .Select(Read)
             .ToArray();
@@ -26,7 +47,8 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
 
     public void Save(StoredQueryRequest request)
     {
-        Directory.CreateDirectory(_directory);
+        var dir = _filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        Directory.CreateDirectory(dir);
         File.WriteAllText(GetPath(request.FileName), JsonSerializer.Serialize(
             new { Query = request.Query, RequestText = request.RequestText },
             Options(writeIndented: true)));
@@ -94,10 +116,11 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
 
     private string GetPath(string fileName)
     {
+        var dir = _filePathResolver.GetUserStoreFolder(FOLDER_NAME);
         if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName)
             throw new ArgumentException("Query request file name is invalid.", nameof(fileName));
-        var path = Path.GetFullPath(Path.Combine(_directory, fileName));
-        var root = Path.GetFullPath(_directory) + Path.DirectorySeparatorChar;
+        var path = Path.GetFullPath(Path.Combine(dir, fileName));
+        var root = Path.GetFullPath(dir) + Path.DirectorySeparatorChar;
         if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Query request file name is invalid.", nameof(fileName));
         return path;

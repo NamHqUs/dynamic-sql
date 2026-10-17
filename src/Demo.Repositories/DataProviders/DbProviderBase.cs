@@ -2,25 +2,22 @@
 
 namespace Demo.Repositories.DataProviders;
 
-public abstract class DbProviderBase
+public abstract class DbProviderBase(string[] scriptFiles)
 {
     private static readonly object oLock = new();
     private static bool _initialized = false;
 
     protected abstract string? SqlScriptCheckIfDbExists { get; }
-    protected abstract string[] InitializeDbScriptFileNames { get; } 
 
     public virtual IDbConnection GetDbConnection()
     {
         var cn = CreateDbConnection();
         lock (oLock)
         {
-            if (!_initialized && InitializeDbScriptFileNames != null)
-            {
-                if  (string.IsNullOrEmpty(SqlScriptCheckIfDbExists) 
-                        || ExecuteScalar<long>(cn, SqlScriptCheckIfDbExists) != 1)
+            if (!_initialized  
+                && (string.IsNullOrEmpty(SqlScriptCheckIfDbExists) 
+                        || ExecuteScalar<long>(cn, SqlScriptCheckIfDbExists) != 1))
                     InitializeDb(cn);
-            }
 
             _initialized = true;
         }
@@ -30,9 +27,9 @@ public abstract class DbProviderBase
     protected abstract IDbConnection CreateDbConnection();
     private void InitializeDb(IDbConnection cn)
     {
-        foreach (var fileName in InitializeDbScriptFileNames)
+        foreach (var fileName in scriptFiles)
         {
-            var filePath = Path.Combine(Environment.CurrentDirectory, "DataStore", "DbScripts", fileName);
+            var filePath = Path.Combine(Environment.CurrentDirectory, fileName);
             var scripts = File.ReadAllText(filePath);
             ExecuteNonQuery(cn, scripts);
         }

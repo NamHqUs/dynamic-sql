@@ -1,4 +1,3 @@
-using Demo.ServiceContracts.Dto;
 using Demo.ServiceContracts.Repositories;
 using Demo.ServiceContracts.Services;
 

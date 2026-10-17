@@ -1,5 +1,3 @@
-using Demo.ServiceContracts.Dto;
-
 namespace Demo.ServiceContracts.Repositories;
 
 public interface IRawDataRepository

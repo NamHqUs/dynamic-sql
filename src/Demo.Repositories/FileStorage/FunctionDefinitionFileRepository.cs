@@ -1,28 +1,32 @@
-using System.Security.Cryptography;
-using System.Text;
-using Demo.Share;
 using Demo.ServiceContracts.Dto;
 using Demo.ServiceContracts.Repositories;
+using Demo.Share;
 using Namh.Data.DynamicSql;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace Demo.Repositories.FileStorage;
 
-public sealed class FunctionDefinitionFileRepository : IFunctionDefinitionRepository
+public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathResolver) : IFunctionDefinitionRepository
 {
-    private readonly string _directory = Path.Combine(Environment.CurrentDirectory, "DataStore", "FunctionDefinitions");
+    private const string FOLDER_NAME = "FunctionDefinitions";
 
-    public IReadOnlyList<SqlFunctionDefintion> GetBuiltInDefinitions()
-        => new MetaProvider([]).GetFunctions().ToArray();
+    public IReadOnlyCollection<SqlFunctionDefintion> GetAll()
+        => new MetaProvider([])
+            .RegisterFunctions(CustomFunctionDefintions.Functions)
+            .RegisterFunctions(GetCustomDefinitions())
+            .GetFunctions();
 
-    public IReadOnlyList<SqlFunctionDefintion> GetCustomDefinitions()
+
+    public IReadOnlyCollection<SqlFunctionDefintion> GetCustomDefinitions()
     {
         var definitions = CustomFunctionDefintions.Functions.ToDictionary(
             definition => definition.Name,
             StringComparer.OrdinalIgnoreCase);
-        if (Directory.Exists(_directory))
+        if (Directory.Exists(filePathResolver.GetUserStoreFolder(FOLDER_NAME)))
         {
-            foreach (var path in Directory.EnumerateFiles(_directory, "*.json"))
+            foreach (var path in Directory.EnumerateFiles(filePathResolver.GetUserStoreFolder(FOLDER_NAME), "*.json"))
             {
                 var dto = JsonSerializer.Deserialize<FunctionDefinitionDto>(File.ReadAllText(path))
                     ?? throw new InvalidOperationException($"Failed to deserialize function definition from '{path}'.");
@@ -35,7 +39,6 @@ public sealed class FunctionDefinitionFileRepository : IFunctionDefinitionReposi
 
     public void Save(SqlFunctionDefintion definition)
     {
-        Directory.CreateDirectory(_directory);
         var path = GetPath(definition.Name);
         File.WriteAllText(path, JsonSerializer.Serialize(
             FunctionDefinitionDto.FromFunctionDefinition(definition),
@@ -52,6 +55,7 @@ public sealed class FunctionDefinitionFileRepository : IFunctionDefinitionReposi
     private string GetPath(string name)
     {
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(name.ToUpperInvariant())));
-        return Path.Combine(_directory, $"{hash}.json");
+        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        return Path.Combine(dir, $"{hash}.json");
     }
 }

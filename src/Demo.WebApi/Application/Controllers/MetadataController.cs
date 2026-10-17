@@ -12,11 +12,11 @@ public sealed class MetadataController(
     IFunctionDefinitionService functionDefinitionService) : ControllerBase
 {
     [HttpGet]
-    public ActionResult<IReadOnlyList<Entity>> GetMetadata() => Ok(metadataService.GetMetadata());
+    public ActionResult<IReadOnlyList<Entity>> GetMetadata() => Ok(metadataService.GetAll());
 
     [HttpPost]
     public ActionResult<Entity> CreateMetadata([FromBody] Entity entity)
-        => Ok(metadataService.CreateMetadata(entity));
+        => Ok(metadataService.Create(entity));
 
     [HttpPost("reset")]
     public ActionResult<IReadOnlyList<Entity>> Reset()
@@ -24,34 +24,34 @@ public sealed class MetadataController(
 
     [HttpPut("{entityName}")]
     public ActionResult<Entity> UpdateMetadata(string entityName, [FromBody] Entity entity)
-        => Ok(metadataService.UpdateMetadata(entityName, entity));
+        => Ok(metadataService.Update(entityName, entity));
 
     [HttpDelete("{entityName}")]
     public IActionResult DeleteMetadata(string entityName)
     {
-        metadataService.DeleteMetadata(entityName);
+        metadataService.Delete(entityName);
         return NoContent();
     }
 
     [HttpGet("functions")]
     public ActionResult<IReadOnlyList<FunctionDefinitionDto>> GetFunctionDefinitions()
-        => Ok(functionDefinitionService.GetFunctionDefinitions());
+        => Ok(functionDefinitionService.GetAll());
 
     [HttpPost("functions")]
     public ActionResult<FunctionDefinitionDto> CreateFunctionDefinition([FromBody] FunctionDefinitionDto definition)
         => Created($"/metadata/functions/{Uri.EscapeDataString(definition.Name)}",
-            functionDefinitionService.CreateFunctionDefinition(definition));
+            functionDefinitionService.Create(definition));
 
     [HttpPut("functions/{functionName}")]
     public ActionResult<FunctionDefinitionDto> UpdateFunctionDefinition(
         string functionName,
         [FromBody] FunctionDefinitionDto definition)
-        => Ok(functionDefinitionService.UpdateFunctionDefinition(functionName, definition));
+        => Ok(functionDefinitionService.Update(functionName, definition));
 
     [HttpDelete("functions/{functionName}")]
     public IActionResult DeleteFunctionDefinition(string functionName)
     {
-        functionDefinitionService.DeleteFunctionDefinition(functionName);
+        functionDefinitionService.Delete(functionName);
         return NoContent();
     }
 }

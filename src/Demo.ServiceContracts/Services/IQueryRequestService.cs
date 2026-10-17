@@ -1,5 +1,5 @@
-using Namh.Data.DynamicSql;
 using Demo.ServiceContracts.Repositories;
+using Namh.Data.DynamicSql;
 
 namespace Demo.ServiceContracts.Services;
 

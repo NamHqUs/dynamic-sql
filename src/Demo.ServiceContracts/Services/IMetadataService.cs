@@ -4,10 +4,10 @@ namespace Demo.ServiceContracts.Services;
 
 public interface IMetadataService
 {
-    IReadOnlyList<Entity> GetMetadata();
-    Entity CreateMetadata(Entity entity);
-    Entity UpdateMetadata(string entityName, Entity entity);
-    void DeleteMetadata(string entityName);
+    IReadOnlyList<Entity> GetAll();
+    Entity Create(Entity entity);
+    Entity Update(string entityName, Entity entity);
+    void Delete(string entityName);
     IReadOnlyList<Entity> Reset();
     IMetaProvider GetMetaProvider();
 }

@@ -1,6 +1,6 @@
-using System.Data;
 using Demo.ServiceContracts.Repositories;
 using Microsoft.Extensions.Configuration;
+using System.Data;
 
 namespace Demo.Repositories.DataProviders;
 
@@ -23,11 +23,14 @@ public sealed class DbConnectionFactory : IDbConnectionFactory
         var connectionString = configuration.GetConnectionString(dbServerType.ToString())
             ?? throw new InvalidOperationException($"Connection string '{dbServerType}' is required.");
 
+        var path = configuration["DbScriptsFilePath"] ?? throw new InvalidOperationException("DbScriptsFilePath is required.");
+        path = Path.Combine(Environment.CurrentDirectory, path);
+
         _dbProvider = dbServerType switch
         {
-            DbServerType.Sqlite => new SqliteDbProvider(connectionString),
-            DbServerType.SqlServer => new SqlServerDbProvider(connectionString),
-            DbServerType.Postgres => new PostgresDbProvider(connectionString),
+            DbServerType.Sqlite => new SqliteDbProvider(connectionString, [Path.Combine(path, "db-scripts.sqlite.sql")]),
+            DbServerType.SqlServer => new SqlServerDbProvider(connectionString, [Path.Combine(path, "db-scripts.sqlserver.sql")]),
+            DbServerType.Postgres => new PostgresDbProvider(connectionString, [Path.Combine(path, "db-scripts.postgres.sql")]),
             _ => throw new ArgumentOutOfRangeException(nameof(dbServerType), dbServerType, null)
         };
     }

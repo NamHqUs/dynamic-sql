@@ -1,5 +1,5 @@
-﻿using System.Linq.Expressions;
-using Namh.Data.DynamicSql.Compilation.Expressions;
+﻿using Namh.Data.DynamicSql.Compilation.Expressions;
+using System.Linq.Expressions;
 
 namespace Namh.Data.DynamicSql.Compilation.Visitors;
 
