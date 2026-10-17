@@ -18,9 +18,18 @@ public class DynamicSqlContext(
     {
     }
 
-    public IDbQueryable Query(string entity, bool includeArchive = false)
+    public IDbQueryable Query(
+        string entity,
+        bool includeArchive = false,
+        IReadOnlyList<EntityContextDefinition>? entityAliases = null)
     {
-        var queryProvider = new DbQueryProvider(metaProvider, dbConnection, _sqlDialect, entity, includeArchive);
+        var queryProvider = new DbQueryProvider(
+            metaProvider,
+            dbConnection,
+            _sqlDialect,
+            entity,
+            includeArchive,
+            entityAliases ?? []);
 
         return new DbQueryable(queryProvider);
     }

@@ -17,9 +17,12 @@ internal sealed class SqlQueryCompiler(
     bool includeArchive)
 {
     internal const int TotalRecordsLimit = 1000;
-    public CompiledQuery Compile(Expression expression, bool includeTotalRecords = false)
+    public CompiledQuery Compile(
+        Expression expression,
+        IReadOnlyList<EntityContextDefinition> entityAliases,
+        bool includeTotalRecords = false)
     {
-        var queryContext = new QueryContext(metaProvider, includeArchive);
+        var queryContext = new QueryContext(metaProvider, includeArchive, entityAliases);
         var tableExpression = (TableExpression)new QueryVisitor(queryContext).Visit(expression);
         var statementGenerator = new SqlStatementGenerator(sqlDialect);
         var generatedSql = statementGenerator.Generate(tableExpression, queryContext.DbParameters);

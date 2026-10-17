@@ -1,5 +1,8 @@
 ﻿using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using NUnit.Framework.Internal;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
@@ -78,6 +81,107 @@ internal class _33_DemoTest : TestBase
         Assert.That(data.All(record => record.ContainsKey("Count()")), Is.True);
         Assert.That(data.Select(record => record["PaymentMethod"]).Distinct().Count(), Is.EqualTo(data.Count));
     }
+
+    [Test]
+    public void Demo9()
+    {
+        /// # 9. Product attach and cross-sell pairs
+        /// SELECT p1.Name AS Product, p2.Name AS FrequentlyBoughtWith, COUNT(*) AS OrdersTogether
+        /// FROM InvoiceItems a
+        ///   JOIN InvoiceItems b ON a.InvoiceId = b.InvoiceId AND a.ProductId<b.ProductId
+        ///   JOIN Products p1 ON p1.Id = a.ProductId
+        ///   JOIN Products p2 ON p2.Id = b.ProductId
+        /// GROUP BY a.ProductId, b.ProductId ORDER BY OrdersTogether DESC;
+
+        QueryDefinition query = new()
+        {
+            Name = "9. Product attach and cross-sell pairs",
+            Entity = "InvoiceItems",
+            EntityAliases =
+            [
+                new("b", "InvoiceItems", [new("InvoiceId")])
+            ],
+            Fields = QueryDefinitionParser.ParseProjections("Product.Name|Product, b.Product.Name|FrequentlyBoughtWith, Count()|OrdersTogether"),
+            Filter = QueryDefinitionParser.ParseFilter("Product.Id < b.Product.Id"),
+            Sorts = [new(new FieldDefinition("OrdersTogether"), QuerySortDirection.Descending)]
+        };
+
+        var queryable = _db.Query(query);
+        var sql = queryable.ToSql();
+        var data = queryable.ToList();
+
+        Assert.That(sql.CommandText, Does.Contain(
+            "LEFT JOIN \"InvoiceItems\" t1 ON (t1.\"InvoiceId\" = t0.\"InvoiceId\")"));
+        Assert.That(sql.CommandText, Does.Contain("GROUP BY"));
+        Assert.That(sql.CommandText, Does.Contain("t2.\"Id\" < t3.\"Id\""));
+        Assert.That(data, Is.Not.Empty);
+        Assert.That(data.All(record =>
+            record.ContainsKey("Product")
+            && record.ContainsKey("FrequentlyBoughtWith")
+            && record.ContainsKey("OrdersTogether")), Is.True);
+        Assert.That(data.Select(record => Convert.ToInt64(record["OrdersTogether"])),
+            Is.Ordered.Descending);
+    }
+
+    [Test]
+    public void Demo9_Yml()
+    {
+        /// # 9. Product attach and cross-sell pairs
+        /// SELECT p1.Name AS Product, p2.Name AS FrequentlyBoughtWith, COUNT(*) AS OrdersTogether
+        /// FROM InvoiceItems a
+        ///   JOIN InvoiceItems b ON a.InvoiceId = b.InvoiceId AND a.ProductId<b.ProductId
+        ///   JOIN Products p1 ON p1.Id = a.ProductId
+        ///   JOIN Products p2 ON p2.Id = b.ProductId
+        /// GROUP BY a.ProductId, b.ProductId ORDER BY OrdersTogether DESC;
+
+        string yml = """
+            Name: 9. Product attach and cross-sell pairs
+            Entity: InvoiceItems
+            EntityAliases:
+              - Name: b
+                Entity: InvoiceItems
+                JoinKeys:
+                  - InvoiceId
+            Fields: 
+              - Product.Name|Product 
+              - b.Product.Name|FrequentlyBoughtWith
+              - Count()|OrdersTogether
+            Filter: Product.Id < b.Product.Id
+            Sorts:
+              - Field: OrdersTogether
+                Direction: Descending
+            """;
+
+        QueryDefinition query = QueryDefinitionParser.ParseFromYml(yml);
+
+        var data = _db.Query(query).ToList();
+        Assert.That(data, Is.Not.Empty);
+        var alias = query.EntityAliases.Single();
+        Assert.That(alias.Alias, Is.EqualTo("b"));
+        Assert.That(alias.RelationPath, Is.EqualTo("InvoiceItems"));
+        Assert.That(alias.RelatedKeys.Single(), Is.EqualTo(new RelationItem("InvoiceId")));
+        Assert.That(query.Fields, Has.Count.EqualTo(3));
+        Assert.That(query.Sorts.Single().Direction, Is.EqualTo(QuerySortDirection.Descending));
+    }
+
+    [Test]
+    public void ParseFromYml_AcceptsFile()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.yml");
+        try
+        {
+            File.WriteAllText(path, "Entity: Products");
+
+            var query = QueryDefinitionParser.ParseFromYml(new FileInfo(path));
+
+            Assert.That(query.Entity, Is.EqualTo("Products"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Test]
     public void Demo13()
     {

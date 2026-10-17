@@ -25,9 +25,12 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQue
     public readonly Entity Entity = entity;
     public readonly List<FieldExpression> Fields = [];
     public readonly Dictionary<string, TableExpression> JoinedTables = [];
+    public readonly Dictionary<string, TableExpression> EntityContexts = new(StringComparer.OrdinalIgnoreCase);
+    public TableExpression? JoinRoot { get; set; }
     protected int? TakeCount;
     protected int? SkipCount;
 
+    internal TableExpression JoinHost => JoinRoot ?? this;
     internal override string DebugView => $"{GetType().Name}: {Entity.Name} ({Alias})";
 
     protected TableExpression(TableExpression source) : this(source.Entity, source.Alias)
@@ -42,8 +45,11 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQue
         SqlOrder = source.SqlOrder;
         TakeCount = source.TakeCount;
         SkipCount = source.SkipCount;
+        JoinRoot = source.JoinRoot;
         foreach (var pair in source.JoinedTables)
             JoinedTables[pair.Key] = pair.Value;
+        foreach (var pair in source.EntityContexts)
+            EntityContexts[pair.Key] = pair.Value;
     }
 
     protected virtual StringBuilder TranslateSelect()

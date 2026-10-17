@@ -2,7 +2,7 @@ import "./plain-text.css";
 import type { ReactNode } from "react";
 import { MetadataEntity } from "../query-design/query-builder-slice";
 
-type MultilineField = "Fields" | "Filters";
+type MultilineField = "Entities" | "Fields" | "Filters";
 
 type PlainTextProps = {
   id: string;
@@ -37,6 +37,11 @@ export default function PlainText({
 }: PlainTextProps) {
   const fields: { label: string; value: string; index: number }[] = [];
   text.split(/\r?\n/).forEach((line, index) => {
+    if (line.length > 0 && /\s/.test(line[0])) {
+      const previousField = fields[fields.length - 1];
+      if (previousField) previousField.value += `\n${line.trim()}`;
+      return;
+    }
     const separator = line.indexOf(":");
     if (separator < 0) {
       const previousField = fields[fields.length - 1];
@@ -60,7 +65,9 @@ export default function PlainText({
     }
   };
   const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const selectedEntityName = fields.find(({ label }) => label === "Entity")?.value;
+  const entityList = fields.find(({ label }) => label === "Entities")?.value;
+  const selectedEntityName = fields.find(({ label }) => label === "Entity")?.value
+    ?? entityList?.split(/\r?\n/).find((value) => value.trim())?.trim();
   const selectedEntity = metadata.find((entity) => entity.name === selectedEntityName);
   const fieldNames = new Set<string>();
   const addEntityFields = (entity: MetadataEntity, prefix = "", visited = new Set<string>()) => {
@@ -161,12 +168,12 @@ export default function PlainText({
                   onChange={(event) => onFieldChange(index, event.target.checked ? "True" : "False")}
                   disabled={fieldsAreDisabled}
                 />
-              ) : ["Fields", "Filters", "Sorts"].includes(label) ? (
-                <div className={`query-request-structure-input-container${label === "Fields" || label === "Filters" ? " query-request-structure-input-container-multiline" : ""}`}>
+              ) : ["Entities", "Fields", "Filters", "Sorts"].includes(label) ? (
+                <div className={`query-request-structure-input-container${label === "Entities" || label === "Fields" || label === "Filters" ? " query-request-structure-input-container-multiline" : ""}`}>
                   <div className="query-request-structure-highlight" aria-hidden="true">
                     {renderHighlightedText(value)}
                   </div>
-                  {label === "Fields" || label === "Filters" ? (
+                  {label === "Entities" || label === "Fields" || label === "Filters" ? (
                     <textarea
                       className="query-request-structure-input query-request-structure-input-highlighted query-request-structure-input-multiline"
                       aria-label={label}

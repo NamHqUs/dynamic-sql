@@ -260,9 +260,19 @@ Use `QueryJson` when a screen, API, or report supplies query rules at runtime:
 var rows = db.QueryJson("""
 {
   "entity": "User",
+  "entityAliases": [
+    {
+      "alias": "Manager2",
+      "relationPath": "Manager",
+      "relatedKeys": [
+        { "fromDbColumn": "ManagerId", "toDbColumn": "Id" }
+      ]
+    }
+  ],
   "fields": [
     { "field": "Name" },
-    { "field": "Manager.Name", "alias": "Manager-Name" }
+    { "field": "Manager.Name", "alias": "Manager-Name" },
+    { "field": "Manager2.Name", "alias": "Second-Manager-Name" }
   ],
   "filter": "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Age] < 12)",
   "sorts": ["-Manager.Name"],
@@ -275,6 +285,11 @@ var rows = db.QueryJson("""
 Supported properties:
 
 - `entity`: metadata entity name.
+- `entityAliases`: optional independent entity contexts. Each entry names an
+  `alias`, a metadata `relationPath`, and one or more `relatedKeys`. Each key
+  maps a field on the relation path's parent entity (`fromDbColumn`) to a field
+  on its target entity (`toDbColumn`). Every entry creates a distinct context,
+  even when another entry uses the same path and keys.
 - `fields`: projection fields; each entry has a `field` expression and an
   optional `alias`. A field expression can be a field path string or a
   structured expression object.
@@ -289,6 +304,24 @@ the query engine, so the active provider handles their SQL representation.
 Plan-text filters use `=`/`<>`, quote string values with double quotes, and
 write right-side field references in brackets; this text can be parsed back
 into the same filter structure.
+
+When entity aliases are present, plan text lists the root and each independent
+context under `Entities`:
+
+```text
+Entities:
+  InvoiceItems
+  OtherItem: Invoice.Items(Id:InvoiceId)
+Fields: Product.Name, OtherItem.Product.Name
+Filters: Product.Id < OtherItem.Product.Id
+```
+
+The alias on the left of `:` is the field-path prefix used by projections,
+filters, and sorts. The relation path on the right identifies the metadata
+relationship being reused; the parent-to-target key pairs in parentheses are
+required for every alias. To create a self-join directly from the root entity,
+use the root entity name as the relation path (for example,
+`b: InvoiceItems(InvoiceId:InvoiceId)`).
 
 Field references in filters use brackets:
 
@@ -434,6 +467,29 @@ The function call still receives an expression DTO, such as
 functions and arithmetic expressions can be supplied as arguments. Built-in
 date function templates map friendly function names to provider-specific SQL,
 and `GETDATE()` renders the provider's current date and time.
+
+## YAML query definitions
+
+`QueryDefinitionParser.ParseFromYml` accepts YAML text or a `FileInfo`:
+
+```csharp
+var query = QueryDefinitionParser.ParseFromYml("""
+Name: Product totals
+Entity: InvoiceItems
+Fields:
+  - Product.Name|Product
+  - Count()|ItemCount
+Sorts:
+  - Field: ItemCount
+    Direction: Descending
+""");
+
+var fileQuery = QueryDefinitionParser.ParseFromYml(new FileInfo("query.yml"));
+```
+
+YAML query definitions use the same properties as `QueryDefinition`. Entity
+aliases use `Name`, `Entity`, and `JoinKeys`; each join key maps a column to
+itself. Fields and filters use the existing query expression syntax.
 
 ## SQL diagnostics
 

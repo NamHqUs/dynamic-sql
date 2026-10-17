@@ -15,7 +15,10 @@ internal static class DbQueryFromQueryDto
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(definition.Fields);
 
-        var query = context.Query(definition.Entity, definition.IncludeArchive);
+        var query = context.Query(
+            definition.Entity,
+            definition.IncludeArchive,
+            definition.EntityAliases);
 
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));

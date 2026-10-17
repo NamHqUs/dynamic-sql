@@ -4,11 +4,12 @@ import Icon from "../icon/icon";
 import PanelSplitter from "../panel-splitter/panel-splitter";
 import { useResizablePanel } from "../../utils/use-resizable-panel";
 import { useMessageBox } from "../message-box/message-box";
-import { createApiQuery, deleteQueryRequest, executeQuery, executeQueryFromText, fetchFunctionDefinitions, fetchQueryMetadata, fetchSavedQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
+import { createApiQuery, deleteQueryRequest, executeQuery, executeQueryFromText, fetchFunctionDefinitions, fetchQueryMetadata, fetchSavedQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import PlainText from "./plain-text/plain-text";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import SavedQueries from "./saved-queries/saved-queries";
+import { addEntityAliasesToMetadata } from "../../utils/query-entity-contexts";
 import "./query-builder.css";
 
 type QueryBuilderProps = {
@@ -20,6 +21,10 @@ let cachedSelectedFileName = "";
 let cachedRequestName = "";
 let cachedSavedRequestBaseline: { fileName: string; serialized: string } | null = null;
 
+function charIsIndent(character: string | undefined): boolean {
+  return character !== undefined && /\s/.test(character);
+}
+
 export function resetQueryBuilderCache() {
   cachedDefinition = null;
 }
@@ -27,6 +32,7 @@ export function resetQueryBuilderCache() {
 function createDefinition(entity: string, fields: MetadataField[] = []): QueryDefinition {
   return {
     entity,
+    entityAliases: [],
     columns: fields.map((field) => ({ field: field.name, alias: null })),
     filters: { logicalOperation: 0, filters: [] },
     sorts: [],
@@ -167,11 +173,19 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const [requestStructureDefinition, setRequestStructureDefinition] = useState<string | null>(null);
   const [requestStructureStatus, setRequestStructureStatus] = useState<"idle" | "loading" | "succeeded" | "failed">("idle");
   const [requestStructureError, setRequestStructureError] = useState("");
-  const [planTextTextareaHeights, setPlanTextTextareaHeights] = useState({ Fields: 80, Filters: 80 });
+  const [planTextTextareaHeights, setPlanTextTextareaHeights] = useState({ Entities: 100, Fields: 80, Filters: 80 });
   const [isResolvingPlanChanges, setIsResolvingPlanChanges] = useState(false);
   const panel = useResizablePanel("query-builder");
   const planTextDirty = requestStructureStatus === "succeeded" && requestStructureDraft !== requestStructureOriginal;
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
+  const contextMetadata = useMemo(
+    () => addEntityAliasesToMetadata(metadata, definition.entity, definition.entityAliases),
+    [metadata, definition.entity, definition.entityAliases],
+  );
+  const contextEntity = useMemo(
+    () => contextMetadata.find((item) => item.name === definition.entity),
+    [contextMetadata, definition.entity],
+  );
   const selectedSavedRequest = savedRequests.find((item) => item.fileName === selectedFileName);
   const defaultNewDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
   const hasUnsavedQueryChanges = (currentDefinition: QueryDefinition) => {
@@ -212,9 +226,9 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       updateDefinition(createDefinition(metadata[0].name, metadata[0].fields));
       return;
     }
-    const selectedEntity = metadata.find((item) => item.name === definition.entity);
+    const selectedEntity = contextEntity;
     if (!selectedEntity) return;
-    const reconciled = reconcileDefinition(definition, selectedEntity, metadata);
+    const reconciled = reconcileDefinition(definition, selectedEntity, contextMetadata);
     if (!reconciled.columns.length) {
       updateDefinition({
         ...reconciled,
@@ -223,7 +237,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     } else if (reconciled !== definition) {
       updateDefinition(reconciled);
     }
-  }, [metadata, definition.entity]);
+  }, [metadata, definition.entity, definition.entityAliases]);
 
   const runQuery = () => {
     if (activeRequestTab === "structure") {
@@ -289,9 +303,18 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
       const fieldSeparator = fieldLine?.indexOf(":") ?? -1;
       if (fieldSeparator < 0) return current;
       const nextFieldIndex = lines.findIndex((candidate, lineIndex) =>
-        lineIndex > index && candidate.indexOf(":") >= 0,
+        lineIndex > index && candidate.length > 0 && !charIsIndent(candidate[0]) && candidate.indexOf(":") >= 0,
       );
       const fieldEndIndex = nextFieldIndex < 0 ? lines.length : nextFieldIndex;
+      if (fieldLine.slice(0, fieldSeparator).trim() === "Entities") {
+        lines.splice(
+          index,
+          fieldEndIndex - index,
+          `${fieldLine.slice(0, fieldSeparator + 1)}`,
+          ...value.split(/\r?\n/).map((item) => `  ${item}`),
+        );
+        return lines.join("\n");
+      }
       lines.splice(
         index,
         fieldEndIndex - index,
@@ -304,13 +327,21 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const applyRequestStructure = async (keepResolving = false) => {
     setIsResolvingPlanChanges(true);
     setRequestStructureError("");
-    const entityLine = requestStructureDraft.split(/\r?\n/).find((line) => {
+    const requestLines = requestStructureDraft.split(/\r?\n/);
+    const entityLine = requestLines.find((line) => {
       const separator = line.indexOf(":");
       return separator >= 0 && line.slice(0, separator).trim() === "Entity";
     });
+    const entitiesIndex = requestLines.findIndex((line) =>
+      line.trim().toLowerCase() === "entities:");
+    const rootFromEntities = entitiesIndex < 0
+      ? undefined
+      : requestLines.slice(entitiesIndex + 1)
+        .find((line) => line.trim().length > 0 && charIsIndent(line[0]))
+        ?.trim();
     const requestEntity = entityLine
       ? entityLine.slice(entityLine.indexOf(":") + 1).trim()
-      : definition.entity;
+      : rootFromEntities ?? definition.entity;
     const resultAction = await dispatch(parseQueryRequestString({ text: requestStructureDraft, entity: requestEntity }));
     if (parseQueryRequestString.fulfilled.match(resultAction)) {
       const nextDefinition = fromApiQuery(resultAction.payload);
@@ -651,7 +682,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
             <PlainText
               id="query-request-structure-panel"
               labelledBy="query-request-structure-tab"
-              metadata={metadata}
+              metadata={contextMetadata}
               status={requestStructureStatus}
               error={requestStructureError}
               text={requestStructureDraft}

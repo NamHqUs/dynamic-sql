@@ -6,7 +6,10 @@ using static Namh.Data.DynamicSql.SqlFunctionDefintion;
 
 namespace Namh.Data.DynamicSql.Compilation;
 
-class QueryContext(IMetaProvider metaProvider, bool includeArchive)
+class QueryContext(
+    IMetaProvider metaProvider,
+    bool includeArchive,
+    IReadOnlyList<EntityContextDefinition> entityAliases)
 {
     private const string ARCHIVE_COL = "DeletedOn";
     private int _aliasCount;
@@ -22,6 +25,7 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         if (BuildEnforceFilter(table, out var filter))
             table.SqlWhere.Add(filter);
 
+        RegisterEntityAliases(table);
         return table;
     }
 
@@ -34,6 +38,16 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
 
         if (TryParseAggregateFunction(fieldPath, out var wrappedAggregate))
             return ParseFunctionExpression(tableContext, wrappedAggregate, 0);
+
+        var queryRoot = tableContext.JoinHost;
+        var entityAlias = queryRoot.EntityContexts
+            .OrderByDescending(pair => pair.Key.Length)
+            .FirstOrDefault(pair => fieldPath.StartsWith($"{pair.Key}.", StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrEmpty(entityAlias.Key))
+        {
+            tableContext = entityAlias.Value;
+            fieldPath = fieldPath[(entityAlias.Key.Length + 1)..];
+        }
 
         var i = fieldPath.LastIndexOf('.');
         var relationPath = i < 0 ? null : fieldPath[..i];
@@ -246,6 +260,74 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
                 .ToList();
     }
 
+    private void RegisterEntityAliases(TableExpression tableContext)
+    {
+        foreach (var entityAlias in entityAliases)
+        {
+            if (entityAlias is null)
+                throw new FormatException("An entity alias cannot be null.");
+            if (string.IsNullOrWhiteSpace(entityAlias.Alias) ||
+                string.IsNullOrWhiteSpace(entityAlias.RelationPath))
+                throw new FormatException("An entity alias requires an alias and a relation path.");
+            if (entityAlias.RelatedKeys is not { Count: > 0 })
+                throw new FormatException($"Entity alias [{entityAlias.Alias}] requires at least one relation key.");
+
+            TableExpression parentTable;
+            Entity targetEntity;
+            if (string.Equals(
+                entityAlias.RelationPath,
+                tableContext.Entity.Name,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                parentTable = tableContext;
+                targetEntity = tableContext.Entity;
+            }
+            else
+            {
+                var relationPath = ParseRelationPath(tableContext, entityAlias.RelationPath).ToArray();
+                if (relationPath.Length == 0)
+                    throw new FormatException($"Entity alias [{entityAlias.Alias}] requires a relation path.");
+
+                parentTable = ApplyJoin(tableContext, relationPath.Take(relationPath.Length - 1));
+                targetEntity = relationPath[^1].joinedEntity;
+            }
+            if (string.IsNullOrWhiteSpace(entityAlias.Alias) ||
+                entityAlias.Alias.Split('.').Any(segment => string.IsNullOrWhiteSpace(segment)))
+                throw new FormatException($"Entity alias [{entityAlias.Alias}] is invalid.");
+            if (string.Equals(entityAlias.Alias, entityAlias.RelationPath, StringComparison.OrdinalIgnoreCase))
+                throw new FormatException($"Entity alias [{entityAlias.Alias}] must differ from its relation path.");
+
+            if (tableContext.EntityContexts.ContainsKey(entityAlias.Alias))
+                throw new FormatException($"Entity alias [{entityAlias.Alias}] is defined more than once.");
+
+            var aliasTable = new TableExpression(targetEntity, GetNextAlias())
+            {
+                JoinRoot = tableContext.JoinHost
+            };
+            var conditions = new List<SqlExpression>();
+            foreach (var key in entityAlias.RelatedKeys)
+            {
+                if (key is null)
+                    throw new FormatException($"Entity alias [{entityAlias.Alias}] contains an empty relation key.");
+                if (string.IsNullOrWhiteSpace(key.FromDbColumn) ||
+                    string.IsNullOrWhiteSpace(key.ToDbColumn))
+                    throw new FormatException($"Entity alias [{entityAlias.Alias}] contains an incomplete relation key.");
+
+                conditions.Add(new BinarySqlExpression(
+                    new FieldExpression(aliasTable.Alias, targetEntity.GetField(key.ToDbColumn)),
+                    "=",
+                    new FieldExpression(parentTable.Alias, parentTable.Entity.GetField(key.FromDbColumn)),
+                    typeof(bool)));
+            }
+
+            if (BuildEnforceFilter(aliasTable, out var archiveFilter))
+                conditions.Add(archiveFilter);
+
+            tableContext.EntityContexts.Add(entityAlias.Alias, aliasTable);
+            tableContext.JoinHost.Joins.Add(new JoinExpression(aliasTable, "LEFT JOIN", conditions));
+        }
+    }
+
     private TableExpression ApplyJoin(TableExpression tableContext, IEnumerable<(Relation relation, Entity joinedEntity)> joinedData)
     {
         var lastTable = tableContext;
@@ -253,8 +335,11 @@ class QueryContext(IMetaProvider metaProvider, bool includeArchive)
         {
             if (!lastTable.JoinedTables.TryGetValue(relation.Name, out TableExpression? joinedTable))
             {
-                lastTable.JoinedTables[relation.Name] = joinedTable = new TableExpression(joinedEntity, GetNextAlias());
-                tableContext.Joins.Add(BuildJoinPath(lastTable, joinedTable, relation));
+                lastTable.JoinedTables[relation.Name] = joinedTable = new TableExpression(joinedEntity, GetNextAlias())
+                {
+                    JoinRoot = tableContext.JoinHost
+                };
+                tableContext.JoinHost.Joins.Add(BuildJoinPath(lastTable, joinedTable, relation));
             }
             lastTable = joinedTable;
         }

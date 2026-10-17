@@ -11,6 +11,14 @@ export type MetadataRelation = {
   name: string;
   relatedEntity: string;
   type?: number | string;
+  relatedKeys?: RelationKey[];
+};
+
+export type RelationKey = { fromDbColumn: string; toDbColumn: string };
+export type EntityAliasDefinition = {
+  alias: string;
+  relationPath: string;
+  relatedKeys: RelationKey[];
 };
 
 export type MetadataEntity = {
@@ -70,6 +78,7 @@ type ApiQueryFilterGroup = Omit<QueryFilterGroup, "filters"> & {
 
 export type QueryDefinition = {
   entity: string;
+  entityAliases: EntityAliasDefinition[];
   columns: QueryColumn[];
   filters: QueryFilterGroup;
   sorts: { field: string; direction: string; expression?: QueryExpression }[];
@@ -240,6 +249,7 @@ function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
 
   return {
     entity: query.entity,
+    entityAliases: query.entityAliases ?? [],
     columns: query.fields.map((projection, index) => ({
       field: projection.field.kind === "field"
         ? projection.field.field

@@ -1,4 +1,6 @@
-﻿#pragma warning disable IDE0130
+﻿using System.Text.Json.Serialization;
+
+#pragma warning disable IDE0130
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 public enum RelationType
@@ -7,7 +9,13 @@ public enum RelationType
     Collection
 }
 
-public record RelationItem(string FromDbColumn, string ToDbColumn);
+[method: JsonConstructor]
+public record RelationItem(string FromDbColumn, string ToDbColumn)
+{
+    public RelationItem(string dbCollumn) : this(dbCollumn, dbCollumn)
+    {
+    }
+}
 
 public record Relation(
     string Name,

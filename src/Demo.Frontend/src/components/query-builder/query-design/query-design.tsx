@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MetadataEntity, QueryDefinition } from "./query-builder-slice";
 import { FunctionDefinition } from "../../sql-functions/types";
+import EntityContextBuilder from "./entity-context-builder/entity-context-builder";
 import ProjectionBuilder from "./projection-builder/projection-builder";
 import SortBuilder from "./sort-builder/sort-builder";
 import FilterBuilder from "./filter-builder/filter-builder";
+import { addEntityAliasesToMetadata } from "../../../utils/query-entity-contexts";
 import "./query-design.css";
 
 type QueryDesignProps = {
@@ -34,6 +36,11 @@ export default function QueryDesign({
   onDefinitionChange,
 }: QueryDesignProps) {
   const [draggedProjectionField, setDraggedProjectionField] = useState<string | null>(null);
+  const contextMetadata = useMemo(
+    () => addEntityAliasesToMetadata(metadata, definition.entity, definition.entityAliases),
+    [metadata, definition.entity, definition.entityAliases],
+  );
+  const contextEntity = contextMetadata.find((item) => item.name === definition.entity);
 
   return (
     <section className="query-builder-card">
@@ -48,6 +55,7 @@ export default function QueryDesign({
             const selectedEntity = metadata.find((item) => item.name === event.target.value);
             onDefinitionChange({
               entity: event.target.value,
+              entityAliases: [],
               columns: selectedEntity?.fields.map((field) => ({ field: field.name, alias: null })) ?? [],
               filters: { logicalOperation: 0, filters: [] },
               sorts: [],
@@ -72,21 +80,27 @@ export default function QueryDesign({
       {metadataStatus === "loading" && <p className="query-message">Loading metadata…</p>}
       {metadataStatus === "failed" && <p className="query-message error" role="alert">{metadataError}</p>}
       {entity && <div className="query-builder-body">
-        <ProjectionBuilder
+        <EntityContextBuilder
           metadata={metadata}
+          entity={entity}
+          definition={definition}
+          onDefinitionChange={onDefinitionChange}
+        />
+        <ProjectionBuilder
+          metadata={contextMetadata}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
           definition={definition}
-          entity={entity}
+          entity={contextEntity ?? entity}
           onDefinitionChange={onDefinitionChange}
           onFieldDragStart={setDraggedProjectionField}
         />
-        <FilterBuilder metadata={metadata} definition={definition} entity={entity} onDefinitionChange={onDefinitionChange} />
+        <FilterBuilder metadata={contextMetadata} definition={definition} entity={contextEntity ?? entity} onDefinitionChange={onDefinitionChange} />
         <SortBuilder
-          metadata={metadata}
+          metadata={contextMetadata}
           definition={definition}
-          entity={entity}
+          entity={contextEntity ?? entity}
           onDefinitionChange={onDefinitionChange}
           draggedProjectionField={draggedProjectionField}
         />

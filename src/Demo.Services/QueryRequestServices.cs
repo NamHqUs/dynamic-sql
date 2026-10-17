@@ -32,6 +32,15 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
         var lines = new List<(string Key, string Value)>();
         foreach (var line in text.Split(["\r\n", "\n"], StringSplitOptions.None))
         {
+            if (line.Length > 0 && char.IsWhiteSpace(line[0]))
+            {
+                if (lines.Count == 0)
+                    throw new FormatException($"Invalid query request line [{line}].");
+                var previous = lines[^1];
+                lines[^1] = (previous.Key, $"{previous.Value}\n{line.Trim()}");
+                continue;
+            }
+
             var separator = line.IndexOf(':');
             if (separator < 1)
             {
@@ -51,8 +60,14 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
             throw new FormatException("Query request fields must not be repeated.");
         var values = lines.ToDictionary(item => item.Key, item => item.Value, StringComparer.OrdinalIgnoreCase);
 
-        if (!values.TryGetValue("Entity", out var parsedEntity) || !string.Equals(parsedEntity, entity, StringComparison.Ordinal))
+        var parsedEntities = values.GetValueOrDefault("Entities");
+        var parsedEntity = values.TryGetValue("Entity", out var legacyEntity)
+            ? legacyEntity
+            : ParseEntityList(parsedEntities).Entity;
+        if (!string.Equals(parsedEntity, entity, StringComparison.Ordinal))
             throw new FormatException("Entity cannot be changed in the request structure.");
+        if (values.ContainsKey("Entity") && values.ContainsKey("Entities"))
+            throw new FormatException("Use either Entity or Entities, not both.");
 
         var fieldText = values.GetValueOrDefault("Fields");
         var fields = !string.IsNullOrWhiteSpace(fieldText) && fieldText.TrimStart().StartsWith('[')
@@ -77,6 +92,9 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
         return new QueryDefinition
         {
             Entity = parsedEntity,
+            EntityAliases = string.IsNullOrWhiteSpace(parsedEntities)
+                ? []
+                : ParseEntityList(parsedEntities).Aliases,
             Fields = fields,
             Filter = filter,
             Sorts = sorts,
@@ -90,20 +108,66 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
 
     public QueryDefinition ParseQueryRequestString(string text)
     {
-        var entities = text.Split(["\r\n", "\n"], StringSplitOptions.None)
-            .Select(line =>
-            {
-                var separator = line.IndexOf(':');
-                return separator > 0 && line[..separator].Trim().Equals("Entity", StringComparison.OrdinalIgnoreCase)
-                    ? line[(separator + 1)..].TrimStart()
-                    : null;
-            })
-            .Where(entity => entity is not null)
-            .ToList();
-        if (entities.Count != 1 || string.IsNullOrWhiteSpace(entities[0]))
-            throw new FormatException("Exactly one non-empty Entity field is required.");
+        var entity = text.Split(["\r\n", "\n"], StringSplitOptions.None)
+            .Select(line => line.Trim())
+            .FirstOrDefault(line => line.StartsWith("Entity:", StringComparison.OrdinalIgnoreCase));
+        if (entity is not null)
+            return ParseQueryRequestString(text, entity[(entity.IndexOf(':') + 1)..].Trim());
 
-        return ParseQueryRequestString(text, entities[0]!);
+        var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
+        var entitiesHeader = Array.FindIndex(lines, line =>
+            line.Trim().Equals("Entities:", StringComparison.OrdinalIgnoreCase));
+        var rootEntity = entitiesHeader < 0
+            ? null
+            : lines.Skip(entitiesHeader + 1)
+                .TakeWhile(line => string.IsNullOrWhiteSpace(line) || char.IsWhiteSpace(line[0]))
+                .Select(line => line.Trim())
+                .FirstOrDefault(line => line.Length > 0);
+        if (string.IsNullOrWhiteSpace(rootEntity))
+            throw new FormatException("Exactly one non-empty Entity or Entities root is required.");
+
+        return ParseQueryRequestString(text, rootEntity);
+    }
+
+    private static (string Entity, List<EntityContextDefinition> Aliases) ParseEntityList(string? value)
+    {
+        var entries = (value ?? string.Empty)
+            .Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (entries.Length == 0)
+            throw new FormatException("Entities requires a root entity.");
+
+        var aliases = new List<EntityContextDefinition>();
+        foreach (var entry in entries.Skip(1))
+        {
+            var separator = entry.IndexOf(':');
+            if (separator < 1)
+                throw new FormatException($"Invalid entity alias definition [{entry}].");
+
+            var alias = entry[..separator].Trim();
+            var relation = entry[(separator + 1)..].Trim();
+            var keyStart = relation.LastIndexOf('(');
+            if (keyStart < 1 || !relation.EndsWith(')'))
+                throw new FormatException($"Entity alias [{alias}] requires relation key mappings.");
+
+            var relationPath = relation[..keyStart].Trim();
+            var relatedKeys = SplitTopLevel(relation[(keyStart + 1)..^1], ',')
+                .Select(keyText =>
+                {
+                    var keySeparator = keyText.IndexOf(':');
+                    var fromColumn = keySeparator < 0 ? keyText.Trim() : keyText[..keySeparator].Trim();
+                    var toColumn = keySeparator < 0 ? fromColumn : keyText[(keySeparator + 1)..].Trim();
+                    if (string.IsNullOrWhiteSpace(fromColumn) || string.IsNullOrWhiteSpace(toColumn))
+                        throw new FormatException($"Invalid relation key mapping [{keyText}].");
+                    return new RelationItem(fromColumn, toColumn);
+                })
+                .ToList();
+            if (string.IsNullOrWhiteSpace(alias) || string.IsNullOrWhiteSpace(relationPath) || relatedKeys.Count == 0)
+                throw new FormatException($"Invalid entity alias definition [{entry}].");
+
+            aliases.Add(new EntityContextDefinition(alias, relationPath, relatedKeys));
+        }
+
+        return (entries[0], aliases);
     }
 
     public StoredQueryRequest? UpdateQueryRequest(string fileName, QueryDefinition query, string? requestText = null)
