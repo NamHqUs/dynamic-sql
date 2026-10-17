@@ -1,6 +1,8 @@
 ﻿using Microsoft.Data.Sqlite;
 using System.Data;
 
+namespace Demo.Repositories.DataProviders;
+
 public class SqliteDbProvider : DbProviderBase
 {
     private readonly string _connectionString;

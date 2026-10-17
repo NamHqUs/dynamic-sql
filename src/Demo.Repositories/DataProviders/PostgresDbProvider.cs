@@ -1,6 +1,8 @@
 ﻿using Npgsql;
 using System.Data;
 
+namespace Demo.Repositories.DataProviders;
+
 public class PostgresDbProvider(string cnString) : DbProviderBase
 {
     protected override string? SqlScriptCheckIfDbExists =>

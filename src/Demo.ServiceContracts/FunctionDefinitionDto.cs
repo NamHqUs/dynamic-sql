@@ -2,8 +2,9 @@ using Namh.Data.DynamicSql;
 using System.Text.Json;
 using static Namh.Data.DynamicSql.SqlFunctionDefintion;
 
-namespace Demo.WebApi.Dto;
+namespace Demo.ServiceContracts.Dto;
 
+/// <summary>Represents a SQL function definition exchanged with the demo API.</summary>
 public sealed class FunctionDefinitionDto
 {
     public string Name { get; set; } = "";
@@ -88,6 +89,7 @@ public sealed class FunctionDefinitionDto
         };
 }
 
+/// <summary>Represents an argument accepted by a SQL function.</summary>
 public sealed class FunctionArgumentDefinitionDto
 {
     public string Name { get; set; } = "";

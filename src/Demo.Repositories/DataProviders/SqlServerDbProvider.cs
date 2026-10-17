@@ -1,6 +1,8 @@
 ﻿using Microsoft.Data.SqlClient;
 using System.Data;
 
+namespace Demo.Repositories.DataProviders;
+
 public class SqlServerDbProvider(string cnString) : DbProviderBase
 {
     protected override string? SqlScriptCheckIfDbExists

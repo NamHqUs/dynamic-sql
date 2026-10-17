@@ -1,46 +1,33 @@
+using Demo.ServiceContracts.Repositories;
+using Demo.ServiceContracts.Services;
 using Namh.Data.DynamicSql;
 using System.Text.Json;
 using System.Globalization;
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
-namespace Demo.WebApi.Services;
+namespace Demo.Services;
 
-public static class QueryRequestServices
+public sealed class QueryRequestService(IQueryRequestRepository repository) : IQueryRequestService
 {
-    private static readonly string _StorePath = Path.Combine(Environment.CurrentDirectory, "DataStore", "QueryRequests");
+    public IReadOnlyList<StoredQueryRequest> ListQueryRequests() => repository.GetAll();
 
-    public sealed record StoredQueryRequest(string FileName, QueryDefinition Query, string? RequestText = null);
-
-    public static List<StoredQueryRequest> ListQueryRequests()
-    {
-        EnsureStore();
-        return Directory.EnumerateFiles(_StorePath, "*.json")
-            .OrderByDescending(Path.GetFileName)
-            .Select(ReadQuery)
-            .ToList();
-    }
-
-    public static StoredQueryRequest SaveQueryRequest(
+    public StoredQueryRequest SaveQueryRequest(
         QueryDefinition query,
         string? fileName = null,
         string? requestText = null)
     {
-        fileName??= CreateRandonFileName();
-        var filePath = GetPath(fileName);
-        WriteQuery(filePath, query, requestText);
-        return new StoredQueryRequest(fileName, query, requestText);
+        fileName ??= CreateRandomFileName();
+        var request = new StoredQueryRequest(fileName, query, requestText);
+        repository.Save(request);
+        return request;
     }
 
-    public static StoredQueryRequest? LoadQueryRequest(string fileName)
-    {
-        var filePath = GetPath(fileName);
-        return File.Exists(filePath) ? ReadQuery(filePath) : null;
-    }
+    public StoredQueryRequest? LoadQueryRequest(string fileName) => repository.Get(fileName);
 
-    public static string GetQueryRequestString(QueryDefinition query)
+    public string GetQueryRequestString(QueryDefinition query)
         => query.ToString();
 
-    public static QueryDefinition ParseQueryRequestString(string text, string entity)
+    public QueryDefinition ParseQueryRequestString(string text, string entity)
     {
         var lines = new List<(string Key, string Value)>();
         foreach (var line in text.Split(["\r\n", "\n"], StringSplitOptions.None))
@@ -101,7 +88,7 @@ public static class QueryRequestServices
         };
     }
 
-    public static QueryDefinition ParseQueryRequestString(string text)
+    public QueryDefinition ParseQueryRequestString(string text)
     {
         var entities = text.Split(["\r\n", "\n"], StringSplitOptions.None)
             .Select(line =>
@@ -119,99 +106,20 @@ public static class QueryRequestServices
         return ParseQueryRequestString(text, entities[0]!);
     }
 
-    public static StoredQueryRequest? UpdateQueryRequest(string fileName, QueryDefinition query, string? requestText = null)
+    public StoredQueryRequest? UpdateQueryRequest(string fileName, QueryDefinition query, string? requestText = null)
     {
-        var filePath = GetPath(fileName);
-        if (!File.Exists(filePath))
+        if (repository.Get(fileName) is null)
             return null;
 
-        WriteQuery(filePath, query, requestText);
-        return new StoredQueryRequest(fileName, query, requestText);
+        var request = new StoredQueryRequest(fileName, query, requestText);
+        repository.Save(request);
+        return request;
     }
 
-    public static bool DeleteQueryRequest(string fileName)
-    {
-        var filePath = GetPath(fileName);
-        if (!File.Exists(filePath))
-            return false;
+    public bool DeleteQueryRequest(string fileName) => repository.Delete(fileName);
 
-        File.Delete(filePath);
-        return true;
-    }
-
-    private static string CreateRandonFileName()
+    private static string CreateRandomFileName()
         => $"query_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.json";
-
-    private static string GetPath(string fileName)
-        => Path.Combine(_StorePath, fileName);
-
-    private static void EnsureStore()
-        => Directory.CreateDirectory(_StorePath);
-
-    private static StoredQueryRequest ReadQuery(string filePath)
-    {
-        var json = File.ReadAllText(filePath);
-        using var document = JsonDocument.Parse(json);
-        var root = document.RootElement;
-        var queryElement = TryGetProperty(root, "Query", out var storedQuery) ? storedQuery : root;
-        var requestText = TryGetProperty(root, "RequestText", out var requestTextElement)
-            && requestTextElement.ValueKind == JsonValueKind.String
-                ? requestTextElement.GetString()
-                : null;
-        var result = JsonSerializer.Deserialize<QueryDefinition>(queryElement.GetRawText(), JsonOptions())
-            ?? throw new InvalidDataException($"Query request file '{Path.GetFileName(filePath)}' is empty.");
-
-        if (!TryGetProperty(queryElement, "Fields", out _) &&
-            TryGetProperty(queryElement, "Columns", out var legacyColumns))
-        {
-            result = new QueryDefinition
-            {
-                Name = result.Name,
-                Entity = result.Entity,
-                Fields = legacyColumns.EnumerateArray().Select(ParseLegacyProjection).ToList(),
-                Filter = result.Filter,
-                Sorts = result.Sorts,
-                Page = result.Page,
-                PageSize = result.PageSize,
-                IncludeArchive = result.IncludeArchive
-            };
-        }
-
-        Console.WriteLine($"\n{new('-', 8)}Loaded query request from '{Path.GetFileName(filePath)}': \n{result}");
-        return new StoredQueryRequest(Path.GetFileName(filePath)!, result, requestText);
-    }
-
-    private static ProjectionDefinition ParseLegacyProjection(JsonElement column)
-    {
-        var alias = TryGetProperty(column, "Alias", out var aliasElement)
-            ? aliasElement.ValueKind switch
-            {
-                JsonValueKind.Null => null,
-                JsonValueKind.String => aliasElement.GetString(),
-                _ => throw new InvalidDataException("A saved projection alias must be a string or null.")
-            }
-            : null;
-        object field = TryGetProperty(column, "Expression", out var expressionElement) &&
-            expressionElement.ValueKind != JsonValueKind.Null
-                ? expressionElement.Clone()
-                : TryGetProperty(column, "Field", out var fieldElement) &&
-                    fieldElement.ValueKind == JsonValueKind.String
-                    ? new { kind = "field", field = fieldElement.GetString() }
-                    : throw new InvalidDataException("A saved projection must contain a field or expression.");
-        var json = JsonSerializer.Serialize(new { field, alias });
-
-        return JsonSerializer.Deserialize<ProjectionDefinition>(json, JsonOptions())
-            ?? throw new InvalidDataException("A saved projection field is empty.");
-    }
-
-    private static bool TryGetProperty(JsonElement element, string name, out JsonElement value)
-        => element.TryGetProperty(name, out value) ||
-            element.TryGetProperty(char.ToLowerInvariant(name[0]) + name[1..], out value);
-
-    private static void WriteQuery(string filePath, QueryDefinition query, string? requestText)
-        => File.WriteAllText(filePath, JsonSerializer.Serialize(
-            new { Query = query, RequestText = requestText },
-            JsonOptions(writeIndented: true)));
 
     private static JsonSerializerOptions JsonOptions(bool writeIndented = false)
         => new()

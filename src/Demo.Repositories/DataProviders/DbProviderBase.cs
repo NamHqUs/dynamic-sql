@@ -1,5 +1,7 @@
 ﻿using System.Data;
 
+namespace Demo.Repositories.DataProviders;
+
 public abstract class DbProviderBase
 {
     private static readonly object oLock = new();

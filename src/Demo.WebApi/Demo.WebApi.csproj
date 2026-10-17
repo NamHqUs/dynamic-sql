@@ -7,20 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-	  <PackageReference Include="Namh.Configuration.GlobalTemplate" Version="1.0.0" />
+    <PackageReference Include="Namh.Configuration.GlobalTemplate" Version="1.0.0" />
 	  <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.0" />
-	  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
-	  <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
-	  <PackageReference Include="Npgsql" Version="10.0.3" />
-	  <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.21" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="FileStorages\FunctionDefinitions\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Demo.Share\Demo.Share.csproj" />
+    <ProjectReference Include="..\Demo.Services\Demo.Services.csproj" />
+    <ProjectReference Include="..\Demo.Repositories\Demo.Repositories.csproj" />
   </ItemGroup>
 
 </Project>
