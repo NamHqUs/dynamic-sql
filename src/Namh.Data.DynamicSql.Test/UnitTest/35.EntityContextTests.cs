@@ -34,19 +34,15 @@ internal sealed class _35_EntityContextTests : TestBase
     }
 
     [Test]
-    public void QueryDefinitionJsonDeserializesEntityAliases()
+    public void QueryDefinitionYmlDeserializesEntityAliases()
     {
-        var definition = QueryDefinition.FromJson("""
-            {
-              "entity": "InvoiceItems",
-              "entityAliases": [{
-                "alias": "Product2",
-                "relationPath": "Product",
-                "relatedKeys": [
-                  { "fromDbColumn": "Id", "toDbColumn": "Id" }
-                ]
-              }]
-            }
+        var definition = QueryDefinition.FromYml("""
+            Entity: InvoiceItems
+            EntityAliases:
+              - Name: Product2
+                Entity: Product
+                JoinKeys:
+                  - Id
             """);
 
         Assert.That(definition.EntityAliases, Has.Count.EqualTo(1));

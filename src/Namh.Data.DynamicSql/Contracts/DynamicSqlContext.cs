@@ -34,8 +34,8 @@ public class DynamicSqlContext(
         return new DbQueryable(queryProvider);
     }
 
-    public IDbQueryable QueryJson(string json)
-        => DbQueryFromQueryDto.BuildQueryable(this, json);
+    public IDbQueryable QueryYml(string yml)
+        => DbQueryFromQueryDto.BuildQueryable(this, yml);
 
     public IDbQueryable Query(QueryDefinition queryRequest)
         => DbQueryFromQueryDto.BuildQueryable(this, queryRequest);

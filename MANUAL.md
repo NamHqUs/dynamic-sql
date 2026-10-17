@@ -252,33 +252,28 @@ If an aggregate field is defined in metadata:
 var totalAge = db.Query("User").Aggregate("TotalAges");
 ```
 
-## JSON queries
+## YAML queries
 
-Use `QueryJson` when a screen, API, or report supplies query rules at runtime:
+Use `QueryYml` when a screen, API, or report supplies query rules at runtime:
 
 ```csharp
-var rows = db.QueryJson("""
-{
-  "entity": "User",
-  "entityAliases": [
-    {
-      "alias": "Manager2",
-      "relationPath": "Manager",
-      "relatedKeys": [
-        { "fromDbColumn": "ManagerId", "toDbColumn": "Id" }
-      ]
-    }
-  ],
-  "fields": [
-    { "field": "Name" },
-    { "field": "Manager.Name", "alias": "Manager-Name" },
-    { "field": "Manager2.Name", "alias": "Second-Manager-Name" }
-  ],
-  "filter": "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Age] < 12)",
-  "sorts": ["-Manager.Name"],
-  "page": 1,
-  "pageSize": 50
-}
+var rows = db.QueryYml("""
+Entity: User
+EntityAliases:
+  - Name: Manager2
+    Entity: Manager
+    JoinKeys:
+      - ManagerId
+Fields:
+  - Name
+  - Manager.Name | Manager-Name
+  - Manager2.Name | Second-Manager-Name
+Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Age] < 12)"
+Sorts:
+  - Field: Manager.Name
+    Direction: Descending
+Page: 1
+PageSize: 50
 """).ToList();
 ```
 
@@ -286,15 +281,12 @@ Supported properties:
 
 - `entity`: metadata entity name.
 - `entityAliases`: optional independent entity contexts. Each entry names an
-  `alias`, a metadata `relationPath`, and one or more `relatedKeys`. Each key
-  maps a field on the relation path's parent entity (`fromDbColumn`) to a field
-  on its target entity (`toDbColumn`). Every entry creates a distinct context,
-  even when another entry uses the same path and keys.
-- `fields`: projection fields; each entry has a `field` expression and an
-  optional `alias`. A field expression can be a field path string or a
-  structured expression object.
-- - `filter`: field comparisons, `like`, `&&`, `||`, `AND`, `OR`, and parentheses.
-- `sorts`: field paths; prefix with `-` for descending order.
+  alias (`name`), a metadata entity (`entity`), and one or more `joinKeys`.
+  Each join key maps a column to itself. Every entry creates a distinct context.
+- `fields`: projection expressions; use `|` to specify an output alias.
+- `filter`: field comparisons, `like`, `&&`, `||`, `AND`, `OR`, and parentheses.
+- `sorts`: field expressions; prefix with `-` for descending order, or specify
+  `field` and `direction`.
 - `page`: one-based page number.
 - `pageSize`: number of rows per page.
 
@@ -496,7 +488,7 @@ itself. Fields and filters use the existing query expression syntax.
 Inspect generated SQL without executing it:
 
 ```csharp
-var sql = db.QueryJson(json).ToSql();
+var sql = db.QueryYml(yml).ToSql();
 
 Console.WriteLine(sql.CommandText);
 

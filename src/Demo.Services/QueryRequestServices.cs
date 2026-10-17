@@ -70,19 +70,13 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
             throw new FormatException("Use either Entity or Entities, not both.");
 
         var fieldText = values.GetValueOrDefault("Fields");
-        var fields = !string.IsNullOrWhiteSpace(fieldText) && fieldText.TrimStart().StartsWith('[')
-            ? ParseJsonFields(fieldText, parsedEntity)
-            : QueryDefinitionParser.ParseProjections(fieldText ?? string.Empty);
+        var fields = QueryDefinitionParser.ParseProjections(fieldText ?? string.Empty);
         var sorts = ParseSorts(values.GetValueOrDefault("Sorts"));
 
         var filterText = values.GetValueOrDefault("Filters");
         var filter = string.IsNullOrWhiteSpace(filterText)
             ? null
-            : QueryDefinition.FromJson(JsonSerializer.Serialize(new
-            {
-                entity = parsedEntity,
-                filter = ConvertFilterExpression(filterText)
-            })).Filter;
+            : QueryDefinitionParser.ParseFilter(ConvertFilterExpression(filterText));
 
         var page = ParseNullableInt(values.GetValueOrDefault("Page"), "Page");
         var pageSize = ParseNullableInt(values.GetValueOrDefault("PageSize"), "PageSize");
@@ -262,16 +256,6 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
 
         parts.Add(text[start..].Trim());
         return parts.Where(part => part.Length > 0).ToList();
-    }
-
-    private static List<ProjectionDefinition> ParseJsonFields(string text, string entity)
-    {
-        using var document = JsonDocument.Parse(text);
-        return QueryDefinition.FromJson(JsonSerializer.Serialize(new
-        {
-            entity,
-            fields = document.RootElement
-        })).Fields;
     }
 
     private static int? ParseNullableInt(string? value, string fieldName)

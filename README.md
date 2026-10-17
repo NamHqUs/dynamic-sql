@@ -2,7 +2,7 @@
 
 Build powerful database screens without creating a CLR class for every table.
 
-`dynamic-sql` turns runtime metadata, C# expressions, or JSON definitions into
+`dynamic-sql` turns runtime metadata, C# expressions, or YAML definitions into
 safe, provider-specific SQL. The same query engine can power a data grid,
 report builder, admin screen, or API endpoint even when the fields and
 relationships are selected at runtime.
@@ -10,18 +10,17 @@ relationships are selected at runtime.
 ## A query defined by data
 
 ```csharp
-var rows = db.QueryJson("""
-{
-  "entity": "User",
-  "fields": [
-    { "field": "Name" },
-    { "field": "Manager.Name", "alias": "Manager-Name" }
-  ],
-  "filter": "[Name] like 'Dav%' && [Age] >= 18",
-  "sorts": ["-Manager.Name"],
-  "page": 1,
-  "pageSize": 50
-}
+var rows = db.QueryYml("""
+Entity: User
+Fields:
+  - Name
+  - Manager.Name | Manager-Name
+Filter: "[Name] like 'Dav%' && [Age] >= 18"
+Sorts:
+  - Field: Manager.Name
+    Direction: Descending
+Page: 1
+PageSize: 50
 """).ToList();
 ```
 
@@ -39,7 +38,7 @@ var rows = db.Query("User")
 ## Why it is different
 
 - Runtime entities, fields, relationships, and aggregates.
-- One compiler for C# expressions and JSON queries.
+- One compiler for C# expressions and YAML queries.
 - Relationship paths such as `Manager.Name` and `Members.Name`.
 - Dynamic projections and aliases without CLR models.
 - SQL Server, SQLite, and PostgreSQL dialect support.
@@ -47,7 +46,7 @@ var rows = db.Query("User")
 - A dialect-independent SQL expression intermediate representation.
 
 ```csharp
-var sql = db.QueryJson(json).ToSql();
+var sql = db.QueryYml(yml).ToSql();
 Console.WriteLine(sql.CommandText);
 ```
 
@@ -56,7 +55,7 @@ the complete text can be copied directly into a query window.
 
 ## Start here
 
-- Read the [user manual](MANUAL.md) for installation, metadata, queries, JSON,
+- Read the [user manual](MANUAL.md) for installation, metadata, queries, YAML,
   providers, async APIs, and troubleshooting.
 - Read the [technical guide](TECH.md) for the compiler pipeline and important
   classes.

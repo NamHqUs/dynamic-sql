@@ -170,29 +170,25 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
-    public void JsonDefinitionSupportsStructuredSortExpressions()
+    public void YmlDefinitionSupportsStructuredSortExpressions()
     {
-        const string json = """
-            {
-              "entity": "User",
-              "sorts": [{
-                "field": {
-                  "kind": "function",
-                  "function": "Sum",
-                  "arguments": [{ "kind": "field", "field": "Age" }]
-                },
-                "direction": 1
-              }]
-            }
+        const string yml = """
+            Entity: User
+            Sorts:
+              - Field: Sum(Age)
+                Direction: Descending
             """;
 
-        var definition = QueryDefinition.FromJson(json);
+        var definition = QueryDefinition.FromYml(yml);
         var sort = definition.Sorts.Single();
         var sql = _db.Query(definition).ToSql().CommandText;
         var serialized = System.Text.Json.JsonSerializer.Serialize(
             definition,
             new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
-        var roundTrippedSort = QueryDefinition.FromJson(serialized).Sorts.Single();
+        var roundTrippedSort = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(
+            serialized,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))!
+            .Sorts.Single();
 
         Assert.That(sort.Field, Is.TypeOf<FunctionFieldDefinition>());
         Assert.That(sort.Direction, Is.EqualTo(QuerySortDirection.Descending));
@@ -359,44 +355,47 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionTextUsesFieldDtoLiteralSyntax()
     {
-        var definition = QueryDefinition.FromJson(
-            """{"entity":"User","filter":{"logicalOperation":0,"filters":[{"logicalOperator":0,"field":{"kind":"field","field":"Name"},"operation":0,"value":"Alice Smith","parameterized":true}]}}""");
+        var definition = QueryDefinition.FromYml("""
+            Entity: User
+            Filter: "Name = <Alice Smith>"
+            """);
 
         Assert.That(definition.ToString(), Does.Contain("Filters: Name = <Alice Smith>"));
     }
 
     [Test]
-    public void DefinitionJsonSupportsLegacyStringFilterFields()
+    public void YmlDefinitionSupportsTextFilters()
     {
-        var definition = QueryDefinition.FromJson(
-            """{"entity":"User","filter":{"logicalOperation":0,"filters":[{"logicalOperator":0,"field":"Name","operation":0,"value":"Alice"}]}}""");
+        var definition = QueryDefinition.FromYml("""
+            Entity: User
+            Filter: Name = Alice
+            """);
 
         Assert.That(((FieldDefinition)((FilterItemDto)definition.Filter!.Filters.Single()).Left).FieldName, Is.EqualTo("Name"));
     }
 
     [Test]
-    public void JsonDefinitionSupportsAliasesLikeGroupingSortingAndPaging()
+    public void YmlDefinitionSupportsAliasesLikeGroupingSortingAndPaging()
     {
-        const string json = """
-            {
-              "entity": "User",
-              "fields": [
-                { "field": "Name" },
-                { "field": "Manager.Name", "alias": "Manager-Name" }
-              ],
-              "filter": "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.TotalMembers] < 12)",
-              "sorts": ["-Manager.Name"],
-              "page": 1,
-              "pageSize": 50
-            }
+        const string yml = """
+            Entity: User
+            Fields:
+              - Name
+              - Manager.Name | Manager-Name
+            Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.TotalMembers] < 12)"
+            Sorts:
+              - Field: Manager.Name
+                Direction: Descending
+            Page: 1
+            PageSize: 50
             """;
 
-        var sql = _db.QueryJson(json).ToSql();
+        var sql = _db.QueryYml(yml).ToSql();
 
         Assert.That(sql.Parameters.Select(parameter => parameter.Value),
             Is.EquivalentTo(new object?[] { "Dav%", "Alice", 12 }));
 
-        var data = _db.QueryJson(json).ToList();
+        var data = _db.QueryYml(yml).ToList();
 
         string[] expectedValues = ["David - Bob"];
         var actualValues = data.Select(e => $"{e["Name"]} - {e["Manager-Name"] ?? "NULL"}").ToArray();
@@ -404,20 +403,28 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
-    public void JsonDefinitionRejectsInvalidFilter()
+    public void YmlDefinitionRejectsInvalidFilter()
     {
-        const string json = """{"entity":"User","filter":"Name like"}""";
+        const string yml = """
+            Entity: User
+            Filter: Name like
+            """;
 
-        Assert.Throws<FormatException>(() => QueryDefinition.FromJson(json));
+        Assert.Throws<FormatException>(() => QueryDefinition.FromYml(yml));
         Assert.Throws<FormatException>(() =>
-            QueryDefinition.FromJson("""{"entity":"User","filter":"Age > (12 + OtherAge)"}"""));
+            QueryDefinition.FromYml("""
+                Entity: User
+                Filter: Age > (12 + OtherAge)
+                """));
     }
 
     [Test]
-    public void JsonDefinitionAcceptsUnquotedStringFilterValues()
+    public void YmlDefinitionAcceptsUnquotedStringFilterValues()
     {
-        var definition = QueryDefinition.FromJson(
-            """{"entity":"User","filter":"Name == Alice"}""");
+        var definition = QueryDefinition.FromYml("""
+            Entity: User
+            Filter: Name == Alice
+            """);
 
         var sql = _db.Query(definition).ToSql();
         var records = _db.Query(definition).ToList();
@@ -427,9 +434,12 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
-    public void JsonDefinitionParsesEscapedSingleQuotesInFilterValues()
+    public void YmlDefinitionParsesEscapedSingleQuotesInFilterValues()
     {
-        var definition = QueryDefinition.FromJson("""{"entity":"User","filter":"Name == 'O''Neil'"}""");
+        var definition = QueryDefinition.FromYml("""
+            Entity: User
+            Filter: "Name == 'O''Neil'"
+            """);
         var filter = (FilterItemDto)definition.Filter!.Filters[0];
 
         Assert.That(((ConstFieldDefinition)filter.Right!).Value, Is.EqualTo("O'Neil"));
@@ -438,11 +448,17 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void FilterTextRoundTripsDtoOperandsAndLogicalGroups()
     {
-        var definition = QueryDefinition.FromJson(
-            """{"entity":"User","filter":"Name = \"Alice Smith\" AND (Age >= 18 OR Name = [Manager.Name])"}""");
+        var definition = QueryDefinition.FromYml("""
+            Entity: User
+            Filter: >-
+              Name = "Alice Smith" AND (Age >= 18 OR Name = [Manager.Name])
+            """);
         var text = definition.Filter!.ToText();
-        var roundTrip = QueryDefinition.FromJson(
-            System.Text.Json.JsonSerializer.Serialize(new { entity = "User", filter = text }));
+        var roundTrip = QueryDefinition.FromYml($"""
+            Entity: User
+            Filter: >-
+              {text}
+            """);
         var outerFilters = ((FilterDefinition)roundTrip.Filter!).Filters;
         var fieldReferenceFilter = (FilterItemDto)((FilterDefinition)outerFilters[1]).Filters[1];
 
@@ -468,15 +484,19 @@ public class _14_QueryRequestTests : TestBase
 
         foreach (var (text, value) in cases)
         {
-            var definition = QueryDefinition.FromJson(
-                System.Text.Json.JsonSerializer.Serialize(new { entity = "User", filter = text }));
+            var definition = QueryDefinition.FromYml($"""
+                    Entity: User
+                    Filter: "{text}"
+                """);
             var filter = (FilterItemDto)definition.Filter!.Filters.Single();
 
             Assert.That(((ConstFieldDefinition)filter.Right!).Value, Is.EqualTo(value), text);
         }
 
-        var nullRightDefinition = QueryDefinition.FromJson(
-            """{"entity":"User","filter":"Name = <NULL>"}""");
+        var nullRightDefinition = QueryDefinition.FromYml("""
+            Entity: User
+            Filter: Name = <NULL>
+            """);
         Assert.That(
             ((FilterItemDto)nullRightDefinition.Filter!.Filters.Single()).Right,
             Is.Null);

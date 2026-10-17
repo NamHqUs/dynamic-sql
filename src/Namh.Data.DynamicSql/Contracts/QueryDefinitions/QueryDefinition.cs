@@ -17,8 +17,8 @@ public sealed class QueryDefinition
     public int? PageSize { get; init; }
     public bool IncludeArchive { get; init; }
 
-    public static QueryDefinition FromJson(string json)
-        => QueryDefinitionParser.Parse(json);
+    public static QueryDefinition FromYml(string yml)
+        => QueryDefinitionParser.ParseFromYml(yml);
 
     public override string ToString()
     {

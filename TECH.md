@@ -44,7 +44,7 @@ wheel to zoom, drag to pan).
    `IDbQueryable`, JSON `QueryDto` values, and runtime metadata
    (`Entity`, `Field`, and `Relation`).
 2. **Process the interface input** uses public query extensions to build a
-   normal expression tree. JSON definitions are converted into the same
+   normal expression tree. YAML definitions are converted into the same
    expression surface by `DbQueryFromQueryDto`.
 3. **Visit and build the IR** creates a dialect-independent `SqlExpression`
    tree. `SqlQueryCompiler` runs `QueryVisitor` and its clause visitors;
@@ -120,7 +120,7 @@ It exposes:
 
 - `Query(entityName)`
 - `Query(entityName, includeArchive)`
-- `QueryJson(json)`
+- `QueryYml(yml)`
 
 The context owns the supplied connection.
 
@@ -366,5 +366,5 @@ dotnet test .\src\Namh.Data.DynamicSql.Test\Namh.Data.DynamicSql.Test.csproj
 ```
 
 The test project targets .NET 8, .NET 9, and .NET 10. Tests cover metadata
-resolution, expression translation, JSON definitions, SQL diagnostics, async
+resolution, expression translation, YAML definitions, SQL diagnostics, async
 execution, SQLite behavior, and SQL Server behavior.

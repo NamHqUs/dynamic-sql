@@ -7,8 +7,8 @@ namespace Namh.Data.DynamicSql.Execution;
 
 internal static class DbQueryFromQueryDto
 {
-    public static IDbQueryable BuildQueryable(DynamicSqlContext context, string json)
-        => BuildQueryable(context, QueryDefinitionParser.Parse(json));
+    public static IDbQueryable BuildQueryable(DynamicSqlContext context, string yml)
+        => BuildQueryable(context, QueryDefinitionParser.ParseFromYml(yml));
     public static IDbQueryable BuildQueryable(DynamicSqlContext context, QueryDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(context);
