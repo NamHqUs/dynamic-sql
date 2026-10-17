@@ -138,18 +138,13 @@ internal class _33_DemoTest : TestBase
             Name: 9. Product attach and cross-sell pairs
             Entity: InvoiceItems
             EntityAliases:
-              - Name: b
-                Entity: InvoiceItems
-                JoinKeys:
-                  - InvoiceId
+              - "b: InvoiceItems(InvoiceId)"
             Fields: 
               - Product.Name|Product 
               - b.Product.Name|FrequentlyBoughtWith
               - Count()|OrdersTogether
             Filter: Product.Id < b.Product.Id
-            Sorts:
-              - Field: OrdersTogether
-                Direction: Descending
+            Sorts: OrdersTogether DESC
             """;
 
         QueryDefinition query = QueryDefinitionParser.ParseFromYml(yml);

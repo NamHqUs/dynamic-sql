@@ -5,22 +5,11 @@ namespace Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
 internal class ProjectionDefinitionParser
 {
-    public static List<ProjectionDefinition> Parse(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        if (string.IsNullOrWhiteSpace(text))
-            return [];
+    public static List<ProjectionDefinition> Parse(List<string?>? texts)
+        => texts?.Where(e => !string.IsNullOrWhiteSpace(e)).SelectMany(Parse!).ToList() ?? [];
 
-        return FieldDefinitionParser.SplitTopLevel(text, ',')
-            .Select(item =>
-            {
-                var aliasSeparator = item.IndexOf(" AS ", StringComparison.OrdinalIgnoreCase);
-                return aliasSeparator < 0
-                    ? FromText(item)
-                    : FromText($"{item[..aliasSeparator].Trim()} | {item[(aliasSeparator + 4)..].Trim()}");
-            })
-            .ToList();
-    }
+    public static List<ProjectionDefinition> Parse(string text)
+        => FieldDefinitionParser.SplitTopLevel(text, ',').Select(FromText).ToList();
 
     static ProjectionDefinition FromText(string text)
     {

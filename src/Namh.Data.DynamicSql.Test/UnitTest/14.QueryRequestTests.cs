@@ -170,16 +170,14 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
-    public void YmlDefinitionSupportsStructuredSortExpressions()
+    public void YmlDefinitionSupportsSortExpressions()
     {
         const string yml = """
             Entity: User
-            Sorts:
-              - Field: Sum(Age)
-                Direction: Descending
+            Sorts: Sum(Age) DESC
             """;
 
-        var definition = QueryDefinition.FromYml(yml);
+        var definition = QueryDefinitionParser.ParseFromYml(yml);
         var sort = definition.Sorts.Single();
         var sql = _db.Query(definition).ToSql().CommandText;
         var serialized = System.Text.Json.JsonSerializer.Serialize(
@@ -196,6 +194,18 @@ public class _14_QueryRequestTests : TestBase
         Assert.That(roundTrippedSort.Direction, Is.EqualTo(QuerySortDirection.Descending));
         Assert.That(sql, Does.Contain("ORDER BY SUM ("));
         Assert.That(sql, Does.Contain("DESC"));
+    }
+
+    [Test]
+    public void SortDefinitionParserSplitsTopLevelExpressionsAndSupportsDefaultDirection()
+    {
+        var sorts = QueryDefinitionParser.ParseSorts("Sum(Age, 1) DESC, Name");
+
+        Assert.That(sorts, Has.Count.EqualTo(2));
+        Assert.That(sorts[0].Field, Is.TypeOf<FunctionFieldDefinition>());
+        Assert.That(sorts[0].Direction, Is.EqualTo(QuerySortDirection.Descending));
+        Assert.That(((FieldDefinition)sorts[1].Field).FieldName, Is.EqualTo("Name"));
+        Assert.That(sorts[1].Direction, Is.EqualTo(QuerySortDirection.Ascending));
     }
 
     [Test]
@@ -355,7 +365,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void DefinitionTextUsesFieldDtoLiteralSyntax()
     {
-        var definition = QueryDefinition.FromYml("""
+        var definition = QueryDefinitionParser.ParseFromYml("""
             Entity: User
             Filter: "Name = <Alice Smith>"
             """);
@@ -366,7 +376,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void YmlDefinitionSupportsTextFilters()
     {
-        var definition = QueryDefinition.FromYml("""
+        var definition = QueryDefinitionParser.ParseFromYml("""
             Entity: User
             Filter: Name = Alice
             """);
@@ -383,9 +393,7 @@ public class _14_QueryRequestTests : TestBase
               - Name
               - Manager.Name | Manager-Name
             Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.TotalMembers] < 12)"
-            Sorts:
-              - Field: Manager.Name
-                Direction: Descending
+            Sorts: Manager.Name DESC
             Page: 1
             PageSize: 50
             """;
@@ -410,9 +418,9 @@ public class _14_QueryRequestTests : TestBase
             Filter: Name like
             """;
 
-        Assert.Throws<FormatException>(() => QueryDefinition.FromYml(yml));
+        Assert.Throws<FormatException>(() => QueryDefinitionParser.ParseFromYml(yml));
         Assert.Throws<FormatException>(() =>
-            QueryDefinition.FromYml("""
+            QueryDefinitionParser.ParseFromYml("""
                 Entity: User
                 Filter: Age > (12 + OtherAge)
                 """));
@@ -421,7 +429,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void YmlDefinitionAcceptsUnquotedStringFilterValues()
     {
-        var definition = QueryDefinition.FromYml("""
+        var definition = QueryDefinitionParser.ParseFromYml("""
             Entity: User
             Filter: Name == Alice
             """);
@@ -436,7 +444,7 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void YmlDefinitionParsesEscapedSingleQuotesInFilterValues()
     {
-        var definition = QueryDefinition.FromYml("""
+        var definition = QueryDefinitionParser.ParseFromYml("""
             Entity: User
             Filter: "Name == 'O''Neil'"
             """);
@@ -448,13 +456,13 @@ public class _14_QueryRequestTests : TestBase
     [Test]
     public void FilterTextRoundTripsDtoOperandsAndLogicalGroups()
     {
-        var definition = QueryDefinition.FromYml("""
+        var definition = QueryDefinitionParser.ParseFromYml("""
             Entity: User
             Filter: >-
               Name = "Alice Smith" AND (Age >= 18 OR Name = [Manager.Name])
             """);
         var text = definition.Filter!.ToText();
-        var roundTrip = QueryDefinition.FromYml($"""
+        var roundTrip = QueryDefinitionParser.ParseFromYml($"""
             Entity: User
             Filter: >-
               {text}
@@ -484,7 +492,7 @@ public class _14_QueryRequestTests : TestBase
 
         foreach (var (text, value) in cases)
         {
-            var definition = QueryDefinition.FromYml($"""
+            var definition = QueryDefinitionParser.ParseFromYml($"""
                     Entity: User
                     Filter: "{text}"
                 """);
@@ -493,7 +501,7 @@ public class _14_QueryRequestTests : TestBase
             Assert.That(((ConstFieldDefinition)filter.Right!).Value, Is.EqualTo(value), text);
         }
 
-        var nullRightDefinition = QueryDefinition.FromYml("""
+        var nullRightDefinition = QueryDefinitionParser.ParseFromYml("""
             Entity: User
             Filter: Name = <NULL>
             """);

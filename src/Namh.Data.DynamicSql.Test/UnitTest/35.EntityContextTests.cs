@@ -34,15 +34,12 @@ internal sealed class _35_EntityContextTests : TestBase
     }
 
     [Test]
-    public void QueryDefinitionYmlDeserializesEntityAliases()
+    public void QueryDefinitionYmlParsesEntityAliases()
     {
-        var definition = QueryDefinition.FromYml("""
+        var definition = QueryDefinitionParser.ParseFromYml("""
             Entity: InvoiceItems
             EntityAliases:
-              - Name: Product2
-                Entity: Product
-                JoinKeys:
-                  - Id
+              - "Product2: Product(Id)"
             """);
 
         Assert.That(definition.EntityAliases, Has.Count.EqualTo(1));
