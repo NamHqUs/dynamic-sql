@@ -1,3 +1,4 @@
+using Demo.Repositories.FileStorage;
 using Demo.ServiceContracts.Repositories;
 using Microsoft.Extensions.Configuration;
 using System.Data;
@@ -13,9 +14,10 @@ public enum DbServerType
 
 public sealed class DbConnectionFactory : IDbConnectionFactory
 {
+    const string FOLDER_NAME = "DbScripts";
     private readonly DbProviderBase _dbProvider;
 
-    public DbConnectionFactory(IConfiguration configuration)
+    public DbConnectionFactory(IConfiguration configuration, FilePathResolver filePathResolver)
     {
         if (!Enum.TryParse<DbServerType>(configuration["DbServerType"], ignoreCase: true, out var dbServerType))
             throw new InvalidOperationException("DbServerType must be Sqlite, SqlServer, or Postgres.");
@@ -23,8 +25,7 @@ public sealed class DbConnectionFactory : IDbConnectionFactory
         var connectionString = configuration.GetConnectionString(dbServerType.ToString())
             ?? throw new InvalidOperationException($"Connection string '{dbServerType}' is required.");
 
-        var path = configuration["DbScriptsFilePath"] ?? throw new InvalidOperationException("DbScriptsFilePath is required.");
-        path = Path.Combine(Environment.CurrentDirectory, path);
+        var path = filePathResolver.GetBuiltinStoreFolder(FOLDER_NAME);
 
         _dbProvider = dbServerType switch
         {

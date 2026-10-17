@@ -13,7 +13,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddSingleton<IDbConnectionFactory>(_ => new DbConnectionFactory(configuration));
+        services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 
         var provider = configuration["StorageProvider"] ?? "Files";
         if (provider.Equals("Files", StringComparison.OrdinalIgnoreCase))

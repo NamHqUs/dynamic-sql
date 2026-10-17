@@ -39,6 +39,7 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
 
     public void Save(SqlFunctionDefintion definition)
     {
+        Directory.CreateDirectory(filePathResolver.GetUserStoreFolder(FOLDER_NAME));
         var path = GetPath(definition.Name);
         File.WriteAllText(path, JsonSerializer.Serialize(
             FunctionDefinitionDto.FromFunctionDefinition(definition),
