@@ -16,9 +16,7 @@ Fields:
   - Name
   - Manager.Name | Manager-Name
 Filter: "[Name] like 'Dav%' && [Age] >= 18"
-Sorts:
-  - Field: Manager.Name
-    Direction: Descending
+Sorts: Manager.Name DESC
 Page: 1
 PageSize: 50
 """).ToList();

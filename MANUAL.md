@@ -260,18 +260,13 @@ Use `QueryYml` when a screen, API, or report supplies query rules at runtime:
 var rows = db.QueryYml("""
 Entity: User
 EntityAliases:
-  - Name: Manager2
-    Entity: Manager
-    JoinKeys:
-      - ManagerId
+  - "Manager2: Manager(ManagerId)"
 Fields:
   - Name
   - Manager.Name | Manager-Name
   - Manager2.Name | Second-Manager-Name
 Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Age] < 12)"
-Sorts:
-  - Field: Manager.Name
-    Direction: Descending
+Sorts: Manager.Name DESC
 Page: 1
 PageSize: 50
 """).ToList();
@@ -280,13 +275,13 @@ PageSize: 50
 Supported properties:
 
 - `entity`: metadata entity name.
-- `entityAliases`: optional independent entity contexts. Each entry names an
-  alias (`name`), a metadata entity (`entity`), and one or more `joinKeys`.
-  Each join key maps a column to itself. Every entry creates a distinct context.
+- `entityAliases`: optional independent entity contexts written as
+  `alias: relationPath(key[, sourceKey:targetKey])`. A key without a mapping
+  maps a column to itself. Every entry creates a distinct context.
 - `fields`: projection expressions; use `|` to specify an output alias.
 - `filter`: field comparisons, `like`, `&&`, `||`, `AND`, `OR`, and parentheses.
-- `sorts`: field expressions; prefix with `-` for descending order, or specify
-  `field` and `direction`.
+- `sorts`: comma-separated field expressions with an optional `ASC` or `DESC`
+  direction (for example, `Manager.Name DESC`).
 - `page`: one-based page number.
 - `pageSize`: number of rows per page.
 
@@ -471,17 +466,16 @@ Entity: InvoiceItems
 Fields:
   - Product.Name|Product
   - Count()|ItemCount
-Sorts:
-  - Field: ItemCount
-    Direction: Descending
+Sorts: ItemCount DESC
 """);
 
 var fileQuery = QueryDefinitionParser.ParseFromYml(new FileInfo("query.yml"));
 ```
 
 YAML query definitions use the same properties as `QueryDefinition`. Entity
-aliases use `Name`, `Entity`, and `JoinKeys`; each join key maps a column to
-itself. Fields and filters use the existing query expression syntax.
+aliases and sorts are plain-text expressions parsed by their respective
+definition parsers. Fields and filters use the existing query expression
+syntax.
 
 ## SQL diagnostics
 
