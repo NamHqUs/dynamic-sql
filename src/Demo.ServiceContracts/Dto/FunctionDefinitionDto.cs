@@ -4,7 +4,6 @@ using static Namh.Data.DynamicSql.SqlFunctionDefintion;
 
 namespace Demo.ServiceContracts.Dto;
 
-/// <summary>Represents a SQL function definition exchanged with the demo API.</summary>
 public sealed class FunctionDefinitionDto
 {
     public string Name { get; set; } = "";
