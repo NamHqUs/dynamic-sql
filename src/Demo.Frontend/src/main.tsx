@@ -12,7 +12,7 @@ import { store } from "./store/store";
 import "./styles.css";
 
 function App() {
-  const [page, setPage] = useState("builder");
+  const [page, setPage] = useState("reports");
   const [metadataVisited, setMetadataVisited] = useState(false);
   const queryBuilderNavigationGuard = useRef<((continueNavigation: () => void) => void) | null>(null);
   const metadataNavigationGuard = useRef<((continueNavigation: () => void) => void) | null>(null);
@@ -48,7 +48,7 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         <div className="brand"><span className="brand-mark"><Icon name="database" size={18} /></span><span>Dynamic<span className="brand-accent">SQL</span></span><span className="brand-divider" /><span className="brand-product">Studio</span></div>
-        <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigate("builder")}><Icon name="grid" /> Query builder</button><button className={page === "reports" ? "nav-item active" : "nav-item"} onClick={() => navigate("reports")}><Icon name="chart" /> Reports</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigate("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "functions" ? "nav-item active" : "nav-item"} onClick={() => navigate("functions")}><Icon name="code" /> Function definitions</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigate("sources")}><Icon name="database" /> Data sources</button></nav>
+        <nav className="topnav"><button className={page === "reports" ? "nav-item active" : "nav-item"} onClick={() => navigate("reports")}><Icon name="chart" /> Reports</button><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigate("builder")}><Icon name="grid" /> Query builder</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigate("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "functions" ? "nav-item active" : "nav-item"} onClick={() => navigate("functions")}><Icon name="code" /> Function definitions</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigate("sources")}><Icon name="database" /> Data sources</button></nav>
         <div className="top-actions"><span className="live-dot" /> Local demo <button className="avatar">N</button></div>
       </header>
 
