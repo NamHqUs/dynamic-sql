@@ -130,7 +130,7 @@ export default function ReportDetail({ report, result, chartType, loading, error
           </div>
           <div className={`report-detail-chart tone-${categoryTone(presentation.category)}`}>
             {result
-              ? <ReportChart result={result} type={chartType} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
+              ? <ReportChart key={chartType} result={result} type={chartType} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
               : loading
                 ? <div className="report-detail-status"><span className="report-spinner" /> Running this report…</div>
                 : <div className="report-detail-status">{error ? <span role="alert">{error}</span> : <><span>Run this report to load its chart and data.</span><button className="button primary" type="button" onClick={onRun}><Icon name="play" size={13} /> Run report</button></>}</div>}

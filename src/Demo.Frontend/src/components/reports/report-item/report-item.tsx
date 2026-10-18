@@ -246,7 +246,7 @@ export default function ReportItem({
         />
         <div className="report-card-chart">
           {result
-            ? <ReportChart result={result} type={chartType} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
+            ? <ReportChart key={chartType} result={result} type={chartType} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
             : loading
               ? <div className="report-card-chart-status"><span className="report-spinner" /> Loading chart…</div>
               : <div className="report-card-chart-status">{error ? <span role="alert">{error}</span> : <><span>Run this report to load its chart.</span><button type="button" onClick={onRun}>Run report <Icon name="play" size={11} /></button></>}</div>}
