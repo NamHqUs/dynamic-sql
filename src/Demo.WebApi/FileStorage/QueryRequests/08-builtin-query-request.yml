@@ -1,0 +1,12 @@
+Name: 8. Sales-channel performance
+Entity: Invoices
+Fields:
+  - SalesChannel
+  - Count() | Orders
+  - Sum(TotalAmount) | Revenue
+  - Average(TotalAmount) | AverageOrderValue
+Filter: Status <> <Draft>
+Sorts: Revenue DESC
+Page:
+PageSize:
+IncludeArchive: False

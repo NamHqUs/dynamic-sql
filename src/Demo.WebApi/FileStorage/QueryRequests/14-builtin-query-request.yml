@@ -1,0 +1,11 @@
+Name: 14. Revenue by weekday
+Entity: Invoices
+Fields:
+  - DateFormat(InvoiceDate, <%w>) | Weekday
+  - Count() | Orders
+  - Sum(TotalAmount) | Revenue
+Filter: Status = <Paid>
+Sorts: Revenue DESC
+Page:
+PageSize:
+IncludeArchive: False

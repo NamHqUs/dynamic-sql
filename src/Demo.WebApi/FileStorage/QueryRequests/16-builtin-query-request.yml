@@ -1,0 +1,15 @@
+# InvoiceId preserves the source grouping by i.Id; it is an extra projected field.
+Name: 16. Average basket composition
+Entity: Invoices
+Fields:
+  - InvoiceNumber
+  - Customer.Name
+  - Count(Items.Id) | LineCount
+  - Sum(Items.Quantity) | Units
+  - TotalAmount
+  - Id | InvoiceId
+Filter: Items.Id <> <NULL> AND Customer.Id <> <NULL>
+Sorts: TotalAmount DESC
+Page:
+PageSize:
+IncludeArchive: False
