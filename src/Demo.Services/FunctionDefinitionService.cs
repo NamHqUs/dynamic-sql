@@ -1,6 +1,6 @@
-using Demo.ServiceContracts.Dto;
-using Demo.ServiceContracts.Repositories;
-using Demo.ServiceContracts.Services;
+using Demo.Contracts.Dto;
+using Demo.Contracts.Repositories;
+using Demo.Contracts.Services;
 using Namh.Data.DynamicSql;
 
 namespace Demo.Services;
@@ -9,28 +9,52 @@ public sealed class FunctionDefinitionService(IFunctionDefinitionRepository repo
 {
     public IReadOnlyList<FunctionDefinitionDto> GetAll() => repository.GetAll()
         .OrderBy(definition => definition.Name, StringComparer.OrdinalIgnoreCase)
-        .Select(FunctionDefinitionDto.FromFunctionDefinition)
+        .Select(ToDto)
         .ToArray();
 
     public FunctionDefinitionDto Create(FunctionDefinitionDto dto)
     {
         var definition = BuildDefinition(dto);
+        if (repository.GetAll().Any(existing =>
+            string.Equals(existing.Name, definition.Name, StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException($"A function named '{definition.Name}' already exists.");
+
         repository.Save(definition);
-        var response = FunctionDefinitionDto.FromFunctionDefinition(definition);
-        response.CanDelete = true;
-        return response;
+        return ToDto(definition);
     }
 
     public FunctionDefinitionDto Update(string functionName, FunctionDefinitionDto dto)
     {
+        ArgumentNullException.ThrowIfNull(dto);
+        if (repository.IsBuiltin(functionName))
+            throw new InvalidOperationException($"Built-in function '{functionName}' is read-only.");
+        if (!repository.GetAll().Any(existing =>
+            string.Equals(existing.Name, functionName, StringComparison.OrdinalIgnoreCase)))
+            throw new KeyNotFoundException($"Function '{functionName}' was not found.");
+        if (!string.Equals(functionName, dto.Name, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("A function name cannot be changed.", nameof(dto));
+
         var definition = BuildDefinition(dto);
         repository.Save(definition);
-        var response = FunctionDefinitionDto.FromFunctionDefinition(definition);
-        response.CanDelete = true;
-        return response;
+        return ToDto(definition);
     }
 
-    public void Delete(string functionName) => repository.Delete(functionName);
+    public void Delete(string functionName)
+    {
+        if (repository.IsBuiltin(functionName))
+            throw new InvalidOperationException($"Built-in function '{functionName}' is read-only.");
+
+        repository.Delete(functionName);
+    }
+
+    private FunctionDefinitionDto ToDto(SqlFunctionDefintion definition)
+    {
+        var isBuiltin = repository.IsBuiltin(definition.Name);
+        var dto = FunctionDefinitionDto.FromFunctionDefinition(definition);
+        dto.IsBuiltin = isBuiltin;
+        dto.CanDelete = !isBuiltin;
+        return dto;
+    }
 
     private static SqlFunctionDefintion BuildDefinition(FunctionDefinitionDto dto)
     {

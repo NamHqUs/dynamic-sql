@@ -8,6 +8,7 @@ import "./entity-builder.css";
 type EntityBuilderProps = {
   draft: EditableEntity | null;
   selectedName: string;
+  isBuiltin: boolean;
   dirty: boolean;
   status: string;
   message: string;
@@ -20,6 +21,7 @@ type EntityBuilderProps = {
 export default function EntityBuilder({
   draft,
   selectedName,
+  isBuiltin,
   dirty,
   status,
   message,
@@ -44,10 +46,10 @@ export default function EntityBuilder({
       <div className="editor-head">
         <div>
           <span className="section-kicker">ENTITY DEFINITION</span>
-          <h2>{selectedName ? "Edit entity" : "New entity"}</h2>
+          <h2>{isBuiltin ? "Built-in entity" : selectedName ? "Edit entity" : "New entity"}</h2>
         </div>
         <div className="editor-actions">
-          {selectedName && (
+          {selectedName && !isBuiltin && (
             <button
               className="icon-button danger"
               type="button"
@@ -57,7 +59,7 @@ export default function EntityBuilder({
               <Icon name="trash" size={19} />
             </button>
           )}
-          <button
+          {!isBuiltin && <button
             className="button primary"
             type="button"
             onClick={onSave}
@@ -65,7 +67,7 @@ export default function EntityBuilder({
           >
             <Icon name="check" size={14} />{" "}
             {status === "saving" ? "Saving…" : "Save changes"}
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -76,6 +78,7 @@ export default function EntityBuilder({
       )}
 
       <div className="metadata-form">
+        <fieldset className="metadata-form-fieldset" disabled={isBuiltin}>
         <div className="metadata-form-grid">
           <label>
             Entity name
@@ -120,6 +123,7 @@ export default function EntityBuilder({
             }))
           }
         />
+        </fieldset>
       </div>
     </main>
   );

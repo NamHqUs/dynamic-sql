@@ -1,5 +1,5 @@
 using Demo.Repositories.FileStorage;
-using Demo.ServiceContracts.Repositories;
+using Demo.Contracts.Repositories;
 using Microsoft.Extensions.Configuration;
 using System.Data;
 

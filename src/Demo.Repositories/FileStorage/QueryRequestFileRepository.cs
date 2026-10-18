@@ -1,4 +1,4 @@
-using Demo.ServiceContracts.Repositories;
+using Demo.Contracts.Repositories;
 using Namh.Data.DynamicSql;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -7,27 +7,26 @@ namespace Demo.Repositories.FileStorage;
 
 public sealed class QueryRequestFileRepository : IQueryRequestRepository
 {
-    private readonly static object _lock = new();
-    private static List<StoredQueryRequest> _builtinItems = null!;
     private const string FOLDER_NAME = "QueryRequests";
-    private readonly FilePathResolver _filePathResolver;    
+    private readonly FilePathResolver _filePathResolver;
 
     public QueryRequestFileRepository(FilePathResolver filePathResolver)
     {
         _filePathResolver = filePathResolver;
-
-        if (_builtinItems == null)
-            lock (_lock)
-            {
-                var builtinFolder = _filePathResolver.GetBuiltinStoreFolder(FOLDER_NAME);
-                _builtinItems ??= GetAll(builtinFolder).ToList();
-            }
     }
 
-    public IReadOnlyList<StoredQueryRequest> GetAll()
+    public IReadOnlyList<StoredQueryRequest> GetAllCustom()
+        => GetAll(_filePathResolver.GetUserStoreFolder(FOLDER_NAME));
+
+    public IReadOnlyList<BuiltinQueryRequestFile> GetBuiltinFiles()
     {
-        var customQueryRequests = GetAll(_filePathResolver.GetUserStoreFolder(FOLDER_NAME));
-        return new List<StoredQueryRequest>(_builtinItems).Concat(customQueryRequests).ToList();
+        var dir = _filePathResolver.GetBuiltinStoreFolder(FOLDER_NAME);
+        Directory.CreateDirectory(dir);
+        return Directory.EnumerateFiles(dir)
+            .Where(path => string.Equals(Path.GetExtension(path), ".yml", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
+            .Select(path => new BuiltinQueryRequestFile(Path.GetFileName(path)!, File.ReadAllText(path)))
+            .ToArray();
     }
 
     private IReadOnlyList<StoredQueryRequest> GetAll(string dir)

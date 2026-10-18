@@ -1,4 +1,4 @@
-﻿using Demo.ServiceContracts.Application;
+using Demo.Contracts.Application;
 
 namespace Demo.WebApi.Application.Middlewares;
 

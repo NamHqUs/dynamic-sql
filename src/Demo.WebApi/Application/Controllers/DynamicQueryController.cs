@@ -1,4 +1,4 @@
-using Demo.ServiceContracts.Services;
+using Demo.Contracts.Services;
 using Microsoft.AspNetCore.Mvc;
 using Namh.Data.DynamicSql;
 using System.Text;

@@ -1,5 +1,5 @@
-using Demo.ServiceContracts.Repositories;
-using Demo.ServiceContracts.Services;
+using Demo.Contracts.Repositories;
+using Demo.Contracts.Services;
 using Microsoft.Extensions.Logging;
 using Namh.Data.DynamicSql;
 

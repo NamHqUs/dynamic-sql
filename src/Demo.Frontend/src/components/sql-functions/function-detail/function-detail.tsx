@@ -16,6 +16,7 @@ import "./function-detail.css";
 type FunctionDetailProps = {
   draft: EditableFunctionDefinition | null;
   selectedName: string;
+  isBuiltin: boolean;
   canDelete: boolean;
   dirty: boolean;
   status: string;
@@ -29,6 +30,7 @@ type FunctionDetailProps = {
 export default function FunctionDetail({
   draft,
   selectedName,
+  isBuiltin,
   canDelete,
   dirty,
   status,
@@ -90,7 +92,7 @@ export default function FunctionDetail({
       <div className="editor-head">
         <div>
           <span className="section-kicker">FUNCTION DEFINITION</span>
-          <h2>{selectedName ? "View or update function" : "Create function"}</h2>
+          <h2>{isBuiltin ? "Built-in function" : selectedName ? "View or update function" : "Create function"}</h2>
         </div>
         <div className="editor-actions">
           {selectedName && canDelete && (
@@ -104,19 +106,20 @@ export default function FunctionDetail({
               <Icon name="delete" size={19} />
             </button>
           )}
-          <button
+          {!isBuiltin && <button
             className="button primary"
             type="button"
             onClick={onSave}
             disabled={status === "saving" || !dirty}
           >
             <Icon name="check" size={14} />{" "}Save changes
-          </button>
+          </button>}
         </div>
       </div>
       {message && <p className="metadata-alert" role="alert">{message}</p>}
 
       <div className="function-form">
+        <fieldset className="function-form-fieldset" disabled={isBuiltin}>
         <section className="function-signature" aria-label="Function signature">
           <label className="signature-name">
             Function Name
@@ -335,6 +338,7 @@ export default function FunctionDetail({
             </table>
           </div>
         </section>
+        </fieldset>
       </div>
     </main>
   );

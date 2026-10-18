@@ -1,4 +1,4 @@
-using Demo.ServiceContracts.Application;
+using Demo.Contracts.Application;
 using Microsoft.Extensions.Configuration;
 
 namespace Demo.Repositories.FileStorage;

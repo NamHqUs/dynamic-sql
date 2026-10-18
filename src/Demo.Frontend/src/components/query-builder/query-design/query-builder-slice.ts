@@ -25,6 +25,8 @@ export type MetadataEntity = {
   name: string;
   fields: MetadataField[];
   relations?: MetadataRelation[];
+  rawSql?: string;
+  isBuiltin?: boolean;
 };
 
 export type QueryExpression =
@@ -98,6 +100,7 @@ export type StoredQueryRequest = {
   fileName: string;
   query: ApiQueryRequest;
   requestText?: string | null;
+  isBuiltin: boolean;
 };
 
 function createApiFilter(group: QueryFilterGroup): ApiQueryFilterGroup | null {
@@ -449,6 +452,7 @@ export const fetchSavedQueryRequests = createAsyncThunk(
       const payload = await requestJson(apiUrls.queryRequests.list);
       if (!Array.isArray(payload) || payload.some((item) => !item
         || typeof item.fileName !== "string"
+        || typeof item.isBuiltin !== "boolean"
         || !item.query
         || (item.requestText !== undefined && item.requestText !== null && typeof item.requestText !== "string"))) {
         return rejectWithValue("Query request API must return saved requests.");
@@ -475,7 +479,8 @@ export const saveQueryRequest = createAsyncThunk(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...createApiQuery(definition), name, ...(requestText !== undefined ? { requestText } : {}) }),
       });
-      if (!payload || typeof payload.fileName !== "string" || !payload.query) {
+      if (!payload || typeof payload.fileName !== "string" || !payload.query
+        || typeof payload.isBuiltin !== "boolean") {
         return rejectWithValue("Query request API returned an invalid saved request.");
       }
       return payload as StoredQueryRequest;

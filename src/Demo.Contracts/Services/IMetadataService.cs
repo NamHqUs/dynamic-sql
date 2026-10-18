@@ -1,10 +1,11 @@
 using Namh.Data.DynamicSql;
 
-namespace Demo.ServiceContracts.Services;
+namespace Demo.Contracts.Services;
 
 public interface IMetadataService
 {
     IReadOnlyList<Entity> GetAll();
+    bool IsBuiltin(string entityName);
     Entity Create(Entity entity);
     Entity Update(string entityName, Entity entity);
     void Delete(string entityName);

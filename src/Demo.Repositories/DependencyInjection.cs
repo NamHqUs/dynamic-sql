@@ -1,7 +1,7 @@
 using Demo.Repositories.DataProviders;
 using Demo.Repositories.FileStorage;
 using Demo.Repositories.InMemory;
-using Demo.ServiceContracts.Repositories;
+using Demo.Contracts.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 

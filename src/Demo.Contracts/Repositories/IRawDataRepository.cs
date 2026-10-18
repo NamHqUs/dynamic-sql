@@ -1,4 +1,4 @@
-namespace Demo.ServiceContracts.Repositories;
+namespace Demo.Contracts.Repositories;
 
 public interface IRawDataRepository
 {

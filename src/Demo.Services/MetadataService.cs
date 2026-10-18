@@ -1,5 +1,5 @@
-using Demo.ServiceContracts.Repositories;
-using Demo.ServiceContracts.Services;
+using Demo.Contracts.Repositories;
+using Demo.Contracts.Services;
 using Namh.Data.DynamicSql;
 
 namespace Demo.Services;
@@ -19,6 +19,8 @@ public sealed class MetadataService : IMetadataService
 
     public IReadOnlyList<Entity> GetAll() => _metadataRepository.GetAll();
 
+    public bool IsBuiltin(string entityName) => _metadataRepository.IsBuiltin(entityName);
+
     public Entity Create(Entity entity)
     {
         ValidateEntity(entity);
@@ -32,6 +34,9 @@ public sealed class MetadataService : IMetadataService
 
     public Entity Update(string entityName, Entity entity)
     {
+        if (_metadataRepository.IsBuiltin(entityName))
+            throw new InvalidOperationException($"Built-in entity '{entityName}' is read-only.");
+
         ValidateEntity(entity);
         var allItems = _metadataRepository.GetAll().ToList();
         var index = allItems.FindIndex(item => string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase));
@@ -49,7 +54,12 @@ public sealed class MetadataService : IMetadataService
     }
 
     public void Delete(string entityName)
-        => _metadataRepository.Delete(entityName);
+    {
+        if (_metadataRepository.IsBuiltin(entityName))
+            throw new InvalidOperationException($"Built-in entity '{entityName}' is read-only.");
+
+        _metadataRepository.Delete(entityName);
+    }
 
     public IReadOnlyList<Entity> Reset() => _metadataRepository.Reset();
 

@@ -1,5 +1,5 @@
-using Demo.ServiceContracts.Repositories;
-using Demo.ServiceContracts.Services;
+using Demo.Contracts.Repositories;
+using Demo.Contracts.Services;
 using Namh.Data.DynamicSql;
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using System.Globalization;
@@ -9,7 +9,8 @@ namespace Demo.Services;
 
 public sealed class QueryRequestService(IQueryRequestRepository repository) : IQueryRequestService
 {
-    public IReadOnlyList<StoredQueryRequest> ListQueryRequests() => repository.GetAll();
+    public IReadOnlyList<StoredQueryRequest> ListQueryRequests()
+        => GetBuiltinQueryRequests().Concat(repository.GetAllCustom()).ToArray();
 
     public StoredQueryRequest SaveQueryRequest(
         QueryDefinition query,
@@ -22,15 +23,32 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
         return request;
     }
 
-    public StoredQueryRequest? LoadQueryRequest(string fileName) => repository.Get(fileName);
+    public StoredQueryRequest? LoadQueryRequest(string fileName)
+        => repository.Get(fileName) ?? GetBuiltinQueryRequests().FirstOrDefault(request =>
+            string.Equals(request.FileName, fileName, StringComparison.OrdinalIgnoreCase));
 
     public string GetQueryRequestString(QueryDefinition query)
         => query.ToString();
 
     public QueryDefinition ParseQueryRequestString(string text, string entity)
     {
+        var textLines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
+        var fieldsHeader = Array.FindIndex(textLines, line =>
+            line.Trim().Equals("Fields:", StringComparison.OrdinalIgnoreCase));
+        var hasYamlFieldList = fieldsHeader >= 0 && textLines
+            .Skip(fieldsHeader + 1)
+            .TakeWhile(line => string.IsNullOrWhiteSpace(line) || char.IsWhiteSpace(line[0]))
+            .Any(line => line.TrimStart().StartsWith("- ", StringComparison.Ordinal));
+        if (hasYamlFieldList)
+        {
+            var query = QueryDefinitionParser.ParseFromYml(text);
+            if (!string.Equals(query.Entity, entity, StringComparison.Ordinal))
+                throw new FormatException("Entity cannot be changed in the request structure.");
+            return query;
+        }
+
         var lines = new List<(string Key, string Value)>();
-        foreach (var line in text.Split(["\r\n", "\n"], StringSplitOptions.None))
+        foreach (var line in textLines)
         {
             if (line.Length > 0 && char.IsWhiteSpace(line[0]))
             {
@@ -75,7 +93,9 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
             : QueryDefinitionParser.ParseProjections(fieldText ?? string.Empty);
         var sorts = ParseSorts(values.GetValueOrDefault("Sorts"));
 
-        var filterText = values.GetValueOrDefault("Filters");
+        if (values.ContainsKey("Filter") && values.ContainsKey("Filters"))
+            throw new FormatException("Use either Filter or Filters, not both.");
+        var filterText = values.GetValueOrDefault("Filter") ?? values.GetValueOrDefault("Filters");
         var filter = string.IsNullOrWhiteSpace(filterText)
             ? null
             : QueryDefinition.FromJson(JsonSerializer.Serialize(new
@@ -91,6 +111,7 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
 
         return new QueryDefinition
         {
+            Name = values.GetValueOrDefault("Name"),
             Entity = parsedEntity,
             EntityAliases = string.IsNullOrWhiteSpace(parsedEntities)
                 ? []
@@ -184,6 +205,15 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
 
     private static string CreateRandomFileName()
         => $"query_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.json";
+
+    private IReadOnlyList<StoredQueryRequest> GetBuiltinQueryRequests()
+        => repository.GetBuiltinFiles()
+            .Select(file => new StoredQueryRequest(
+                file.FileName,
+                ParseQueryRequestString(file.RequestText),
+                file.RequestText,
+                IsBuiltin: true))
+            .ToArray();
 
     private static JsonSerializerOptions JsonOptions(bool writeIndented = false)
         => new()

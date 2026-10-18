@@ -17,6 +17,7 @@ export type FunctionDefinition = {
   arguments: FunctionArgumentDefinition[];
   resultType: FunctionResultDataType;
   canDelete?: boolean;
+  isBuiltin?: boolean;
   isAggregate: boolean;
   description: string;
   sqlTemplates: Record<string, string>;

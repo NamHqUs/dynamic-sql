@@ -1,5 +1,5 @@
-using Demo.ServiceContracts.Dto;
-using Demo.ServiceContracts.Repositories;
+using Demo.Contracts.Dto;
+using Demo.Contracts.Repositories;
 using Demo.Share;
 using Namh.Data.DynamicSql;
 using System.Security.Cryptography;
@@ -31,11 +31,17 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
                 var dto = JsonSerializer.Deserialize<FunctionDefinitionDto>(File.ReadAllText(path))
                     ?? throw new InvalidOperationException($"Failed to deserialize function definition from '{path}'.");
                 var definition = dto.ToFunctionDefinition();
+                if (IsBuiltin(definition.Name))
+                    throw new InvalidDataException($"Custom function definitions cannot replace built-in function '{definition.Name}'.");
                 definitions[definition.Name] = definition;
             }
         }
         return definitions.Values.ToArray();
     }
+
+    public bool IsBuiltin(string functionName)
+        => CustomFunctionDefintions.Functions.Any(definition =>
+            string.Equals(definition.Name, functionName, StringComparison.OrdinalIgnoreCase));
 
     public void Save(SqlFunctionDefintion definition)
     {

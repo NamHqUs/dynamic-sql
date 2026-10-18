@@ -1,4 +1,4 @@
-//using Demo.ServiceContracts.Repositories;
+//using Demo.Contracts.Repositories;
 //using Demo.Share;
 //using Namh.Data.DynamicSql;
 

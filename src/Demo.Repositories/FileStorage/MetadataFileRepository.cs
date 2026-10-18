@@ -1,4 +1,4 @@
-using Demo.ServiceContracts.Repositories;
+using Demo.Contracts.Repositories;
 using Demo.Share;
 using Namh.Data.DynamicSql;
 using System.Text.Json;
@@ -30,9 +30,17 @@ public sealed class MetadataFileRepository(FilePathResolver filePathResolver) : 
 
         var merge = BuiltinMetadata.DefaultMetadata.ToDictionary(e => e.Name);
         foreach (var entity in customeEntities)
+        {
+            if (IsBuiltin(entity.Name))
+                throw new InvalidDataException($"Custom metadata cannot replace built-in entity '{entity.Name}'.");
             merge[entity.Name] = entity;
+        }
         return merge.Values.ToArray();
     }
+
+    public bool IsBuiltin(string entityName)
+        => BuiltinMetadata.DefaultMetadata.Any(entity =>
+            string.Equals(entity.Name, entityName, StringComparison.OrdinalIgnoreCase));
 
     public void Save(Entity entity)
     {

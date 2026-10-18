@@ -1,6 +1,6 @@
 using Namh.Data.DynamicSql;
 
-namespace Demo.ServiceContracts.Services;
+namespace Demo.Contracts.Services;
 
 public interface IDynamicQueryService
 {

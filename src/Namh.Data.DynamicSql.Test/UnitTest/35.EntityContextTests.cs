@@ -1,5 +1,6 @@
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 #if NET10_0
+using Demo.Contracts.Repositories;
 using Demo.Services;
 #endif
 
@@ -100,6 +101,46 @@ internal sealed class _35_EntityContextTests : TestBase
         Assert.That(parsed.EntityAliases[1].Alias, Is.EqualTo("Product2"));
         Assert.That(parsed.EntityAliases[1].RelatedKeys, Is.EqualTo(definition.EntityAliases[1].RelatedKeys));
         Assert.That(parsed.Fields, Is.EqualTo(definition.Fields));
+    }
+
+    [Test]
+    public void BuiltinQueryRequestsLoadAsReadOnlyAndRestoreFromTheirYamlText()
+    {
+        var directory = new DirectoryInfo("../../../../Demo.WebApi/FileStorage/QueryRequests").FullName;
+        var files = Directory.EnumerateFiles(directory, "*.yml")
+            .Select(path => new BuiltinQueryRequestFile(Path.GetFileName(path)!, File.ReadAllText(path)))
+            .ToArray();
+        var service = new QueryRequestService(new TestQueryRequestRepository(files));
+
+        var requests = service.ListQueryRequests();
+
+        Assert.That(requests, Has.Count.EqualTo(files.Length));
+        Assert.That(requests, Has.All.Property(nameof(StoredQueryRequest.IsBuiltin)).True);
+        foreach (var request in requests)
+        {
+            Assert.That(request.Query.Name, Is.Not.Null.And.Not.Empty);
+            var restored = service.ParseQueryRequestString(request.RequestText!, request.Query.Entity);
+            Assert.That(restored.Name, Is.EqualTo(request.Query.Name));
+            Assert.That(restored.Entity, Is.EqualTo(request.Query.Entity));
+            Assert.That(restored.Fields.Select(field => field.ToText()),
+                Is.EqualTo(request.Query.Fields.Select(field => field.ToText())));
+        }
+
+        Assert.That(service.LoadQueryRequest(requests[0].FileName)?.IsBuiltin, Is.True);
+        Assert.That(service.UpdateQueryRequest(requests[0].FileName, requests[0].Query), Is.Null);
+        Assert.That(service.DeleteQueryRequest(requests[0].FileName), Is.False);
+    }
+
+    private sealed class TestQueryRequestRepository(
+        IReadOnlyList<BuiltinQueryRequestFile> builtinFiles) : IQueryRequestRepository
+    {
+        private readonly Dictionary<string, StoredQueryRequest> _requests = new(StringComparer.OrdinalIgnoreCase);
+
+        public IReadOnlyList<StoredQueryRequest> GetAllCustom() => _requests.Values.ToArray();
+        public IReadOnlyList<BuiltinQueryRequestFile> GetBuiltinFiles() => builtinFiles;
+        public StoredQueryRequest? Get(string fileName) => _requests.GetValueOrDefault(fileName);
+        public void Save(StoredQueryRequest request) => _requests[request.FileName] = request;
+        public bool Delete(string fileName) => _requests.Remove(fileName);
     }
 #endif
 

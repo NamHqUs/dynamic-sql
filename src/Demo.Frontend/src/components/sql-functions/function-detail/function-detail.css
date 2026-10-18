@@ -1,4 +1,5 @@
 .function-form { padding: 25px 28px 35px; }
+.function-form-fieldset { border: 0; margin: 0; min-width: 0; padding: 0; width: 100%; }
 .function-form label { display: grid; gap: 8px; color: #aeb6c5; font-size: 11px; font-weight: 600; }
 .function-form input, .function-form select { width: 100%; min-width: 0; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; outline: 0; padding: 9px 10px; font: 11px "DM Mono", monospace; }
 .function-form input:focus, .function-form select:focus { border-color: #7054d4; }

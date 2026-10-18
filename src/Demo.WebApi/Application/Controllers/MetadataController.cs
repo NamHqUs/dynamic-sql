@@ -1,5 +1,5 @@
-using Demo.ServiceContracts.Dto;
-using Demo.ServiceContracts.Services;
+using Demo.Contracts.Dto;
+using Demo.Contracts.Services;
 using Microsoft.AspNetCore.Mvc;
 using Namh.Data.DynamicSql;
 
@@ -12,7 +12,13 @@ public sealed class MetadataController(
     IFunctionDefinitionService functionDefinitionService) : ControllerBase
 {
     [HttpGet]
-    public ActionResult<IReadOnlyList<Entity>> GetMetadata() => Ok(metadataService.GetAll());
+    public ActionResult<IReadOnlyList<MetadataEntityDto>> GetMetadata()
+        => Ok(metadataService.GetAll().Select(entity => new MetadataEntityDto(
+            entity.Name,
+            entity.RawSql,
+            entity.Fields,
+            entity.Relations,
+            metadataService.IsBuiltin(entity.Name))).ToArray());
 
     [HttpPost]
     public ActionResult<Entity> CreateMetadata([FromBody] Entity entity)

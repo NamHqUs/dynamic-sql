@@ -187,6 +187,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     [contextMetadata, definition.entity],
   );
   const selectedSavedRequest = savedRequests.find((item) => item.fileName === selectedFileName);
+  const selectedRequestIsBuiltin = selectedSavedRequest?.isBuiltin === true;
   const defaultNewDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
   const hasUnsavedQueryChanges = (currentDefinition: QueryDefinition) => {
     const currentRequest = serializeQueryRequest(requestName.trim(), currentDefinition);
@@ -504,6 +505,11 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   const createNewRequest = () => requestQueryChangeNavigation(startNewRequest);
 
   const saveRequest = async () => {
+    if (selectedRequestIsBuiltin) {
+      setSavedMessageIsError(true);
+      setSavedMessage("Built-in query requests are read-only.");
+      return false;
+    }
     if (!requestName.trim()) {
       setSavedMessageIsError(true);
       setSavedMessage("A name is required for the query request.");
@@ -556,7 +562,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   };
 
   const removeRequest = async () => {
-    if (!selectedFileName) return;
+    if (!selectedFileName || selectedRequestIsBuiltin) return;
     const action = await showMessageBox({
       eyebrow: "DELETE QUERY REQUEST",
       title: `Delete "${requestName}"?`,
@@ -585,21 +591,25 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           <h2>Query Builder</h2>
         </div>
         <div className="heading-actions">
-          <button className="button danger" type="button" onClick={removeRequest} disabled={!selectedFileName || isResolvingPlanChanges} title="Delete query request" aria-label="Delete query request">
-            <Icon name="trash" size={16} />
-          </button>
+          {!selectedRequestIsBuiltin && (
+            <button className="button danger" type="button" onClick={removeRequest} disabled={!selectedFileName || isResolvingPlanChanges} title="Delete query request" aria-label="Delete query request">
+              <Icon name="trash" size={16} />
+            </button>
+          )}
           <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>New Query</button>
-          <div className="query-save-action">
-            {savedMessage && (
-              <p
-                className={`query-save-notification${savedMessageIsError ? " error" : ""}`}
-                role={savedMessageIsError ? "alert" : "status"}
-              >
-                {savedMessage}
-              </p>
-            )}
-            <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges || (!hasUnsavedChanges && !planTextDirty)} title="Save Query">Save Query</button>
-          </div>
+          {!selectedRequestIsBuiltin && (
+            <div className="query-save-action">
+              {savedMessage && (
+                <p
+                  className={`query-save-notification${savedMessageIsError ? " error" : ""}`}
+                  role={savedMessageIsError ? "alert" : "status"}
+                >
+                  {savedMessage}
+                </p>
+              )}
+              <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges || (!hasUnsavedChanges && !planTextDirty)} title="Save Query">Save Query</button>
+            </div>
+          )}
         </div>
       </section>
 

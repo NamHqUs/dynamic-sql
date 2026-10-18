@@ -38,6 +38,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [dirty, setDirty] = useState(false);
+  const selectedIsBuiltin = entities.find((entity) => entity.name === selectedName)?.isBuiltin === true;
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -85,6 +86,10 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   };
 
   const save = async (): Promise<boolean> => {
+    if (selectedIsBuiltin) {
+      setMessage("Built-in metadata is read-only.");
+      return false;
+    }
     if (!draft?.name.trim() || draft.fields.some((field) => !field.name.trim())) {
       setMessage("Entity and field names are required.");
       return false;
@@ -158,7 +163,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   };
 
   const remove = async () => {
-    if (!selectedName || !(await resolveDirtyChanges())) return;
+    if (!selectedName || selectedIsBuiltin || !(await resolveDirtyChanges())) return;
     const action = await showMessageBox({
       eyebrow: "DELETE ENTITY",
       title: `Delete ${selectedName}?`,
@@ -238,6 +243,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
         <EntityBuilder
           draft={draft}
           selectedName={selectedName}
+          isBuiltin={selectedIsBuiltin}
           dirty={dirty}
           status={status}
           message={message}

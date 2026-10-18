@@ -89,6 +89,7 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [dirty, setDirty] = useState(false);
+  const selectedIsBuiltin = definitions.find((definition) => definition.name === selectedName)?.isBuiltin === true;
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -131,6 +132,10 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
   };
 
   const save = async (): Promise<boolean> => {
+    if (selectedIsBuiltin) {
+      setMessage("Built-in function definitions are read-only.");
+      return false;
+    }
     if (!draft?.name.trim() || !draft.description.trim()) {
       setMessage("Function name and description are required.");
       return false;
@@ -232,7 +237,7 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
   };
 
   const removeDefinition = async () => {
-    if (!selectedName || !(await resolveDirtyChanges())) return;
+    if (!selectedName || selectedIsBuiltin || !(await resolveDirtyChanges())) return;
     const action = await showMessageBox({
       eyebrow: "DELETE FUNCTION",
       title: `Delete ${selectedName}?`,
@@ -287,6 +292,7 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
         <FunctionDetail
           draft={draft}
           selectedName={selectedName}
+          isBuiltin={selectedIsBuiltin}
           canDelete={Boolean(definitions.find((definition) => definition.name === selectedName)?.canDelete)}
           dirty={dirty}
           status={status}

@@ -1,10 +1,11 @@
 using Namh.Data.DynamicSql;
 
-namespace Demo.ServiceContracts.Repositories;
+namespace Demo.Contracts.Repositories;
 
 public interface IFunctionDefinitionRepository
 {
     IReadOnlyCollection<SqlFunctionDefintion> GetAll();
+    bool IsBuiltin(string functionName);
     void Save(SqlFunctionDefintion definition);
     void Delete(string functionName);
 }
