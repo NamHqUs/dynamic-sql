@@ -10,6 +10,7 @@ internal static class SortDefinitionParser
             return [];
 
         return FieldDefinitionParser.SplitTopLevel(text, ',')
+            .Where(sort => !string.IsNullOrWhiteSpace(sort))
             .Select(ParseSort)
             .ToList();
     }

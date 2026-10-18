@@ -80,10 +80,12 @@ registers dependencies, `Demo.Services` contains application logic,
 `Demo.Repositories` implements file, in-memory, and database access. Set
 `StorageProvider` in `src/Demo.WebApi/appsettings.json` to `Files` (default) or
 `Memory` to select the metadata, function-definition, and saved-query-request
-store. Database connections remain selected separately through `DbServerType`.
-With file storage, built-in metadata, SQL functions, and saved query requests
-are shared and read-only. User-defined records are stored under
-`FileStorage/UserData/{SectionId}` and can be changed only within that section.
+store. Built-in metadata and SQL functions are shared, read-only definitions;
+built-in saved queries are loaded from
+`src/Demo.WebApi/FileStorage/QueryRequests/*.yml` and can be edited and run but
+not saved or deleted. Custom metadata, functions, and saved queries are stored
+under `FileStorage/UserData/{SectionId}/` and are isolated by section.
+Database connections remain selected separately through `DbServerType`.
 
 ## License
 

@@ -79,7 +79,8 @@ export default function EntityBuilder({
         </p>
       )}
 
-      <fieldset className="metadata-form" disabled={!canEdit}>
+      <div className="metadata-form">
+        <fieldset className="metadata-form-fieldset" disabled={!canEdit}>
         <div className="metadata-form-grid">
           <label>
             Entity name
@@ -124,7 +125,8 @@ export default function EntityBuilder({
             }))
           }
         />
-      </fieldset>
+        </fieldset>
+      </div>
     </main>
   );
 }

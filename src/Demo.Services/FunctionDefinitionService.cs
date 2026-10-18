@@ -18,6 +18,7 @@ public sealed class FunctionDefinitionService(IFunctionDefinitionRepository repo
             {
                 var dto = FunctionDefinitionDto.FromFunctionDefinition(definition);
                 dto.CanDelete = userDefinedNames.Contains(definition.Name);
+                dto.IsBuiltin = !dto.CanDelete;
                 return dto;
             })
             .ToArray();
@@ -33,11 +34,21 @@ public sealed class FunctionDefinitionService(IFunctionDefinitionRepository repo
         repository.Save(definition);
         var response = FunctionDefinitionDto.FromFunctionDefinition(definition);
         response.CanDelete = true;
+        response.IsBuiltin = false;
         return response;
     }
 
     public FunctionDefinitionDto Update(string functionName, FunctionDefinitionDto dto)
     {
+        ArgumentNullException.ThrowIfNull(dto);
+        if (repository.IsBuiltin(functionName))
+            throw new InvalidOperationException($"Built-in function '{functionName}' is read-only.");
+        if (!repository.GetAll().Any(existing =>
+            string.Equals(existing.Name, functionName, StringComparison.OrdinalIgnoreCase)))
+            throw new KeyNotFoundException($"Function '{functionName}' was not found.");
+        if (!string.Equals(functionName, dto.Name, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("A function name cannot be changed.", nameof(dto));
+
         var definition = BuildDefinition(dto);
         var userDefinitions = repository.GetUserDefined();
         var existing = userDefinitions.FirstOrDefault(item =>
@@ -59,6 +70,7 @@ public sealed class FunctionDefinitionService(IFunctionDefinitionRepository repo
             repository.Delete(existing.Name);
         var response = FunctionDefinitionDto.FromFunctionDefinition(definition);
         response.CanDelete = true;
+        response.IsBuiltin = false;
         return response;
     }
 

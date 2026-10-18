@@ -42,6 +42,10 @@ public sealed class MetadataFileRepository(FilePathResolver filePathResolver) : 
             .ToArray();
     }
 
+    public bool IsBuiltin(string entityName)
+        => BuiltinMetadata.DefaultMetadata.Any(entity =>
+            string.Equals(entity.Name, entityName, StringComparison.OrdinalIgnoreCase));
+
     public void Save(Entity entity)
     {
         if (BuiltinMetadata.DefaultMetadata.Any(builtin =>

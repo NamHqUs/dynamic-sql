@@ -26,6 +26,7 @@ export type MetadataEntity = {
   fields: MetadataField[];
   relations?: MetadataRelation[];
   canDelete?: boolean;
+  rawSql?: string;
 };
 
 export type QueryExpression =
@@ -478,7 +479,8 @@ export const saveQueryRequest = createAsyncThunk(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...createApiQuery(definition), name, ...(requestText !== undefined ? { requestText } : {}) }),
       });
-      if (!payload || typeof payload.fileName !== "string" || !payload.query) {
+      if (!payload || typeof payload.fileName !== "string" || !payload.query
+        || typeof payload.canDelete !== "boolean") {
         return rejectWithValue("Query request API returned an invalid saved request.");
       }
       return payload as StoredQueryRequest;

@@ -28,6 +28,8 @@ public sealed class MetadataService : IMetadataService
             .ToArray();
     }
 
+    public bool IsBuiltin(string entityName) => _metadataRepository.IsBuiltin(entityName);
+
     public Entity Create(Entity entity)
     {
         ValidateEntity(entity);
@@ -41,6 +43,9 @@ public sealed class MetadataService : IMetadataService
 
     public Entity Update(string entityName, Entity entity)
     {
+        if (_metadataRepository.IsBuiltin(entityName))
+            throw new InvalidOperationException($"Built-in entity '{entityName}' is read-only.");
+
         ValidateEntity(entity);
         var userEntities = _metadataRepository.GetUserDefined();
         if (!userEntities.Any(item => string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase)))

@@ -7,50 +7,48 @@ namespace Demo.Repositories.FileStorage;
 
 public sealed class QueryRequestFileRepository : IQueryRequestRepository
 {
-    private readonly static object _lock = new();
-    private static List<StoredQueryRequest> _builtinItems = null!;
     private const string FOLDER_NAME = "QueryRequests";
-    private readonly FilePathResolver _filePathResolver;    
+    private readonly FilePathResolver _filePathResolver;
 
     public QueryRequestFileRepository(FilePathResolver filePathResolver)
     {
         _filePathResolver = filePathResolver;
-
-        if (_builtinItems == null)
-            lock (_lock)
-            {
-                var builtinFolder = _filePathResolver.GetBuiltinStoreFolder(FOLDER_NAME);
-                _builtinItems ??= GetAll(builtinFolder).ToList();
-            }
     }
 
-    public IReadOnlyList<StoredQueryRequest> GetAll()
-    {
-        var builtinQueryRequests = _builtinItems.Select(request => request with { CanDelete = false });
-        var customQueryRequests = GetAll(_filePathResolver.GetUserStoreFolder(FOLDER_NAME));
-        var builtinFileNames = _builtinItems.Select(request => request.FileName)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var conflictingRequest = customQueryRequests.FirstOrDefault(request => builtinFileNames.Contains(request.FileName));
-        if (conflictingRequest is not null)
-            throw new InvalidDataException(
-                $"User query request '{conflictingRequest.FileName}' cannot replace a built-in request.");
+    public IReadOnlyList<StoredQueryRequest> GetAllCustom()
+        => GetAll(_filePathResolver.GetUserStoreFolder(FOLDER_NAME));
 
-        return builtinQueryRequests.Concat(customQueryRequests).ToList();
+    public IReadOnlyList<BuiltinQueryRequestFile> GetBuiltinFiles()
+    {
+        var dir = _filePathResolver.GetBuiltinStoreFolder(FOLDER_NAME);
+        Directory.CreateDirectory(dir);
+        return Directory.EnumerateFiles(dir)
+            .Where(path => string.Equals(Path.GetExtension(path), ".yml", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
+            .Select(path => new BuiltinQueryRequestFile(Path.GetFileName(path)!, File.ReadAllText(path)))
+            .ToArray();
     }
 
     private IReadOnlyList<StoredQueryRequest> GetAll(string dir)
     {
         Directory.CreateDirectory(dir);
-        return Directory.EnumerateFiles(dir, "*.json")
+        var requests = Directory.EnumerateFiles(dir, "*.json")
             .OrderByDescending(Path.GetFileName)
             .Select(Read)
             .ToArray();
+        var builtinFileNames = GetBuiltinFiles()
+            .Select(request => request.FileName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var conflictingRequest = requests.FirstOrDefault(request => builtinFileNames.Contains(request.FileName));
+        if (conflictingRequest is not null)
+            throw new InvalidDataException(
+                $"User query request '{conflictingRequest.FileName}' cannot replace a built-in request.");
+        return requests;
     }
 
     public StoredQueryRequest? Get(string fileName)
     {
-        if (_builtinItems.Any(request =>
-            string.Equals(request.FileName, fileName, StringComparison.OrdinalIgnoreCase)))
+        if (IsBuiltinFileName(fileName))
             return null;
 
         var path = GetPath(fileName);
@@ -59,8 +57,7 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
 
     public void Save(StoredQueryRequest request)
     {
-        if (_builtinItems.Any(builtin =>
-            string.Equals(builtin.FileName, request.FileName, StringComparison.OrdinalIgnoreCase)))
+        if (IsBuiltinFileName(request.FileName))
             throw new InvalidOperationException($"Built-in query request '{request.FileName}' cannot be changed.");
 
         var dir = _filePathResolver.GetUserStoreFolder(FOLDER_NAME);
@@ -72,8 +69,7 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
 
     public bool Delete(string fileName)
     {
-        if (_builtinItems.Any(builtin =>
-            string.Equals(builtin.FileName, fileName, StringComparison.OrdinalIgnoreCase)))
+        if (IsBuiltinFileName(fileName))
             return false;
 
         var path = GetPath(fileName);
@@ -82,6 +78,10 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
         File.Delete(path);
         return true;
     }
+
+    private bool IsBuiltinFileName(string fileName)
+        => GetBuiltinFiles().Any(request =>
+            string.Equals(request.FileName, fileName, StringComparison.OrdinalIgnoreCase));
 
     private StoredQueryRequest Read(string path)
     {

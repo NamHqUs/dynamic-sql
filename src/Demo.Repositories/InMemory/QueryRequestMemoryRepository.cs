@@ -7,8 +7,10 @@ public sealed class QueryRequestMemoryRepository : IQueryRequestRepository
     private readonly Dictionary<string, StoredQueryRequest> _requests =
         new(StringComparer.OrdinalIgnoreCase);
 
-    public IReadOnlyList<StoredQueryRequest> GetAll()
+    public IReadOnlyList<StoredQueryRequest> GetAllCustom()
         => _requests.Values.OrderByDescending(request => request.FileName).ToArray();
+
+    public IReadOnlyList<BuiltinQueryRequestFile> GetBuiltinFiles() => [];
 
     public StoredQueryRequest? Get(string fileName)
         => _requests.GetValueOrDefault(fileName);

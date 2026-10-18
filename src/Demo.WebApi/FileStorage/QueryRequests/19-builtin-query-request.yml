@@ -1,0 +1,14 @@
+# CustomerId preserves the source grouping by c.Id; it is an extra projected field.
+Name: 19. Customer recency, frequency, and monetary value
+Entity: Customers
+Fields:
+  - Name
+  - Max(Invoices.InvoiceDate) | LastPurchase
+  - Count(Invoices.Id) | Frequency
+  - Sum(Invoices.TotalAmount) | MonetaryValue
+  - Id | CustomerId
+Filter: Invoices.Status = <Paid>
+Sorts: LastPurchase DESC, MonetaryValue DESC
+Page:
+PageSize:
+IncludeArchive: False

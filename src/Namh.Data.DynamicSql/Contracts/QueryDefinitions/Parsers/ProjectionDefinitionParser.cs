@@ -9,7 +9,12 @@ internal class ProjectionDefinitionParser
         => texts?.Where(e => !string.IsNullOrWhiteSpace(e)).SelectMany(Parse!).ToList() ?? [];
 
     public static List<ProjectionDefinition> Parse(string text)
-        => FieldDefinitionParser.SplitTopLevel(text, ',').Select(FromText).ToList();
+        => string.IsNullOrWhiteSpace(text)
+            ? []
+            : FieldDefinitionParser.SplitTopLevel(text, ',')
+            .Where(part => !string.IsNullOrWhiteSpace(part))
+            .Select(FromText)
+            .ToList();
 
     static ProjectionDefinition FromText(string text)
     {

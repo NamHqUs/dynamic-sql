@@ -7,6 +7,7 @@ public interface IMetadataRepository
     IReadOnlyList<Entity> Reset();
     IReadOnlyList<Entity> GetAll();
     IReadOnlyList<Entity> GetUserDefined();
+    bool IsBuiltin(string entityName);
     void Save(Entity entity);
     void Delete(string entityName);
 }

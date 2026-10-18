@@ -9,7 +9,7 @@ internal sealed class FilterDefinitionParser
     private int _position;
 
     public static FilterDefinition? Parse(string? text)
-        => string.IsNullOrEmpty(text) ? null : new FilterDefinitionParser(text).Parse();
+        => string.IsNullOrWhiteSpace(text) ? null : new FilterDefinitionParser(text).Parse();
 
     private FilterDefinitionParser(string text)
         => _tokens = Tokenize(text);

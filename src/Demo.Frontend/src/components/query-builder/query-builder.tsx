@@ -386,6 +386,10 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   };
 
   const requestQueryChangeNavigation = async (continueNavigation: () => void) => {
+    if (selectedRequestIsBuiltin) {
+      continueNavigation();
+      return;
+    }
     if (!planTextDirty && !hasUnsavedQueryChanges(definitionRef.current)) {
       continueNavigation();
       return;
@@ -602,6 +606,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
             </button>
           )}
           <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>New Query</button>
+          {canModifySelectedRequest && (
           <div className="query-save-action">
             {savedMessage && (
               <p
@@ -611,10 +616,9 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
                 {savedMessage}
               </p>
             )}
-            {canModifySelectedRequest && (
-              <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges || (!hasUnsavedChanges && !planTextDirty)} title="Save Query">Save Query</button>
-            )}
+            <button className="button primary" onClick={saveRequest} disabled={isResolvingPlanChanges || (!hasUnsavedChanges && !planTextDirty)} title="Save Query">Save Query</button>
           </div>
+          )}
         </div>
       </section>
 

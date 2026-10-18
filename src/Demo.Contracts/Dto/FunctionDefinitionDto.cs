@@ -10,6 +10,7 @@ public sealed class FunctionDefinitionDto
     public List<FunctionArgumentDefinitionDto> Arguments { get; set; } = [];
     public string ResultType { get; set; } = "";
     public bool CanDelete { get; set; }
+    public bool IsBuiltin { get; set; }
     public bool IsAggregate { get; set; }
     public string Description { get; set; } = "";
     public Dictionary<string, string> SqlTemplates { get; set; } = new(StringComparer.OrdinalIgnoreCase);
