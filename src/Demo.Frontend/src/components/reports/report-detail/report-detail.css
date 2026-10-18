@@ -7,6 +7,11 @@
 .report-detail-section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
 .report-detail-section-heading h3 { margin: 5px 0 0; color: #e6e6ed; font-size: 16px; }
 .report-detail-section-heading > span { color: #858fa1; font: 11px "DM Mono",monospace; }
+.report-detail-chart-controls { display: flex; align-items: flex-end; gap: 14px; }
+.report-detail-chart-controls > span { padding-bottom: 7px; color: #858fa1; font: 11px "DM Mono",monospace; }
+.report-detail-chart-type { display: flex; align-items: center; gap: 8px; color: #929cad; font-size: 11px; }
+.report-detail-chart-type select { padding: 7px 9px; border: 1px solid #303847; border-radius: 4px; outline: 0; color: #c8ced9; background: #0e1117; font-size: 11px; }
+.report-detail-chart-type select:focus { border-color: #8064e8; box-shadow: 0 0 0 2px #8064e833; }
 .report-detail-chart-section { margin-top: 20px; }
 .report-detail-chart { display: grid; min-height: 285px; place-items: center; overflow: hidden; padding: 16px; border: 1px solid color-mix(in srgb,var(--report-accent,#a78bfa) 25%,#303642); border-radius: 8px; background: radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--report-accent,#a78bfa) 10%,transparent),transparent 72%),#10131a; }
 .report-detail-chart.tone-revenue { --report-accent: #62d4b4; }
@@ -44,6 +49,7 @@
   .report-detail-panel { padding: 17px; }
   .report-detail-heading { flex-direction: column; }
   .report-detail-actions { align-self: flex-end; }
+  .report-detail-chart-controls { align-items: flex-end; flex-wrap: wrap; justify-content: flex-end; }
   .report-detail-chart { min-height: 220px; padding: 9px; }
   .report-detail-chart .report-bar-row { grid-template-columns: minmax(55px,100px) minmax(45px,1fr) 45px; gap: 8px; }
 }

@@ -16,7 +16,14 @@ import {
   ReportDto,
 } from "../query-builder/query-design/query-builder-slice";
 import ReportDashboard from "./report-dashboard/report-dashboard";
-import { chartOptions, presentationFor, reportTitle, type ChartType } from "./report-model";
+import {
+  chartOptions,
+  defaultReportChartSettings,
+  presentationFor,
+  reportTitle,
+  type ChartType,
+  type ReportChartSettings,
+} from "./report-model";
 import "./reports.css";
 
 function getNewDefinition(entity: MetadataEntity): QueryDefinition {
@@ -89,6 +96,7 @@ export default function Reports() {
   });
   const requestedReports = useRef(new Set<string>());
   const [chartTypeOverrides, setChartTypeOverrides] = useState<Record<string, ChartType>>({});
+  const [chartSettingsOverrides, setChartSettingsOverrides] = useState<Record<string, ReportChartSettings>>({});
   const [editingReport, setEditingReport] = useState<ReportDto | null>(null);
   const [detailReport, setDetailReport] = useState<ReportDto | null>(null);
   const detailScrollPosition = useRef(0);
@@ -152,6 +160,10 @@ export default function Reports() {
 
   const changeChartType = (request: ReportDto, chartType: ChartType) => {
     setChartTypeOverrides((current) => ({ ...current, [request.fileName]: chartType }));
+  };
+
+  const changeChartSettings = (request: ReportDto, settings: ReportChartSettings) => {
+    setChartSettingsOverrides((current) => ({ ...current, [request.fileName]: settings }));
   };
 
   const reorderReports = (sourceFileName: string, targetFileName: string, position: "before" | "after") => {
@@ -270,9 +282,16 @@ export default function Reports() {
         reportLoading={reportLoading}
         reportErrors={reportErrors}
         chartTypeOverrides={chartTypeOverrides}
+        chartSettingsOverrides={chartSettingsOverrides}
         detailReport={detailReport}
         detailResult={detailReport ? reportResults[detailReport.fileName] : undefined}
         detailChartType={detailReport ? chartTypeOverrides[detailReport.fileName] || presentationFor(detailReport).chartType : "bar"}
+        detailChartSettings={detailReport
+          ? chartSettingsOverrides[detailReport.fileName]
+            || (reportResults[detailReport.fileName]
+              ? defaultReportChartSettings(detailReport, reportResults[detailReport.fileName])
+              : { metrics: [], axes: {} })
+          : { metrics: [], axes: {} }}
         detailLoading={Boolean(detailReport && reportLoading[detailReport.fileName])}
         detailError={detailReport ? reportErrors[detailReport.fileName] : undefined}
         message={message}
@@ -287,6 +306,7 @@ export default function Reports() {
         onCloseDetails={closeReportDetails}
         onRunDetails={() => { if (detailReport) void runReport(detailReport); }}
         onChartTypeChange={changeChartType}
+        onChartSettingsChange={changeChartSettings}
         onEdit={setEditingReport}
         onDelete={(report) => void deleteSelectedReport(report)}
         onCustomize={cloneBuiltin}

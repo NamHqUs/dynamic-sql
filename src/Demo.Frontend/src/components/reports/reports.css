@@ -123,8 +123,27 @@
 .report-donut-layout { display: flex; width: 100%; max-width: 600px; align-items: center; justify-content: center; gap: clamp(20px,7vw,80px); padding: 2px 0; }
 .report-donut-layout svg { width: min(210px,40%); overflow: visible; }.donut-total { fill: #eeeaf8; font: 700 18px "Manrope",sans-serif; }.donut-caption { fill: #777f91; font: 9px "DM Mono",monospace; letter-spacing: 1px; }
 .report-legend { display: flex; min-width: 190px; flex-direction: column; gap: 11px; }
-.report-legend-item { display: grid; grid-template-columns: 7px minmax(60px,1fr) auto; align-items: center; gap: 8px; color: #9da6b6; font-size: 10px; }
-.report-legend-item i { width: 7px; height: 7px; border-radius: 2px; }.report-legend-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.report-legend-item b { color: #d6d0e6; font: 10px "DM Mono",monospace; }
+.report-legend-item { display: grid; grid-template-columns: 13px minmax(60px,1fr) auto; align-items: center; gap: 8px; color: #9da6b6; font-size: 10px; }
+.report-legend-item input,.report-series-legend input { box-sizing: border-box; width: 13px; height: 13px; margin: 0; flex: none; accent-color: #a78bfa; }
+.report-legend-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.report-legend-item b { color: #d6d0e6; font: 10px "DM Mono",monospace; }
+.report-series-legend { display: flex; width: 100%; flex-wrap: wrap; justify-content: center; gap: 6px 13px; color: #9da6b6; font-size: 10px; }
+.report-series-legend label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.report-series-legend i { width: 7px; height: 7px; flex: none; border-radius: 2px; }
+.report-donut-multiples { display: grid; width: 100%; grid-template-columns: repeat(auto-fit,minmax(270px,1fr)); gap: 12px; }
+.report-donut-metric { min-width: 0; padding: 10px; border: 1px solid #252b38; border-radius: 6px; }
+.report-donut-metric > strong { color: #c7c0d8; font: 11px "DM Mono",monospace; }
+.report-donut-metric .report-donut-layout { gap: 10px; }
+.report-donut-metric .report-donut-layout svg { width: min(160px,40%); }
+.report-donut-metric .report-legend { min-width: 0; gap: 6px; }
+.report-chart-settings { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin: 0 0 12px; }
+.report-chart-settings fieldset { display: flex; min-width: 0; flex-wrap: wrap; gap: 7px 12px; margin: 0; padding: 10px 12px; border: 1px solid #2b303d; border-radius: 6px; }
+.report-chart-settings legend { padding: 0 4px; color: #9da6b6; font-size: 10px; font-weight: 650; }
+.report-chart-settings fieldset > label { display: inline-flex; min-width: 0; align-items: center; gap: 6px; color: #c6cbd5; font-size: 11px; }
+.report-chart-settings input[type="checkbox"] { accent-color: #a78bfa; }
+.report-chart-settings fieldset:nth-child(2) { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); }
+.report-chart-settings fieldset:nth-child(2) > label { justify-content: space-between; }
+.report-chart-settings select { min-width: 130px; padding: 6px 8px; border: 1px solid #303644; border-radius: 4px; color: #dce2ec; background: #0d1016; font-size: 10px; }
+.report-chart-settings p { grid-column: 1 / -1; margin: 0; color: #788396; font-size: 10px; }
 .report-chart-empty { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 27px 16px; text-align: center; }.report-chart-empty strong { color: #dedbe9; font-size: 13px; }.report-chart-empty > span:not(.report-empty-mark) { max-width: 350px; color: #818b9d; font-size: 10px; line-height: 1.6; }
 .report-empty-mark { display: grid; width: 43px; height: 43px; place-items: center; border: 1px solid #433860; border-radius: 12px; color: #b7a4ff; background: #211b32; box-shadow: 0 8px 22px #0003; }.report-chart-empty .button { margin-top: 5px; padding: 8px 11px; font-size: 11px; }
 .report-spinner { width: 14px; height: 14px; border: 2px solid #554777; border-top-color: #c3adff; border-radius: 50%; animation: report-spin .75s linear infinite; }@keyframes report-spin { to { transform: rotate(360deg); } }
@@ -156,4 +175,5 @@
   .report-dashboard-grid { grid-template-columns: 1fr; }
   .report-group-total { padding: 0; }
   .group-report-search { width: 100%; }
+  .report-chart-settings { grid-template-columns: 1fr; }
 }

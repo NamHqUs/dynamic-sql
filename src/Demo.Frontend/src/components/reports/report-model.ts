@@ -1,7 +1,13 @@
 import type { ReportDto } from "../query-builder/query-design/query-builder-slice";
+import type { QueryExpression, QueryResult } from "../query-builder/query-design/query-builder-slice";
 import type { IconName } from "../icon/icon";
 
 export type ChartType = "line" | "bar" | "donut" | "funnel" | "scatter";
+export type ReportAxis = "axis1" | "axis2" | "none";
+export type ReportChartSettings = {
+  metrics: string[];
+  axes: Record<string, ReportAxis>;
+};
 export type ReportPresentation = {
   description: string;
   chartType: ChartType;
@@ -41,6 +47,69 @@ export const chartOptions: { value: ChartType; label: string; icon: IconName }[]
   { value: "funnel", label: "Funnel", icon: "chart-funnel" },
   { value: "scatter", label: "Scatter plot", icon: "chart-scatter" },
 ];
+
+function isAggregateExpression(expression: QueryExpression): boolean {
+  if (expression.kind === "function") {
+    return ["count", "sum", "max", "min", "average", "avg"].includes(expression.function.toLowerCase())
+      || expression.arguments.some(isAggregateExpression);
+  }
+  if (expression.kind === "binary") {
+    return expression.arguments.some(isAggregateExpression);
+  }
+  return false;
+}
+
+function expressionName(expression: QueryExpression): string {
+  switch (expression.kind) {
+    case "field":
+      return expression.field;
+    case "function":
+      return `${expression.function}(${expression.arguments.map(expressionName).join(", ")})`;
+    case "binary":
+      return `${expressionName(expression.arguments[0])} ${expression.operator} ${expressionName(expression.arguments[1])}`;
+    case "value":
+      return String(expression.value);
+  }
+}
+
+function outputColumn(columns: string[], candidates: string[]): string | null {
+  const normalizedColumns = columns.map((column) => column.toLowerCase());
+  for (const candidate of candidates.filter(Boolean)) {
+    const matchIndex = normalizedColumns.indexOf(candidate.toLowerCase());
+    if (matchIndex >= 0) return columns[matchIndex];
+  }
+  for (const candidate of candidates.filter(Boolean)) {
+    const leafName = candidate.split(".").at(-1)?.toLowerCase();
+    const matchIndex = leafName ? normalizedColumns.indexOf(leafName) : -1;
+    if (matchIndex >= 0) return columns[matchIndex];
+  }
+  return null;
+}
+
+export function reportChartFields(report: ReportDto, result: QueryResult): { metrics: string[]; axes: string[] } {
+  const metrics: string[] = [];
+  const axes: string[] = [];
+  report.query.fields.forEach((projection) => {
+    const expression = projection.field;
+    const name = outputColumn(result.columns, [
+      projection.alias || "",
+      expressionName(expression),
+      expression.kind === "field" ? expression.field : "",
+    ]);
+    if (!name) return;
+    const target = isAggregateExpression(expression) ? metrics : axes;
+    if (!target.includes(name)) target.push(name);
+  });
+  return { metrics, axes };
+}
+
+export function defaultReportChartSettings(report: ReportDto, result: QueryResult): ReportChartSettings {
+  const fields = reportChartFields(report, result);
+  return {
+    metrics: fields.metrics,
+    axes: Object.fromEntries(fields.axes.map((field, index) => [field, index === 0 ? "axis1" : "axis2"])),
+  };
+}
 
 export function reportTitle(request: ReportDto): string {
   return request.query.name || request.fileName.replace(/\.(json|yml)$/i, "");

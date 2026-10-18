@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import Icon from "../../icon/icon";
 import type { QueryResult, ReportDto } from "../../query-builder/query-design/query-builder-slice";
-import { categoryTone, presentationFor, reportTitle, type ChartType } from "../report-model";
+import {
+  categoryTone,
+  chartOptions,
+  presentationFor,
+  reportChartFields,
+  reportTitle,
+  type ChartType,
+  type ReportAxis,
+  type ReportChartSettings,
+} from "../report-model";
 import { ReportChart } from "../report-item/report-item";
 import "./report-detail.css";
 
@@ -9,10 +18,13 @@ type ReportDetailProps = {
   report: ReportDto;
   result?: QueryResult;
   chartType: ChartType;
+  chartSettings: ReportChartSettings;
   loading: boolean;
   error?: string;
   onClose: () => void;
   onRun: () => void;
+  onChartTypeChange: (chartType: ChartType) => void;
+  onChartSettingsChange: (settings: ReportChartSettings) => void;
 };
 
 type TableSort = { column: string; direction: "asc" | "desc" } | null;
@@ -90,7 +102,57 @@ function ReportDataTable({ result }: { result: QueryResult }) {
   );
 }
 
-export default function ReportDetail({ report, result, chartType, loading, error, onClose, onRun }: ReportDetailProps) {
+function ReportChartSettingsPanel({ report, result, settings, onChange }: {
+  report: ReportDto;
+  result: QueryResult;
+  settings: ReportChartSettings;
+  onChange: (settings: ReportChartSettings) => void;
+}) {
+  const fields = reportChartFields(report, result);
+  if (!fields.metrics.length && !fields.axes.length) return null;
+
+  const setAxis = (field: string, axis: ReportAxis) => {
+    onChange({ ...settings, axes: { ...settings.axes, [field]: axis } });
+  };
+  const setMetric = (metric: string, enabled: boolean) => {
+    const metrics = enabled
+      ? [...settings.metrics, metric]
+      : settings.metrics.filter((selected) => selected !== metric);
+    onChange({ ...settings, metrics });
+  };
+
+  return (
+    <section className="report-chart-settings" aria-label="Chart channels and axes">
+      {fields.metrics.length > 0 && <fieldset>
+        <legend>Aggregate channels</legend>
+        {fields.metrics.map((metric) => <label key={metric}>
+          <input
+            type="checkbox"
+            checked={settings.metrics.includes(metric)}
+            onChange={(event) => setMetric(metric, event.target.checked)}
+          />
+          {metric}
+        </label>)}
+      </fieldset>}
+      {fields.axes.length > 0 && <fieldset>
+        <legend>Dimension axes</legend>
+        {fields.axes.map((field) => <label key={field}>
+          <span>{field}</span>
+          <select value={settings.axes[field] ?? "none"} onChange={(event) => setAxis(field, event.target.value as ReportAxis)}>
+            <option value="none">Not used</option>
+            <option value="axis1">Axis 1 · categories</option>
+            <option value="axis2">Axis 2 · breakdown</option>
+          </select>
+        </label>)}
+        <p>Fields on the same axis are combined into one group.</p>
+      </fieldset>}
+    </section>
+  );
+}
+
+export default function ReportDetail({
+  report, result, chartType, chartSettings, loading, error, onClose, onRun, onChartTypeChange, onChartSettingsChange,
+}: ReportDetailProps) {
   const presentation = presentationFor(report);
   const title = reportTitle(report);
 
@@ -126,11 +188,25 @@ export default function ReportDetail({ report, result, chartType, loading, error
         <section className="report-detail-chart-section" aria-labelledby="report-detail-chart-title">
           <div className="report-detail-section-heading">
             <div><span className="eyebrow">VISUALIZATION</span><h3 id="report-detail-chart-title">Report chart</h3></div>
-            {result && <span>{result.rows.length} rows</span>}
+            <div className="report-detail-chart-controls">
+              {result && <span>{result.rows.length} rows</span>}
+              <label className="report-detail-chart-type">
+                Chart type
+                <select aria-label="Chart type" value={chartType} onChange={(event) => onChartTypeChange(event.target.value as ChartType)}>
+                  {chartOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+            </div>
           </div>
+          {result && <ReportChartSettingsPanel
+            report={report}
+            result={result}
+            settings={chartSettings}
+            onChange={onChartSettingsChange}
+          />}
           <div className={`report-detail-chart tone-${categoryTone(presentation.category)}`}>
             {result
-              ? <ReportChart key={chartType} result={result} type={chartType} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
+              ? <ReportChart key={chartType} result={result} type={chartType} report={report} settings={chartSettings} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
               : loading
                 ? <div className="report-detail-status"><span className="report-spinner" /> Running this report…</div>
                 : <div className="report-detail-status">{error ? <span role="alert">{error}</span> : <><span>Run this report to load its chart and data.</span><button className="button primary" type="button" onClick={onRun}><Icon name="play" size={13} /> Run report</button></>}</div>}

@@ -3,7 +3,14 @@ import Icon from "../../icon/icon";
 import type { QueryResult, ReportDto } from "../../query-builder/query-design/query-builder-slice";
 import ReportDetail from "../report-detail/report-detail";
 import ReportItem from "../report-item/report-item";
-import { categoryTone, presentationFor, reportTitle, type ChartType } from "../report-model";
+import {
+  categoryTone,
+  defaultReportChartSettings,
+  presentationFor,
+  reportTitle,
+  type ChartType,
+  type ReportChartSettings,
+} from "../report-model";
 
 type ReportGroup = { name: string; reports: ReportDto[] };
 type DropPosition = "before" | "after";
@@ -24,9 +31,11 @@ type ReportDashboardProps = {
   reportLoading: Record<string, boolean>;
   reportErrors: Record<string, string>;
   chartTypeOverrides: Record<string, ChartType>;
+  chartSettingsOverrides: Record<string, ReportChartSettings>;
   detailReport: ReportDto | null;
   detailResult?: QueryResult;
   detailChartType: ChartType;
+  detailChartSettings: ReportChartSettings;
   detailLoading: boolean;
   detailError?: string;
   message: string;
@@ -41,6 +50,7 @@ type ReportDashboardProps = {
   onCloseDetails: () => void;
   onRunDetails: () => void;
   onChartTypeChange: (report: ReportDto, chartType: ChartType) => void;
+  onChartSettingsChange: (report: ReportDto, settings: ReportChartSettings) => void;
   onEdit: (report: ReportDto) => void;
   onDelete: (report: ReportDto) => void;
   onCustomize: (report: ReportDto) => void;
@@ -49,9 +59,9 @@ type ReportDashboardProps = {
 export default function ReportDashboard({
   groups, sortedReports, filteredReports, category, search, numberOfBuiltins, numberOfCustom,
   reportsStatus, reportsError, metadataStatus, metadataError, reportResults, reportLoading,
-  reportErrors, chartTypeOverrides, detailReport, detailResult, detailChartType, detailLoading, detailError,
+  reportErrors, chartTypeOverrides, chartSettingsOverrides, detailReport, detailResult, detailChartType, detailChartSettings, detailLoading, detailError,
   message, messageIsError, onCreateReport, onSelectCategory, onSearchChange,
-  onDismissMessage, onRun, onOpenDetails, onReorderReports, onCloseDetails, onRunDetails, onChartTypeChange, onEdit, onDelete, onCustomize,
+  onDismissMessage, onRun, onOpenDetails, onReorderReports, onCloseDetails, onRunDetails, onChartTypeChange, onChartSettingsChange, onEdit, onDelete, onCustomize,
 }: ReportDashboardProps) {
   const draggedReport = useRef<string | null>(null);
   const dragPreview = useRef<HTMLElement | null>(null);
@@ -113,10 +123,13 @@ export default function ReportDashboard({
           report={detailReport}
           result={detailResult}
           chartType={detailChartType}
+          chartSettings={detailChartSettings}
           loading={detailLoading}
           error={detailError}
           onClose={onCloseDetails}
           onRun={onRunDetails}
+          onChartTypeChange={(chartType) => onChartTypeChange(detailReport, chartType)}
+          onChartSettingsChange={(settings) => onChartSettingsChange(detailReport, settings)}
         />}
           <div className="report-group-dashboard-heading">
             <div><span className="eyebrow">REPORT DASHBOARD</span><h3>{category}</h3><p>{filteredReports.length} {filteredReports.length === 1 ? "report" : "reports"}{search ? " matching your search" : " for this sales question"}</p></div>
@@ -133,6 +146,10 @@ export default function ReportDashboard({
                 key={report.fileName}
                 report={report}
                 chartType={chartTypeOverrides[report.fileName] || presentation.chartType}
+                chartSettings={chartSettingsOverrides[report.fileName]
+                  || (reportResults[report.fileName]
+                    ? defaultReportChartSettings(report, reportResults[report.fileName])
+                    : { metrics: [], axes: {} })}
                 result={reportResults[report.fileName]}
                 loading={Boolean(reportLoading[report.fileName])}
                 error={reportErrors[report.fileName]}
