@@ -103,8 +103,10 @@ export default function ReportDetail({ report, result, chartType, loading, error
   }, [onClose]);
 
   return (
-    <div className="report-detail-page">
-      <section className="report-detail-panel" aria-labelledby="report-detail-title">
+    <div className="report-detail-page" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
+      <section className="report-detail-panel" role="dialog" aria-modal="true" aria-labelledby="report-detail-title">
         <header className="report-detail-heading">
           <div>
             <span className="eyebrow">REPORT DETAIL</span>

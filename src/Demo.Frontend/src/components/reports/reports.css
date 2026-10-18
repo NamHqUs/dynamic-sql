@@ -59,12 +59,14 @@
 .group-report-search input { font-size: 12px; }
 .report-dashboard-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 13px; }
 .report-dashboard-card { position: relative; min-width: 0; overflow: hidden; padding: 15px; border: 1px solid #303642; border-radius: 10px; background: linear-gradient(155deg,color-mix(in srgb,var(--report-accent,#a78bfa) 7%,#191d26),#12161d 58%); box-shadow: 0 7px 20px #0002; transition: border-color .18s,transform .18s,box-shadow .18s; }
-.report-dashboard-card-open { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; }
-.report-dashboard-card-open:focus-visible { outline: 2px solid #b8a2ff; outline-offset: -3px; }
 .report-dashboard-card::before { position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg,var(--report-accent,#a78bfa),color-mix(in srgb,var(--report-accent,#a78bfa) 0%,transparent) 82%); content: ""; }
+.report-dashboard-card.drop-before { border-top-color: #b8a2ff; box-shadow: inset 0 3px #b8a2ff,0 0 0 1px #b8a2ff,0 7px 20px #0002; }
+.report-dashboard-card.drop-before::before { height: 5px; background: #b8a2ff; box-shadow: 0 0 12px #b8a2ff; }
+.report-dashboard-card.drop-after::after { position: absolute; z-index: 3; right: 14px; bottom: 0; left: 14px; height: 4px; border-radius: 4px; background: #b8a2ff; box-shadow: 0 0 12px #b8a2ff; content: ""; }
 .report-dashboard-card:hover { border-color: color-mix(in srgb,var(--report-accent,#a78bfa) 48%,#303642); box-shadow: 0 12px 28px #0003; transform: translateY(-2px); }
-.report-dashboard-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.report-dashboard-card h4 { min-width: 0; overflow: hidden; margin: 0; color: #f0f0f5; font-size: 15px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.report-dashboard-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: grab; }
+.report-dashboard-card-top:active { cursor: grabbing; }
+.report-dashboard-card h4 { min-width: 0; overflow: hidden; margin: 0; color: #f0f0f5; font-size: 15px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; cursor: grab; }
 .report-dashboard-card-tools { position: relative; z-index: 2; display: flex; flex: none; align-items: center; gap: 4px; opacity: .55; transition: opacity .15s; }
 .report-dashboard-card:hover .report-dashboard-card-tools,.report-dashboard-card:focus-within .report-dashboard-card-tools { opacity: 1; }
 .report-dashboard-card-tools .report-icon-button { width: 26px; height: 26px; }
@@ -74,7 +76,9 @@
 .chart-type-picker-option { display: grid; width: 26px; height: 26px; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 5px; color: #929bad; background: transparent; }
 .chart-type-picker-option:hover,.chart-type-picker-option.selected { border-color: #514277; color: #d0c2ff; background: #211d30; }
 .chart-type-picker-option:focus-visible,.chart-type-picker-button:focus-visible { outline: 2px solid #b8a2ff; outline-offset: 1px; }
-.report-card-visual { overflow: hidden; margin-top: 10px; border: 1px solid color-mix(in srgb,var(--report-accent,#a78bfa) 21%,#252a35); border-radius: 7px; background: radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--report-accent,#a78bfa) 12%,transparent),transparent 72%),#10131a; }
+.report-card-visual { position: relative; overflow: hidden; margin-top: 10px; border-radius: 7px; background: radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--report-accent,#a78bfa) 12%,transparent),transparent 72%),#10131a; }
+.report-card-visual-open { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+.report-card-visual-open:focus-visible { outline: 2px solid #b8a2ff; outline-offset: -3px; }
 .report-card-visual-heading { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid #232834; color: #818c9e; font: 9px "DM Mono",monospace; letter-spacing: .55px; }
 .report-card-visual-heading span:last-child { color: var(--report-accent,#b9a7ff); letter-spacing: 0; }
 .report-card-chart { display: grid; min-height: 210px; place-items: center; overflow: hidden; padding: 9px; }

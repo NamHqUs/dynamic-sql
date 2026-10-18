@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { DragEvent } from "react";
 import Icon from "../../icon/icon";
 import type { QueryResult, ReportDto } from "../../query-builder/query-design/query-builder-slice";
 import { categoryTone, chartOptions, presentationFor, reportTitle, type ChartType } from "../report-model";
@@ -139,8 +140,14 @@ type ReportItemProps = {
   result?: QueryResult;
   loading: boolean;
   error?: string;
+  dropPosition?: "before" | "after";
   onChartTypeChange: (chartType: ChartType) => void;
   onOpenDetails: () => void;
+  onDragStart: (event: DragEvent<HTMLDivElement>) => void;
+  onDragEnd: () => void;
+  onDragOver: (event: DragEvent<HTMLElement>) => void;
+  onDragLeave: (event: DragEvent<HTMLElement>) => void;
+  onDrop: (event: DragEvent<HTMLElement>) => void;
   onRun: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -149,7 +156,8 @@ type ReportItemProps = {
 
 export default function ReportItem({
   report, chartType, result, loading, error,
-  onChartTypeChange, onOpenDetails, onRun, onEdit, onDelete, onCustomize,
+  dropPosition, onChartTypeChange, onOpenDetails, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
+  onRun, onEdit, onDelete, onCustomize,
 }: ReportItemProps) {
   const presentation = presentationFor(report);
   const title = reportTitle(report);
@@ -170,10 +178,20 @@ export default function ReportItem({
   }, [chartMenuOpen]);
 
   return (
-    <article className={`report-dashboard-card tone-${categoryTone(presentation.category)}`}>
-      <button className="report-dashboard-card-open" type="button" aria-label={`View ${title} report details`} onClick={onOpenDetails} />
-      <div className="report-dashboard-card-top">
-        <h4 title={report.description || presentation.description}>{title}</h4>
+    <article
+      className={`report-dashboard-card tone-${categoryTone(presentation.category)}${dropPosition ? ` drop-${dropPosition}` : ""}`}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      <div
+        className="report-dashboard-card-top"
+        draggable
+        title="Drag this header to reorder the report"
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+      >
+        <h4>{title}</h4>
         <div className="report-dashboard-card-tools">
           <div className="chart-type-picker" ref={chartTypePickerRef} onKeyDown={(event) => {
             if (event.key === "Escape" && chartMenuOpen) {
@@ -220,6 +238,12 @@ export default function ReportItem({
         </div>
       </div>
       <section className="report-card-visual" aria-label={`${title} chart`}>
+        <button
+          className="report-card-visual-open"
+          type="button"
+          aria-label={`Open ${title} report details`}
+          onClick={onOpenDetails}
+        />
         <div className="report-card-chart">
           {result
             ? <ReportChart result={result} type={chartType} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />

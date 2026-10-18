@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import Icon from "../../icon/icon";
 import type { QueryResult, ReportDto } from "../../query-builder/query-design/query-builder-slice";
 import ReportDetail from "../report-detail/report-detail";
@@ -5,6 +6,7 @@ import ReportItem from "../report-item/report-item";
 import { categoryTone, presentationFor, reportTitle, type ChartType } from "../report-model";
 
 type ReportGroup = { name: string; reports: ReportDto[] };
+type DropPosition = "before" | "after";
 
 type ReportDashboardProps = {
   groups: ReportGroup[];
@@ -35,6 +37,7 @@ type ReportDashboardProps = {
   onDismissMessage: () => void;
   onRun: (report: ReportDto) => void;
   onOpenDetails: (report: ReportDto) => void;
+  onReorderReports: (sourceFileName: string, targetFileName: string, position: DropPosition) => void;
   onCloseDetails: () => void;
   onRunDetails: () => void;
   onChartTypeChange: (report: ReportDto, chartType: ChartType) => void;
@@ -48,8 +51,25 @@ export default function ReportDashboard({
   reportsStatus, reportsError, metadataStatus, metadataError, reportResults, reportLoading,
   reportErrors, chartTypeOverrides, detailReport, detailResult, detailChartType, detailLoading, detailError,
   message, messageIsError, onCreateReport, onSelectCategory, onSearchChange,
-  onDismissMessage, onRun, onOpenDetails, onCloseDetails, onRunDetails, onChartTypeChange, onEdit, onDelete, onCustomize,
+  onDismissMessage, onRun, onOpenDetails, onReorderReports, onCloseDetails, onRunDetails, onChartTypeChange, onEdit, onDelete, onCustomize,
 }: ReportDashboardProps) {
+  const draggedReport = useRef<string | null>(null);
+  const dragPreview = useRef<HTMLElement | null>(null);
+  const [dropIndicator, setDropIndicator] = useState<{ fileName: string; position: DropPosition } | null>(null);
+
+  const clearDragPreview = () => {
+    dragPreview.current?.remove();
+    dragPreview.current = null;
+    draggedReport.current = null;
+    setDropIndicator(null);
+  };
+
+  const dropPositionFor = (targetFileName: string): DropPosition => {
+    const sourceIndex = filteredReports.findIndex((report) => report.fileName === draggedReport.current);
+    const targetIndex = filteredReports.findIndex((report) => report.fileName === targetFileName);
+    return sourceIndex < targetIndex ? "after" : "before";
+  };
+
   return (
     <div className="reports-workspace">
     <section className="reports-hero" aria-labelledby="reports-hero-title">
@@ -87,7 +107,8 @@ export default function ReportDashboard({
         </button>
       </div>
       <div className="report-group-dashboard" id="report-group-dashboard">
-        {detailReport ? <ReportDetail
+        <>
+        {detailReport && <ReportDetail
           key={detailReport.fileName}
           report={detailReport}
           result={detailResult}
@@ -96,7 +117,7 @@ export default function ReportDashboard({
           error={detailError}
           onClose={onCloseDetails}
           onRun={onRunDetails}
-        /> : <>
+        />}
           <div className="report-group-dashboard-heading">
             <div><span className="eyebrow">REPORT DASHBOARD</span><h3>{category}</h3><p>{filteredReports.length} {filteredReports.length === 1 ? "report" : "reports"}{search ? " matching your search" : " for this sales question"}</p></div>
             <label className="report-search group-report-search"><Icon name="search" size={14} /><input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Find a report in this group…" /></label>
@@ -116,6 +137,57 @@ export default function ReportDashboard({
                 loading={Boolean(reportLoading[report.fileName])}
                 error={reportErrors[report.fileName]}
                 onOpenDetails={() => onOpenDetails(report)}
+                dropPosition={dropIndicator?.fileName === report.fileName ? dropIndicator.position : undefined}
+                onDragStart={(event) => {
+                  if (event.target instanceof Element && event.target.closest(".report-dashboard-card-tools")) {
+                    event.preventDefault();
+                    return;
+                  }
+                  draggedReport.current = report.fileName;
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", report.fileName);
+                  const card = event.currentTarget.closest(".report-dashboard-card");
+                  if (card instanceof HTMLElement) {
+                    const preview = card.cloneNode(true) as HTMLElement;
+                    preview.classList.add("report-dashboard-drag-preview");
+                    preview.setAttribute("aria-hidden", "true");
+                    preview.style.position = "fixed";
+                    preview.style.top = "-10000px";
+                    preview.style.left = "-10000px";
+                    preview.style.width = `${card.offsetWidth}px`;
+                    preview.style.pointerEvents = "none";
+                    document.body.append(preview);
+                    dragPreview.current = preview;
+                    const bounds = card.getBoundingClientRect();
+                    event.dataTransfer.setDragImage(preview, event.clientX - bounds.left, event.clientY - bounds.top);
+                  }
+                }}
+                onDragEnd={clearDragPreview}
+                onDragOver={(event) => {
+                  if (!draggedReport.current || draggedReport.current === report.fileName) return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  const position = dropPositionFor(report.fileName);
+                  setDropIndicator((current) => (
+                    current?.fileName === report.fileName && current.position === position
+                      ? current
+                      : { fileName: report.fileName, position }
+                  ));
+                }}
+                onDragLeave={(event) => {
+                  if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+                  setDropIndicator((current) => current?.fileName === report.fileName ? null : current);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const sourceFileName = draggedReport.current;
+                  const position = dropPositionFor(report.fileName);
+                  draggedReport.current = null;
+                  if (sourceFileName && sourceFileName !== report.fileName) {
+                    onReorderReports(sourceFileName, report.fileName, position);
+                  }
+                  setDropIndicator(null);
+                }}
                 onChartTypeChange={(chartType) => onChartTypeChange(report, chartType)}
                 onRun={() => onRun(report)}
                 onEdit={() => onEdit(report)}
@@ -125,7 +197,7 @@ export default function ReportDashboard({
             })}
           </div>}
           {reportsStatus !== "loading" && reportsStatus !== "failed" && !filteredReports.length && <p className="report-group-empty">No reports match this group and search.</p>}
-        </>}
+        </>
       </div>
     </section>
     </div>

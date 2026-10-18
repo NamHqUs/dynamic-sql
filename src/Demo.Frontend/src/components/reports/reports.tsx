@@ -78,6 +78,15 @@ export default function Reports() {
   const [reportErrors, setReportErrors] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
   const [selectedCategory, setCategory] = useState<string | null>(null);
+  const [reportOrder, setReportOrder] = useState<string[]>(() => {
+    const savedOrder = window.sessionStorage.getItem("dynamic-sql-report-order");
+    if (!savedOrder) return [];
+    const parsedOrder: unknown = JSON.parse(savedOrder);
+    if (!Array.isArray(parsedOrder) || !parsedOrder.every((fileName) => typeof fileName === "string")) {
+      throw new Error("Invalid report order in browser session storage.");
+    }
+    return parsedOrder;
+  });
   const requestedReports = useRef(new Set<string>());
   const [chartTypeOverrides, setChartTypeOverrides] = useState<Record<string, ChartType>>({});
   const [editingReport, setEditingReport] = useState<ReportDto | null>(null);
@@ -92,9 +101,20 @@ export default function Reports() {
     if (metadataStatus === "idle") dispatch(fetchQueryMetadata());
   }, [dispatch, metadataStatus, reportsStatus]);
 
-  const sortedReports = useMemo(() => [...reports].sort((left, right) => (
-    reportTitle(left).localeCompare(reportTitle(right), undefined, { numeric: true, sensitivity: "base" })
-  )), [reports]);
+  const sortedReports = useMemo(() => {
+    const alphabeticalReports = [...reports].sort((left, right) => (
+      reportTitle(left).localeCompare(reportTitle(right), undefined, { numeric: true, sensitivity: "base" })
+    ));
+    const orderIndex = new Map(reportOrder.map((fileName, index) => [fileName, index]));
+    return alphabeticalReports.sort((left, right) => (
+      (orderIndex.get(left.fileName) ?? Number.MAX_SAFE_INTEGER)
+      - (orderIndex.get(right.fileName) ?? Number.MAX_SAFE_INTEGER)
+    ));
+  }, [reportOrder, reports]);
+
+  useEffect(() => {
+    window.sessionStorage.setItem("dynamic-sql-report-order", JSON.stringify(reportOrder));
+  }, [reportOrder]);
   const reportGroups = useMemo(() => [...new Set(sortedReports.map((request) => presentationFor(request).category))].map((name) => ({
     name,
     reports: sortedReports.filter((request) => presentationFor(request).category === name),
@@ -132,6 +152,19 @@ export default function Reports() {
 
   const changeChartType = (request: ReportDto, chartType: ChartType) => {
     setChartTypeOverrides((current) => ({ ...current, [request.fileName]: chartType }));
+  };
+
+  const reorderReports = (sourceFileName: string, targetFileName: string, position: "before" | "after") => {
+    setReportOrder(() => {
+      const currentOrder = sortedReports.map((report) => report.fileName);
+      const sourceIndex = currentOrder.indexOf(sourceFileName);
+      const targetIndex = currentOrder.indexOf(targetFileName);
+      if (sourceIndex < 0 || targetIndex < 0) return currentOrder;
+      currentOrder.splice(sourceIndex, 1);
+      const insertIndex = currentOrder.indexOf(targetFileName) + (position === "after" ? 1 : 0);
+      currentOrder.splice(insertIndex, 0, sourceFileName);
+      return currentOrder;
+    });
   };
 
   const selectReportGroup = (group: string) => {
@@ -244,6 +277,7 @@ export default function Reports() {
         detailError={detailReport ? reportErrors[detailReport.fileName] : undefined}
         message={message}
         messageIsError={messageIsError}
+        onReorderReports={reorderReports}
         onCreateReport={createReport}
         onSelectCategory={selectReportGroup}
         onSearchChange={setSearch}
