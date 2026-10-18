@@ -9,13 +9,13 @@
 .database-content-heading h2 {
   margin: 7px 0 0;
   color: #e9edf4;
-  font-size: 18px;
+  font-size: 19px;
   letter-spacing: -.4px;
 }
 
 .database-record-count {
   color: #919bad;
-  font: 11px "DM Mono", monospace;
+  font: 12px "DM Mono", monospace;
 }
 
 .database-grid-wrap {
@@ -82,7 +82,7 @@
   color: inherit;
   background: transparent;
   border: 0;
-  font: 500 10px "DM Mono", monospace;
+  font: 500 11px "DM Mono", monospace;
   letter-spacing: .6px;
   text-align: left;
   text-transform: uppercase;
@@ -94,7 +94,7 @@
 
 .database-sort-indicator {
   color: #6f798a;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .database-filter-box {
@@ -150,7 +150,7 @@
   border: 1px solid #303847;
   border-radius: 4px;
   outline: 0;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 400;
   text-transform: none;
 }
@@ -168,7 +168,7 @@
   padding: 13px 15px;
   color: #c8ced9;
   border-bottom: 1px solid #1e2430;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 

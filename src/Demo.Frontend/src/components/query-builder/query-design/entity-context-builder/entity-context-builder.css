@@ -1,12 +1,12 @@
 .entity-context-section { border-top: 1px solid var(--line); padding-top: 20px; }
 .entity-context-card { margin-top: 12px; padding: 12px; border: 1px solid #2d3441; border-radius: 6px; background: #151923; }
 .entity-context-main, .entity-context-add-row { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
-.entity-context-main label, .entity-context-add-row label { display: flex; flex: 1 1 200px; flex-direction: column; gap: 6px; color: #aab3c2; font: 10px "DM Mono", monospace; letter-spacing: .4px; }
-.entity-context-main input, .entity-context-main select, .entity-context-add-row select, .entity-context-key-row select { box-sizing: border-box; min-width: 0; height: 34px; padding: 8px; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; font: 12px "Manrope", sans-serif; }
+.entity-context-main label, .entity-context-add-row label { display: flex; flex: 1 1 200px; flex-direction: column; gap: 6px; color: #aab3c2; font: 11px "DM Mono", monospace; letter-spacing: .4px; }
+.entity-context-main input, .entity-context-main select, .entity-context-add-row select, .entity-context-key-row select { box-sizing: border-box; min-width: 0; height: 34px; padding: 8px; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; font: 13px "Manrope", sans-serif; }
 .entity-context-remove, .entity-context-key-remove { display: grid; flex: 0 0 30px; place-items: center; width: 30px; height: 30px; color: #aab3c2; border: 1px solid #323947; border-radius: 5px; background: #191e28; cursor: pointer; }
 .entity-context-remove:hover, .entity-context-key-remove:hover:not(:disabled) { color: #ff9b9b; border-color: #71333d; background: #43252c; }
 .entity-context-key-list { display: grid; gap: 7px; margin-top: 12px; }
-.entity-context-key-heading { color: #8993a5; font: 10px "DM Mono", monospace; letter-spacing: .4px; text-transform: uppercase; }
+.entity-context-key-heading { color: #8993a5; font: 11px "DM Mono", monospace; letter-spacing: .4px; text-transform: uppercase; }
 .entity-context-key-row { display: grid; grid-template-columns: minmax(120px, 1fr) 20px minmax(120px, 1fr) 30px; align-items: center; gap: 8px; max-width: 620px; }
 .entity-context-key-row > span { color: var(--purple); text-align: center; }
 .entity-context-key-remove:disabled { opacity: .35; cursor: default; }

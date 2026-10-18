@@ -1,20 +1,20 @@
 .metadata-editor { min-width: 0; }
 .editor-head { padding: 21px 28px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
-.editor-head h2 { margin: 8px 0 0; font-size: 17px; }
+.editor-head h2 { margin: 8px 0 0; font-size: 18px; }
 .editor-actions { display: flex; align-items: center; gap: 9px; }
 .metadata-workspace .editor-actions .button.primary:disabled { cursor: not-allowed; }
 .metadata-form { padding: 25px 28px 35px; }
 .metadata-form-fieldset { border: 0; margin: 0; min-width: 0; padding: 0; }
 .metadata-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.metadata-form label { display: grid; gap: 8px; color: #aeb6c5; font-size: 11px; font-weight: 600; }
-.metadata-form input, .metadata-form select { width: 100%; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; outline: 0; padding: 9px 10px; font-size: 11px; }
+.metadata-form label { display: grid; gap: 8px; color: #aeb6c5; font-size: 12px; font-weight: 600; }
+.metadata-form input, .metadata-form select { width: 100%; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; outline: 0; padding: 9px 10px; font-size: 12px; }
 .metadata-form input:focus, .metadata-form select:focus { border-color: #7054d4; }
 .editor-section { margin-top: 29px; }
 .editor-section-head { display: flex; align-items: center; justify-content: space-between; }
-.editor-section h3 { margin: 0; font-size: 14px; }
-.editor-section p { color: var(--muted); margin: 5px 0 0; font-size: 11px; }
-.metadata-alert { margin: 18px 28px 0; padding: 10px 12px; border: 1px solid #704047; border-radius: 5px; color: #f0a6ae; background: #24171c; font-size: 11px; }
-.metadata-empty { min-height: 600px; display: grid; align-content: center; justify-items: center; gap: 12px; color: var(--muted); font-size: 11px; text-align: center; }
+.editor-section h3 { margin: 0; font-size: 15px; }
+.editor-section p { color: var(--muted); margin: 5px 0 0; font-size: 12px; }
+.metadata-alert { margin: 18px 28px 0; padding: 10px 12px; border: 1px solid #704047; border-radius: 5px; color: #f0a6ae; background: #24171c; font-size: 12px; }
+.metadata-empty { min-height: 600px; display: grid; align-content: center; justify-items: center; gap: 12px; color: var(--muted); font-size: 12px; text-align: center; }
 .metadata-empty svg { color: #6d5baf; }
 .metadata-empty p { margin: 0; }
 

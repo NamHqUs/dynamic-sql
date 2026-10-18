@@ -20,7 +20,7 @@
   color: #bbb0e4;
   background: #28223d;
   border-radius: 12px;
-  font: 11px "DM Mono", monospace;
+  font: 12px "DM Mono", monospace;
 }
 
 .database-table-item {
@@ -34,7 +34,7 @@
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .database-table-item > span {

@@ -19,7 +19,7 @@
   margin: 0;
   padding: 20px 10px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .database-message.error {
@@ -43,7 +43,7 @@
 
 .database-placeholder p {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 @media (max-width: 760px) {
