@@ -12,7 +12,7 @@ public class BuiltinMetadata
             [
                 new("Id", DataType.Number), new("Name"), new("Email"), new("Phone"), new("Address"),
                 new("Segment"), new("Region"), new("CustomerSince", DataType.Datetime),
-                new("CreatedOn", DataType.Datetime), new("UpdatedOn", DataType.Datetime), new("DeletedOn", DataType.Datetime)
+                new("CreatedOn", DataType.Datetime), new("UpdatedOn", DataType.Datetime)
             ],
             Relations:
             [
@@ -25,7 +25,7 @@ public class BuiltinMetadata
                 new("Id", DataType.Number), new("Name"), new("Description"), new("Category"),
                 new("UnitPrice", DataType.Number), new("CostPrice", DataType.Number),
                 new("StockQuantity", DataType.Number), new("ReorderLevel", DataType.Number),
-                new("CreatedOn", DataType.Datetime), new("UpdatedOn", DataType.Datetime), new("DeletedOn", DataType.Datetime)
+                new("CreatedOn", DataType.Datetime), new("UpdatedOn", DataType.Datetime)
             ],
             Relations:
             [
@@ -40,7 +40,7 @@ public class BuiltinMetadata
                 new("SalesChannel"), new("PaymentMethod"), new("PaidOn", DataType.Datetime),
                 new("DiscountAmount", DataType.Number), new("TaxAmount", DataType.Number),
                 new("TotalAmount", DataType.Number), new("CreatedOn", DataType.Datetime),
-                new("UpdatedOn", DataType.Datetime), new("DeletedOn", DataType.Datetime)
+                new("UpdatedOn", DataType.Datetime)
             ],
             Relations:
             [
@@ -54,7 +54,7 @@ public class BuiltinMetadata
                 new("Id", DataType.Number), new("InvoiceId", DataType.Number), new("ProductId", DataType.Number),
                 new("Quantity", DataType.Number), new("UnitPrice", DataType.Number),
                 new("DiscountAmount", DataType.Number), new("LineTotal", DataType.Number),
-                new("CreatedOn", DataType.Datetime), new("UpdatedOn", DataType.Datetime), new("DeletedOn", DataType.Datetime)
+                new("CreatedOn", DataType.Datetime), new("UpdatedOn", DataType.Datetime)
             ],
             Relations:
             [

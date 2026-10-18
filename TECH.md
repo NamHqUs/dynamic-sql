@@ -49,7 +49,7 @@ wheel to zoom, drag to pan).
 3. **Visit and build the IR** creates a dialect-independent `SqlExpression`
    tree. `SqlQueryCompiler` runs `QueryVisitor` and its clause visitors;
    `QueryContext` resolves metadata and relations, assigns aliases, applies
-   archive filters, and collects parameters.
+   and collects parameters.
 4. **Render the SQL statement** passes the resulting IR to
    `SqlStatementGenerator`. `ISqlDialect` owns quoting, table rendering,
    concatenation, booleans, and paging.
@@ -119,7 +119,6 @@ var db = new DynamicSqlContext(connection, metadata, dialect);
 It exposes:
 
 - `Query(entityName)`
-- `Query(entityName, includeArchive)`
 - `QueryYml(yml)`
 
 The context owns the supplied connection.
@@ -195,7 +194,6 @@ not execute queries.
 - Table aliases
 - Relationship joins
 - SQL parameters
-- Archive filters
 - Field-path resolution
 - Function definitions and recursive function-argument translation
 
@@ -328,7 +326,7 @@ Manager.Name
 Members.TotalMembers
 ```
 
-It follows relations, creates aliases, applies archive filters, and resolves
+It follows relations, creates aliases, and resolves
 aggregate fields. Missing entities, fields, and relations produce dedicated
 metadata exceptions:
 

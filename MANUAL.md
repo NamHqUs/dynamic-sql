@@ -42,7 +42,6 @@ var metadata = new[]
             new("Id", DataType.Number),
             new("Name"),
             new("Age", DataType.Number),
-            new("DeletedOn", DataType.Datetime),
         ],
         Relations:
         [
@@ -534,16 +533,6 @@ var adultCount = await db.Query("User")
 var hasManagers = await db.Query("User")
     .AnyAsync(user => user["ManagerId"] != null, cancellationToken);
 ```
-
-## Archive behavior
-
-Entities with a `DeletedOn` field exclude archived rows by default:
-
-```csharp
-var allUsers = db.Query("User", includeArchive: true).ToList();
-```
-
-The convention applies to the root and related queries.
 
 ## Raw SQL and security
 

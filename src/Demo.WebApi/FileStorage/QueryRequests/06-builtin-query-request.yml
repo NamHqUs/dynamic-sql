@@ -12,4 +12,3 @@ Filter: Status = <Sent>
 Sorts: DaysOverdue DESC
 Page:
 PageSize:
-IncludeArchive: False

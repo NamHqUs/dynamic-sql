@@ -13,8 +13,7 @@ CREATE TABLE public."Customers" (
     "Region" text NOT NULL,
     "CustomerSince" date NOT NULL,
     "CreatedOn" date NOT NULL,
-    "UpdatedOn" date NOT NULL,
-    "DeletedOn" date NULL
+    "UpdatedOn" date NOT NULL
 );
 
 CREATE TABLE public."Products" (
@@ -27,8 +26,7 @@ CREATE TABLE public."Products" (
     "StockQuantity" integer NOT NULL,
     "ReorderLevel" integer NOT NULL,
     "CreatedOn" date NOT NULL,
-    "UpdatedOn" date NOT NULL,
-    "DeletedOn" date NULL
+    "UpdatedOn" date NOT NULL
 );
 
 CREATE TABLE public."Invoices" (
@@ -46,7 +44,6 @@ CREATE TABLE public."Invoices" (
     "TotalAmount" numeric(18, 2) NOT NULL,
     "CreatedOn" date NOT NULL,
     "UpdatedOn" date NOT NULL,
-    "DeletedOn" date NULL,
     FOREIGN KEY ("CustomerId") REFERENCES public."Customers" ("Id")
 );
 
@@ -60,7 +57,6 @@ CREATE TABLE public."InvoiceItems" (
     "LineTotal" numeric(18, 2) NOT NULL,
     "CreatedOn" date NOT NULL,
     "UpdatedOn" date NOT NULL,
-    "DeletedOn" date NULL,
     FOREIGN KEY ("InvoiceId") REFERENCES public."Invoices" ("Id"),
     FOREIGN KEY ("ProductId") REFERENCES public."Products" ("Id")
 );

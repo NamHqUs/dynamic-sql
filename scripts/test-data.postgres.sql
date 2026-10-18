@@ -5,15 +5,13 @@ CREATE TABLE IF NOT EXISTS public."User" (
     "Name" VARCHAR(255),
     "Age" INTEGER,
     "Birthday" TIMESTAMP,
-    "IsMale" BOOLEAN,
-    "DeletedOn" TIMESTAMP NULL
+    "IsMale" BOOLEAN
 );
 
 CREATE TABLE IF NOT EXISTS public."School" (
     "Id" INTEGER PRIMARY KEY,
     "Name" VARCHAR(255),
-    "Address" VARCHAR(255),
-    "DeletedOn" TIMESTAMP NULL
+    "Address" VARCHAR(255)
 );
 
 INSERT INTO public."User" ("Id", "ManagerId", "SchoolId", "Name", "Age", "Birthday", "IsMale")

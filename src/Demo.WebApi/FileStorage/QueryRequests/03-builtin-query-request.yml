@@ -9,4 +9,3 @@ Filter: Invoices.Status = <Paid>
 Sorts: LifetimeValue DESC
 Page:
 PageSize: 10
-IncludeArchive: False

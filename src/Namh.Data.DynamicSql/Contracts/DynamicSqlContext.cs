@@ -20,7 +20,6 @@ public class DynamicSqlContext(
 
     public IDbQueryable Query(
         string entity,
-        bool includeArchive = false,
         IReadOnlyList<EntityContextDefinition>? entityAliases = null)
     {
         var queryProvider = new DbQueryProvider(
@@ -28,7 +27,6 @@ public class DynamicSqlContext(
             dbConnection,
             _sqlDialect,
             entity,
-            includeArchive,
             entityAliases ?? []);
 
         return new DbQueryable(queryProvider);

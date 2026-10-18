@@ -9,4 +9,3 @@ Filter: Status <> <Draft>
 Sorts: Revenue DESC
 Page:
 PageSize:
-IncludeArchive: False

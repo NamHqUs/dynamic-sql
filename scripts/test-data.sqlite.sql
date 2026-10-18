@@ -5,15 +5,13 @@ CREATE TABLE dbo.[User] (
     [Name] TEXT,
     [Age] INTEGER,
     [Birthday] TEXT,
-    [IsMale] INTEGER,
-    [DeletedOn] TEXT NULL
+    [IsMale] INTEGER
 );
 
 CREATE TABLE dbo.[School] (
     [Id] INTEGER PRIMARY KEY,
     [Name] TEXT,
-    [Address] TEXT,
-    [DeletedOn] TEXT NULL
+    [Address] TEXT
 );
 
 INSERT INTO dbo.[User] ([Id], [ManagerId], [SchoolId], [Name], [Age], [Birthday], [IsMale]) VALUES

@@ -14,7 +14,6 @@ class DbQueryProvider(
     IDbConnection dbConnection,
     ISqlDialect sqlDialect,
     string entityName,
-    bool includeArchive,
     IReadOnlyList<EntityContextDefinition> entityAliases) : IDbQueryProvider
 {
     public readonly Entity Entity = metaProvider.GetEntity(entityName);
@@ -144,7 +143,7 @@ class DbQueryProvider(
         => Translate(expression, includeTotalRecords: false);
 
     private CompiledQuery Translate(Expression expression, bool includeTotalRecords)
-        => new SqlQueryCompiler(metaProvider, sqlDialect, includeArchive)
+        => new SqlQueryCompiler(metaProvider, sqlDialect)
             .Compile(expression, entityAliases, includeTotalRecords);
 
     private static long ConvertTotalRecords(object? value)

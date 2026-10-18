@@ -14,8 +14,7 @@ public sealed class _16_QueryExpressionTests
             [
                 new("Id", DataType.Number),
                 new("Name"),
-                new("CostPrice", DataType.Number),
-                new("DeletedOn", DataType.Datetime)
+                new("CostPrice", DataType.Number)
             ],
             Relations:
             [
@@ -33,8 +32,7 @@ public sealed class _16_QueryExpressionTests
                 new("ProductId", DataType.Number),
                 new("InvoiceId", DataType.Number),
                 new("Quantity", DataType.Number),
-                new("LineTotal", DataType.Number),
-                new("DeletedOn", DataType.Datetime)
+                new("LineTotal", DataType.Number)
             ],
             Relations:
             [
@@ -49,8 +47,7 @@ public sealed class _16_QueryExpressionTests
             Fields:
             [
                 new("Id", DataType.Number),
-                new("Status"),
-                new("DeletedOn", DataType.Datetime)
+                new("Status")
             ])
     ];
 
@@ -147,7 +144,6 @@ public sealed class _16_QueryExpressionTests
                   }
                 }
               ],
-              "includeArchive": false,
               "filter": {
                 "logicalOperation": 0,
                 "filters": [{
@@ -170,32 +166,29 @@ public sealed class _16_QueryExpressionTests
                 CREATE TABLE "Products" (
                     "Id" INTEGER PRIMARY KEY,
                     "Name" TEXT NOT NULL,
-                    "CostPrice" NUMERIC NOT NULL,
-                    "DeletedOn" TEXT NULL
+                    "CostPrice" NUMERIC NOT NULL
                 );
                 CREATE TABLE "InvoiceItems" (
                     "Id" INTEGER PRIMARY KEY,
                     "ProductId" INTEGER NOT NULL,
                     "InvoiceId" INTEGER NOT NULL,
                     "Quantity" NUMERIC NOT NULL,
-                    "LineTotal" NUMERIC NOT NULL,
-                    "DeletedOn" TEXT NULL
+                    "LineTotal" NUMERIC NOT NULL
                 );
                 CREATE TABLE "Invoices" (
                     "Id" INTEGER PRIMARY KEY,
-                    "Status" TEXT NOT NULL,
-                    "DeletedOn" TEXT NULL
+                    "Status" TEXT NOT NULL
                 );
-                INSERT INTO "Products" ("Id", "Name", "CostPrice", "DeletedOn") VALUES
-                    (1, 'Widget', 3, NULL),
-                    (2, 'No sales', 4, NULL);
-                INSERT INTO "Invoices" ("Id", "Status", "DeletedOn") VALUES
-                    (10, 'Paid', NULL),
-                    (11, 'Draft', NULL);
-                INSERT INTO "InvoiceItems" ("Id", "ProductId", "InvoiceId", "Quantity", "LineTotal", "DeletedOn") VALUES
-                    (100, 1, 10, 2, 20, NULL),
-                    (101, 1, 10, 1, 12, NULL),
-                    (102, 1, 11, 99, 1000, NULL);
+                INSERT INTO "Products" ("Id", "Name", "CostPrice") VALUES
+                    (1, 'Widget', 3),
+                    (2, 'No sales', 4);
+                INSERT INTO "Invoices" ("Id", "Status") VALUES
+                    (10, 'Paid'),
+                    (11, 'Draft');
+                INSERT INTO "InvoiceItems" ("Id", "ProductId", "InvoiceId", "Quantity", "LineTotal") VALUES
+                    (100, 1, 10, 2, 20),
+                    (101, 1, 10, 1, 12),
+                    (102, 1, 11, 99, 1000);
                 """;
             command.ExecuteNonQuery();
         }

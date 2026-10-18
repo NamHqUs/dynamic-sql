@@ -14,8 +14,7 @@ CREATE TABLE dbo.[Customers] (
     Region nvarchar(255) NOT NULL,
     CustomerSince date NOT NULL,
     CreatedOn date NOT NULL,
-    UpdatedOn date NOT NULL,
-    DeletedOn date NULL
+    UpdatedOn date NOT NULL
 );
 
 CREATE TABLE dbo.[Products] (
@@ -28,8 +27,7 @@ CREATE TABLE dbo.[Products] (
     StockQuantity int NOT NULL,
     ReorderLevel int NOT NULL,
     CreatedOn date NOT NULL,
-    UpdatedOn date NOT NULL,
-    DeletedOn date NULL
+    UpdatedOn date NOT NULL
 );
 
 CREATE TABLE dbo.[Invoices] (
@@ -47,7 +45,6 @@ CREATE TABLE dbo.[Invoices] (
     TotalAmount decimal(18, 2) NOT NULL,
     CreatedOn date NOT NULL,
     UpdatedOn date NOT NULL,
-    DeletedOn date NULL,
     FOREIGN KEY (CustomerId) REFERENCES dbo.[Customers] (Id)
 );
 
@@ -61,7 +58,6 @@ CREATE TABLE dbo.[InvoiceItems] (
     LineTotal decimal(18, 2) NOT NULL,
     CreatedOn date NOT NULL,
     UpdatedOn date NOT NULL,
-    DeletedOn date NULL,
     FOREIGN KEY (InvoiceId) REFERENCES dbo.[Invoices] (Id),
     FOREIGN KEY (ProductId) REFERENCES dbo.[Products] (Id)
 );

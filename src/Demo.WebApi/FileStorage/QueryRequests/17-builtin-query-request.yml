@@ -8,4 +8,3 @@ Filter: InvoiceItems.Invoice.Status = <Paid>
 Sorts: Revenue DESC
 Page:
 PageSize:
-IncludeArchive: False

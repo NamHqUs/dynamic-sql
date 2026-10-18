@@ -27,8 +27,7 @@ public static class QueryDefinitionParser
             Filter = FilterDefinitionParser.Parse(definition.Filter),
             Sorts = SortDefinitionParser.Parse(definition.Sorts),
             Page = definition.Page,
-            PageSize = definition.PageSize,
-            IncludeArchive = definition.IncludeArchive
+            PageSize = definition.PageSize
         };
     }
 
@@ -140,6 +139,5 @@ public static class QueryDefinitionParser
         public string? Sorts { get; set; }
         public int? Page { get; set; }
         public int? PageSize { get; set; }
-        public bool IncludeArchive { get; set; }
     }
 }

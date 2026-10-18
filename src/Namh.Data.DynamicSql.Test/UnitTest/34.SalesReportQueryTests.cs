@@ -186,7 +186,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
                 Fields = definition.Fields,
                 Filter = definition.Filter,
                 Sorts = definition.Sorts,
-                IncludeArchive = definition.IncludeArchive
             }
             : definition;
         var query = _db.Query(queryDefinition);

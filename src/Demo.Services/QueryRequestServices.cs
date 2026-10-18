@@ -114,10 +114,7 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
             Filter = filter,
             Sorts = sorts,
             Page = page,
-            PageSize = pageSize,
-            IncludeArchive = bool.TryParse(values.GetValueOrDefault("IncludeArchive"), out var includeArchive)
-                ? includeArchive
-                : throw new FormatException("IncludeArchive must be True or False.")
+            PageSize = pageSize
         };
     }
 

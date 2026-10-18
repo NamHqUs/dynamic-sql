@@ -15,8 +15,7 @@ CREATE TABLE Customers (
     Region TEXT NOT NULL,
     CustomerSince TEXT NOT NULL,
     CreatedOn TEXT NOT NULL,
-    UpdatedOn TEXT NOT NULL,
-    DeletedOn TEXT NULL
+    UpdatedOn TEXT NOT NULL
 );
 
 CREATE TABLE Products (
@@ -29,8 +28,7 @@ CREATE TABLE Products (
     StockQuantity INTEGER NOT NULL,
     ReorderLevel INTEGER NOT NULL,
     CreatedOn TEXT NOT NULL,
-    UpdatedOn TEXT NOT NULL,
-    DeletedOn TEXT NULL
+    UpdatedOn TEXT NOT NULL
 );
 
 CREATE TABLE Invoices (
@@ -48,7 +46,6 @@ CREATE TABLE Invoices (
     TotalAmount NUMERIC NOT NULL,
     CreatedOn TEXT NOT NULL,
     UpdatedOn TEXT NOT NULL,
-    DeletedOn TEXT NULL,
     FOREIGN KEY (CustomerId) REFERENCES Customers (Id)
 );
 
@@ -62,7 +59,6 @@ CREATE TABLE InvoiceItems (
     LineTotal NUMERIC NOT NULL,
     CreatedOn TEXT NOT NULL,
     UpdatedOn TEXT NOT NULL,
-    DeletedOn TEXT NULL,
     FOREIGN KEY (InvoiceId) REFERENCES Invoices (Id),
     FOREIGN KEY (ProductId) REFERENCES Products (Id)
 );

@@ -104,8 +104,7 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
                 Filter = query.Filter,
                 Sorts = query.Sorts,
                 Page = query.Page,
-                PageSize = query.PageSize,
-                IncludeArchive = query.IncludeArchive
+                PageSize = query.PageSize
             };
         }
 

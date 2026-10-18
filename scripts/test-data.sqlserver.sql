@@ -5,15 +5,13 @@ CREATE TABLE dbo.[User] (
     [Name] NVARCHAR(255),
     [Age] INTEGER,
     [Birthday] DATETIME,
-    [IsMale] BIT,
-    [DeletedOn] DATETIME NULL
+    [IsMale] BIT
 );
 
 CREATE TABLE dbo.[School] (
     [Id] INTEGER PRIMARY KEY,
     [Name] NVARCHAR(255),
-    [Address] NVARCHAR(255),
-    [DeletedOn] DATETIME NULL
+    [Address] NVARCHAR(255)
 );
 
 INSERT INTO dbo.[User] ([Id], [ManagerId], [SchoolId], [Name], [Age], [Birthday], [IsMale]) VALUES

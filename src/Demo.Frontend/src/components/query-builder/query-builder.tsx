@@ -38,7 +38,6 @@ function createDefinition(entity: string, fields: MetadataField[] = []): QueryDe
     sorts: [],
     page: 1,
     pageSize: 50,
-    includeArchive: false,
   };
 }
 

@@ -39,7 +39,6 @@ public class DefinedMetadata
                 new("Age"),
                 new("Birthday"),
                 new("IsMale"),
-                new("DeletedOn"),
                 new("TotalMembers", FieldType: FieldType.Aggregate) { RawSql ="Count(*)" },
                 new("TotalAges", FieldType: FieldType.Aggregate) { RawSql ="Sum(@Age)" },
             ],
@@ -74,7 +73,6 @@ public class DefinedMetadata
             Fields : [
                 new("Name"),
                 new("Age"),
-                new("DeletedOn"),
                 new("TotalMembers", FieldType: FieldType.Aggregate) { RawSql ="Count(*)" },
                 new("TotalAges",  FieldType: FieldType.Aggregate) { RawSql ="Sum(Age)" },
                 new("CountAgeWithNam", FieldType: FieldType.Aggregate) { RawSql ="Count(*)$Name='Nam'" }
@@ -85,7 +83,6 @@ public class DefinedMetadata
             Fields : [
                 new("Id"),
                 new("Name"),
-                new("DeletedOn"),
             ],
             Relations : [
                 new(
@@ -122,8 +119,7 @@ public class DefinedMetadata
                     new("Region"),
                     new("CustomerSince", DataType.Datetime),
                     new("CreatedOn", DataType.Datetime),
-                    new("UpdatedOn", DataType.Datetime),
-                    new("DeletedOn", DataType.Datetime)
+                    new("UpdatedOn", DataType.Datetime)
                 ],
                 Relations: [
                     new(
@@ -144,8 +140,7 @@ public class DefinedMetadata
                     new("StockQuantity", DataType.Number),
                     new("ReorderLevel", DataType.Number),
                     new("CreatedOn", DataType.Datetime),
-                    new("UpdatedOn", DataType.Datetime),
-                    new("DeletedOn", DataType.Datetime)
+                    new("UpdatedOn", DataType.Datetime)
                 ],
                 Relations: [
                     new(
@@ -170,8 +165,7 @@ public class DefinedMetadata
                     new("TaxAmount", DataType.Number),
                     new("TotalAmount", DataType.Number),
                     new("CreatedOn", DataType.Datetime),
-                    new("UpdatedOn", DataType.Datetime),
-                    new("DeletedOn", DataType.Datetime)
+                    new("UpdatedOn", DataType.Datetime)
                 ],
                 Relations: [
                     new(
@@ -196,8 +190,7 @@ public class DefinedMetadata
                     new("DiscountAmount", DataType.Number),
                     new("LineTotal", DataType.Number),
                     new("CreatedOn", DataType.Datetime),
-                    new("UpdatedOn", DataType.Datetime),
-                    new("DeletedOn", DataType.Datetime)
+                    new("UpdatedOn", DataType.Datetime)
                 ],
                 Relations: [
                     new(

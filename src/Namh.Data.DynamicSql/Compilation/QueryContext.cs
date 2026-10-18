@@ -8,10 +8,8 @@ namespace Namh.Data.DynamicSql.Compilation;
 
 class QueryContext(
     IMetaProvider metaProvider,
-    bool includeArchive,
     IReadOnlyList<EntityContextDefinition> entityAliases)
 {
-    private const string ARCHIVE_COL = "DeletedOn";
     private int _aliasCount;
     public readonly Stack<(string ArgumentName, TableExpression TableContext)> Arguments = new();
     private readonly List<DbParameter> _dbParameters = [];
@@ -21,9 +19,6 @@ class QueryContext(
     public TableExpression CreateTableContext(Entity entity)
     {
         var table = new TableExpression(entity, GetNextAlias());
-
-        if (BuildEnforceFilter(table, out var filter))
-            table.SqlWhere.Add(filter);
 
         RegisterEntityAliases(table);
         return table;
@@ -320,9 +315,6 @@ class QueryContext(
                     typeof(bool)));
             }
 
-            if (BuildEnforceFilter(aliasTable, out var archiveFilter))
-                conditions.Add(archiveFilter);
-
             tableContext.EntityContexts.Add(entityAlias.Alias, aliasTable);
             tableContext.JoinHost.Joins.Add(new JoinExpression(aliasTable, "LEFT JOIN", conditions));
         }
@@ -393,26 +385,7 @@ class QueryContext(
                 new FieldExpression(table.Alias, new Field(e.FromDbColumn)),
                 typeof(bool)));
 
-        if (BuildEnforceFilter(joinedTable, out var filter))
-            predicates.Add(filter);
-
         return predicates;
-    }
-
-    private bool BuildEnforceFilter(TableExpression table, out SqlExpression filter)
-    {
-        var enforced = !includeArchive
-                && table.Entity.Fields.Any(e => string.Equals(e.Name, ARCHIVE_COL, StringComparison.OrdinalIgnoreCase))
-            ;
-        filter = enforced
-            ? new BinarySqlExpression(
-                new FieldExpression(table.Alias, table.Entity.GetField(ARCHIVE_COL)),
-                "IS",
-                new ValueExpression(null, typeof(object)),
-                typeof(bool))
-            : null!;
-
-        return enforced;
     }
 
     public string AddDbParameter(object? value, bool forceParameter = false)

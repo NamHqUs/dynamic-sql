@@ -12,4 +12,3 @@ Filter: Items.Id <> <NULL> AND Customer.Id <> <NULL>
 Sorts: TotalAmount DESC
 Page:
 PageSize:
-IncludeArchive: False

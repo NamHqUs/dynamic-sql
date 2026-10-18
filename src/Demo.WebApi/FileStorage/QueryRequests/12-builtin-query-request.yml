@@ -10,4 +10,3 @@ Filter: StockQuantity <= ReorderLevel
 Sorts: StockQuantity ASC
 Page:
 PageSize:
-IncludeArchive: False

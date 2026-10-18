@@ -86,7 +86,6 @@ export type QueryDefinition = {
   sorts: { field: string; direction: string; expression?: QueryExpression }[];
   page: number | null;
   pageSize: number | null;
-  includeArchive: boolean;
 };
 
 export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns"> & {
@@ -270,9 +269,8 @@ function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
           expression: sort.field,
           direction: sort.direction === 1 ? "desc" : "asc",
         }),
-    page: query.page,
-    pageSize: query.pageSize,
-    includeArchive: query.includeArchive,
+        page: query.page,
+        pageSize: query.pageSize,
   };
 }
 

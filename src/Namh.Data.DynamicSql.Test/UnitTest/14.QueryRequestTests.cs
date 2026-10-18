@@ -290,8 +290,7 @@ public class _14_QueryRequestTests : TestBase
                         new ConstFieldDefinition(18)))),
             Sorts = [new SortDefinition(new FieldDefinition("Name"))],
             Page = 1,
-            PageSize = 25,
-            IncludeArchive = true
+            PageSize = 25
         };
 
         var expected = string.Join(Environment.NewLine,
@@ -300,8 +299,7 @@ public class _14_QueryRequestTests : TestBase
             "Filters: (Id > <3> AND Invoices.Id < <3>) AND (Name = <abc> OR Age > <18>)",
             "Sorts: Name ASC",
             "Page: 1",
-            "PageSize: 25",
-            "IncludeArchive: True");
+            "PageSize: 25");
 
         Assert.That(definition.ToString(), Is.EqualTo(expected));
     }
@@ -317,8 +315,7 @@ public class _14_QueryRequestTests : TestBase
             "Filters: ",
             "Sorts: ",
             "Page: ",
-            "PageSize: ",
-            "IncludeArchive: False");
+            "PageSize: ");
 
         Assert.That(definition.ToString(), Is.EqualTo(expected));
     }

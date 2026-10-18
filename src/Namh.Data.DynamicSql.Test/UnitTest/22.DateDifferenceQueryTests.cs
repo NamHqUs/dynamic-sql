@@ -13,8 +13,7 @@ internal sealed class _22_DateDifferenceQueryTests
             Fields:
             [
                 new("Id", DataType.Number),
-                new("Name"),
-                new("DeletedOn", DataType.Datetime)
+                new("Name")
             ]),
         new(
             Name: "Invoices",
@@ -24,8 +23,7 @@ internal sealed class _22_DateDifferenceQueryTests
                 new("CustomerId", DataType.Number),
                 new("InvoiceNumber"),
                 new("InvoiceDate", DataType.Datetime),
-                new("DueDate", DataType.Datetime),
-                new("DeletedOn", DataType.Datetime)
+                new("DueDate", DataType.Datetime)
             ],
             Relations:
             [
@@ -68,23 +66,21 @@ internal sealed class _22_DateDifferenceQueryTests
             command.CommandText = """
                 CREATE TABLE "Customers" (
                     "Id" INTEGER PRIMARY KEY,
-                    "Name" TEXT NOT NULL,
-                    "DeletedOn" TEXT NULL
+                    "Name" TEXT NOT NULL
                 );
                 CREATE TABLE "Invoices" (
                     "Id" INTEGER PRIMARY KEY,
                     "CustomerId" INTEGER NOT NULL,
                     "InvoiceNumber" TEXT NOT NULL,
                     "InvoiceDate" TEXT NOT NULL,
-                    "DueDate" TEXT NOT NULL,
-                    "DeletedOn" TEXT NULL
+                    "DueDate" TEXT NOT NULL
                 );
-                INSERT INTO "Customers" ("Id", "Name", "DeletedOn")
-                VALUES (1, 'Ada', NULL);
+                INSERT INTO "Customers" ("Id", "Name")
+                VALUES (1, 'Ada');
                 INSERT INTO "Invoices"
-                    ("Id", "CustomerId", "InvoiceNumber", "InvoiceDate", "DueDate", "DeletedOn")
+                    ("Id", "CustomerId", "InvoiceNumber", "InvoiceDate", "DueDate")
                 VALUES
-                    (1, 1, 'INV-001', date('now', 'localtime'), date('now', 'localtime', '-3 days'), NULL);
+                    (1, 1, 'INV-001', date('now', 'localtime'), date('now', 'localtime', '-3 days'));
                 """;
             command.ExecuteNonQuery();
         }

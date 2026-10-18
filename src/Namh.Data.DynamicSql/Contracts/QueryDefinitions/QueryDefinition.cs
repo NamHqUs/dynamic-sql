@@ -15,7 +15,6 @@ public sealed class QueryDefinition
     public List<SortDefinition> Sorts { get; init; } = [];
     public int? Page { get; init; }
     public int? PageSize { get; init; }
-    public bool IncludeArchive { get; init; }
 
     public static QueryDefinition FromYml(string yml)
         => QueryDefinitionParser.ParseFromYml(yml);
@@ -44,8 +43,7 @@ public sealed class QueryDefinition
             $"Filters: {Filter?.ToText() ?? string.Empty}",
             $"Sorts: {string.Join(", ", Sorts.Select(FormatSort))}",
             $"Page: {Page}",
-            $"PageSize: {PageSize}",
-            $"IncludeArchive: {IncludeArchive}"
+            $"PageSize: {PageSize}"
         ]);
 
         return string.Join(Environment.NewLine, lines.Where(line => line is not null)!);

@@ -13,4 +13,3 @@ Filter: Product.Id < b.Product.Id
 Sorts: OrdersTogether DESC
 Page:
 PageSize:
-IncludeArchive: False

@@ -127,7 +127,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                     ? $"{field.TableAlias}.{dialect.QuoteIdentifier(field.MetaField.RawSql)}"
                     : $"({field.MetaField.RawSql.Replace("@", field.TableAlias + ".")})",
 
-            RawSqlExpression raw => raw.Sql.Replace("__ARCHIVE__", dialect.QuoteIdentifier("DeletedOn"), StringComparison.Ordinal),
+            RawSqlExpression raw => raw.Sql,
 
             ValueExpression value => RenderValue(value.Value),
 

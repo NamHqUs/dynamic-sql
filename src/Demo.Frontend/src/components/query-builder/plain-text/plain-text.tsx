@@ -159,15 +159,6 @@ export default function PlainText({
                     <option value={entity.name} key={entity.name}>{entity.name}</option>
                   ))}
                 </select>
-              ) : label === "IncludeArchive" ? (
-                <input
-                  className="query-request-structure-checkbox"
-                  type="checkbox"
-                  aria-label={label}
-                  checked={value.trim().toLowerCase() === "true"}
-                  onChange={(event) => onFieldChange(index, event.target.checked ? "True" : "False")}
-                  disabled={fieldsAreDisabled}
-                />
               ) : ["Entities", "Fields", "Filters", "Sorts"].includes(label) ? (
                 <div className={`query-request-structure-input-container${label === "Entities" || label === "Fields" || label === "Filters" ? " query-request-structure-input-container-multiline" : ""}`}>
                   <div className="query-request-structure-highlight" aria-hidden="true">

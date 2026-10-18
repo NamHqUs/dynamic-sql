@@ -12,4 +12,3 @@ Filter: Invoices.Status = <Sent>
 Sorts: AmountDue DESC
 Page:
 PageSize:
-IncludeArchive: False

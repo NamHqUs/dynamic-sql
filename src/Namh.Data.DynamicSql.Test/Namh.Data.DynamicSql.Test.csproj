@@ -6,7 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="UnitTest\ArchiveTest.cs" />
 		<Compile Remove="UnitTest\ComputedTest.cs" />
 		<Compile Remove="UnitTest\TakeTest.cs" />
 	</ItemGroup>
