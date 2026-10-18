@@ -205,4 +205,17 @@ internal class _33_DemoTest : TestBase
             && record.ContainsKey("NetRevenue")
             && record.ContainsKey("DiscountRate")), Is.True);
     }
+
+    [Test]
+    public void Demo_Yaml_All()
+    {
+        var path = new DirectoryInfo("../../../../Demo.WebApi/FileStorage/QueryRequests").FullName;
+        var files = Directory.GetFiles(path, "*.yml", SearchOption.AllDirectories);
+        foreach(var file in files)
+        {
+            var query = QueryDefinitionParser.ParseFromYml(new FileInfo(file));
+            var data = _db.Query(query).ToList();
+            Assert.That(data.Count, Is.GreaterThanOrEqualTo(0));
+        };
+    }
 }
