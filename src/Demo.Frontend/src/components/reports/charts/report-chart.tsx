@@ -35,10 +35,11 @@ function isDimensionSelected(settings: ReportChartSettings, field: string): bool
   return settings.axes[field] === "axis1" || settings.axes[field] === "axis2";
 }
 
-function DimensionControls({ fields, settings, onSettingsChange }: {
+function DimensionControls({ fields, settings, onSettingsChange, showBreakdownDisplay }: {
   fields: string[];
   settings: ReportChartSettings;
   onSettingsChange: (settings: ReportChartSettings) => void;
+  showBreakdownDisplay: boolean;
 }) {
   const setEnabled = (field: string, enabled: boolean) => {
     onSettingsChange({
@@ -67,6 +68,25 @@ function DimensionControls({ fields, settings, onSettingsChange }: {
           );
         })}
       </div>
+      {showBreakdownDisplay && <div className="report-breakdown-display" role="group" aria-label="Breakdown display style">
+        <span>Display</span>
+        <button
+          type="button"
+          className={settings.breakdownDisplay === "subcharts" ? "selected" : ""}
+          aria-pressed={settings.breakdownDisplay === "subcharts"}
+          onClick={() => onSettingsChange({ ...settings, breakdownDisplay: "subcharts" })}
+        >
+          Sub charts
+        </button>
+        <button
+          type="button"
+          className={settings.breakdownDisplay === "direct" ? "selected" : ""}
+          aria-pressed={settings.breakdownDisplay === "direct"}
+          onClick={() => onSettingsChange({ ...settings, breakdownDisplay: "direct" })}
+        >
+          Direct display
+        </button>
+      </div>}
     </div>
   );
 }
@@ -83,7 +103,14 @@ function AggregateBarChart({ result, type, report, settings, onSettingsChange, x
   const defaults = defaultReportChartSettings(report, result);
   const chartSettings = settings ?? defaults;
   const dimensionControls = onSettingsChange && fields.axes.length > 0
-    ? <DimensionControls fields={fields.axes} settings={chartSettings} onSettingsChange={onSettingsChange} />
+    ? <DimensionControls
+      fields={fields.axes}
+      settings={chartSettings}
+      onSettingsChange={onSettingsChange}
+      showBreakdownDisplay={type === "bar"
+        && fields.axes.filter((field) => isDimensionSelected(chartSettings, field)).length === 1
+        && fields.axes.some((field) => !isDimensionSelected(chartSettings, field))}
+    />
     : null;
   const wrapChart = (content: ReactNode) => (
     <div className="report-chart-composition">
@@ -167,53 +194,65 @@ function AggregateBarChart({ result, type, report, settings, onSettingsChange, x
   });
   if (!points.length) return wrapChart(<div className="report-chart-empty"><strong>No data to visualize</strong><span>The selected aggregate fields contain no numeric values.</span></div>);
 
-  const breakdowns: Record<string, AggregateChartData> = {};
   const breakdownFields = fields.axes.filter((field) => !groupingFields.includes(field));
+  const buildBreakdownData = (rows: string[][], dimensions: string[]): AggregateChartData | undefined => {
+    if (!dimensions.length) return undefined;
+    const dimensionIndex = result.columns.indexOf(dimensions[0]);
+    const groupedRows = [...groupRows(rows, [dimensionIndex]).values()].slice(0, 12);
+    const breakdowns: Record<string, AggregateChartData> = {};
+    const childPoints: AggregateChartData["points"] = groupedRows.flatMap((group, rowIndex) => {
+      const row = rollupGroup(group);
+      const label = row[dimensionIndex] || "Unspecified";
+      const nested = buildBreakdownData(group, dimensions.slice(1));
+      if (nested) breakdowns[label] = nested;
+      return metrics.flatMap((metric) => {
+        const metricIndex = result.columns.indexOf(metric);
+        const value = numberValue(row[metricIndex]);
+        return value === null ? [] : [{
+          label,
+          series: metric,
+          metric,
+          value,
+          xValue: xIndex >= 0 ? numberValue(row[xIndex]) ?? rowIndex + 1 : rowIndex + 1,
+          rowIndex,
+          breakdownField: dimensions[0],
+          breakdownLabel: label,
+        }];
+      });
+    });
+    if (!childPoints.length) return undefined;
+    return {
+      kind: "aggregate",
+      metrics,
+      points: childPoints,
+      categories: [...new Set(childPoints.map((point) => point.label))],
+      seriesNames: [...new Set(childPoints.map((point) => point.series))],
+      breakdowns,
+    };
+  };
+
+  const breakdowns: Record<string, AggregateChartData> = {};
   if (groupingFields.length > 0 && breakdownFields.length > 0) {
-    const breakdownIndices = breakdownFields.map((field) => result.columns.indexOf(field));
     chartRows.forEach((parentRow, rowIndex) => {
       const parentValues = groupingIndices.map((index) => parentRow[index] || "Unspecified");
       const matchingRows = result.rows.filter((row) =>
         groupingIndices.every((index, valueIndex) => (row[index] || "Unspecified") === parentValues[valueIndex]),
       );
-      const childRows = [...groupRows(matchingRows, breakdownIndices).values()].map(rollupGroup).slice(0, 12);
-      const childLabel = (row: string[]) =>
-        breakdownFields.map((field) => row[result.columns.indexOf(field)] || "Unspecified").join(" · ") || "All records";
-      const childPoints: AggregateChartData["points"] = childRows.flatMap((row, childRowIndex) => {
-        const category = childLabel(row);
-        return metrics.flatMap((metric) => {
-          const metricIndex = result.columns.indexOf(metric);
-          const value = numberValue(row[metricIndex]);
-          return value === null ? [] : [{
-            label: category,
-            series: metric,
-            metric,
-            value,
-            xValue: xIndex >= 0 ? numberValue(row[xIndex]) ?? childRowIndex + 1 : childRowIndex + 1,
-            rowIndex: childRowIndex,
-          }];
-        });
-      });
-      if (childPoints.length) {
-        breakdowns[categoryForRow(parentRow, rowIndex)] = {
-          kind: "aggregate",
-          metrics,
-          points: childPoints,
-          categories: [...new Set(childPoints.map((point) => point.label))],
-          seriesNames: [...new Set(childPoints.map((point) => point.series))],
-        };
-      }
+      const childData = buildBreakdownData(matchingRows, breakdownFields);
+      if (childData) breakdowns[categoryForRow(parentRow, rowIndex)] = childData;
     });
   }
 
-  return wrapChart(renderChart(type, {
-      kind: "aggregate",
-      metrics,
-      points,
-      categories,
-      seriesNames: [...new Set(points.map((point) => point.series))],
-      breakdowns,
-    }));
+  const chartData: AggregateChartData = {
+    kind: "aggregate",
+    metrics,
+    points,
+    categories,
+    seriesNames: [...new Set(points.map((point) => point.series))],
+    breakdownDisplay: chartSettings.breakdownDisplay ?? "subcharts",
+    breakdowns,
+  };
+  return wrapChart(renderChart(type, chartData));
 }
 
 export default function ReportChart({ result, type, report, settings, onSettingsChange, metric, groupBy, xMetric }: {

@@ -182,6 +182,17 @@
 .report-dimension-option:before { color: #7d8798; font-size: 12px; line-height: 10px; content: "○"; }
 .report-dimension-option[aria-pressed="true"]:before { content: "●"; color: #c7b8e8; }
 .report-dimension-option:focus-visible { outline: 2px solid #b8a2ff; outline-offset: 2px; }
+.report-breakdown-display { position: absolute; top: 36px; left: 10px; display: flex; align-items: center; gap: 5px; color: #a5adbc; font-size: 9px; white-space: nowrap; }
+.report-breakdown-display button { padding: 3px 6px; border: 1px solid #393447; border-radius: 5px; color: #a5adbc; background: #171923; font: inherit; cursor: pointer; }
+.report-breakdown-display button:hover,.report-breakdown-display button.selected { border-color: #77669f; color: #e0d7f3; background: #262138; }
+.report-breakdown-display button:focus-visible { outline: 2px solid #b8a2ff; outline-offset: 2px; }
+.report-breakdown-legend { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px 10px; margin: 0 10px 4px; overflow-x: auto; color: #a5adbc; font-size: 9px; white-space: nowrap; scrollbar-width: none; }
+.report-breakdown-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.report-breakdown-legend i { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 2px; }
+.report-breakdown-legend::-webkit-scrollbar { display: none; }
+.report-chart-composition:has(.report-breakdown-display) { padding-top: 66px; }
+.report-chart-composition:has(.report-breakdown-display)::before { height: 60px; }
+.report-dimension-controls:has(.report-breakdown-display) { overflow: visible; }
 .report-chart-composition .report-series-legend { position: absolute; z-index: 2; top: 0; right: 0; width: 50%; height: 34px; box-sizing: border-box; margin: 0; padding: 0 10px; background: transparent; }
 .report-chart-empty { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 27px 16px; text-align: center; }.report-chart-empty strong { color: #dedbe9; font-size: 13px; }.report-chart-empty > span:not(.report-empty-mark) { max-width: 350px; color: #818b9d; font-size: 10px; line-height: 1.6; }
 .report-empty-mark { display: grid; width: 43px; height: 43px; place-items: center; border: 1px solid #433860; border-radius: 12px; color: #b7a4ff; background: #211b32; box-shadow: 0 8px 22px #0003; }.report-chart-empty .button { margin-top: 5px; padding: 8px 11px; font-size: 11px; }

@@ -46,6 +46,26 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
   const step = niceChartStep(rawMax);
   const max = niceChartMax(rawMax);
   const visibleSeries = data.seriesNames.filter(isSeriesVisible);
+  const breakdownNames = [...new Set(Object.values(data.breakdowns ?? {}).flatMap((breakdown) =>
+    breakdown.points.map((point) => point.breakdownLabel ?? point.label),
+  ))];
+  const getBreakdownRows = (
+    breakdown: AggregateChartData | undefined,
+    metric: string,
+    depth = 0,
+    path = "",
+  ): { point: AggregateChartData["points"][number]; depth: number; path: string }[] => {
+    if (!breakdown) return [];
+    return breakdown.points
+      .filter((point) => point.metric === metric && isSeriesVisible(point.series))
+      .flatMap((point) => {
+        const pointPath = path ? `${path}/${point.label}` : point.label;
+        return [
+          { point, depth, path: pointPath },
+          ...getBreakdownRows(breakdown.breakdowns?.[point.label], metric, depth + 1, pointPath),
+        ];
+      });
+  };
   const groups = new Map<string, { label: string; points: typeof visiblePoints }>();
   visiblePoints.forEach((point) => {
     const group = groups.get(point.label);
@@ -66,22 +86,20 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
     const expandedIndex = expandedPoint?.category === group.label
       ? group.points.findIndex((point) => point.metric === expandedPoint.metric)
       : -1;
-    const childPoints = expandedIndex >= 0
-      ? (data.breakdowns?.[group.label]?.points.filter((point) =>
-      point.metric === expandedPoint.metric && isSeriesVisible(point.series),
-      ) ?? [])
+    const childRows = expandedIndex >= 0
+      ? getBreakdownRows(data.breakdowns?.[group.label], expandedPoint.metric)
       : [];
-    const lastPointShift = childPoints.length && group.points.length - 1 > expandedIndex
-      ? childPoints.length * barStep + 4
+    const lastPointShift = childRows.length && group.points.length - 1 > expandedIndex
+      ? childRows.length * barStep + 4
       : 0;
-    const categoryCenterY = childPoints.length > 0
+    const categoryCenterY = childRows.length > 0
       ? groupTop + barHeight / 2
       : groupTop + ((group.points.length - 1) * barStep + lastPointShift) / 2 + barHeight / 2;
     const childTop = groupTop + (expandedIndex + 1) * barStep + 4;
-    const longestLabelLength = Math.max(0, ...childPoints.map((point) => Math.min(point.label.length, 16)));
+    const longestLabelLength = Math.max(0, ...childRows.map(({ point, depth }) => Math.min(point.label.length + depth * 2, 16)));
     const spineX = left - 8 - longestLabelLength * 6 - 8 - 2;
-    nextGroupTop = groupTop + groupStep + (childPoints.length ? childPoints.length * barStep + 4 : 0);
-    return { group, groupTop, categoryCenterY, childPoints, childTop, expandedIndex, spineX };
+    nextGroupTop = groupTop + groupStep + (childRows.length ? childRows.length * barStep + 4 : 0);
+    return { group, groupTop, categoryCenterY, childRows, childTop, expandedIndex, spineX };
   });
   const height = nextGroupTop + 24;
 
@@ -92,6 +110,12 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
         {series}
       </button>
       ))}</div>}
+      {data.breakdownDisplay === "direct" && breakdownNames.length > 0 && <div className="report-breakdown-legend" role="group" aria-label="Breakdown values">
+        {breakdownNames.map((name, index) => <span key={name}>
+          <i style={{ backgroundColor: chartColors[index % chartColors.length] }} />
+          {name}
+        </span>)}
+      </div>}
       <div className="report-svg-wrap">
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Grouped bar chart of ${data.seriesNames.join(", ")}`}>
           {[0, 1, 2, 3, 4, 5].map((tick) => {
@@ -102,19 +126,19 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
               <text x={x} y={height - 4} textAnchor="middle" className="chart-label">{formatChartValue(value)}</text>
             </g>;
           })}
-          {groupLayouts.map(({ group, childPoints, childTop, expandedIndex, spineX }, groupIndex) =>
-            expandedIndex >= 0 && childPoints.length > 0
+          {groupLayouts.map(({ group, childRows, childTop, expandedIndex, spineX }, groupIndex) =>
+            expandedIndex >= 0 && childRows.length > 0
               ? <rect
                 key={`${group.label}-${groupIndex}-spine`}
                 x={spineX}
                 y={childTop - 2}
                 width="2"
-                height={childPoints.length * barStep}
+                height={childRows.length * barStep}
                 className="chart-breakdown-spine"
               />
               : null,
           )}
-          {groupLayouts.map(({ group, groupTop, categoryCenterY, childPoints, childTop, expandedIndex }, groupIndex) => {
+          {groupLayouts.map(({ group, groupTop, categoryCenterY, childRows, childTop, expandedIndex }, groupIndex) => {
             const canExpand = Boolean(data.breakdowns?.[group.label]);
             const label = group.label.length > 18 ? `${group.label.slice(0, 17)}…` : group.label;
             return <g
@@ -131,10 +155,17 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
               {group.points.map((point, pointIndex) => {
                 const barWidth = Math.max(3, (Math.abs(point.value) / max) * plotWidth);
                 const isExpanded = expandedIndex === pointIndex;
-                const shift = childPoints.length > 0 && expandedIndex >= 0 && pointIndex > expandedIndex ? childPoints.length * barStep + 4 : 0;
+                const shift = childRows.length > 0 && expandedIndex >= 0 && pointIndex > expandedIndex ? childRows.length * barStep + 4 : 0;
                 const y = groupTop + pointIndex * barStep + shift;
                 const seriesIndex = data.seriesNames.indexOf(point.series);
                 const detail = `${group.label}\n${point.series}: ${formatChartValue(point.value)}`;
+                const breakdownPoints = data.breakdownDisplay === "direct"
+                  ? (data.breakdowns?.[group.label]?.points.filter((breakdownPoint) =>
+                    breakdownPoint.metric === point.metric && isSeriesVisible(breakdownPoint.series),
+                  ) ?? [])
+                  : [];
+                const breakdownTotal = breakdownPoints.reduce((total, breakdownPoint) => total + Math.abs(breakdownPoint.value), 0);
+                let segmentX = left;
                 return <g
                   key={point.series}
                   className="chart-drillable"
@@ -149,39 +180,75 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
                     }
                   }}
                 >
-                  <rect
-                    x={left}
-                    y={y}
-                    width={barWidth}
-                    height={barHeight}
-                    rx="3"
-                    fill={chartColors[seriesIndex % chartColors.length]}
-                    className={`chart-data-point chart-drillable${isExpanded ? " chart-expanded-parent" : ""}`}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={canExpand ? `${isExpanded ? "Collapse" : "Expand"} ${point.metric} breakdown for ${group.label}` : detail}
-                    aria-expanded={canExpand ? isExpanded : undefined}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        if (canExpand) {
-                          setExpandedPoint(isExpanded ? null : { category: group.label, metric: point.metric });
-                          if (isExpanded) event.currentTarget.blur();
+                  {breakdownPoints.length
+                    ? breakdownPoints.map((breakdownPoint, breakdownIndex) => {
+                      const segmentWidth = breakdownTotal > 0
+                        ? barWidth * Math.abs(breakdownPoint.value) / breakdownTotal
+                        : barWidth / breakdownPoints.length;
+                      const x = segmentX;
+                      segmentX += segmentWidth;
+                      const breakdownName = breakdownPoint.breakdownLabel ?? breakdownPoint.label;
+                      const isFocusableSegment = breakdownIndex === 0;
+                      return <rect
+                        key={`${breakdownPoint.label}-${breakdownPoint.metric}`}
+                        x={x}
+                        y={y}
+                        width={segmentWidth}
+                        height={barHeight}
+                        fill={chartColors[breakdownNames.indexOf(breakdownName) % chartColors.length]}
+                        className={`chart-data-point${isFocusableSegment ? ` chart-drillable${isExpanded ? " chart-expanded-parent" : ""}` : ""}`}
+                        role={isFocusableSegment ? "button" : undefined}
+                        tabIndex={isFocusableSegment ? 0 : undefined}
+                        aria-label={isFocusableSegment
+                          ? canExpand ? `${isExpanded ? "Collapse" : "Expand"} ${point.metric} breakdown for ${group.label}` : detail
+                          : undefined}
+                        aria-expanded={isFocusableSegment && canExpand ? isExpanded : undefined}
+                        onKeyDown={isFocusableSegment ? (event) => {
+                          if ((event.key === "Enter" || event.key === " ") && canExpand) {
+                            event.preventDefault();
+                            setExpandedPoint(isExpanded ? null : { category: group.label, metric: point.metric });
+                            if (isExpanded) event.currentTarget.blur();
+                          }
+                        } : undefined}
+                      >
+                        <title>{`${breakdownPoint.breakdownField ?? "Breakdown"}: ${breakdownName}\n${point.metric}: ${formatChartValue(breakdownPoint.value)}`}</title>
+                      </rect>;
+                    })
+                    : <rect
+                      x={left}
+                      y={y}
+                      width={barWidth}
+                      height={barHeight}
+                      rx="3"
+                      fill={chartColors[seriesIndex % chartColors.length]}
+                      className={`chart-data-point chart-drillable${isExpanded ? " chart-expanded-parent" : ""}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={canExpand ? `${isExpanded ? "Collapse" : "Expand"} ${point.metric} breakdown for ${group.label}` : detail}
+                      aria-expanded={canExpand ? isExpanded : undefined}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          if (canExpand) {
+                            setExpandedPoint(isExpanded ? null : { category: group.label, metric: point.metric });
+                            if (isExpanded) event.currentTarget.blur();
+                          }
                         }
-                      }
-                    }}
-                  />
+                      }}
+                    />}
                   <text x={left + barWidth + 5} y={y + barHeight - 1} className={isExpanded ? "chart-label chart-expanded-value" : "chart-label"}>{formatChartValue(point.value)}</text>
                 </g>;
               })}
-              {childPoints.map((point, pointIndex) => {
+              {childRows.map(({ point, depth, path }, pointIndex) => {
                 const barWidth = Math.max(3, (Math.abs(point.value) / max) * plotWidth);
                 const y = childTop + pointIndex * barStep;
                 const seriesIndex = data.seriesNames.indexOf(point.series);
                 const label = point.label.length > 16 ? `${point.label.slice(0, 15)}…` : point.label;
-                return <g key={`${point.label}-${point.series}`} className="chart-breakdown-point">
-                  <text x={left - 8} y={y + barHeight - 1} textAnchor="end" className="chart-label chart-breakdown-label">{label}</text>
-                  <rect x={left} y={y} width={barWidth} height={barHeight} rx="3" fill={chartColors[seriesIndex % chartColors.length]} />
+                return <g key={`${path}-${point.series}`} className="chart-breakdown-point">
+                  <text x={left - 8 - depth * 10} y={y + barHeight - 1} textAnchor="end" className="chart-label chart-breakdown-label">{label}</text>
+                  <rect x={left} y={y} width={barWidth} height={barHeight} rx="3" fill={chartColors[(depth + seriesIndex) % chartColors.length]}>
+                    <title>{`${point.breakdownField ?? "Breakdown"}: ${point.breakdownLabel ?? point.label}\n${point.metric}: ${formatChartValue(point.value)}`}</title>
+                  </rect>
                   <text x={left + barWidth + 5} y={y + barHeight - 1} className="chart-label">{formatChartValue(point.value)}</text>
                 </g>;
               })}

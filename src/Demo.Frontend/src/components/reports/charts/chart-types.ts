@@ -4,6 +4,8 @@ export type AggregateChartPoint = ChartPoint & {
   series: string;
   metric: string;
   rowIndex: number;
+  breakdownField?: string;
+  breakdownLabel?: string;
 };
 
 export type SimpleChartData = {
@@ -17,6 +19,7 @@ export type AggregateChartData = {
   points: AggregateChartPoint[];
   categories: string[];
   seriesNames: string[];
+  breakdownDisplay?: "subcharts" | "direct";
   breakdowns?: Record<string, AggregateChartData>;
 };
 

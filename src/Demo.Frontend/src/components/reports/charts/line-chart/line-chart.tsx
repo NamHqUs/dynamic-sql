@@ -100,7 +100,9 @@ function AggregateLineChart({ data, hiddenSeries, onToggleSeries }: {
                   </path>
                   <g className="chart-hover-tooltip" transform={`translate(${tooltipX},${tooltipY})`}>
                     <rect width="184" height="40" rx="5" />
-                    <text x="8" y="15" className="chart-tooltip-label">{`${previousValue.label} → ${currentValue.label}`.slice(0, 28)}</text>
+                    <text x="8" y="15" className="chart-tooltip-label">
+                      {`${previousValue.label} → ${currentValue.label}`.slice(0, 28)}
+                    </text>
                     <text x="8" y="31" className="chart-tooltip-value">{`${series}: ${formatChartValue(previousValue.value)} → ${formatChartValue(currentValue.value)}`.slice(0, 30)}</text>
                   </g>
                 </g>;
