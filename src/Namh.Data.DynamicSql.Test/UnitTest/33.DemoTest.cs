@@ -149,6 +149,13 @@ internal class _33_DemoTest : TestBase
 
         QueryDefinition query = QueryDefinitionParser.ParseFromYml(yml);
 
+        var text = query.ToYml();
+
+        QueryDefinition query2 = QueryDefinitionParser.ParseFromYml(text);
+
+        Assert.That(query2.Entity, Is.EqualTo("InvoiceItems"));
+        Assert.That(string.Join(",", query2.Fields.Select(e => e.ToText())), Is.EqualTo(string.Join(",", query.Fields.Select(e => e.ToText()))));
+
         var data = _db.Query(query).ToList();
         Assert.That(data, Is.Not.Empty);
         var alias = query.EntityAliases.Single();
@@ -213,7 +220,10 @@ internal class _33_DemoTest : TestBase
         var files = Directory.GetFiles(path, "*.yml", SearchOption.AllDirectories);
         foreach(var file in files)
         {
-            var query = QueryDefinitionParser.ParseFromYml(new FileInfo(file));
+            var lines = File.ReadAllLines(file)
+                .Where(line => !line.StartsWith("Name:", StringComparison.Ordinal) && line != "Query:")
+                .Select(line => line.StartsWith("  ", StringComparison.Ordinal) ? line[2..] : line);
+            var query = QueryDefinitionParser.ParseFromYml(string.Join(Environment.NewLine, lines));
             var data = _db.Query(query).ToList();
             Assert.That(data.Count, Is.GreaterThanOrEqualTo(0));
         };

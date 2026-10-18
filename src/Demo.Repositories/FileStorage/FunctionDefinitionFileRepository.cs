@@ -9,7 +9,7 @@ using System.Text.Json;
 namespace Demo.Repositories.FileStorage;
 
 public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathResolver)
-    : RepositoryBase<SqlFunctionDefintion>, IFunctionDefinitionRepository
+    : FileRepositoryBase<SqlFunctionDefintion>(filePathResolver, FOLDER_NAME), IFunctionDefinitionRepository
 {
     private const string FOLDER_NAME = "FunctionDefinitions";
 
@@ -17,7 +17,7 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
 
     public override IReadOnlyCollection<SqlFunctionDefintion> GetUserDefined(string userSectionId)
     {
-        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
+        var dir = GetUserStoreFolder(userSectionId);
         if (!Directory.Exists(dir))
             return [];
 
@@ -38,22 +38,22 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
         return definitions.Values.ToArray();
     }
 
-    public override SqlFunctionDefintion? Get(string userSectionId, string name)
+    public override SqlFunctionDefintion? Get(string userSectionId, string id)
         => GetUserDefined(userSectionId).FirstOrDefault(definition =>
-            string.Equals(definition.Name, name, StringComparison.OrdinalIgnoreCase));
+            string.Equals(definition.Name, id, StringComparison.OrdinalIgnoreCase));
 
     public override void Save(string userSectionId, SqlFunctionDefintion definition)
     {
-        Directory.CreateDirectory(filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME));
-        var path = GetPath(userSectionId, definition.Name);
+        Directory.CreateDirectory(GetUserStoreFolder(userSectionId));
+        var path = GetUserFilePath(userSectionId, GetFileId(definition.Name));
         File.WriteAllText(path, JsonSerializer.Serialize(
             FunctionDefinitionDto.FromFunctionDefinition(definition),
             new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    public override bool Delete(string userSectionId, string functionName)
+    public override bool Delete(string userSectionId, string id)
     {
-        var path = GetPath(userSectionId, functionName);
+        var path = GetUserFilePath(userSectionId, GetFileId(id));
         if (!File.Exists(path))
             return false;
         File.Delete(path);
@@ -65,10 +65,9 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
             .RegisterFunctions(CustomFunctionDefintions.Functions)
             .GetFunctions();
 
-    private string GetPath(string userSectionId, string name)
+    private static string GetFileId(string id)
     {
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(name.ToUpperInvariant())));
-        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
-        return Path.Combine(dir, $"{hash}.json");
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(id.ToUpperInvariant())));
+        return hash;
     }
 }

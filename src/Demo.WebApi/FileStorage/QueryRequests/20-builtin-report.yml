@@ -1,0 +1,15 @@
+Name: 20. Unpaid revenue exposure by customer
+Query:
+  # CustomerId preserves the source grouping by c.Id; it is an extra projected field.
+  Entity: Customers
+  Fields:
+    - Name
+    - Segment
+    - Count(Invoices.Id) | OpenInvoices
+    - Sum(Invoices.TotalAmount) | AmountDue
+    - Min(Invoices.DueDate) | OldestDueDate
+    - Id | CustomerId
+  Filter: Invoices.Status = <Sent>
+  Sorts: AmountDue DESC
+  Page:
+  PageSize:

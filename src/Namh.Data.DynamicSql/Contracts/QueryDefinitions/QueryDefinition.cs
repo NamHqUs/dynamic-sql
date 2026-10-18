@@ -19,35 +19,46 @@ public sealed class QueryDefinition
     public static QueryDefinition FromYml(string yml)
         => QueryDefinitionParser.ParseFromYml(yml);
 
-    public override string ToString()
+    public string ToYml()
     {
-        var lines = new List<string?>
-        {
-            Name is null ? null : $"Name: {Name}"
-        };
+        List<string> lines = [];
+        lines.Add($"Name: {Name}");
+        lines.Add($"Entity: {Entity}");
 
-        if (EntityAliases.Count == 0)
+        if (EntityAliases.Count > 0)
         {
-            lines.Add($"Entity: {Entity}");
-        }
-        else
-        {
-            lines.Add("Entities:");
-            lines.Add($"  {Entity}");
+            lines.Add("EntityAliases:");
             lines.AddRange(EntityAliases.Select(alias =>
-                $"  {alias.Alias}: {alias.RelationPath}({string.Join(", ", alias.RelatedKeys.Select(key => $"{key.FromDbColumn}:{key.ToDbColumn}"))})"));
+                $"  - \"{alias.Alias}: {alias.RelationPath}({string.Join(", ", alias.RelatedKeys.Select(key => $"{key.FromDbColumn}:{key.ToDbColumn}"))})\""));
         }
 
-        lines.AddRange([
-            $"Fields: {string.Join(", ", Fields.Select(field => field.ToText()))}",
-            $"Filters: {Filter?.ToText() ?? string.Empty}",
-            $"Sorts: {string.Join(", ", Sorts.Select(FormatSort))}",
-            $"Page: {Page}",
-            $"PageSize: {PageSize}"
-        ]);
+        if (Fields.Count > 0)
+        {
+            lines.Add("Fields:");
+            lines.AddRange(Fields.Select(field => $"  - {field.ToText()}"));
+        }
+
+        if (Filter is not null)
+        {
+            lines.Add($"Filter: {Filter.ToText()}");
+        }
+
+        if (Sorts.Count > 0)
+        {
+            lines.Add($"Sorts: {string.Join(", ", Sorts.Select(FormatSort))}");
+        }
+
+        if (Page is not null)
+            lines.Add($"Page: {Page}");
+
+        if (PageSize is not null)
+            lines.Add($"PageSize: {PageSize}");
 
         return string.Join(Environment.NewLine, lines.Where(line => line is not null)!);
     }
+
+    public override string ToString()
+        => ToYml();
 
     private static string FormatSort(SortDefinition sort)
         => $"{sort.Field.ToText()} {sort.Direction switch

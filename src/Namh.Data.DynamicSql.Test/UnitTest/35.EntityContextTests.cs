@@ -105,26 +105,22 @@ internal sealed class _35_EntityContextTests : TestBase
     public void BuiltinReportsLoadAsReadOnlyAndRestoreFromTheirYamlText()
     {
         var directory = new DirectoryInfo("../../../../Demo.WebApi/FileStorage/QueryRequests").FullName;
-        var files = Directory.EnumerateFiles(directory, "*.yml")
-            .Select(path =>
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                var requestText = File.ReadAllText(path);
-                return new ReportDto(
-                    Path.GetFileName(path)!,
-                    QueryDefinitionParser.ParseFromYml(requestText),
-                    requestText)
-                {
-                    CanDelete = false
-                };
+                ["FileStoragePath"] = Path.GetRelativePath(
+                    Environment.CurrentDirectory,
+                    Directory.GetParent(directory)!.FullName)
             })
-            .ToArray();
+            .Build();
+        var repository = new ReportFileRepository(new FilePathResolver(configuration));
         var service = new ReportService(
-            new TestReportRepository(files),
+            repository,
             new TestUserSectionManager());
 
         var reports = service.ListReports();
 
-        Assert.That(reports, Has.Count.EqualTo(files.Length));
+        Assert.That(reports, Has.Count.EqualTo(Directory.EnumerateFiles(directory, "*.yml").Count()));
         Assert.That(reports, Has.All.Property(nameof(ReportDto.CanDelete)).False);
         foreach (var report in reports)
         {
@@ -142,9 +138,88 @@ internal sealed class _35_EntityContextTests : TestBase
     }
 
     [Test]
+    public void ReportRepositoryCreatesTenCharacterIdsAndUsesThemAsFileNames()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "DynamicSqlTest", Guid.NewGuid().ToString("N"));
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["FileStoragePath"] = Path.GetRelativePath(Environment.CurrentDirectory, root)
+            })
+            .Build();
+        var resolver = new FilePathResolver(configuration);
+        var repository = new ReportFileRepository(resolver);
+
+        try
+        {
+            var id = repository.CreateId("section-a");
+            Assert.That(id, Does.Match("^[A-Za-z0-9]{10}$"));
+
+            repository.Save("section-a", new ReportDto(
+                id,
+                new QueryDefinition { Name = "test", Entity = "Product" }));
+
+            var path = Path.Combine(resolver.GetUserStoreFolder("section-a", "QueryRequests"), $"{id}.json");
+            Assert.That(File.Exists(path), Is.True);
+            Assert.That(repository.Get("section-a", id)?.FileName, Is.EqualTo(id));
+            Assert.That(repository.Delete("section-a", id), Is.True);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Test]
+    public void ReportRepositoryReadsBuiltinYamlWithNestedQuery()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "DynamicSqlTest", Guid.NewGuid().ToString("N"));
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["FileStoragePath"] = Path.GetRelativePath(Environment.CurrentDirectory, root)
+            })
+            .Build();
+        var resolver = new FilePathResolver(configuration);
+        var builtinDirectory = resolver.GetBuiltinStoreFolder("QueryRequests");
+        Directory.CreateDirectory(builtinDirectory);
+        File.WriteAllText(Path.Combine(builtinDirectory, "builtin.yml"),
+            """
+            Name: Built-in report
+            Description: Built-in description
+            Query:
+              Entity: Products
+              Fields:
+                - ProductName
+            """);
+        var repository = new ReportFileRepository(resolver);
+
+        try
+        {
+            var report = repository.GetBuiltin().Single();
+
+            Assert.That(report.FileName, Is.EqualTo("builtin.yml"));
+            Assert.That(report.Query.Name, Is.EqualTo("Built-in report"));
+            Assert.That(report.Query.Entity, Is.EqualTo("Products"));
+            Assert.That(report.Description, Is.EqualTo("Built-in description"));
+            Assert.That(report.CanDelete, Is.False);
+            Assert.That(
+                QueryDefinitionParser.ParseFromYml(report.RequestText!).Entity,
+                Is.EqualTo("Products"));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Test]
     public void BuiltinSqlFunctionsAreReadOnly()
     {
-        var repository = new FunctionDefinitionFileRepository(null!);
+        var repository = new FunctionDefinitionFileRepository(new FilePathResolver(
+            new ConfigurationBuilder().Build()));
         var builtins = new MetaProvider([]).GetFunctions()
             .Concat(CustomFunctionDefintions.Functions);
         var builtinNames = repository.GetBuiltin()
@@ -200,14 +275,15 @@ internal sealed class _35_EntityContextTests : TestBase
     {
         private readonly Dictionary<string, ReportDto> _reports = new(StringComparer.OrdinalIgnoreCase);
 
-        public IReadOnlyList<ReportDto> GetUserDefined(string userSectionId)
+        public string CreateId(string userSectionId) => Guid.NewGuid().ToString("N")[..10];
+        public IReadOnlyCollection<ReportDto> GetUserDefined(string userSectionId)
             => _reports.Values.ToArray();
-        public IReadOnlyList<ReportDto> GetBuiltin() => builtinReports;
-        public ReportDto? Get(string userSectionId, string fileName)
-            => _reports.GetValueOrDefault(fileName);
+        public IReadOnlyCollection<ReportDto> GetBuiltin() => builtinReports;
+        public ReportDto? Get(string userSectionId, string id)
+            => _reports.GetValueOrDefault(id);
         public void Save(string userSectionId, ReportDto report)
             => _reports[report.FileName] = report;
-        public bool Delete(string userSectionId, string fileName) => _reports.Remove(fileName);
+        public bool Delete(string userSectionId, string id) => _reports.Remove(id);
     }
 #endif
 

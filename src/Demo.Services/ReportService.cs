@@ -28,9 +28,9 @@ public sealed class ReportService(
         string? description = null,
         string? chartType = null)
     {
-        fileName ??= CreateRandomFileName();
-        EnsureNotBuiltin(fileName);
         var sectionId = userSectionManager.GetSectionId();
+        fileName ??= repository.CreateId(sectionId);
+        EnsureNotBuiltin(fileName);
         var report = new ReportDto(fileName, query, requestText, description, chartType);
         repository.Save(sectionId, report);
         return report;
@@ -224,10 +224,7 @@ public sealed class ReportService(
         return !IsBuiltin(fileName) && repository.Delete(sectionId, fileName);
     }
 
-    private static string CreateRandomFileName()
-        => $"query_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.json";
-
-    private IReadOnlyList<ReportDto> GetBuiltinReports() => repository.GetBuiltin();
+    private IReadOnlyList<ReportDto> GetBuiltinReports() => repository.GetBuiltin().ToArray();
 
     private IReadOnlyList<ReportDto> GetUserDefinedQueryRequests(string userSectionId)
     {
@@ -239,7 +236,7 @@ public sealed class ReportService(
         if (conflict is not null)
             throw new InvalidDataException(
                 $"User query request '{conflict.FileName}' cannot replace a built-in request.");
-        return userDefined;
+        return userDefined.ToArray();
     }
 
     private void EnsureNoBuiltinConflict(string userSectionId)

@@ -1,0 +1,12 @@
+Name: 11. Customers with paid orders
+Query:
+  Entity: Customers
+  Fields:
+    - Id
+    - Name
+    - Segment
+    - Region
+  Filter: Invoices.Status = <Paid>
+  Sorts: Name ASC
+  Page:
+  PageSize:

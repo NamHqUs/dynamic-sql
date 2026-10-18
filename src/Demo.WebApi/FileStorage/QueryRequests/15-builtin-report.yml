@@ -1,0 +1,11 @@
+Name: 15. Invoice status funnel
+Query:
+  Entity: Invoices
+  Fields:
+    - Status
+    - Count() | InvoiceCount
+    - Sum(TotalAmount) | PipelineValue
+  Filter:
+  Sorts: PipelineValue DESC
+  Page:
+  PageSize:

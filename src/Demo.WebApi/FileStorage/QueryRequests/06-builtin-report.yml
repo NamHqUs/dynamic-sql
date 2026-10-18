@@ -1,0 +1,15 @@
+Name: 6. Outstanding receivables and aging
+Query:
+  # Partial: DateSub counts whole calendar-day boundaries; the SQL truncates julianday elapsed-day differences.
+  Entity: Invoices
+  Fields:
+    - InvoiceNumber
+    - Customer.Name | Name
+    - InvoiceDate
+    - DueDate
+    - TotalAmount
+    - DateSub(DueDate, GETDATE()) | DaysOverdue
+  Filter: Status = <Sent>
+  Sorts: DaysOverdue DESC
+  Page:
+  PageSize:

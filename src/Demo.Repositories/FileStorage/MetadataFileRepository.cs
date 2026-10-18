@@ -6,13 +6,13 @@ using System.Text.Json;
 namespace Demo.Repositories.FileStorage;
 
 public sealed class MetadataFileRepository(FilePathResolver filePathResolver)
-    : RepositoryBase<Entity>, IMetadataRepository
+    : FileRepositoryBase<Entity>(filePathResolver, FOLDER_NAME), IMetadataRepository
 {
     private const string FOLDER_NAME = "Metadata";
 
     public void Reset(string userSectionId)
     {
-        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
+        var dir = GetUserStoreFolder(userSectionId);
         if (Directory.Exists(dir))
             Directory.Delete(dir, recursive: true);
     }
@@ -21,7 +21,7 @@ public sealed class MetadataFileRepository(FilePathResolver filePathResolver)
 
     public override IReadOnlyCollection<Entity> GetUserDefined(string userSectionId)
     {
-        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
+        var dir = GetUserStoreFolder(userSectionId);
         if (!Directory.Exists(dir))
             return [];
 
@@ -31,35 +31,26 @@ public sealed class MetadataFileRepository(FilePathResolver filePathResolver)
             .ToArray();
     }
 
-    public override Entity? Get(string userSectionId, string name)
+    public override Entity? Get(string userSectionId, string id)
         => GetUserDefined(userSectionId).FirstOrDefault(entity =>
-            string.Equals(entity.Name, name, StringComparison.OrdinalIgnoreCase));
+            string.Equals(entity.Name, id, StringComparison.OrdinalIgnoreCase));
 
     public override void Save(string userSectionId, Entity entity)
     {
-        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
+        var dir = GetUserStoreFolder(userSectionId);
         Directory.CreateDirectory(dir);
         File.WriteAllText(
-            GetPath(userSectionId, entity.Name),
+            GetUserFilePath(userSectionId, $"{entity.Name}.json"),
             JsonSerializer.Serialize(entity, new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    public override bool Delete(string userSectionId, string entityName)
+    public override bool Delete(string userSectionId, string id)
     {
-        var path = GetPath(userSectionId, entityName);
+        var path = GetUserFilePath(userSectionId, $"{id}.json");
         if (!File.Exists(path))
             return false;
         File.Delete(path);
         return true;
     }
 
-    private string GetPath(string userSectionId, string name)
-    {
-        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
-        var path = Path.GetFullPath(Path.Combine(dir, $"{name}.json"));
-        var root = Path.GetFullPath(dir) + Path.DirectorySeparatorChar;
-        if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Entity name is not a valid file name.", nameof(name));
-        return path;
-    }
 }
