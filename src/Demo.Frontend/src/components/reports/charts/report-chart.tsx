@@ -169,12 +169,13 @@ function AggregateBarChart({ result, type, report, settings, onSettingsChange, x
 
   const breakdowns: Record<string, AggregateChartData> = {};
   const breakdownFields = fields.axes.filter((field) => !groupingFields.includes(field));
-  if (groupingFields.length === 1 && breakdownFields.length > 0) {
-    const parentIndex = groupingIndices[0];
+  if (groupingFields.length > 0 && breakdownFields.length > 0) {
     const breakdownIndices = breakdownFields.map((field) => result.columns.indexOf(field));
     chartRows.forEach((parentRow, rowIndex) => {
-      const parentValue = parentRow[parentIndex] || "Unspecified";
-      const matchingRows = result.rows.filter((row) => (row[parentIndex] || "Unspecified") === parentValue);
+      const parentValues = groupingIndices.map((index) => parentRow[index] || "Unspecified");
+      const matchingRows = result.rows.filter((row) =>
+        groupingIndices.every((index, valueIndex) => (row[index] || "Unspecified") === parentValues[valueIndex]),
+      );
       const childRows = [...groupRows(matchingRows, breakdownIndices).values()].map(rollupGroup).slice(0, 12);
       const childLabel = (row: string[]) =>
         breakdownFields.map((field) => row[result.columns.indexOf(field)] || "Unspecified").join(" · ") || "All records";
