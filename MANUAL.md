@@ -476,20 +476,21 @@ and `GETDATE()` renders the provider's current date and time.
 var query = QueryDefinitionParser.ParseFromYml("""
 Name: Product totals
 Entity: InvoiceItems
+EntityAliases:
+  - "b: InvoiceItems(InvoiceId)"
 Fields:
   - Product.Name|Product
   - Count()|ItemCount
-Sorts:
-  - Field: ItemCount
-    Direction: Descending
+Sorts: ItemCount DESC
 """);
 
 var fileQuery = QueryDefinitionParser.ParseFromYml(new FileInfo("query.yml"));
 ```
 
-YAML query definitions use the same properties as `QueryDefinition`. Entity
-aliases use `Name`, `Entity`, and `JoinKeys`; each join key maps a column to
-itself. Fields and filters use the existing query expression syntax.
+YAML entity aliases use the string form `alias: RelationPath(key[, ...])`;
+quote the value so YAML treats it as a string. A key can map different columns
+with `fromColumn:toColumn`. Fields are a list of expressions, and sorts are a
+comma-separated string with an optional `ASC` or `DESC` direction.
 
 ## SQL diagnostics
 

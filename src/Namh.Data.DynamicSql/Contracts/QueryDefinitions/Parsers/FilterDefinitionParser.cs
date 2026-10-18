@@ -8,8 +8,8 @@ internal sealed class FilterDefinitionParser
     private readonly List<Token> _tokens;
     private int _position;
 
-    public static FilterDefinition Parse(string text)
-        => new FilterDefinitionParser(text).Parse();
+    public static FilterDefinition? Parse(string? text)
+        => string.IsNullOrWhiteSpace(text) ? null : new FilterDefinitionParser(text).Parse();
 
     private FilterDefinitionParser(string text)
         => _tokens = Tokenize(text);
