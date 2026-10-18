@@ -63,7 +63,13 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
         var dir = _filePathResolver.GetUserStoreFolder(FOLDER_NAME);
         Directory.CreateDirectory(dir);
         File.WriteAllText(GetPath(request.FileName), JsonSerializer.Serialize(
-            new { Query = request.Query, RequestText = request.RequestText },
+            new
+            {
+                Query = request.Query,
+                RequestText = request.RequestText,
+                Description = request.Description,
+                ChartType = request.ChartType
+            },
             Options(writeIndented: true)));
     }
 
@@ -90,6 +96,10 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
         var queryElement = TryGetProperty(root, "Query", out var storedQuery) ? storedQuery : root;
         var requestText = TryGetProperty(root, "RequestText", out var text) &&
             text.ValueKind == JsonValueKind.String ? text.GetString() : null;
+        var description = TryGetProperty(root, "Description", out var descriptionElement) &&
+            descriptionElement.ValueKind == JsonValueKind.String ? descriptionElement.GetString() : null;
+        var chartType = TryGetProperty(root, "ChartType", out var chartElement) &&
+            chartElement.ValueKind == JsonValueKind.String ? chartElement.GetString() : null;
         var query = JsonSerializer.Deserialize<QueryDefinition>(queryElement.GetRawText(), Options())
             ?? throw new InvalidDataException($"Query request file '{Path.GetFileName(path)}' is empty.");
 
@@ -108,7 +118,7 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
             };
         }
 
-        return new StoredQueryRequest(Path.GetFileName(path)!, query, requestText);
+        return new StoredQueryRequest(Path.GetFileName(path)!, query, requestText, description, chartType);
     }
 
     private static ProjectionDefinition ParseLegacyProjection(JsonElement column)

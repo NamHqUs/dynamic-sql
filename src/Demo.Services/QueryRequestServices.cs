@@ -15,10 +15,12 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
     public StoredQueryRequest SaveQueryRequest(
         QueryDefinition query,
         string? fileName = null,
-        string? requestText = null)
+        string? requestText = null,
+        string? description = null,
+        string? chartType = null)
     {
         fileName ??= CreateRandomFileName();
-        var request = new StoredQueryRequest(fileName, query, requestText);
+        var request = new StoredQueryRequest(fileName, query, requestText, description, chartType);
         repository.Save(request);
         return request;
     }
@@ -182,12 +184,17 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
         return (entries[0], aliases);
     }
 
-    public StoredQueryRequest? UpdateQueryRequest(string fileName, QueryDefinition query, string? requestText = null)
+    public StoredQueryRequest? UpdateQueryRequest(
+        string fileName,
+        QueryDefinition query,
+        string? requestText = null,
+        string? description = null,
+        string? chartType = null)
     {
         if (repository.Get(fileName) is null)
             return null;
 
-        var request = new StoredQueryRequest(fileName, query, requestText);
+        var request = new StoredQueryRequest(fileName, query, requestText, description, chartType);
         repository.Save(request);
         return request;
     }

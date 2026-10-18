@@ -99,6 +99,8 @@ export type StoredQueryRequest = {
   fileName: string;
   query: ApiQueryRequest;
   requestText?: string | null;
+  description?: string | null;
+  chartType?: string | null;
   canDelete: boolean;
 };
 
@@ -452,7 +454,9 @@ export const fetchSavedQueryRequests = createAsyncThunk(
         || typeof item.fileName !== "string"
         || typeof item.canDelete !== "boolean"
         || !item.query
-        || (item.requestText !== undefined && item.requestText !== null && typeof item.requestText !== "string"))) {
+        || (item.requestText !== undefined && item.requestText !== null && typeof item.requestText !== "string")
+        || (item.description !== undefined && item.description !== null && typeof item.description !== "string")
+        || (item.chartType !== undefined && item.chartType !== null && typeof item.chartType !== "string"))) {
         return rejectWithValue("Query request API must return saved requests.");
       }
       return payload as StoredQueryRequest[];
@@ -464,18 +468,26 @@ export const fetchSavedQueryRequests = createAsyncThunk(
 
 export const saveQueryRequest = createAsyncThunk(
   "queryBuilder/saveRequest",
-  async ({ fileName, name, definition, requestText }: {
+  async ({ fileName, name, definition, requestText, description, chartType }: {
     fileName?: string;
     name: string;
     definition: QueryDefinition;
     requestText?: string;
+    description?: string;
+    chartType?: string;
   }, { rejectWithValue }) => {
     try {
       const url = fileName ? apiUrls.queryRequests.byFileName(fileName) : apiUrls.queryRequests.list;
       const payload = await requestJson(url, {
         method: fileName ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...createApiQuery(definition), name, ...(requestText !== undefined ? { requestText } : {}) }),
+        body: JSON.stringify({
+          ...createApiQuery(definition),
+          name,
+          ...(requestText !== undefined ? { requestText } : {}),
+          ...(description !== undefined ? { description } : {}),
+          ...(chartType !== undefined ? { chartType } : {}),
+        }),
       });
       if (!payload || typeof payload.fileName !== "string" || !payload.query
         || typeof payload.canDelete !== "boolean") {

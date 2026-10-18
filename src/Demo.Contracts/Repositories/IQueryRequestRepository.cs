@@ -6,7 +6,9 @@ namespace Demo.Contracts.Repositories;
 public sealed record StoredQueryRequest(
     string FileName,
     QueryDefinition Query,
-    string? RequestText = null)
+    string? RequestText = null,
+    string? Description = null,
+    string? ChartType = null)
 {
     public bool CanDelete { get; init; } = true;
 }

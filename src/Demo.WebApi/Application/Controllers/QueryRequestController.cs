@@ -40,16 +40,18 @@ public sealed class QueryRequestController(
     [HttpPost]
     public ActionResult<StoredQueryRequest> Save([FromBody] JsonElement payload)
     {
-        var (query, requestText) = ParseSavePayload(payload);
-        var saved = queryRequestService.SaveQueryRequest(query, requestText: requestText);
+        var (query, requestText, description, chartType) = ParseSavePayload(payload);
+        var saved = queryRequestService.SaveQueryRequest(
+            query, requestText: requestText, description: description, chartType: chartType);
         return Created($"/query-request/{saved.FileName}", saved);
     }
 
     [HttpPut("{fileName}")]
     public ActionResult<StoredQueryRequest> Update(string fileName, [FromBody] JsonElement payload)
     {
-        var (query, requestText) = ParseSavePayload(payload);
-        var request = queryRequestService.UpdateQueryRequest(fileName, query, requestText);
+        var (query, requestText, description, chartType) = ParseSavePayload(payload);
+        var request = queryRequestService.UpdateQueryRequest(
+            fileName, query, requestText, description, chartType);
         return request is null ? NotFound() : Ok(request);
     }
 
@@ -57,7 +59,7 @@ public sealed class QueryRequestController(
     public IActionResult Delete(string fileName)
         => queryRequestService.DeleteQueryRequest(fileName) ? NoContent() : NotFound();
 
-    private (QueryDefinition Query, string? RequestText) ParseSavePayload(JsonElement payload)
+    private (QueryDefinition Query, string? RequestText, string? Description, string? ChartType) ParseSavePayload(JsonElement payload)
     {
         var queryElement = payload.ValueKind == JsonValueKind.Object &&
             payload.TryGetProperty("query", out var wrappedQuery)
@@ -76,7 +78,24 @@ public sealed class QueryRequestController(
                     _ => throw new JsonException("Request text must be a string or null.")
                 }
                 : null;
-        return (query, requestText);
+        var description = ReadOptionalString(payload, "description", "Description");
+        var chartType = ReadOptionalString(payload, "chartType", "ChartType");
+        return (query, requestText, description, chartType);
+    }
+
+    private static string? ReadOptionalString(JsonElement payload, string camelCaseName, string pascalCaseName)
+    {
+        if (payload.ValueKind != JsonValueKind.Object)
+            return null;
+        if (!payload.TryGetProperty(camelCaseName, out var value) &&
+            !payload.TryGetProperty(pascalCaseName, out value))
+            return null;
+        return value.ValueKind switch
+        {
+            JsonValueKind.Null => null,
+            JsonValueKind.String => value.GetString(),
+            _ => throw new JsonException($"{pascalCaseName} must be a string or null.")
+        };
     }
 
     /// <summary>Request payload for parsing edited query text against a fixed entity.</summary>

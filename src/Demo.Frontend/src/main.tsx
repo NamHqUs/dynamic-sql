@@ -6,6 +6,7 @@ import DataSources from "./components/data-sources/data-sources";
 import QueryBuilder from "./components/query-builder/query-builder";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
 import SqlFunctions from "./components/sql-functions/sql-functions";
+import Reports from "./components/reports/reports";
 import { MessageBoxProvider } from "./components/message-box/message-box";
 import { store } from "./store/store";
 import "./styles.css";
@@ -47,11 +48,12 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         <div className="brand"><span className="brand-mark"><Icon name="database" size={18} /></span><span>Dynamic<span className="brand-accent">SQL</span></span><span className="brand-divider" /><span className="brand-product">Studio</span></div>
-        <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigate("builder")}><Icon name="grid" /> Query builder</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigate("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "functions" ? "nav-item active" : "nav-item"} onClick={() => navigate("functions")}><Icon name="code" /> Function definitions</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigate("sources")}><Icon name="database" /> Data sources</button></nav>
+        <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigate("builder")}><Icon name="grid" /> Query builder</button><button className={page === "reports" ? "nav-item active" : "nav-item"} onClick={() => navigate("reports")}><Icon name="chart" /> Reports</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigate("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "functions" ? "nav-item active" : "nav-item"} onClick={() => navigate("functions")}><Icon name="code" /> Function definitions</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigate("sources")}><Icon name="database" /> Data sources</button></nav>
         <div className="top-actions"><span className="live-dot" /> Local demo <button className="avatar">N</button></div>
       </header>
 
       {page === "sources" ? <DataSources /> : null}
+      {page === "reports" ? <Reports /> : null}
       {metadataVisited && <div hidden={page !== "metadata"}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
       {page === "builder" ? <QueryBuilder onNavigationGuardChange={updateQueryBuilderNavigationGuard} /> : null}
       {page === "functions" ? <SqlFunctions onNavigationGuardChange={updateFunctionsNavigationGuard} /> : null}
