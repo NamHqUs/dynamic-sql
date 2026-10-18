@@ -187,6 +187,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     [contextMetadata, definition.entity],
   );
   const selectedSavedRequest = savedRequests.find((item) => item.fileName === selectedFileName);
+  const selectedRequestIsBuiltin = selectedSavedRequest?.canDelete === false;
   const canModifySelectedRequest = !selectedFileName || selectedSavedRequest?.canDelete === true;
   const defaultNewDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
   const hasUnsavedQueryChanges = (currentDefinition: QueryDefinition) => {
@@ -488,7 +489,6 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   };
 
   const selectSavedRequest = (fileName: string) => {
-    if (fileName === selectedFileName) return;
     requestQueryChangeNavigation(() => loadSavedRequest(fileName));
   };
 
