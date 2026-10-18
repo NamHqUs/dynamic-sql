@@ -243,6 +243,7 @@ export default function Reports() {
 
   const openReportDetails = (report: ReportDto) => {
     detailScrollPosition.current = window.scrollY;
+    window.scrollTo(0, 0);
     setDetailReport(report);
   };
 

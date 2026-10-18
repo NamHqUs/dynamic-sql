@@ -11,7 +11,7 @@ import {
   type ReportAxis,
   type ReportChartSettings,
 } from "../report-model";
-import { ReportChart } from "../report-item/report-item";
+import ReportChart from "../charts/report-chart";
 import "./report-detail.css";
 
 type ReportDetailProps = {
@@ -165,10 +165,8 @@ export default function ReportDetail({
   }, [onClose]);
 
   return (
-    <div className="report-detail-page" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
-    }}>
-      <section className="report-detail-panel" role="dialog" aria-modal="true" aria-labelledby="report-detail-title">
+    <div className="report-detail-page">
+      <section className="report-detail-panel" role="region" aria-labelledby="report-detail-title">
         <header className="report-detail-heading">
           <div>
             <span className="eyebrow">REPORT DETAIL</span>

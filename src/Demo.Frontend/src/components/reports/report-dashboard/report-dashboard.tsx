@@ -80,6 +80,22 @@ export default function ReportDashboard({
     return sourceIndex < targetIndex ? "after" : "before";
   };
 
+  if (detailReport) {
+    return <ReportDetail
+      key={detailReport.fileName}
+      report={detailReport}
+      result={detailResult}
+      chartType={detailChartType}
+      chartSettings={detailChartSettings}
+      loading={detailLoading}
+      error={detailError}
+      onClose={onCloseDetails}
+      onRun={onRunDetails}
+      onChartTypeChange={(chartType) => onChartTypeChange(detailReport, chartType)}
+      onChartSettingsChange={(settings) => onChartSettingsChange(detailReport, settings)}
+    />;
+  }
+
   return (
     <div className="reports-workspace">
     <section className="reports-hero" aria-labelledby="reports-hero-title">
@@ -117,20 +133,6 @@ export default function ReportDashboard({
         </button>
       </div>
       <div className="report-group-dashboard" id="report-group-dashboard">
-        <>
-        {detailReport && <ReportDetail
-          key={detailReport.fileName}
-          report={detailReport}
-          result={detailResult}
-          chartType={detailChartType}
-          chartSettings={detailChartSettings}
-          loading={detailLoading}
-          error={detailError}
-          onClose={onCloseDetails}
-          onRun={onRunDetails}
-          onChartTypeChange={(chartType) => onChartTypeChange(detailReport, chartType)}
-          onChartSettingsChange={(settings) => onChartSettingsChange(detailReport, settings)}
-        />}
           <div className="report-group-dashboard-heading">
             <div><span className="eyebrow">REPORT DASHBOARD</span><h3>{category}</h3><p>{filteredReports.length} {filteredReports.length === 1 ? "report" : "reports"}{search ? " matching your search" : " for this sales question"}</p></div>
             <label className="report-search group-report-search"><Icon name="search" size={14} /><input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Find a report in this group…" /></label>
@@ -214,7 +216,6 @@ export default function ReportDashboard({
             })}
           </div>}
           {reportsStatus !== "loading" && reportsStatus !== "failed" && !filteredReports.length && <p className="report-group-empty">No reports match this group and search.</p>}
-        </>
       </div>
     </section>
     </div>
