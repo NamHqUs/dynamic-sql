@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Icon from "../../icon/icon";
 import type { QueryResult, ReportDto } from "../../query-builder/query-design/query-builder-slice";
 import { categoryTone, chartOptions, presentationFor, reportTitle, type ChartType } from "../report-model";
@@ -153,13 +153,65 @@ export default function ReportItem({
 }: ReportItemProps) {
   const presentation = presentationFor(report);
   const title = reportTitle(report);
+  const [chartMenuOpen, setChartMenuOpen] = useState(false);
+  const chartTypePickerRef = useRef<HTMLDivElement>(null);
+  const chartTypeButtonRef = useRef<HTMLButtonElement>(null);
+  const selectedChartOption = chartOptions.find((option) => option.value === chartType) || chartOptions[0];
+
+  useEffect(() => {
+    if (!chartMenuOpen) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (event.target instanceof Node && !chartTypePickerRef.current?.contains(event.target)) {
+        setChartMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, [chartMenuOpen]);
+
   return (
     <article className={`report-dashboard-card tone-${categoryTone(presentation.category)}`}>
       <button className="report-dashboard-card-open" type="button" aria-label={`View ${title} report details`} onClick={onOpenDetails} />
       <div className="report-dashboard-card-top">
         <h4 title={report.description || presentation.description}>{title}</h4>
         <div className="report-dashboard-card-tools">
-          <select aria-label={`${title} chart type`} title="Chart type" value={chartType} onChange={(event) => onChartTypeChange(event.target.value as ChartType)}>{chartOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+          <div className="chart-type-picker" ref={chartTypePickerRef} onKeyDown={(event) => {
+            if (event.key === "Escape" && chartMenuOpen) {
+              setChartMenuOpen(false);
+              chartTypeButtonRef.current?.focus();
+            }
+          }}>
+            <button
+              className="report-icon-button chart-type-picker-button"
+              type="button"
+              aria-label={`${title} chart type: ${selectedChartOption.label}`}
+              title={`Chart type: ${selectedChartOption.label}`}
+              aria-haspopup="true"
+              aria-expanded={chartMenuOpen}
+              onClick={() => setChartMenuOpen((open) => !open)}
+              ref={chartTypeButtonRef}
+            >
+              <Icon name={selectedChartOption.icon} size={14} />
+            </button>
+            {chartMenuOpen && <div className="chart-type-picker-menu" role="group" aria-label={`${title} chart types`}>
+              {chartOptions.map((option) => (
+                <button
+                  className={`chart-type-picker-option${option.value === chartType ? " selected" : ""}`}
+                  type="button"
+                  key={option.value}
+                  aria-label={option.label}
+                  aria-pressed={option.value === chartType}
+                  title={option.label}
+                  onClick={() => {
+                    onChartTypeChange(option.value);
+                    setChartMenuOpen(false);
+                  }}
+                >
+                  <Icon name={option.icon} size={14} />
+                </button>
+              ))}
+            </div>}
+          </div>
           <button className="report-icon-button" type="button" aria-label={`Run ${title}`} title="Run report" onClick={onRun} disabled={loading}><Icon name="reset" size={13} /></button>
           {report.canDelete ? <>
             <button className="report-icon-button" type="button" aria-label={`Edit ${title}`} title="Edit report" onClick={onEdit}><Icon name="edit" size={13} /></button>

@@ -1,4 +1,5 @@
 import type { ReportDto } from "../query-builder/query-design/query-builder-slice";
+import type { IconName } from "../icon/icon";
 
 export type ChartType = "line" | "bar" | "donut" | "funnel" | "scatter";
 export type ReportPresentation = {
@@ -33,12 +34,12 @@ export const builtinPresentations: Record<number, ReportPresentation> = {
   20: { description: "Rank customers by unpaid invoice exposure, alongside open counts and the oldest due date.", chartType: "bar", category: "Finance", metric: "AmountDue" },
 };
 
-export const chartOptions: { value: ChartType; label: string }[] = [
-  { value: "line", label: "Trend line" },
-  { value: "bar", label: "Bar chart" },
-  { value: "donut", label: "Donut chart" },
-  { value: "funnel", label: "Funnel" },
-  { value: "scatter", label: "Scatter plot" },
+export const chartOptions: { value: ChartType; label: string; icon: IconName }[] = [
+  { value: "line", label: "Trend line", icon: "chart-line" },
+  { value: "bar", label: "Bar chart", icon: "chart-bar" },
+  { value: "donut", label: "Donut chart", icon: "chart-donut" },
+  { value: "funnel", label: "Funnel", icon: "chart-funnel" },
+  { value: "scatter", label: "Scatter plot", icon: "chart-scatter" },
 ];
 
 export function reportTitle(request: ReportDto): string {

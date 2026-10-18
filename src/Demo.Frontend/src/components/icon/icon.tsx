@@ -7,6 +7,11 @@ const paths = {
   play: <path d="m8 5 11 7-11 7V5Z" fill="currentColor" stroke="none" />,
   code: <><path d="m9 7-5 5 5 5M15 7l5 5-5 5" /></>,
   chart: <><path d="M4 19V5M4 19h17" /><path d="m7 14 4-4 3 2 5-6" /><circle cx="7" cy="14" r="1" /><circle cx="11" cy="10" r="1" /><circle cx="14" cy="12" r="1" /><circle cx="19" cy="6" r="1" /></>,
+  "chart-line": <><path d="M4 19V5M4 19h17" /><path d="m7 15 4-5 3 3 5-7" /></>,
+  "chart-bar": <><path d="M4 19V5M4 19h17" /><path d="M8 16v-5M12 16V7M16 16v-8M20 16v-4" /></>,
+  "chart-donut": <><path d="M12 3a9 9 0 1 0 9 9h-9V3Z" /><path d="M15 3.5A9 9 0 0 1 20.5 9H15V3.5Z" /></>,
+  "chart-funnel": <><path d="M4 5h16l-6 7v5l-4 2v-7L4 5Z" /></>,
+  "chart-scatter": <><path d="M4 19V5M4 19h17" /><circle cx="8" cy="15" r="1.5" /><circle cx="11" cy="10" r="1.5" /><circle cx="15" cy="13" r="1.5" /><circle cx="19" cy="7" r="1.5" /></>,
   upload: <><path d="M12 16V4m0 0L7 9m5-5 5 5" /><path d="M5 14v5h14v-5" /></>,
   plus: <><path d="M12 5v14M5 12h14" /></>,
   minus: <path d="M5 12h14" />,
@@ -25,6 +30,8 @@ const paths = {
   edit: <><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z" /><path d="m14.5 7.5 2 2" /></>,
 };
 
-export default function Icon({ name, size = 16 }) {
+export type IconName = keyof typeof paths;
+
+export default function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
   return <svg className="icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
 }
