@@ -72,11 +72,11 @@ function AggregateDonutChart({ data }: { data: AggregateChartData }) {
               <text x="80" y="77" textAnchor="middle" className="donut-total">{formatChartValue(total)}</text>
               <text x="80" y="95" textAnchor="middle" className="donut-caption">TOTAL</text>
             </svg>
-            <div className="report-legend">{allSlices.map((slice, index) => <label className="report-legend-item" key={`${slice.label}-${index}`}>
-              <input type="checkbox" checked={isLabelVisible(slice.label)} style={{ accentColor: chartColors[index % chartColors.length] }} onChange={() => toggleLabel(slice.label)} />
+            <div className="report-legend">{allSlices.map((slice, index) => <div className="report-legend-item" key={`${slice.label}-${index}`}>
+              <button className="report-legend-toggle" type="button" aria-label={`Toggle ${slice.label}`} aria-pressed={isLabelVisible(slice.label)} style={{ color: chartColors[index % chartColors.length] }} onClick={() => toggleLabel(slice.label)} />
               <span>{slice.label}</span>
               <b>{formatChartValue(slice.value)}</b>
-            </label>)}</div>
+            </div>)}</div>
           </div>
         </section>;
       })}

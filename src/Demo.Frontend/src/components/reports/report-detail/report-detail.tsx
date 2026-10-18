@@ -5,13 +5,12 @@ import {
   categoryTone,
   chartOptions,
   presentationFor,
-  reportChartFields,
   reportTitle,
   type ChartType,
-  type ReportAxis,
   type ReportChartSettings,
 } from "../report-model";
 import ReportChart from "../charts/report-chart";
+import ReportChartSettingsPanel from "../report-chart-settings/report-chart-settings";
 import "./report-detail.css";
 
 type ReportDetailProps = {
@@ -102,54 +101,6 @@ function ReportDataTable({ result }: { result: QueryResult }) {
   );
 }
 
-function ReportChartSettingsPanel({ report, result, settings, onChange }: {
-  report: ReportDto;
-  result: QueryResult;
-  settings: ReportChartSettings;
-  onChange: (settings: ReportChartSettings) => void;
-}) {
-  const fields = reportChartFields(report, result);
-  if (!fields.metrics.length && !fields.axes.length) return null;
-
-  const setAxis = (field: string, axis: ReportAxis) => {
-    onChange({ ...settings, axes: { ...settings.axes, [field]: axis } });
-  };
-  const setMetric = (metric: string, enabled: boolean) => {
-    const metrics = enabled
-      ? [...settings.metrics, metric]
-      : settings.metrics.filter((selected) => selected !== metric);
-    onChange({ ...settings, metrics });
-  };
-
-  return (
-    <section className="report-chart-settings" aria-label="Chart channels and axes">
-      {fields.metrics.length > 0 && <fieldset>
-        <legend>Aggregate channels</legend>
-        {fields.metrics.map((metric) => <label key={metric}>
-          <input
-            type="checkbox"
-            checked={settings.metrics.includes(metric)}
-            onChange={(event) => setMetric(metric, event.target.checked)}
-          />
-          {metric}
-        </label>)}
-      </fieldset>}
-      {fields.axes.length > 0 && <fieldset>
-        <legend>Dimension axes</legend>
-        {fields.axes.map((field) => <label key={field}>
-          <span>{field}</span>
-          <select value={settings.axes[field] ?? "none"} onChange={(event) => setAxis(field, event.target.value as ReportAxis)}>
-            <option value="none">Not used</option>
-            <option value="axis1">Axis 1 · categories</option>
-            <option value="axis2">Axis 2 · breakdown</option>
-          </select>
-        </label>)}
-        <p>Fields on the same axis are combined into one group.</p>
-      </fieldset>}
-    </section>
-  );
-}
-
 export default function ReportDetail({
   report, result, chartType, chartSettings, loading, error, onClose, onRun, onChartTypeChange, onChartSettingsChange,
 }: ReportDetailProps) {
@@ -204,7 +155,7 @@ export default function ReportDetail({
           />}
           <div className={`report-detail-chart tone-${categoryTone(presentation.category)}`}>
             {result
-              ? <ReportChart key={chartType} result={result} type={chartType} report={report} settings={chartSettings} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
+              ? <ReportChart key={chartType} result={result} type={chartType} report={report} settings={chartSettings} onSettingsChange={onChartSettingsChange} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
               : loading
                 ? <div className="report-detail-status"><span className="report-spinner" /> Running this report…</div>
                 : <div className="report-detail-status">{error ? <span role="alert">{error}</span> : <><span>Run this report to load its chart and data.</span><button className="button primary" type="button" onClick={onRun}><Icon name="play" size={13} /> Run report</button></>}</div>}

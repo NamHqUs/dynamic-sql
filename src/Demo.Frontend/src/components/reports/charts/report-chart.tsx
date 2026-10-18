@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { ReactNode } from "react";
 import type { QueryResult, ReportDto } from "../../query-builder/query-design/query-builder-slice";
 import type { ChartType, ReportChartSettings } from "../report-model";
 import { defaultReportChartSettings, reportChartFields } from "../report-model";
@@ -30,40 +31,128 @@ function renderChart(type: ChartType, data: ChartData) {
   }
 }
 
-function AggregateReportChart({ result, type, report, settings, xMetric }: {
+function isDimensionSelected(settings: ReportChartSettings, field: string): boolean {
+  return settings.axes[field] === "axis1" || settings.axes[field] === "axis2";
+}
+
+function DimensionControls({ fields, settings, onSettingsChange }: {
+  fields: string[];
+  settings: ReportChartSettings;
+  onSettingsChange: (settings: ReportChartSettings) => void;
+}) {
+  const setEnabled = (field: string, enabled: boolean) => {
+    onSettingsChange({
+      ...settings,
+      axes: {
+        ...Object.fromEntries(fields.map((dimension) => [
+          dimension,
+          dimension === field ? enabled ? "axis1" : "none" : isDimensionSelected(settings, dimension) ? "axis1" : "none",
+        ])),
+      },
+    });
+  };
+
+  return (
+    <div className="report-dimension-controls" role="group" aria-label="Group by dimensions">
+      <div className="report-dimension-heading">
+        <span className="report-dimension-title">Dimensions</span>
+      </div>
+      <div className="report-dimension-options">
+        {fields.map((field) => {
+          const enabled = isDimensionSelected(settings, field);
+          return (
+            <button className={`report-dimension-option${enabled ? " selected" : ""}`} type="button" aria-pressed={enabled} key={field} onClick={() => setEnabled(field, !enabled)}>
+              <span title={field}>{field}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AggregateBarChart({ result, type, report, settings, onSettingsChange, xMetric }: {
   result: QueryResult;
   type: ChartType;
   report: ReportDto;
   settings?: ReportChartSettings;
+  onSettingsChange?: (settings: ReportChartSettings) => void;
   xMetric?: string;
 }) {
   const fields = reportChartFields(report, result);
   const defaults = defaultReportChartSettings(report, result);
   const chartSettings = settings ?? defaults;
+  const dimensionControls = onSettingsChange && fields.axes.length > 0
+    ? <DimensionControls fields={fields.axes} settings={chartSettings} onSettingsChange={onSettingsChange} />
+    : null;
+  const wrapChart = (content: ReactNode) => (
+    <div className="report-chart-composition">
+      {dimensionControls}
+      {content}
+    </div>
+  );
   const metrics = fields.metrics.filter((metric) => chartSettings.metrics.includes(metric));
   if (!metrics.length) {
-    return <div className="report-chart-empty"><strong>No aggregate channels selected</strong><span>Enable at least one aggregate channel in the report details.</span></div>;
+    return wrapChart(<div className="report-chart-empty"><strong>No aggregate channels selected</strong><span>Enable at least one aggregate channel in the report details.</span></div>);
   }
 
-  const axis1Fields = fields.axes.filter((field) => chartSettings.axes[field] === "axis1");
-  const axis2Fields = fields.axes.filter((field) => chartSettings.axes[field] === "axis2");
-  const categoryFields = axis1Fields.length ? axis1Fields : fields.axes.slice(0, 1);
+  const groupingFields = fields.axes.filter((field) => isDimensionSelected(chartSettings, field));
+  const labelFields = groupingFields;
   const xIndex = xMetric ? result.columns.findIndex((column) => column.toLowerCase() === xMetric.toLowerCase()) : -1;
-  const chartRows = result.rows.slice(0, 12);
+  const groupingIndices = groupingFields.map((field) => result.columns.indexOf(field));
+  const metricIndices = metrics.map((metric) => ({
+    metric,
+    index: result.columns.indexOf(metric),
+    rollup: fields.metricRollups[metric] ?? "unsupported",
+  }));
+  const rowGroups = new Map<string, string[][]>();
+  result.rows.forEach((row) => {
+    const key = JSON.stringify(groupingIndices.map((index) => row[index] || "Unspecified"));
+    const group = rowGroups.get(key);
+    if (group) group.push(row);
+    else rowGroups.set(key, [row]);
+  });
+  const requiresRollup = [...rowGroups.values()].some((group) => group.length > 1);
+  const unsupportedMetric = requiresRollup && metricIndices.find(({ rollup }) => rollup === "unsupported");
+  if (unsupportedMetric) {
+    return wrapChart(
+      <div className="report-chart-empty" role="alert">
+        <strong>Cannot combine this aggregate</strong>
+        <span>{unsupportedMetric.metric} cannot be accurately rolled up from the current results. Keep all dimensions selected or change the report query to aggregate it at the desired level.</span>
+      </div>,
+    );
+  }
+
+  const chartRows = [...rowGroups.values()].map((group) => {
+    const row = [...group[0]];
+    metricIndices.forEach(({ index, rollup }) => {
+      if (group.length === 1) return;
+      const values = group.map((sourceRow) => numberValue(sourceRow[index])).filter((value): value is number => value !== null);
+      if (!values.length) {
+        row[index] = "";
+      } else if (rollup === "sum") {
+        row[index] = String(values.reduce((total, value) => total + value, 0));
+      } else if (rollup === "min") {
+        row[index] = String(Math.min(...values));
+      } else if (rollup === "max") {
+        row[index] = String(Math.max(...values));
+      }
+    });
+    return row;
+  }).slice(0, 12);
   const categoryForRow = (row: string[], index: number) => {
-    const label = categoryFields.map((field) => row[result.columns.indexOf(field)] || "Unspecified").join(" · ");
-    return label || row.find((cell, cellIndex) => numberValue(cell) === null && !fields.metrics.includes(result.columns[cellIndex])) || `Item ${index + 1}`;
+    const label = labelFields.map((field) => row[result.columns.indexOf(field)] || "Unspecified").join(" · ");
+    return label || "All records";
   };
   const categories = [...new Set(chartRows.map((row, index) => categoryForRow(row, index)))];
   const points: AggregateChartData["points"] = chartRows.flatMap((row, rowIndex) => {
     const category = categoryForRow(row, rowIndex);
-    const axis2 = axis2Fields.map((field) => row[result.columns.indexOf(field)] || "Unspecified").join(" · ");
     return metrics.flatMap((metric) => {
       const metricIndex = result.columns.indexOf(metric);
       const value = numberValue(row[metricIndex]);
       return value === null ? [] : [{
         label: category,
-        series: [metric, axis2].filter(Boolean).join(" · "),
+        series: metric,
         metric,
         value,
         xValue: xIndex >= 0 ? numberValue(row[xIndex]) ?? rowIndex + 1 : rowIndex + 1,
@@ -71,28 +160,29 @@ function AggregateReportChart({ result, type, report, settings, xMetric }: {
       }];
     });
   });
-  if (!points.length) return <div className="report-chart-empty"><strong>No data to visualize</strong><span>The selected aggregate fields contain no numeric values.</span></div>;
+  if (!points.length) return wrapChart(<div className="report-chart-empty"><strong>No data to visualize</strong><span>The selected aggregate fields contain no numeric values.</span></div>);
 
-  return renderChart(type, {
-    kind: "aggregate",
-    metrics,
-    points,
-    categories,
-    seriesNames: [...new Set(points.map((point) => point.series))],
-  });
+  return wrapChart(renderChart(type, {
+      kind: "aggregate",
+      metrics,
+      points,
+      categories,
+      seriesNames: [...new Set(points.map((point) => point.series))],
+    }));
 }
 
-export default function ReportChart({ result, type, report, settings, metric, groupBy, xMetric }: {
+export default function ReportChart({ result, type, report, settings, onSettingsChange, metric, groupBy, xMetric }: {
   result: QueryResult;
   type: ChartType;
   report?: ReportDto;
   settings?: ReportChartSettings;
+  onSettingsChange?: (settings: ReportChartSettings) => void;
   metric?: string;
   groupBy?: string;
   xMetric?: string;
 }) {
   if (report && reportChartFields(report, result).metrics.length) {
-    return <AggregateReportChart result={result} type={type} report={report} settings={settings} xMetric={xMetric} />;
+    return <AggregateBarChart result={result} type={type} report={report} settings={settings} onSettingsChange={onSettingsChange} xMetric={xMetric} />;
   }
 
   const chartData = useMemo<ChartPoint[]>(() => {

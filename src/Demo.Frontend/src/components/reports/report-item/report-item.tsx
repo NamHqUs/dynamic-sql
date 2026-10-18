@@ -21,6 +21,7 @@ type ReportItemProps = {
   error?: string;
   dropPosition?: "before" | "after";
   onChartTypeChange: (chartType: ChartType) => void;
+  onChartSettingsChange: (settings: ReportChartSettings) => void;
   onOpenDetails: () => void;
   onDragStart: (event: DragEvent<HTMLDivElement>) => void;
   onDragEnd: () => void;
@@ -36,7 +37,7 @@ type ReportItemProps = {
 export default function ReportItem({
   report, chartType, result, chartSettings, loading, error,
   dropPosition, onChartTypeChange, onOpenDetails, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
-  onRun, onEdit, onDelete, onCustomize,
+  onChartSettingsChange, onRun, onEdit, onDelete, onCustomize,
 }: ReportItemProps) {
   const presentation = presentationFor(report);
   const title = reportTitle(report);
@@ -123,9 +124,12 @@ export default function ReportItem({
           aria-label={`Open ${title} report details`}
           onClick={onOpenDetails}
         />
-        <div className="report-card-chart">
+        <div className="report-card-chart" onClick={(event) => {
+          if (event.target instanceof Element && event.target.closest("button, input, label")) return;
+          onOpenDetails();
+        }}>
           {result
-            ? <ReportChart key={chartType} result={result} type={chartType} report={report} settings={chartSettings} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
+            ? <ReportChart key={chartType} result={result} type={chartType} report={report} settings={chartSettings} onSettingsChange={onChartSettingsChange} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
             : loading
               ? <div className="report-card-chart-status"><span className="report-spinner" /> Loading chart…</div>
               : <div className="report-card-chart-status">{error ? <span role="alert">{error}</span> : <><span>Run this report to load its chart.</span><button type="button" onClick={onRun}>Run report <Icon name="play" size={11} /></button></>}</div>}

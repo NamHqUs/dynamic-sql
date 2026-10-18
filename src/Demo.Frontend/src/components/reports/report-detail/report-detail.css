@@ -14,6 +14,7 @@
 .report-detail-chart-type select:focus { border-color: #8064e8; box-shadow: 0 0 0 2px #8064e833; }
 .report-detail-chart-section { margin-top: 20px; }
 .report-detail-chart { display: grid; min-height: 285px; place-items: center; overflow: hidden; padding: 16px; border: 1px solid color-mix(in srgb,var(--report-accent,#a78bfa) 25%,#303642); border-radius: 8px; background: radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--report-accent,#a78bfa) 10%,transparent),transparent 72%),#10131a; }
+.report-detail-chart .report-chart-composition { display: flex; min-height: 285px; align-self: stretch; box-sizing: border-box; flex-direction: column; align-items: center; justify-content: center; }
 .report-detail-chart.tone-revenue { --report-accent: #62d4b4; }
 .report-detail-chart.tone-customer { --report-accent: #b49aff; }
 .report-detail-chart.tone-product { --report-accent: #69b5ff; }
@@ -51,5 +52,6 @@
   .report-detail-actions { align-self: flex-end; }
   .report-detail-chart-controls { align-items: flex-end; flex-wrap: wrap; justify-content: flex-end; }
   .report-detail-chart { min-height: 220px; padding: 9px; }
+  .report-detail-chart .report-chart-composition { min-height: 220px; }
   .report-detail-chart .report-bar-row { grid-template-columns: minmax(55px,100px) minmax(45px,1fr) 45px; gap: 8px; }
 }

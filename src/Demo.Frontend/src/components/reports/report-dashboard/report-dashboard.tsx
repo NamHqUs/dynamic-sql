@@ -208,6 +208,7 @@ export default function ReportDashboard({
                   setDropIndicator(null);
                 }}
                 onChartTypeChange={(chartType) => onChartTypeChange(report, chartType)}
+                onChartSettingsChange={(settings) => onChartSettingsChange(report, settings)}
                 onRun={() => onRun(report)}
                 onEdit={() => onEdit(report)}
                 onDelete={() => onDelete(report)}

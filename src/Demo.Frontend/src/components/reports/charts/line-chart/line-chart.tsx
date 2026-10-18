@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { AggregateChartData, ChartData } from "../chart-types";
-import { chartColors } from "../chart-utils";
+import { chartColors, formatChartValue, niceChartMax } from "../chart-utils";
 
 export default function LineChart({ data }: { data: ChartData }) {
   const [hiddenSeries, setHiddenSeries] = useState<string[]>([]);
@@ -21,8 +21,15 @@ export default function LineChart({ data }: { data: ChartData }) {
           {[0, 1, 2, 3].map((row) => <line key={row} x1="20" x2={width - 16} y1={35 + row * 52} y2={35 + row * 52} className="chart-grid-line" />)}
           <path d={line} className="report-line" />
           {points.map((point, index) => (
-            <g key={`${data.points[index].label}-${index}`}>
+            <g key={`${data.points[index].label}-${index}`} className="chart-data-point" tabIndex={0} aria-label={`${data.points[index].label}: ${formatChartValue(data.points[index].value)}`}>
+              <title>{`${data.points[index].label}: ${formatChartValue(data.points[index].value)}`}</title>
+              <circle cx={point.x} cy={point.y} r="9" fill="transparent" pointerEvents="all" />
               <circle cx={point.x} cy={point.y} r="4" className="report-point" />
+              <g className="chart-hover-tooltip" transform={`translate(${Math.max(8, Math.min(point.x - 92, width - 192))},${Math.max(2, point.y - 48)})`}>
+                <rect width="184" height="40" rx="5" />
+                <text x="8" y="15" className="chart-tooltip-label">{data.points[index].label.slice(0, 28)}</text>
+                <text x="8" y="31" className="chart-tooltip-value">{formatChartValue(data.points[index].value)}</text>
+              </g>
               {data.points.length < 8 && <text x={point.x} y={height - 5} textAnchor="middle" className="chart-label">{data.points[index].label.slice(0, 12)}</text>}
             </g>
           ))}
@@ -56,7 +63,7 @@ function AggregateLineChart({ data, hiddenSeries, onToggleSeries }: {
 
   const categories = data.categories.length ? data.categories : [...new Set(data.points.map((point) => point.label))];
   const minValue = Math.min(0, ...data.points.map((point) => point.value));
-  const maxValue = Math.max(1, ...data.points.map((point) => point.value));
+  const maxValue = niceChartMax(Math.max(1, ...data.points.map((point) => point.value)));
   const linePoints = (seriesPoints: typeof visiblePoints) => seriesPoints.map((point) => ({
     x: categories.length === 1 ? width / 2 : 22 + (categories.indexOf(point.label) * (width - 44)) / (categories.length - 1),
     y: height - 25 - ((point.value - minValue) / (maxValue - minValue || 1)) * (height - 55),
@@ -74,10 +81,45 @@ function AggregateLineChart({ data, hiddenSeries, onToggleSeries }: {
             const line = plotted.map((point, index) => `${index ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
             return <g key={series}>
               <path d={line} className="report-line" style={{ stroke: chartColors[data.seriesNames.indexOf(series) % chartColors.length] }} />
-              {plotted.map((point, index) => <g key={`${series}-${index}`}>
+              {plotted.slice(1).map((point, index) => {
+                const previous = plotted[index];
+                const previousValue = seriesPoints[index];
+                const currentValue = seriesPoints[index + 1];
+                const detail = `${previousValue.label}: ${series} ${formatChartValue(previousValue.value)}\n${currentValue.label}: ${series} ${formatChartValue(currentValue.value)}`;
+                const tooltipX = Math.max(8, Math.min((previous.x + point.x) / 2 - 92, width - 192));
+                const tooltipY = Math.max(2, Math.min((previous.y + point.y) / 2 - 48, height - 45));
+                return <g key={`${series}-${index}-hit`} className="chart-data-point" tabIndex={0} aria-label={detail}>
+                  <path
+                    d={`M ${previous.x} ${previous.y} L ${point.x} ${point.y}`}
+                    fill="none"
+                    stroke="transparent"
+                    strokeWidth="14"
+                    pointerEvents="stroke"
+                  >
+                    <title>{detail}</title>
+                  </path>
+                  <g className="chart-hover-tooltip" transform={`translate(${tooltipX},${tooltipY})`}>
+                    <rect width="184" height="40" rx="5" />
+                    <text x="8" y="15" className="chart-tooltip-label">{`${previousValue.label} → ${currentValue.label}`.slice(0, 28)}</text>
+                    <text x="8" y="31" className="chart-tooltip-value">{`${series}: ${formatChartValue(previousValue.value)} → ${formatChartValue(currentValue.value)}`.slice(0, 30)}</text>
+                  </g>
+                </g>;
+              })}
+              {plotted.map((point, index) => {
+                const sourcePoint = seriesPoints[index];
+                const detail = `${sourcePoint.label}\n${series}: ${formatChartValue(sourcePoint.value)}`;
+                return <g key={`${series}-${index}`} className="chart-data-point" tabIndex={0} aria-label={detail}>
+                <title>{detail}</title>
+                <circle cx={point.x} cy={point.y} r="9" fill="transparent" pointerEvents="all" />
                 <circle cx={point.x} cy={point.y} r="4" className="report-point" style={{ fill: chartColors[data.seriesNames.indexOf(series) % chartColors.length] }} />
+                <g className="chart-hover-tooltip" transform={`translate(${Math.max(8, Math.min(point.x - 92, width - 192))},${Math.max(2, point.y - 48)})`}>
+                  <rect width="184" height="40" rx="5" />
+                  <text x="8" y="15" className="chart-tooltip-label">{sourcePoint.label.slice(0, 28)}</text>
+                  <text x="8" y="31" className="chart-tooltip-value">{`${series}: ${formatChartValue(sourcePoint.value)}`.slice(0, 30)}</text>
+                </g>
                 {data.seriesNames.length === 1 && categories.length < 8 && <text x={point.x} y={height - 5} textAnchor="middle" className="chart-label">{seriesPoints[index].label.slice(0, 12)}</text>}
-              </g>)}
+              </g>;
+              })}
             </g>;
           })}
         </svg>
@@ -92,9 +134,8 @@ function SeriesLegend({ data, isVisible, onToggle }: {
   onToggle: (series: string) => void;
 }) {
   return <div className="report-series-legend" role="group" aria-label="Chart series">{data.seriesNames.map((series, index) => (
-    <label key={series}>
-      <input type="checkbox" checked={isVisible(series)} style={{ accentColor: chartColors[index % chartColors.length] }} onChange={() => onToggle(series)} />
+    <button type="button" aria-pressed={isVisible(series)} style={{ color: chartColors[index % chartColors.length] }} key={series} onClick={() => onToggle(series)}>
       {series}
-    </label>
+    </button>
   ))}</div>;
 }

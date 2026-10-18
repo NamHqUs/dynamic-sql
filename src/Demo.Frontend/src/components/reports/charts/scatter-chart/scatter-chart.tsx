@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { AggregateChartData, ChartData } from "../chart-types";
-import { chartColors } from "../chart-utils";
+import { chartColors, niceChartMax } from "../chart-utils";
 
 export default function ScatterChart({ data }: { data: ChartData }) {
   const [hiddenSeries, setHiddenSeries] = useState<string[]>([]);
@@ -58,7 +58,7 @@ function AggregateScatterChart({ data, hiddenSeries, onToggleSeries }: {
   const xMin = Math.min(...data.points.map((point) => point.xValue));
   const xMax = Math.max(...data.points.map((point) => point.xValue), xMin + 1);
   const minValue = Math.min(0, ...data.points.map((point) => point.value));
-  const maxValue = Math.max(1, ...data.points.map((point) => point.value));
+  const maxValue = niceChartMax(Math.max(1, ...data.points.map((point) => point.value)));
 
   return (
     <>
@@ -91,9 +91,8 @@ function SeriesLegend({ data, isVisible, onToggle }: {
   onToggle: (series: string) => void;
 }) {
   return <div className="report-series-legend" role="group" aria-label="Chart series">{data.seriesNames.map((series, index) => (
-    <label key={series}>
-      <input type="checkbox" checked={isVisible(series)} style={{ accentColor: chartColors[index % chartColors.length] }} onChange={() => onToggle(series)} />
+    <button type="button" aria-pressed={isVisible(series)} style={{ color: chartColors[index % chartColors.length] }} key={series} onClick={() => onToggle(series)}>
       {series}
-    </label>
+    </button>
   ))}</div>;
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { AggregateChartData, ChartData } from "../chart-types";
-import { chartColors, formatChartValue } from "../chart-utils";
+import { chartColors, formatChartValue, niceChartMax } from "../chart-utils";
 
 export default function FunnelChart({ data }: { data: ChartData }) {
   if (data.kind === "simple") {
@@ -32,25 +32,23 @@ function AggregateFunnelChart({ data }: { data: AggregateChartData }) {
     return (
       <>
         {data.seriesNames.length > 1 && <div className="report-series-legend" role="group" aria-label="Chart series">{data.seriesNames.map((series, index) => (
-          <label key={series}>
-            <input type="checkbox" checked={isSeriesVisible(series)} style={{ accentColor: chartColors[index % chartColors.length] }} onChange={() => toggleSeries(series)} />
+          <button type="button" aria-pressed={isSeriesVisible(series)} style={{ color: chartColors[index % chartColors.length] }} key={series} onClick={() => toggleSeries(series)}>
             {series}
-          </label>
+          </button>
         ))}</div>}
         <div className="report-chart-empty"><strong>No chart series selected</strong><span>Enable a legend item to show it in the chart.</span></div>
       </>
     );
   }
-  const max = Math.max(...visiblePoints.map((point) => Math.abs(point.value)), 1);
+  const max = niceChartMax(Math.max(...visiblePoints.map((point) => Math.abs(point.value)), 1));
   const colorsForSeries = new Map(data.seriesNames.map((series, index) => [series, chartColors[index % chartColors.length]]));
 
   return (
     <>
       {data.seriesNames.length > 1 && <div className="report-series-legend" role="group" aria-label="Chart series">{data.seriesNames.map((series, index) => (
-        <label key={series}>
-          <input type="checkbox" checked={isSeriesVisible(series)} style={{ accentColor: chartColors[index % chartColors.length] }} onChange={() => toggleSeries(series)} />
+        <button type="button" aria-pressed={isSeriesVisible(series)} style={{ color: chartColors[index % chartColors.length] }} key={series} onClick={() => toggleSeries(series)}>
           {series}
-        </label>
+        </button>
       ))}</div>}
       <div className="report-bars report-funnel">
         {visiblePoints.map((point, index) => (

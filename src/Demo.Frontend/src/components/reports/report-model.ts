@@ -8,6 +8,7 @@ export type ReportChartSettings = {
   metrics: string[];
   axes: Record<string, ReportAxis>;
 };
+export type MetricRollup = "sum" | "min" | "max" | "unsupported";
 export type ReportPresentation = {
   description: string;
   chartType: ChartType;
@@ -59,6 +60,21 @@ function isAggregateExpression(expression: QueryExpression): boolean {
   return false;
 }
 
+function metricRollup(expression: QueryExpression): MetricRollup {
+  if (expression.kind !== "function" || expression.arguments.some(isAggregateExpression)) return "unsupported";
+  switch (expression.function.toLowerCase()) {
+    case "count":
+    case "sum":
+      return "sum";
+    case "min":
+      return "min";
+    case "max":
+      return "max";
+    default:
+      return "unsupported";
+  }
+}
+
 function expressionName(expression: QueryExpression): string {
   switch (expression.kind) {
     case "field":
@@ -86,9 +102,14 @@ function outputColumn(columns: string[], candidates: string[]): string | null {
   return null;
 }
 
-export function reportChartFields(report: ReportDto, result: QueryResult): { metrics: string[]; axes: string[] } {
+export function reportChartFields(report: ReportDto, result: QueryResult): {
+  metrics: string[];
+  axes: string[];
+  metricRollups: Record<string, MetricRollup>;
+} {
   const metrics: string[] = [];
   const axes: string[] = [];
+  const metricRollups: Record<string, MetricRollup> = {};
   report.query.fields.forEach((projection) => {
     const expression = projection.field;
     const name = outputColumn(result.columns, [
@@ -99,15 +120,16 @@ export function reportChartFields(report: ReportDto, result: QueryResult): { met
     if (!name) return;
     const target = isAggregateExpression(expression) ? metrics : axes;
     if (!target.includes(name)) target.push(name);
+    if (target === metrics) metricRollups[name] = metricRollup(expression);
   });
-  return { metrics, axes };
+  return { metrics, axes, metricRollups };
 }
 
 export function defaultReportChartSettings(report: ReportDto, result: QueryResult): ReportChartSettings {
   const fields = reportChartFields(report, result);
   return {
     metrics: fields.metrics,
-    axes: Object.fromEntries(fields.axes.map((field, index) => [field, index === 0 ? "axis1" : "axis2"])),
+    axes: Object.fromEntries(fields.axes.map((field) => [field, "axis1"])),
   };
 }
 
