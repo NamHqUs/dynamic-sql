@@ -10,22 +10,21 @@ namespace Demo.Repositories.FileStorage;
 
 public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IReportRepository
 {
-    private const string FOLDER_NAME = "QueryRequests";
+    private const string FOLDER_NAME = "Reports";
+    private const string FILE_EXTENSION = ".yml";
 
     public ReportFileRepository(FilePathResolver filePathResolver)
-        : base(filePathResolver, FOLDER_NAME, YML_EXTENSION)
+        : base(filePathResolver, FOLDER_NAME, FILE_EXTENSION)
     {
     }
 
-    private const string YML_EXTENSION = ".yml";
-    private const string LEGACY_JSON_EXTENSION = ".json";
 
     public override IReadOnlyCollection<ReportDto> GetUserDefined(string userSectionId)
     {
         var dir = GetUserStoreFolder(userSectionId);
         Directory.CreateDirectory(dir);
         return Directory.EnumerateFiles(dir)
-            .Where(path => HasExtension(path, YML_EXTENSION) || HasExtension(path, LEGACY_JSON_EXTENSION))
+            .Where(path => HasExtension(path, FILE_EXTENSION))
             .OrderByDescending(Path.GetFileName)
             .Select(path => Load(userSectionId, path))
             .ToArray();
@@ -47,7 +46,7 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
         var path = GetUserFilePath(userSectionId, id);
         if (File.Exists(path))
             return Load(userSectionId, path);
-        var legacyPath = Path.ChangeExtension(path, LEGACY_JSON_EXTENSION);
+        var legacyPath = Path.ChangeExtension(path, FILE_EXTENSION);
         return File.Exists(legacyPath) ? Load(userSectionId, legacyPath) : null;
     }
 
@@ -126,7 +125,7 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
     private ReportDto Load(string userSectionId, string path)
     {
         var fileName = Path.GetFileNameWithoutExtension(path);
-        if (HasExtension(path, YML_EXTENSION))
+        if (HasExtension(path, FILE_EXTENSION))
             return ReadYml(fileName, File.ReadAllText(path));
 
         // Legacy JSON report: convert to YAML on first access.
@@ -157,7 +156,7 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
     public override bool Delete(string userSectionId, string id)
     {
         var path = GetUserFilePath(userSectionId, id);
-        var legacyPath = Path.ChangeExtension(path, LEGACY_JSON_EXTENSION);
+        var legacyPath = Path.ChangeExtension(path, FILE_EXTENSION);
         var deleted = false;
         foreach (var candidate in new[] { path, legacyPath })
         {
