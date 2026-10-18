@@ -110,7 +110,7 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
               key={`${group.label}-${groupIndex}`}
               className={childChart ? "chart-drillable" : undefined}
             >
-              <text x="8" y={groupTop + contentHeight / 2 + 4} textAnchor="start" className="chart-label">{group.label.length > 18 ? `${group.label.slice(0, 17)}…` : group.label}</text>
+              <text x={left - 8} y={groupTop + contentHeight / 2 + 4} textAnchor="end" className="chart-label">{group.label.length > 18 ? `${group.label.slice(0, 17)}…` : group.label}</text>
               {group.points.map((point, pointIndex) => {
                 const barWidth = Math.max(3, (Math.abs(point.value) / max) * plotWidth);
                 const y = groupTop + pointIndex * barStep;
