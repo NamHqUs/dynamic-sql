@@ -187,7 +187,8 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     [contextMetadata, definition.entity],
   );
   const selectedSavedRequest = savedRequests.find((item) => item.fileName === selectedFileName);
-  const selectedRequestIsBuiltin = selectedSavedRequest?.isBuiltin === true;
+  const selectedRequestIsBuiltin = selectedSavedRequest?.isBuiltin === true
+    || /\.yml$/i.test(selectedFileName);
   const defaultNewDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
   const hasUnsavedQueryChanges = (currentDefinition: QueryDefinition) => {
     const currentRequest = serializeQueryRequest(requestName.trim(), currentDefinition);
@@ -386,6 +387,10 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
   };
 
   const requestQueryChangeNavigation = async (continueNavigation: () => void) => {
+    if (selectedRequestIsBuiltin) {
+      continueNavigation();
+      return;
+    }
     if (!planTextDirty && !hasUnsavedQueryChanges(definitionRef.current)) {
       continueNavigation();
       return;

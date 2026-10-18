@@ -89,7 +89,9 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [dirty, setDirty] = useState(false);
-  const selectedIsBuiltin = definitions.find((definition) => definition.name === selectedName)?.isBuiltin === true;
+  const selectedDefinition = definitions.find((definition) => definition.name === selectedName);
+  const selectedIsBuiltin = selectedDefinition?.isBuiltin === true
+    || selectedDefinition?.canDelete === false;
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -293,7 +295,7 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
           draft={draft}
           selectedName={selectedName}
           isBuiltin={selectedIsBuiltin}
-          canDelete={Boolean(definitions.find((definition) => definition.name === selectedName)?.canDelete)}
+          canDelete={Boolean(selectedDefinition?.canDelete)}
           dirty={dirty}
           status={status}
           message={message}

@@ -11,6 +11,11 @@ namespace Demo.Repositories.FileStorage;
 public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathResolver) : IFunctionDefinitionRepository
 {
     private const string FOLDER_NAME = "FunctionDefinitions";
+    private static readonly HashSet<string> BuiltinFunctionNames = new MetaProvider([])
+        .GetFunctions()
+        .Select(definition => definition.Name)
+        .Concat(CustomFunctionDefintions.Functions.Select(definition => definition.Name))
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyCollection<SqlFunctionDefintion> GetAll()
         => new MetaProvider([])
@@ -40,8 +45,7 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
     }
 
     public bool IsBuiltin(string functionName)
-        => CustomFunctionDefintions.Functions.Any(definition =>
-            string.Equals(definition.Name, functionName, StringComparison.OrdinalIgnoreCase));
+        => BuiltinFunctionNames.Contains(functionName);
 
     public void Save(SqlFunctionDefintion definition)
     {

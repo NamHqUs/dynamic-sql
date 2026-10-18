@@ -1,6 +1,8 @@
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 #if NET10_0
 using Demo.Contracts.Repositories;
+using Demo.Repositories.FileStorage;
+using Demo.Share;
 using Demo.Services;
 #endif
 
@@ -129,6 +131,17 @@ internal sealed class _35_EntityContextTests : TestBase
         Assert.That(service.LoadQueryRequest(requests[0].FileName)?.IsBuiltin, Is.True);
         Assert.That(service.UpdateQueryRequest(requests[0].FileName, requests[0].Query), Is.Null);
         Assert.That(service.DeleteQueryRequest(requests[0].FileName), Is.False);
+    }
+
+    [Test]
+    public void BuiltinSqlFunctionsAreReadOnly()
+    {
+        var repository = new FunctionDefinitionFileRepository(null!);
+        var builtins = new MetaProvider([]).GetFunctions()
+            .Concat(CustomFunctionDefintions.Functions);
+
+        foreach (var function in builtins)
+            Assert.That(repository.IsBuiltin(function.Name), Is.True, function.Name);
     }
 
     private sealed class TestQueryRequestRepository(
