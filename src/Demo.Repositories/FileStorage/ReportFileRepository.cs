@@ -1,95 +1,84 @@
 using Demo.Contracts.Repositories;
+using Demo.Contracts.Dto;
 using Namh.Data.DynamicSql;
+using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Demo.Repositories.FileStorage;
 
-public sealed class QueryRequestFileRepository : IQueryRequestRepository
+public sealed class ReportFileRepository : RepositoryBase<ReportDto>, IReportRepository
 {
     private const string FOLDER_NAME = "QueryRequests";
     private readonly FilePathResolver _filePathResolver;
 
-    public QueryRequestFileRepository(FilePathResolver filePathResolver)
+    public ReportFileRepository(FilePathResolver filePathResolver)
     {
         _filePathResolver = filePathResolver;
     }
 
-    public IReadOnlyList<StoredQueryRequest> GetAllCustom()
-        => GetAll(_filePathResolver.GetUserStoreFolder(FOLDER_NAME));
+    public override IReadOnlyCollection<ReportDto> GetUserDefined(string userSectionId)
+    {
+        var dir = _filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
+        Directory.CreateDirectory(dir);
+        return Directory.EnumerateFiles(dir, "*.json")
+            .OrderByDescending(Path.GetFileName)
+            .Select(Read)
+            .ToArray();
+    }
 
-    public IReadOnlyList<BuiltinQueryRequestFile> GetBuiltinFiles()
+    public override IReadOnlyCollection<ReportDto> GetBuiltin()
     {
         var dir = _filePathResolver.GetBuiltinStoreFolder(FOLDER_NAME);
         Directory.CreateDirectory(dir);
         return Directory.EnumerateFiles(dir)
             .Where(path => string.Equals(Path.GetExtension(path), ".yml", StringComparison.OrdinalIgnoreCase))
             .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
-            .Select(path => new BuiltinQueryRequestFile(Path.GetFileName(path)!, File.ReadAllText(path)))
+            .Select(path =>
+            {
+                var requestText = File.ReadAllText(path);
+                return new ReportDto(
+                    Path.GetFileName(path)!,
+                    QueryDefinitionParser.ParseFromYml(requestText),
+                    requestText)
+                {
+                    CanDelete = false
+                };
+            })
             .ToArray();
     }
 
-    private IReadOnlyList<StoredQueryRequest> GetAll(string dir)
+    public override ReportDto? Get(string userSectionId, string fileName)
     {
-        Directory.CreateDirectory(dir);
-        var requests = Directory.EnumerateFiles(dir, "*.json")
-            .OrderByDescending(Path.GetFileName)
-            .Select(Read)
-            .ToArray();
-        var builtinFileNames = GetBuiltinFiles()
-            .Select(request => request.FileName)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var conflictingRequest = requests.FirstOrDefault(request => builtinFileNames.Contains(request.FileName));
-        if (conflictingRequest is not null)
-            throw new InvalidDataException(
-                $"User query request '{conflictingRequest.FileName}' cannot replace a built-in request.");
-        return requests;
-    }
-
-    public StoredQueryRequest? Get(string fileName)
-    {
-        if (IsBuiltinFileName(fileName))
-            return null;
-
-        var path = GetPath(fileName);
+        var path = GetPath(userSectionId, fileName);
         return File.Exists(path) ? Read(path) : null;
     }
 
-    public void Save(StoredQueryRequest request)
+    public override void Save(string userSectionId, ReportDto report)
     {
-        if (IsBuiltinFileName(request.FileName))
-            throw new InvalidOperationException($"Built-in query request '{request.FileName}' cannot be changed.");
-
-        var dir = _filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        var dir = _filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
         Directory.CreateDirectory(dir);
-        File.WriteAllText(GetPath(request.FileName), JsonSerializer.Serialize(
+        File.WriteAllText(GetPath(userSectionId, report.FileName), JsonSerializer.Serialize(
             new
             {
-                Query = request.Query,
-                RequestText = request.RequestText,
-                Description = request.Description,
-                ChartType = request.ChartType
+                Query = report.Query,
+                RequestText = report.RequestText,
+                Description = report.Description,
+                ChartType = report.ChartType
             },
             Options(writeIndented: true)));
     }
 
-    public bool Delete(string fileName)
+    public override bool Delete(string userSectionId, string fileName)
     {
-        if (IsBuiltinFileName(fileName))
-            return false;
-
-        var path = GetPath(fileName);
+        var path = GetPath(userSectionId, fileName);
         if (!File.Exists(path))
             return false;
         File.Delete(path);
         return true;
     }
 
-    private bool IsBuiltinFileName(string fileName)
-        => GetBuiltinFiles().Any(request =>
-            string.Equals(request.FileName, fileName, StringComparison.OrdinalIgnoreCase));
-
-    private StoredQueryRequest Read(string path)
+    private ReportDto Read(string path)
     {
         using var document = JsonDocument.Parse(File.ReadAllText(path));
         var root = document.RootElement;
@@ -118,7 +107,7 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
             };
         }
 
-        return new StoredQueryRequest(Path.GetFileName(path)!, query, requestText, description, chartType);
+        return new ReportDto(Path.GetFileName(path)!, query, requestText, description, chartType);
     }
 
     private static ProjectionDefinition ParseLegacyProjection(JsonElement column)
@@ -143,9 +132,9 @@ public sealed class QueryRequestFileRepository : IQueryRequestRepository
             ?? throw new InvalidDataException("A saved projection field is empty.");
     }
 
-    private string GetPath(string fileName)
+    private string GetPath(string userSectionId, string fileName)
     {
-        var dir = _filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        var dir = _filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
         if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName)
             throw new ArgumentException("Query request file name is invalid.", nameof(fileName));
         var path = Path.GetFullPath(Path.Combine(dir, fileName));

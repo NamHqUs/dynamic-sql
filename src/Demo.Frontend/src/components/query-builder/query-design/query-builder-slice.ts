@@ -95,7 +95,7 @@ export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "colum
   fields: { field: QueryExpression; alias: string | null }[];
 };
 
-export type StoredQueryRequest = {
+export type ReportDto = {
   fileName: string;
   query: ApiQueryRequest;
   requestText?: string | null;
@@ -415,7 +415,7 @@ export const getQueryRequestString = createAsyncThunk(
   "queryBuilder/getQueryRequestString",
   async ({ name, definition }: { name: string; definition: QueryDefinition }, { rejectWithValue }) => {
     try {
-      return await requestText(apiUrls.queryRequests.toString, {
+      return await requestText(apiUrls.reports.toString, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...createApiQuery(definition), name }),
@@ -430,7 +430,7 @@ export const parseQueryRequestString = createAsyncThunk(
   "queryBuilder/parseQueryRequestString",
   async ({ text, entity }: { text: string; entity: string }, { rejectWithValue }) => {
     try {
-      const payload = await requestJson(apiUrls.queryRequests.parse, {
+      const payload = await requestJson(apiUrls.reports.parse, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, entity }),
@@ -445,11 +445,11 @@ export const parseQueryRequestString = createAsyncThunk(
   },
 );
 
-export const fetchSavedQueryRequests = createAsyncThunk(
-  "queryBuilder/fetchSavedRequests",
+export const fetchReports = createAsyncThunk(
+  "queryBuilder/fetchReports",
   async (_, { rejectWithValue }) => {
     try {
-      const payload = await requestJson(apiUrls.queryRequests.list);
+      const payload = await requestJson(apiUrls.reports.list);
       if (!Array.isArray(payload) || payload.some((item) => !item
         || typeof item.fileName !== "string"
         || typeof item.canDelete !== "boolean"
@@ -457,17 +457,17 @@ export const fetchSavedQueryRequests = createAsyncThunk(
         || (item.requestText !== undefined && item.requestText !== null && typeof item.requestText !== "string")
         || (item.description !== undefined && item.description !== null && typeof item.description !== "string")
         || (item.chartType !== undefined && item.chartType !== null && typeof item.chartType !== "string"))) {
-        return rejectWithValue("Query request API must return saved requests.");
+        return rejectWithValue("Report API must return reports.");
       }
-      return payload as StoredQueryRequest[];
+      return payload as ReportDto[];
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : "Unable to load saved query requests.");
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to load reports.");
     }
   },
 );
 
-export const saveQueryRequest = createAsyncThunk(
-  "queryBuilder/saveRequest",
+export const saveReport = createAsyncThunk(
+  "queryBuilder/saveReport",
   async ({ fileName, name, definition, requestText, description, chartType }: {
     fileName?: string;
     name: string;
@@ -477,7 +477,7 @@ export const saveQueryRequest = createAsyncThunk(
     chartType?: string;
   }, { rejectWithValue }) => {
     try {
-      const url = fileName ? apiUrls.queryRequests.byFileName(fileName) : apiUrls.queryRequests.list;
+      const url = fileName ? apiUrls.reports.byFileName(fileName) : apiUrls.reports.list;
       const payload = await requestJson(url, {
         method: fileName ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -491,20 +491,20 @@ export const saveQueryRequest = createAsyncThunk(
       });
       if (!payload || typeof payload.fileName !== "string" || !payload.query
         || typeof payload.canDelete !== "boolean") {
-        return rejectWithValue("Query request API returned an invalid saved request.");
+        return rejectWithValue("Report API returned an invalid report.");
       }
-      return payload as StoredQueryRequest;
+      return payload as ReportDto;
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : "Unable to save query request.");
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to save report.");
     }
   },
 );
 
-export const deleteQueryRequest = createAsyncThunk(
-  "queryBuilder/deleteRequest",
+export const deleteReport = createAsyncThunk(
+  "queryBuilder/deleteReport",
   async (fileName: string, { rejectWithValue }) => {
     try {
-      await requestJson(apiUrls.queryRequests.byFileName(fileName), { method: "DELETE" });
+      await requestJson(apiUrls.reports.byFileName(fileName), { method: "DELETE" });
       return fileName;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to delete query request.");
@@ -523,9 +523,9 @@ const queryBuilderSlice = createSlice({
     resultView: "data" as "data" | "sql",
     queryStatus: "idle",
     queryError: "",
-    savedRequests: [] as StoredQueryRequest[],
-    savedRequestsStatus: "idle",
-    savedRequestsError: "",
+    reports: [] as ReportDto[],
+    reportsStatus: "idle",
+    reportsError: "",
     functionDefinitions: [] as FunctionDefinition[],
     functionDefinitionsStatus: "idle",
     functionDefinitionsError: "",
@@ -626,29 +626,29 @@ const queryBuilderSlice = createSlice({
         state.queryStatus = "failed";
         state.queryError = String(action.payload || action.error.message || "Unable to generate SQL statement.");
       })
-      .addCase(fetchSavedQueryRequests.pending, (state) => {
-        state.savedRequestsStatus = "loading";
-        state.savedRequestsError = "";
+      .addCase(fetchReports.pending, (state) => {
+        state.reportsStatus = "loading";
+        state.reportsError = "";
       })
-      .addCase(fetchSavedQueryRequests.fulfilled, (state, action) => {
-        state.savedRequests = action.payload;
-        state.savedRequestsStatus = "succeeded";
+      .addCase(fetchReports.fulfilled, (state, action) => {
+        state.reports = action.payload;
+        state.reportsStatus = "succeeded";
       })
-      .addCase(fetchSavedQueryRequests.rejected, (state, action) => {
-        state.savedRequestsStatus = "failed";
-        state.savedRequestsError = String(action.payload || action.error.message || "Unable to load saved query requests.");
+      .addCase(fetchReports.rejected, (state, action) => {
+        state.reportsStatus = "failed";
+        state.reportsError = String(action.payload || action.error.message || "Unable to load reports.");
       })
-      .addCase(saveQueryRequest.fulfilled, (state, action) => {
-        const savedRequest = {
+      .addCase(saveReport.fulfilled, (state, action) => {
+        const savedReport = {
           ...action.payload,
           requestText: action.payload.requestText ?? action.meta.arg.requestText ?? null,
         };
-        const index = state.savedRequests.findIndex((item) => item.fileName === savedRequest.fileName);
-        if (index >= 0) state.savedRequests[index] = savedRequest;
-        else state.savedRequests.unshift(savedRequest);
+        const index = state.reports.findIndex((item) => item.fileName === savedReport.fileName);
+        if (index >= 0) state.reports[index] = savedReport;
+        else state.reports.unshift(savedReport);
       })
-      .addCase(deleteQueryRequest.fulfilled, (state, action) => {
-        state.savedRequests = state.savedRequests.filter((item) => item.fileName !== action.payload);
+      .addCase(deleteReport.fulfilled, (state, action) => {
+        state.reports = state.reports.filter((item) => item.fileName !== action.payload);
       });
   },
 });

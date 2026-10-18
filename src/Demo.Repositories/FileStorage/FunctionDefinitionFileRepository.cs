@@ -8,24 +8,16 @@ using System.Text.Json;
 
 namespace Demo.Repositories.FileStorage;
 
-public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathResolver) : IFunctionDefinitionRepository
+public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathResolver)
+    : RepositoryBase<SqlFunctionDefintion>, IFunctionDefinitionRepository
 {
     private const string FOLDER_NAME = "FunctionDefinitions";
-    private static readonly HashSet<string> BuiltinFunctionNames = new MetaProvider([])
-        .GetFunctions()
-        .Select(definition => definition.Name)
-        .Concat(CustomFunctionDefintions.Functions.Select(definition => definition.Name))
-        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-    public IReadOnlyCollection<SqlFunctionDefintion> GetAll()
-        => new MetaProvider([])
-            .RegisterFunctions(CustomFunctionDefintions.Functions)
-            .RegisterFunctions(GetUserDefined())
-            .GetFunctions();
+    public override IReadOnlyCollection<SqlFunctionDefintion> GetBuiltin() => GetBuiltInDefinitions();
 
-    public IReadOnlyCollection<SqlFunctionDefintion> GetUserDefined()
+    public override IReadOnlyCollection<SqlFunctionDefintion> GetUserDefined(string userSectionId)
     {
-        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
         if (!Directory.Exists(dir))
             return [];
 
@@ -46,31 +38,26 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
         return definitions.Values.ToArray();
     }
 
-    public bool IsBuiltin(string functionName)
-        => BuiltinFunctionNames.Contains(functionName);
+    public override SqlFunctionDefintion? Get(string userSectionId, string name)
+        => GetUserDefined(userSectionId).FirstOrDefault(definition =>
+            string.Equals(definition.Name, name, StringComparison.OrdinalIgnoreCase));
 
-    public void Save(SqlFunctionDefintion definition)
+    public override void Save(string userSectionId, SqlFunctionDefintion definition)
     {
-        if (GetBuiltInDefinitions().Any(builtin =>
-            string.Equals(builtin.Name, definition.Name, StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException($"Built-in function '{definition.Name}' cannot be changed.");
-
-        Directory.CreateDirectory(filePathResolver.GetUserStoreFolder(FOLDER_NAME));
-        var path = GetPath(definition.Name);
+        Directory.CreateDirectory(filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME));
+        var path = GetPath(userSectionId, definition.Name);
         File.WriteAllText(path, JsonSerializer.Serialize(
             FunctionDefinitionDto.FromFunctionDefinition(definition),
             new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    public void Delete(string functionName)
+    public override bool Delete(string userSectionId, string functionName)
     {
-        if (GetBuiltInDefinitions().Any(builtin =>
-            string.Equals(builtin.Name, functionName, StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException($"Built-in function '{functionName}' cannot be deleted.");
-
-        var path = GetPath(functionName);
-        if (File.Exists(path))
-            File.Delete(path);
+        var path = GetPath(userSectionId, functionName);
+        if (!File.Exists(path))
+            return false;
+        File.Delete(path);
+        return true;
     }
 
     private static IReadOnlyCollection<SqlFunctionDefintion> GetBuiltInDefinitions()
@@ -78,10 +65,10 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
             .RegisterFunctions(CustomFunctionDefintions.Functions)
             .GetFunctions();
 
-    private string GetPath(string name)
+    private string GetPath(string userSectionId, string name)
     {
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(name.ToUpperInvariant())));
-        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
         return Path.Combine(dir, $"{hash}.json");
     }
 }

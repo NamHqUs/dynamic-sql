@@ -2,11 +2,6 @@ using Namh.Data.DynamicSql;
 
 namespace Demo.Contracts.Repositories;
 
-public interface IFunctionDefinitionRepository
+public interface IFunctionDefinitionRepository : IRepository<SqlFunctionDefintion>
 {
-    IReadOnlyCollection<SqlFunctionDefintion> GetAll();
-    IReadOnlyCollection<SqlFunctionDefintion> GetUserDefined();
-    bool IsBuiltin(string functionName);
-    void Save(SqlFunctionDefintion definition);
-    void Delete(string functionName);
 }

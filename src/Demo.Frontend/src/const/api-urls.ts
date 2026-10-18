@@ -20,10 +20,10 @@ export const apiUrls = {
     toString: `${backendApiUrl}/dynamic-query/query/to-string`,
     toStringText: `${backendApiUrl}/dynamic-query/query/to-string-from-text`,
   },
-  queryRequests: {
-    list: `${backendApiUrl}/query-request`,
-    toString: `${backendApiUrl}/query-request/to-string`,
-    parse: `${backendApiUrl}/query-request/parse`,
-    byFileName: (fileName: string) => `${backendApiUrl}/query-request/${encodeURIComponent(fileName)}`,
+  reports: {
+    list: `${backendApiUrl}/report`,
+    toString: `${backendApiUrl}/report/to-string`,
+    parse: `${backendApiUrl}/report/parse`,
+    byFileName: (fileName: string) => `${backendApiUrl}/report/${encodeURIComponent(fileName)}`,
   },
 } as const;

@@ -1,4 +1,4 @@
-using Demo.Contracts.Repositories;
+using Demo.Contracts.Dto;
 using Demo.Contracts.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -8,56 +8,56 @@ using System.Text.Json;
 namespace Demo.WebApi.Application.Controllers;
 
 [ApiController]
-[Route("query-request")]
-public sealed class QueryRequestController(
-    IQueryRequestService queryRequestService,
+[Route("report")]
+public sealed class ReportController(
+    IReportService reportService,
     IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions> jsonOptions) : ControllerBase
 {
     [HttpGet]
-    public ActionResult<IReadOnlyList<StoredQueryRequest>> List()
-        => Ok(queryRequestService.ListQueryRequests());
+    public ActionResult<IReadOnlyList<ReportDto>> List()
+        => Ok(reportService.ListReports());
 
     [HttpPost("to-string")]
     public IActionResult GetQueryRequestString([FromBody] QueryDefinition query)
-        => Content(queryRequestService.GetQueryRequestString(query), "text/plain");
+        => Content(reportService.GetQueryRequestString(query), "text/plain");
 
     [HttpPost("parse")]
-    public ActionResult<QueryDefinition> Parse([FromBody] QueryRequestTextRequest request)
+    public ActionResult<QueryDefinition> Parse([FromBody] ReportTextRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Text) || string.IsNullOrWhiteSpace(request.Entity))
             return BadRequest("Request text and entity are required.");
 
-        return Ok(queryRequestService.ParseQueryRequestString(request.Text, request.Entity));
+        return Ok(reportService.ParseQueryRequestString(request.Text, request.Entity));
     }
 
     [HttpGet("{fileName}")]
-    public ActionResult<StoredQueryRequest> Get(string fileName)
+    public ActionResult<ReportDto> Get(string fileName)
     {
-        var request = queryRequestService.LoadQueryRequest(fileName);
-        return request is null ? NotFound() : Ok(request);
+        var report = reportService.GetReport(fileName);
+        return report is null ? NotFound() : Ok(report);
     }
 
     [HttpPost]
-    public ActionResult<StoredQueryRequest> Save([FromBody] JsonElement payload)
+    public ActionResult<ReportDto> Save([FromBody] JsonElement payload)
     {
         var (query, requestText, description, chartType) = ParseSavePayload(payload);
-        var saved = queryRequestService.SaveQueryRequest(
+        var saved = reportService.SaveReport(
             query, requestText: requestText, description: description, chartType: chartType);
-        return Created($"/query-request/{saved.FileName}", saved);
+        return Created($"/report/{saved.FileName}", saved);
     }
 
     [HttpPut("{fileName}")]
-    public ActionResult<StoredQueryRequest> Update(string fileName, [FromBody] JsonElement payload)
+    public ActionResult<ReportDto> Update(string fileName, [FromBody] JsonElement payload)
     {
         var (query, requestText, description, chartType) = ParseSavePayload(payload);
-        var request = queryRequestService.UpdateQueryRequest(
+        var report = reportService.UpdateReport(
             fileName, query, requestText, description, chartType);
-        return request is null ? NotFound() : Ok(request);
+        return report is null ? NotFound() : Ok(report);
     }
 
     [HttpDelete("{fileName}")]
     public IActionResult Delete(string fileName)
-        => queryRequestService.DeleteQueryRequest(fileName) ? NoContent() : NotFound();
+        => reportService.DeleteReport(fileName) ? NoContent() : NotFound();
 
     private (QueryDefinition Query, string? RequestText, string? Description, string? ChartType) ParseSavePayload(JsonElement payload)
     {
@@ -99,5 +99,6 @@ public sealed class QueryRequestController(
     }
 
     /// <summary>Request payload for parsing edited query text against a fixed entity.</summary>
-    public sealed record QueryRequestTextRequest(string? Text, string? Entity);
+    /// <summary>Text to parse as a report query for a specified entity.</summary>
+    public sealed record ReportTextRequest(string? Text, string? Entity);
 }

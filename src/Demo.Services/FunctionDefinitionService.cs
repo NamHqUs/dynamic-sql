@@ -1,18 +1,22 @@
 using Demo.Contracts.Dto;
+using Demo.Contracts.Application;
 using Demo.Contracts.Repositories;
 using Demo.Contracts.Services;
 using Namh.Data.DynamicSql;
 
 namespace Demo.Services;
 
-public sealed class FunctionDefinitionService(IFunctionDefinitionRepository repository) : IFunctionDefinitionService
+public sealed class FunctionDefinitionService(
+    IFunctionDefinitionRepository repository,
+    IUserSectionManager userSectionManager) : IFunctionDefinitionService
 {
     public IReadOnlyList<FunctionDefinitionDto> GetAll()
     {
-        var userDefinedNames = repository.GetUserDefined()
+        var userDefined = repository.GetUserDefined(userSectionManager.GetSectionId());
+        var userDefinedNames = userDefined
             .Select(definition => definition.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        return repository.GetAll()
+        return GetAllDefinitions(userDefined)
             .OrderBy(definition => definition.Name, StringComparer.OrdinalIgnoreCase)
             .Select(definition =>
             {
@@ -27,11 +31,12 @@ public sealed class FunctionDefinitionService(IFunctionDefinitionRepository repo
     public FunctionDefinitionDto Create(FunctionDefinitionDto dto)
     {
         var definition = BuildDefinition(dto);
-        if (repository.GetAll().Any(existing =>
+        var sectionId = userSectionManager.GetSectionId();
+        if (GetAllDefinitions(repository.GetUserDefined(sectionId)).Any(existing =>
             string.Equals(existing.Name, definition.Name, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException($"A function named '{definition.Name}' already exists.");
 
-        repository.Save(definition);
+        repository.Save(sectionId, definition);
         var response = FunctionDefinitionDto.FromFunctionDefinition(definition);
         response.CanDelete = true;
         response.IsBuiltin = false;
@@ -41,33 +46,31 @@ public sealed class FunctionDefinitionService(IFunctionDefinitionRepository repo
     public FunctionDefinitionDto Update(string functionName, FunctionDefinitionDto dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
-        if (repository.IsBuiltin(functionName))
+        var sectionId = userSectionManager.GetSectionId();
+        if (IsBuiltin(functionName))
             throw new InvalidOperationException($"Built-in function '{functionName}' is read-only.");
-        if (!repository.GetAll().Any(existing =>
+        if (!GetAllDefinitions(repository.GetUserDefined(sectionId)).Any(existing =>
             string.Equals(existing.Name, functionName, StringComparison.OrdinalIgnoreCase)))
             throw new KeyNotFoundException($"Function '{functionName}' was not found.");
         if (!string.Equals(functionName, dto.Name, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("A function name cannot be changed.", nameof(dto));
 
         var definition = BuildDefinition(dto);
-        var userDefinitions = repository.GetUserDefined();
+        var userDefinitions = repository.GetUserDefined(sectionId);
         var existing = userDefinitions.FirstOrDefault(item =>
             string.Equals(item.Name, functionName, StringComparison.OrdinalIgnoreCase));
         if (existing is null)
         {
-            if (repository.GetAll().Any(item =>
-                string.Equals(item.Name, functionName, StringComparison.OrdinalIgnoreCase)))
-                throw new InvalidOperationException($"Built-in function '{functionName}' cannot be changed.");
             throw new KeyNotFoundException($"Function '{functionName}' was not found.");
         }
-        if (repository.GetAll().Any(item =>
+        if (GetAllDefinitions(userDefinitions).Any(item =>
             !string.Equals(item.Name, functionName, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(item.Name, definition.Name, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException($"A function named '{definition.Name}' already exists.");
 
-        repository.Save(definition);
+        repository.Save(sectionId, definition);
         if (!string.Equals(existing.Name, definition.Name, StringComparison.OrdinalIgnoreCase))
-            repository.Delete(existing.Name);
+            repository.Delete(sectionId, existing.Name);
         var response = FunctionDefinitionDto.FromFunctionDefinition(definition);
         response.CanDelete = true;
         response.IsBuiltin = false;
@@ -76,17 +79,36 @@ public sealed class FunctionDefinitionService(IFunctionDefinitionRepository repo
 
     public void Delete(string functionName)
     {
-        if (!repository.GetUserDefined().Any(item =>
+        var sectionId = userSectionManager.GetSectionId();
+        if (!repository.GetUserDefined(sectionId).Any(item =>
             string.Equals(item.Name, functionName, StringComparison.OrdinalIgnoreCase)))
         {
-            if (repository.GetAll().Any(item =>
-                string.Equals(item.Name, functionName, StringComparison.OrdinalIgnoreCase)))
+            if (IsBuiltin(functionName))
                 throw new InvalidOperationException($"Built-in function '{functionName}' cannot be deleted.");
             return;
         }
 
-        repository.Delete(functionName);
+        repository.Delete(sectionId, functionName);
     }
+
+    private IReadOnlyCollection<SqlFunctionDefintion> GetAllDefinitions(
+        IReadOnlyCollection<SqlFunctionDefintion> userDefined)
+    {
+        var builtin = repository.GetBuiltin();
+        var names = builtin.Select(definition => definition.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var definition in userDefined)
+        {
+            if (!names.Add(definition.Name))
+                throw new InvalidDataException(
+                    $"User function '{definition.Name}' cannot replace a built-in function.");
+        }
+        return builtin.Concat(userDefined).ToArray();
+    }
+
+    private bool IsBuiltin(string functionName)
+        => repository.GetBuiltin().Any(definition =>
+            string.Equals(definition.Name, functionName, StringComparison.OrdinalIgnoreCase));
 
     private static SqlFunctionDefintion BuildDefinition(FunctionDefinitionDto dto)
     {

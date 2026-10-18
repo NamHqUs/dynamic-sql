@@ -1,9 +1,12 @@
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 #if NET10_0
+using Demo.Contracts.Application;
+using Demo.Contracts.Dto;
 using Demo.Contracts.Repositories;
 using Demo.Repositories.FileStorage;
 using Demo.Share;
 using Demo.Services;
+using Microsoft.Extensions.Configuration;
 #endif
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
@@ -84,7 +87,7 @@ internal sealed class _35_EntityContextTests : TestBase
             ],
             Fields = QueryDefinitionParser.ParseProjections("Product1.Name|First, Product2.Name|Second")
         };
-        var service = new QueryRequestService(null!);
+        var service = new ReportService(null!, new TestUserSectionManager());
 
         var parsed = service.ParseQueryRequestString(definition.ToString());
 
@@ -99,31 +102,43 @@ internal sealed class _35_EntityContextTests : TestBase
     }
 
     [Test]
-    public void BuiltinQueryRequestsLoadAsReadOnlyAndRestoreFromTheirYamlText()
+    public void BuiltinReportsLoadAsReadOnlyAndRestoreFromTheirYamlText()
     {
         var directory = new DirectoryInfo("../../../../Demo.WebApi/FileStorage/QueryRequests").FullName;
         var files = Directory.EnumerateFiles(directory, "*.yml")
-            .Select(path => new BuiltinQueryRequestFile(Path.GetFileName(path)!, File.ReadAllText(path)))
+            .Select(path =>
+            {
+                var requestText = File.ReadAllText(path);
+                return new ReportDto(
+                    Path.GetFileName(path)!,
+                    QueryDefinitionParser.ParseFromYml(requestText),
+                    requestText)
+                {
+                    CanDelete = false
+                };
+            })
             .ToArray();
-        var service = new QueryRequestService(new TestQueryRequestRepository(files));
+        var service = new ReportService(
+            new TestReportRepository(files),
+            new TestUserSectionManager());
 
-        var requests = service.ListQueryRequests();
+        var reports = service.ListReports();
 
-        Assert.That(requests, Has.Count.EqualTo(files.Length));
-        Assert.That(requests, Has.All.Property(nameof(StoredQueryRequest.CanDelete)).False);
-        foreach (var request in requests)
+        Assert.That(reports, Has.Count.EqualTo(files.Length));
+        Assert.That(reports, Has.All.Property(nameof(ReportDto.CanDelete)).False);
+        foreach (var report in reports)
         {
-            Assert.That(request.Query.Name, Is.Not.Null.And.Not.Empty);
-            var restored = service.ParseQueryRequestString(request.RequestText!, request.Query.Entity);
-            Assert.That(restored.Name, Is.EqualTo(request.Query.Name));
-            Assert.That(restored.Entity, Is.EqualTo(request.Query.Entity));
+            Assert.That(report.Query.Name, Is.Not.Null.And.Not.Empty);
+            var restored = service.ParseQueryRequestString(report.RequestText!, report.Query.Entity);
+            Assert.That(restored.Name, Is.EqualTo(report.Query.Name));
+            Assert.That(restored.Entity, Is.EqualTo(report.Query.Entity));
             Assert.That(restored.Fields.Select(field => field.ToText()),
-                Is.EqualTo(request.Query.Fields.Select(field => field.ToText())));
+                Is.EqualTo(report.Query.Fields.Select(field => field.ToText())));
         }
 
-        Assert.That(service.LoadQueryRequest(requests[0].FileName)?.CanDelete, Is.False);
-        Assert.That(service.UpdateQueryRequest(requests[0].FileName, requests[0].Query), Is.Null);
-        Assert.That(service.DeleteQueryRequest(requests[0].FileName), Is.False);
+        Assert.That(service.GetReport(reports[0].FileName)?.CanDelete, Is.False);
+        Assert.That(service.UpdateReport(reports[0].FileName, reports[0].Query), Is.Null);
+        Assert.That(service.DeleteReport(reports[0].FileName), Is.False);
     }
 
     [Test]
@@ -132,21 +147,67 @@ internal sealed class _35_EntityContextTests : TestBase
         var repository = new FunctionDefinitionFileRepository(null!);
         var builtins = new MetaProvider([]).GetFunctions()
             .Concat(CustomFunctionDefintions.Functions);
+        var builtinNames = repository.GetBuiltin()
+            .Select(function => function.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var function in builtins)
-            Assert.That(repository.IsBuiltin(function.Name), Is.True, function.Name);
+            Assert.That(builtinNames.Contains(function.Name), Is.True, function.Name);
     }
 
-    private sealed class TestQueryRequestRepository(
-        IReadOnlyList<BuiltinQueryRequestFile> builtinFiles) : IQueryRequestRepository
+    [Test]
+    public void MetadataResetDeletesOnlyTheSpecifiedUserSectionsData()
     {
-        private readonly Dictionary<string, StoredQueryRequest> _requests = new(StringComparer.OrdinalIgnoreCase);
+        var root = Path.Combine(Path.GetTempPath(), "DynamicSqlTest", Guid.NewGuid().ToString("N"));
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["FileStoragePath"] = Path.GetRelativePath(Environment.CurrentDirectory, root)
+            })
+            .Build();
+        var resolver = new FilePathResolver(configuration);
+        var repository = new MetadataFileRepository(resolver);
+        var firstSection = resolver.GetUserStoreFolder("section-a", "Metadata");
+        var secondSection = resolver.GetUserStoreFolder("section-b", "Metadata");
 
-        public IReadOnlyList<StoredQueryRequest> GetAllCustom() => _requests.Values.ToArray();
-        public IReadOnlyList<BuiltinQueryRequestFile> GetBuiltinFiles() => builtinFiles;
-        public StoredQueryRequest? Get(string fileName) => _requests.GetValueOrDefault(fileName);
-        public void Save(StoredQueryRequest request) => _requests[request.FileName] = request;
-        public bool Delete(string fileName) => _requests.Remove(fileName);
+        try
+        {
+            Directory.CreateDirectory(firstSection);
+            Directory.CreateDirectory(secondSection);
+            File.WriteAllText(Path.Combine(firstSection, "custom.json"), "{}");
+            File.WriteAllText(Path.Combine(secondSection, "custom.json"), "{}");
+
+            repository.Reset("section-a");
+
+            Assert.That(Directory.Exists(firstSection), Is.False);
+            Assert.That(File.Exists(Path.Combine(secondSection, "custom.json")), Is.True);
+            Assert.That(repository.GetBuiltin(), Is.Not.Empty);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private sealed class TestUserSectionManager : IUserSectionManager
+    {
+        public string GetSectionId() => "test";
+    }
+
+    private sealed class TestReportRepository(
+        IReadOnlyList<ReportDto> builtinReports) : IReportRepository
+    {
+        private readonly Dictionary<string, ReportDto> _reports = new(StringComparer.OrdinalIgnoreCase);
+
+        public IReadOnlyList<ReportDto> GetUserDefined(string userSectionId)
+            => _reports.Values.ToArray();
+        public IReadOnlyList<ReportDto> GetBuiltin() => builtinReports;
+        public ReportDto? Get(string userSectionId, string fileName)
+            => _reports.GetValueOrDefault(fileName);
+        public void Save(string userSectionId, ReportDto report)
+            => _reports[report.FileName] = report;
+        public bool Delete(string userSectionId, string fileName) => _reports.Remove(fileName);
     }
 #endif
 

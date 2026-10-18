@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
         "/db": backendApiUrl,
         "/metadata": backendApiUrl,
         "/dynamic-query": backendApiUrl,
-        "/query-request": backendApiUrl,
+        "/report": backendApiUrl,
       },
     },
   };

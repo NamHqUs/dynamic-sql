@@ -1,4 +1,5 @@
 using Demo.Contracts.Dto;
+using Demo.Contracts.Application;
 using Demo.Contracts.Repositories;
 using Demo.Contracts.Services;
 using Namh.Data.DynamicSql;
@@ -9,86 +10,107 @@ public sealed class MetadataService : IMetadataService
 {
     private readonly IMetadataRepository _metadataRepository;
     private readonly IFunctionDefinitionService _functionDefinitionService;
+    private readonly IUserSectionManager _userSectionManager;
 
     public MetadataService(
         IMetadataRepository metadataRepository,
-        IFunctionDefinitionService functionDefinitionService)
+        IFunctionDefinitionService functionDefinitionService,
+        IUserSectionManager userSectionManager)
     {
         _metadataRepository = metadataRepository;
         _functionDefinitionService = functionDefinitionService;
+        _userSectionManager = userSectionManager;
     }
 
     public IReadOnlyList<MetadataEntityDto> GetAll()
     {
-        var userDefinedNames = _metadataRepository.GetUserDefined()
+        var sectionId = _userSectionManager.GetSectionId();
+        var userDefinedNames = _metadataRepository.GetUserDefined(sectionId)
             .Select(entity => entity.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        return _metadataRepository.GetAll()
+        return GetAllEntities(sectionId)
             .Select(entity => MetadataEntityDto.FromEntity(entity, userDefinedNames.Contains(entity.Name)))
             .ToArray();
     }
 
-    public bool IsBuiltin(string entityName) => _metadataRepository.IsBuiltin(entityName);
+    public bool IsBuiltin(string entityName)
+        => _metadataRepository.GetBuiltin().Any(entity =>
+            string.Equals(entity.Name, entityName, StringComparison.OrdinalIgnoreCase));
 
     public Entity Create(Entity entity)
     {
         ValidateEntity(entity);
-        var metadata = _metadataRepository.GetAll();
+        var sectionId = _userSectionManager.GetSectionId();
+        var metadata = GetAllEntities(sectionId);
         if (metadata.Any(item => string.Equals(item.Name, entity.Name, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException($"An entity named '{entity.Name}' already exists.");
 
-        _metadataRepository.Save(entity);
+        _metadataRepository.Save(sectionId, entity);
         return entity;
     }
 
     public Entity Update(string entityName, Entity entity)
     {
-        if (_metadataRepository.IsBuiltin(entityName))
+        var sectionId = _userSectionManager.GetSectionId();
+        if (IsBuiltin(entityName))
             throw new InvalidOperationException($"Built-in entity '{entityName}' is read-only.");
 
         ValidateEntity(entity);
-        var userEntities = _metadataRepository.GetUserDefined();
+        var userEntities = _metadataRepository.GetUserDefined(sectionId);
         if (!userEntities.Any(item => string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase)))
         {
-            if (_metadataRepository.GetAll().Any(item =>
-                string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase)))
-                throw new InvalidOperationException($"Built-in entity '{entityName}' cannot be changed.");
             throw new KeyNotFoundException($"Entity '{entityName}' was not found.");
         }
 
-        var allItems = _metadataRepository.GetAll().ToList();
-        var index = allItems.FindIndex(item => string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase));
-        if (index < 0)
-            throw new KeyNotFoundException($"Entity '{entityName}' was not found.");
-        if (allItems.Where((_, itemIndex) => itemIndex != index)
-            .Any(item => string.Equals(item.Name, entity.Name, StringComparison.OrdinalIgnoreCase)))
+        if (GetAllEntities(sectionId).Any(item =>
+            !string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(item.Name, entity.Name, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException($"An entity named '{entity.Name}' already exists.");
 
-        allItems[index] = entity;
-        _metadataRepository.Save(entity);
+        _metadataRepository.Save(sectionId, entity);
         if (!string.Equals(entityName, entity.Name, StringComparison.OrdinalIgnoreCase))
-            _metadataRepository.Delete(entityName);
+            _metadataRepository.Delete(sectionId, entityName);
         return entity;
     }
 
     public void Delete(string entityName)
     {
-        if (!_metadataRepository.GetUserDefined()
+        var sectionId = _userSectionManager.GetSectionId();
+        if (!_metadataRepository.GetUserDefined(sectionId)
             .Any(item => string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase)))
         {
-            if (_metadataRepository.GetAll().Any(item =>
-                string.Equals(item.Name, entityName, StringComparison.OrdinalIgnoreCase)))
+            if (IsBuiltin(entityName))
                 throw new InvalidOperationException($"Built-in entity '{entityName}' cannot be deleted.");
             return;
         }
 
-        _metadataRepository.Delete(entityName);
+        _metadataRepository.Delete(sectionId, entityName);
     }
 
-    public IReadOnlyList<Entity> Reset() => _metadataRepository.Reset();
+    public IReadOnlyList<Entity> Reset()
+    {
+        var sectionId = _userSectionManager.GetSectionId();
+        _metadataRepository.Reset(sectionId);
+        return GetAllEntities(sectionId);
+    }
 
     public IMetaProvider GetMetaProvider()
-        => new MetaProvider(_metadataRepository.GetAll(), _functionDefinitionService.GetAll().Select(e => e.ToFunctionDefinition()));
+        => new MetaProvider(
+            GetAllEntities(_userSectionManager.GetSectionId()),
+            _functionDefinitionService.GetAll().Select(e => e.ToFunctionDefinition()));
+
+    private IReadOnlyList<Entity> GetAllEntities(string userSectionId)
+    {
+        var builtin = _metadataRepository.GetBuiltin();
+        var userDefined = _metadataRepository.GetUserDefined(userSectionId);
+        var names = builtin.Select(entity => entity.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var entity in userDefined)
+        {
+            if (!names.Add(entity.Name))
+                throw new InvalidDataException($"User metadata cannot replace built-in entity '{entity.Name}'.");
+        }
+        return builtin.Concat(userDefined).ToArray();
+    }
 
     private static void ValidateEntity(Entity entity)
     {

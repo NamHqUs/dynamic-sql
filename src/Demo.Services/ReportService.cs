@@ -1,5 +1,7 @@
 using Demo.Contracts.Repositories;
 using Demo.Contracts.Services;
+using Demo.Contracts.Application;
+using Demo.Contracts.Dto;
 using Namh.Data.DynamicSql;
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using System.Globalization;
@@ -7,12 +9,19 @@ using System.Text.Json;
 
 namespace Demo.Services;
 
-public sealed class QueryRequestService(IQueryRequestRepository repository) : IQueryRequestService
+public sealed class ReportService(
+    IReportRepository repository,
+    IUserSectionManager userSectionManager) : IReportService
 {
-    public IReadOnlyList<StoredQueryRequest> ListQueryRequests()
-        => GetBuiltinQueryRequests().Concat(repository.GetAllCustom()).ToArray();
+    public IReadOnlyList<ReportDto> ListReports()
+    {
+        var sectionId = userSectionManager.GetSectionId();
+        return GetBuiltinReports()
+            .Concat(GetUserDefinedQueryRequests(sectionId))
+            .ToArray();
+    }
 
-    public StoredQueryRequest SaveQueryRequest(
+    public ReportDto SaveReport(
         QueryDefinition query,
         string? fileName = null,
         string? requestText = null,
@@ -20,14 +29,21 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
         string? chartType = null)
     {
         fileName ??= CreateRandomFileName();
-        var request = new StoredQueryRequest(fileName, query, requestText, description, chartType);
-        repository.Save(request);
-        return request;
+        EnsureNotBuiltin(fileName);
+        var sectionId = userSectionManager.GetSectionId();
+        var report = new ReportDto(fileName, query, requestText, description, chartType);
+        repository.Save(sectionId, report);
+        return report;
     }
 
-    public StoredQueryRequest? LoadQueryRequest(string fileName)
-        => repository.Get(fileName) ?? GetBuiltinQueryRequests().FirstOrDefault(request =>
-            string.Equals(request.FileName, fileName, StringComparison.OrdinalIgnoreCase));
+    public ReportDto? GetReport(string fileName)
+    {
+        var sectionId = userSectionManager.GetSectionId();
+        EnsureNoBuiltinConflict(sectionId);
+        return GetBuiltinReports().FirstOrDefault(report =>
+                string.Equals(report.FileName, fileName, StringComparison.OrdinalIgnoreCase))
+            ?? repository.Get(sectionId, fileName);
+    }
 
     public string GetQueryRequestString(QueryDefinition query)
         => query.ToString();
@@ -184,36 +200,60 @@ public sealed class QueryRequestService(IQueryRequestRepository repository) : IQ
         return (entries[0], aliases);
     }
 
-    public StoredQueryRequest? UpdateQueryRequest(
+    public ReportDto? UpdateReport(
         string fileName,
         QueryDefinition query,
         string? requestText = null,
         string? description = null,
         string? chartType = null)
     {
-        if (repository.Get(fileName) is null)
+        var sectionId = userSectionManager.GetSectionId();
+        EnsureNoBuiltinConflict(sectionId);
+        if (IsBuiltin(fileName) || repository.Get(sectionId, fileName) is null)
             return null;
 
-        var request = new StoredQueryRequest(fileName, query, requestText, description, chartType);
-        repository.Save(request);
-        return request;
+        var report = new ReportDto(fileName, query, requestText, description, chartType);
+        repository.Save(sectionId, report);
+        return report;
     }
 
-    public bool DeleteQueryRequest(string fileName) => repository.Delete(fileName);
+    public bool DeleteReport(string fileName)
+    {
+        var sectionId = userSectionManager.GetSectionId();
+        EnsureNoBuiltinConflict(sectionId);
+        return !IsBuiltin(fileName) && repository.Delete(sectionId, fileName);
+    }
 
     private static string CreateRandomFileName()
         => $"query_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.json";
 
-    private IReadOnlyList<StoredQueryRequest> GetBuiltinQueryRequests()
-        => repository.GetBuiltinFiles()
-            .Select(file => new StoredQueryRequest(
-                file.FileName,
-                QueryDefinitionParser.ParseFromYml(file.RequestText),
-                file.RequestText)
-            {
-                CanDelete = false
-            })
-            .ToArray();
+    private IReadOnlyList<ReportDto> GetBuiltinReports() => repository.GetBuiltin();
+
+    private IReadOnlyList<ReportDto> GetUserDefinedQueryRequests(string userSectionId)
+    {
+        var builtinNames = GetBuiltinReports()
+            .Select(report => report.FileName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var userDefined = repository.GetUserDefined(userSectionId);
+        var conflict = userDefined.FirstOrDefault(request => builtinNames.Contains(request.FileName));
+        if (conflict is not null)
+            throw new InvalidDataException(
+                $"User query request '{conflict.FileName}' cannot replace a built-in request.");
+        return userDefined;
+    }
+
+    private void EnsureNoBuiltinConflict(string userSectionId)
+        => _ = GetUserDefinedQueryRequests(userSectionId);
+
+    private bool IsBuiltin(string fileName)
+        => GetBuiltinReports().Any(report =>
+            string.Equals(report.FileName, fileName, StringComparison.OrdinalIgnoreCase));
+
+    private void EnsureNotBuiltin(string fileName)
+    {
+        if (IsBuiltin(fileName))
+            throw new InvalidOperationException($"Built-in query request '{fileName}' cannot be changed.");
+    }
 
     private static JsonSerializerOptions JsonOptions(bool writeIndented = false)
         => new()

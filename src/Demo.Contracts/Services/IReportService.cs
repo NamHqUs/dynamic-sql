@@ -1,26 +1,26 @@
-using Demo.Contracts.Repositories;
+using Demo.Contracts.Dto;
 using Namh.Data.DynamicSql;
 
 namespace Demo.Contracts.Services;
 
-public interface IQueryRequestService
+public interface IReportService
 {
-    IReadOnlyList<StoredQueryRequest> ListQueryRequests();
-    StoredQueryRequest SaveQueryRequest(
+    IReadOnlyList<ReportDto> ListReports();
+    ReportDto SaveReport(
         QueryDefinition query,
         string? fileName = null,
         string? requestText = null,
         string? description = null,
         string? chartType = null);
-    StoredQueryRequest? LoadQueryRequest(string fileName);
+    ReportDto? GetReport(string fileName);
     string GetQueryRequestString(QueryDefinition query);
     QueryDefinition ParseQueryRequestString(string text, string entity);
     QueryDefinition ParseQueryRequestString(string text);
-    StoredQueryRequest? UpdateQueryRequest(
+    ReportDto? UpdateReport(
         string fileName,
         QueryDefinition query,
         string? requestText = null,
         string? description = null,
         string? chartType = null);
-    bool DeleteQueryRequest(string fileName);
+    bool DeleteReport(string fileName);
 }

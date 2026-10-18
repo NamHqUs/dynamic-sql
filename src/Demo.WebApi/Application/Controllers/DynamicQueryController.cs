@@ -9,7 +9,7 @@ namespace Demo.WebApi.Application.Controllers;
 [Route("dynamic-query/query")]
 public sealed class DynamicQueryController(
     IDynamicQueryService dynamicQueryService,
-    IQueryRequestService queryRequestService) : ControllerBase
+    IReportService reportService) : ControllerBase
 {
     [HttpPost("to-string")]
     public IActionResult GetSqlQueryString([FromBody] QueryDefinition query)
@@ -26,7 +26,7 @@ public sealed class DynamicQueryController(
     {
         using var reader = new StreamReader(Request.Body, Encoding.UTF8);
         var text = await reader.ReadToEndAsync(cancellationToken);
-        var query = queryRequestService.ParseQueryRequestString(text);
+        var query = reportService.ParseQueryRequestString(text);
         return Content(dynamicQueryService.GetSqlQueryString(query), "text/plain");
     }
 
@@ -35,7 +35,7 @@ public sealed class DynamicQueryController(
     {
         using var reader = new StreamReader(Request.Body, Encoding.UTF8);
         var text = await reader.ReadToEndAsync(cancellationToken);
-        var query = queryRequestService.ParseQueryRequestString(text);
+        var query = reportService.ParseQueryRequestString(text);
         return Ok(await dynamicQueryService.ExecuteQueryAsync(query, cancellationToken));
     }
 }

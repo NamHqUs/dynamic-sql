@@ -4,17 +4,17 @@ import { useDispatch, useSelector } from "react-redux";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
 import {
-  deleteQueryRequest,
+  deleteReport,
   executeQuery,
   clearQueryResult,
   fetchQueryMetadata,
-  fetchSavedQueryRequests,
+  fetchReports,
   fromApiQuery,
   MetadataEntity,
   QueryDefinition,
   QueryResult,
-  saveQueryRequest,
-  StoredQueryRequest,
+  saveReport,
+  ReportDto,
 } from "../query-builder/query-design/query-builder-slice";
 import "./reports.css";
 
@@ -59,16 +59,16 @@ const chartOptions: { value: ChartType; label: string }[] = [
   { value: "scatter", label: "Scatter plot" },
 ];
 
-function builtinIndex(request: StoredQueryRequest): number | null {
+function builtinIndex(request: ReportDto): number | null {
   const match = request.fileName.match(/^(\d{2})-builtin-query-request\.yml$/i);
   return match ? Number(match[1]) : null;
 }
 
-function reportTitle(request: StoredQueryRequest): string {
+function reportTitle(request: ReportDto): string {
   return request.query.name || request.fileName.replace(/\.(json|yml)$/i, "");
 }
 
-function presentationFor(request: StoredQueryRequest): ReportPresentation {
+function presentationFor(request: ReportDto): ReportPresentation {
   const index = builtinIndex(request);
   if (index && builtinPresentations[index]) return builtinPresentations[index];
   const chartType = chartOptions.some((option) => option.value === request.chartType)
@@ -227,7 +227,7 @@ function ReportChart({ result, type, metric, groupBy, xMetric }: {
 }
 
 type ReportFormProps = {
-  report: StoredQueryRequest | null;
+  report: ReportDto | null;
   entities: MetadataEntity[];
   onClose: () => void;
   onSave: (details: { name: string; description: string; chartType: ChartType; entity: string }) => void;
@@ -267,24 +267,24 @@ function ReportForm({ report, entities, onClose, onSave }: ReportFormProps) {
 export default function Reports() {
   const dispatch = useDispatch();
   const showMessageBox = useMessageBox();
-  const { savedRequests, savedRequestsStatus, savedRequestsError, metadata, metadataStatus, metadataError, result, queryStatus, queryError } = useSelector((state) => state.queryBuilder);
+  const { reports, reportsStatus, reportsError, metadata, metadataStatus, metadataError, result, queryStatus, queryError } = useSelector((state) => state.queryBuilder);
   const [selectedFileName, setSelectedFileName] = useState("");
   const [lastExecutedFileName, setLastExecutedFileName] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All reports");
-  const [editingReport, setEditingReport] = useState<StoredQueryRequest | null>(null);
+  const [editingReport, setEditingReport] = useState<ReportDto | null>(null);
   const [creatingReport, setCreatingReport] = useState(false);
   const [message, setMessage] = useState("");
   const [messageIsError, setMessageIsError] = useState(false);
 
   useEffect(() => {
-    if (savedRequestsStatus === "idle") dispatch(fetchSavedQueryRequests());
+    if (reportsStatus === "idle") dispatch(fetchReports());
     if (metadataStatus === "idle") dispatch(fetchQueryMetadata());
-  }, [dispatch, metadataStatus, savedRequestsStatus]);
+  }, [dispatch, metadataStatus, reportsStatus]);
 
-  const sortedReports = useMemo(() => [...savedRequests].sort((left, right) => (
+  const sortedReports = useMemo(() => [...reports].sort((left, right) => (
     reportTitle(left).localeCompare(reportTitle(right), undefined, { numeric: true, sensitivity: "base" })
-  )), [savedRequests]);
+  )), [reports]);
   const categories = useMemo(() => ["All reports", ...new Set(sortedReports.map((request) => presentationFor(request).category))], [sortedReports]);
   const filteredReports = useMemo(() => sortedReports.filter((request) => {
     const matchesCategory = category === "All reports" || presentationFor(request).category === category;
@@ -305,7 +305,7 @@ export default function Reports() {
     dispatch(executeQuery(fromApiQuery(selectedReport.query)));
   }, [dispatch, selectedFileName, selectedReport]);
 
-  const runReport = (request: StoredQueryRequest) => {
+  const runReport = (request: ReportDto) => {
     setSelectedFileName(request.fileName);
     setLastExecutedFileName(request.fileName);
     dispatch(clearQueryResult());
@@ -323,7 +323,7 @@ export default function Reports() {
       setMessage("Dataset metadata is not available yet.");
       return;
     }
-    const resultAction = await dispatch(saveQueryRequest({
+    const resultAction = await dispatch(saveReport({
       fileName: target?.fileName,
       name,
       definition: queryDefinition,
@@ -331,7 +331,7 @@ export default function Reports() {
       description,
       chartType,
     }));
-    if (saveQueryRequest.fulfilled.match(resultAction)) {
+    if (saveReport.fulfilled.match(resultAction)) {
       setSelectedFileName(resultAction.payload.fileName);
       setMessageIsError(false);
       setMessage(target ? "Report updated." : "Report created.");
@@ -343,7 +343,7 @@ export default function Reports() {
     }
   };
 
-  const deleteReport = async (request: StoredQueryRequest) => {
+  const deleteSelectedReport = async (request: ReportDto) => {
     const action = await showMessageBox({
       eyebrow: "DELETE REPORT",
       title: `Delete "${reportTitle(request)}"?`,
@@ -354,8 +354,8 @@ export default function Reports() {
       ],
     });
     if (action !== "delete") return;
-    const resultAction = await dispatch(deleteQueryRequest(request.fileName));
-    if (deleteQueryRequest.fulfilled.match(resultAction)) {
+    const resultAction = await dispatch(deleteReport(request.fileName));
+    if (deleteReport.fulfilled.match(resultAction)) {
       setSelectedFileName("");
       setMessageIsError(false);
       setMessage("Report deleted.");
@@ -370,7 +370,7 @@ export default function Reports() {
     setCreatingReport(true);
   };
 
-  const cloneBuiltin = (request: StoredQueryRequest) => {
+  const cloneBuiltin = (request: ReportDto) => {
     const defaults = presentationFor(request);
     setEditingReport({
       ...request,
@@ -405,9 +405,9 @@ export default function Reports() {
           </div>
           <div className="report-list-heading"><span>ALL REPORTS</span><span>{filteredReports.length}</span></div>
           <div className="report-list">
-            {savedRequestsStatus === "loading" && <p className="report-list-status">Loading your reports…</p>}
-            {savedRequestsStatus === "failed" && <p className="report-list-status error" role="alert">{savedRequestsError}</p>}
-            {savedRequestsStatus !== "loading" && filteredReports.map((request) => {
+            {reportsStatus === "loading" && <p className="report-list-status">Loading your reports…</p>}
+            {reportsStatus === "failed" && <p className="report-list-status error" role="alert">{reportsError}</p>}
+            {reportsStatus !== "loading" && filteredReports.map((request) => {
               const presentation = presentationFor(request);
               return <button className={`report-list-item${selectedReport?.fileName === request.fileName ? " active" : ""}`} key={request.fileName} type="button" onClick={() => {
                 setSelectedFileName(request.fileName);
@@ -418,7 +418,7 @@ export default function Reports() {
                 <Icon name="chevron" size={14} />
               </button>;
             })}
-            {savedRequestsStatus !== "loading" && !filteredReports.length && <p className="report-list-status">No reports match this view.</p>}
+            {reportsStatus !== "loading" && !filteredReports.length && <p className="report-list-status">No reports match this view.</p>}
           </div>
           <div className="reports-sidebar-foot"><span className="report-sync-dot" /> Live from your data source</div>
         </aside>
@@ -431,7 +431,7 @@ export default function Reports() {
               <div className="report-detail-heading">
                 <div className="report-breadcrumb"><span>REPORTS</span><Icon name="chevron" size={12} /><span>{selectedPresentation.category.toUpperCase()}</span></div>
                 <div className="report-title-row"><div><div className="report-tags"><span className="report-tag">{selectedReport.canDelete ? "YOUR REPORT" : "CURATED REPORT"}</span><span className="report-tag subtle">{selectedPresentation.category}</span></div><h2>{reportTitle(selectedReport)}</h2><p>{selectedReport.description || selectedPresentation.description}</p></div>
-                  <div className="report-detail-actions"><button className="button secondary report-refresh" type="button" onClick={() => runReport(selectedReport)} disabled={queryStatus === "loading"}><Icon name="reset" size={14} /> {queryStatus === "loading" ? "Running…" : "Refresh"}</button>{selectedReport.canDelete ? <><button className="report-icon-button" type="button" aria-label="Edit report" title="Edit report" onClick={() => setEditingReport(selectedReport)}><Icon name="edit" size={15} /></button><button className="report-icon-button report-delete-button" type="button" aria-label="Delete report" title="Delete report" onClick={() => void deleteReport(selectedReport)}><Icon name="trash" size={15} /></button></> : <button className="button secondary" type="button" onClick={() => cloneBuiltin(selectedReport)}><Icon name="plus" size={14} /> Customize</button>}</div>
+                  <div className="report-detail-actions"><button className="button secondary report-refresh" type="button" onClick={() => runReport(selectedReport)} disabled={queryStatus === "loading"}><Icon name="reset" size={14} /> {queryStatus === "loading" ? "Running…" : "Refresh"}</button>{selectedReport.canDelete ? <><button className="report-icon-button" type="button" aria-label="Edit report" title="Edit report" onClick={() => setEditingReport(selectedReport)}><Icon name="edit" size={15} /></button><button className="report-icon-button report-delete-button" type="button" aria-label="Delete report" title="Delete report" onClick={() => void deleteSelectedReport(selectedReport)}><Icon name="trash" size={15} /></button></> : <button className="button secondary" type="button" onClick={() => cloneBuiltin(selectedReport)}><Icon name="plus" size={14} /> Customize</button>}</div>
                 </div>
               </div>
 
@@ -452,7 +452,7 @@ export default function Reports() {
 
               {selectedResult && <section className="report-data-card"><div className="report-data-heading"><div><span className="eyebrow">UNDERLYING DATA</span><h3>Query preview <span>{selectedResult.rows.length}</span></h3></div><span>Showing first {Math.min(selectedResult.rows.length, 8)} rows</span></div><div className="report-table-wrap"><table><thead><tr>{selectedResult.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{selectedResult.rows.slice(0, 8).map((row, rowIndex) => <tr key={rowIndex}>{selectedResult.columns.map((column, columnIndex) => <td key={`${column}-${columnIndex}`}>{row[columnIndex] ?? "—"}</td>)}</tr>)}</tbody></table></div></section>}
             </>
-          ) : <div className="reports-empty"><span className="report-empty-mark"><Icon name="grid" size={22} /></span><h2>Your reporting studio is ready</h2><p>{savedRequestsStatus === "failed" ? savedRequestsError : "Create a custom report or try again when your saved reports are available."}</p><button className="button primary" type="button" onClick={createReport}><Icon name="plus" size={14} /> Create your first report</button></div>}
+          ) : <div className="reports-empty"><span className="report-empty-mark"><Icon name="grid" size={22} /></span><h2>Your reporting studio is ready</h2><p>{reportsStatus === "failed" ? reportsError : "Create a custom report or try again when your saved reports are available."}</p><button className="button primary" type="button" onClick={createReport}><Icon name="plus" size={14} /> Create your first report</button></div>}
           {metadataStatus === "failed" && <p className="report-metadata-error" role="alert">Could not load report datasets: {metadataError}</p>}
         </main>
       </div>

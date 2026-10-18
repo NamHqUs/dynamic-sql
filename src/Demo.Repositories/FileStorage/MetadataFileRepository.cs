@@ -5,34 +5,23 @@ using System.Text.Json;
 
 namespace Demo.Repositories.FileStorage;
 
-public sealed class MetadataFileRepository(FilePathResolver filePathResolver) : IMetadataRepository
+public sealed class MetadataFileRepository(FilePathResolver filePathResolver)
+    : RepositoryBase<Entity>, IMetadataRepository
 {
     private const string FOLDER_NAME = "Metadata";
 
-    public IReadOnlyList<Entity> Reset()
+    public void Reset(string userSectionId)
     {
-        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
         if (Directory.Exists(dir))
             Directory.Delete(dir, recursive: true);
-        return GetAll();
     }
 
-    public IReadOnlyList<Entity> GetAll()
-    {
-        var merge = BuiltinMetadata.DefaultMetadata.ToDictionary(
-            entity => entity.Name,
-            StringComparer.OrdinalIgnoreCase);
-        foreach (var entity in GetUserDefined())
-        {
-            if (!merge.TryAdd(entity.Name, entity))
-                throw new InvalidDataException($"User metadata cannot replace built-in entity '{entity.Name}'.");
-        }
-        return merge.Values.ToArray();
-    }
+    public override IReadOnlyCollection<Entity> GetBuiltin() => BuiltinMetadata.DefaultMetadata;
 
-    public IReadOnlyList<Entity> GetUserDefined()
+    public override IReadOnlyCollection<Entity> GetUserDefined(string userSectionId)
     {
-        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
         if (!Directory.Exists(dir))
             return [];
 
@@ -42,37 +31,31 @@ public sealed class MetadataFileRepository(FilePathResolver filePathResolver) : 
             .ToArray();
     }
 
-    public bool IsBuiltin(string entityName)
-        => BuiltinMetadata.DefaultMetadata.Any(entity =>
-            string.Equals(entity.Name, entityName, StringComparison.OrdinalIgnoreCase));
+    public override Entity? Get(string userSectionId, string name)
+        => GetUserDefined(userSectionId).FirstOrDefault(entity =>
+            string.Equals(entity.Name, name, StringComparison.OrdinalIgnoreCase));
 
-    public void Save(Entity entity)
+    public override void Save(string userSectionId, Entity entity)
     {
-        if (BuiltinMetadata.DefaultMetadata.Any(builtin =>
-            string.Equals(builtin.Name, entity.Name, StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException($"Built-in entity '{entity.Name}' cannot be changed.");
-
-        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
         Directory.CreateDirectory(dir);
         File.WriteAllText(
-            GetPath(entity.Name),
+            GetPath(userSectionId, entity.Name),
             JsonSerializer.Serialize(entity, new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    public void Delete(string entityName)
+    public override bool Delete(string userSectionId, string entityName)
     {
-        if (BuiltinMetadata.DefaultMetadata.Any(builtin =>
-            string.Equals(builtin.Name, entityName, StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException($"Built-in entity '{entityName}' cannot be deleted.");
-
-        var path = GetPath(entityName);
-        if (File.Exists(path))
-            File.Delete(path);
+        var path = GetPath(userSectionId, entityName);
+        if (!File.Exists(path))
+            return false;
+        File.Delete(path);
+        return true;
     }
 
-    private string GetPath(string name)
+    private string GetPath(string userSectionId, string name)
     {
-        var dir = filePathResolver.GetUserStoreFolder(FOLDER_NAME);
+        var dir = filePathResolver.GetUserStoreFolder(userSectionId, FOLDER_NAME);
         var path = Path.GetFullPath(Path.Combine(dir, $"{name}.json"));
         var root = Path.GetFullPath(dir) + Path.DirectorySeparatorChar;
         if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase))

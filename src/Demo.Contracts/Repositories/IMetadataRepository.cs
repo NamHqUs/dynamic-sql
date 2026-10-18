@@ -2,12 +2,7 @@ using Namh.Data.DynamicSql;
 
 namespace Demo.Contracts.Repositories;
 
-public interface IMetadataRepository
+public interface IMetadataRepository : IRepository<Entity>
 {
-    IReadOnlyList<Entity> Reset();
-    IReadOnlyList<Entity> GetAll();
-    IReadOnlyList<Entity> GetUserDefined();
-    bool IsBuiltin(string entityName);
-    void Save(Entity entity);
-    void Delete(string entityName);
+    void Reset(string userSectionId);
 }
