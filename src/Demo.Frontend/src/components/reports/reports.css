@@ -115,6 +115,12 @@
 .report-svg-wrap svg { display: block; width: 100%; overflow: visible; }
 .chart-grid-line { stroke: #282e39; stroke-width: 1; stroke-dasharray: 3 5; }.report-line { fill: none; stroke: #a78bfa; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }.report-point { fill: #b6a0ff; stroke: #1b1830; stroke-width: 3; }.chart-label { fill: #778194; font: 10px "DM Mono",monospace; }
 .chart-data-point { cursor: crosshair; }
+.chart-drillable,.chart-drillable .chart-data-point { cursor: pointer; }
+.chart-drillable:focus-visible { outline: 2px solid #b39aff; outline-offset: 3px; }
+.report-chart-drilldown-heading { display: flex; align-items: center; gap: 10px; margin: 0 10px 6px; color: #9da6b6; font-size: 11px; }
+.report-chart-drilldown-heading button { padding: 3px 7px; border: 1px solid #38334a; border-radius: 4px; color: #c3b6e8; background: #1b1c28; font-size: 10px; cursor: pointer; }
+.report-chart-drilldown-heading button:hover { border-color: #65558a; color: #fff; }
+.report-chart-drilldown-heading strong { color: #e0d7f3; font-weight: 600; }
 .chart-hover-tooltip { visibility: hidden; opacity: 0; pointer-events: none; transition: opacity .12s,visibility .12s; }
 .chart-data-point:hover .chart-hover-tooltip,.chart-data-point:focus .chart-hover-tooltip { visibility: visible; opacity: 1; }
 .chart-hover-tooltip rect { fill: #191c26; stroke: #65558a; stroke-width: 1; filter: drop-shadow(0 3px 5px #0008); }
@@ -170,7 +176,7 @@
 .report-dimension-option span { max-width: 125px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .report-dimension-option:before { color: #7d8798; font-size: 12px; line-height: 10px; content: "○"; }
 .report-dimension-option[aria-pressed="true"]:before { content: "●"; color: #c7b8e8; }
-.report-dimension-option:focus-within { outline: 2px solid #b8a2ff; outline-offset: 2px; }
+.report-dimension-option:focus-visible { outline: 2px solid #b8a2ff; outline-offset: 2px; }
 .report-chart-composition .report-series-legend { position: absolute; z-index: 2; top: 0; right: 0; width: 50%; height: 34px; box-sizing: border-box; margin: 0; padding: 0 10px; background: transparent; }
 .report-chart-empty { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 27px 16px; text-align: center; }.report-chart-empty strong { color: #dedbe9; font-size: 13px; }.report-chart-empty > span:not(.report-empty-mark) { max-width: 350px; color: #818b9d; font-size: 10px; line-height: 1.6; }
 .report-empty-mark { display: grid; width: 43px; height: 43px; place-items: center; border: 1px solid #433860; border-radius: 12px; color: #b7a4ff; background: #211b32; box-shadow: 0 8px 22px #0003; }.report-chart-empty .button { margin-top: 5px; padding: 8px 11px; font-size: 11px; }

@@ -8,8 +8,8 @@ export default function BarChart({ data }: { data: ChartData }) {
     return (
       <div className="report-bars">
         {data.points.map((point, index) => (
-          <div className="report-bar-row" key={`${point.label}-${index}`} title={`${point.label}: ${formatChartValue(point.value)}`}>
-            <span className="report-bar-label" title={point.label}>{point.label}</span>
+          <div className="report-bar-row" key={`${point.label}-${index}`}>
+            <span className="report-bar-label">{point.label}</span>
             <div className="report-bar-track"><i style={{ width: `${Math.max(3, (point.value / max) * 100)}%`, opacity: 1 - index * 0.035 }} /></div>
             <b>{formatChartValue(point.value)}</b>
           </div>
@@ -23,11 +23,22 @@ export default function BarChart({ data }: { data: ChartData }) {
 
 function AggregateBarChart({ data }: { data: AggregateChartData }) {
   const [hiddenSeries, setHiddenSeries] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
+  const breakdown = selectedCategory ? data.breakdowns?.[selectedCategory] : undefined;
+  const chartData = breakdown && selectedMetric
+    ? {
+      ...breakdown,
+      metrics: breakdown.metrics.filter((metric) => metric === selectedMetric),
+      points: breakdown.points.filter((point) => point.metric === selectedMetric),
+      seriesNames: breakdown.seriesNames.filter((series) => series === selectedMetric),
+    }
+    : breakdown ?? data;
   const isSeriesVisible = (series: string) => !hiddenSeries.includes(series);
   const toggleSeries = (series: string) => {
     setHiddenSeries((hidden) => hidden.includes(series) ? hidden.filter((name) => name !== series) : [...hidden, series]);
   };
-  const visiblePoints = data.points.filter((point) => isSeriesVisible(point.series));
+  const visiblePoints = chartData.points.filter((point) => isSeriesVisible(point.series));
   if (!visiblePoints.length) {
     return (
       <>
@@ -44,7 +55,7 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
   const rawMax = Math.max(...visiblePoints.map((point) => Math.abs(point.value)), 1);
   const step = niceChartStep(rawMax);
   const max = niceChartMax(rawMax);
-  const visibleSeries = data.seriesNames.filter(isSeriesVisible);
+  const visibleSeries = chartData.seriesNames.filter(isSeriesVisible);
   const groups = new Map<string, { label: string; points: typeof visiblePoints }>();
   visiblePoints.forEach((point) => {
     const group = groups.get(point.label);
@@ -63,7 +74,14 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
 
   return (
     <>
-      {data.seriesNames.length > 1 && <div className="report-series-legend" role="group" aria-label="Chart series">{data.seriesNames.map((series, index) => (
+      {selectedCategory && breakdown && <div className="report-chart-drilldown-heading">
+      <button type="button" onClick={() => {
+        setSelectedCategory(null);
+        setSelectedMetric(null);
+      }}>Back to chart</button>
+      <span>Breakdown for <strong>{selectedCategory}</strong>{selectedMetric && <> · <strong>{selectedMetric}</strong></>}</span>
+      </div>}
+      {chartData.seriesNames.length > 1 && <div className="report-series-legend" role="group" aria-label="Chart series">{chartData.seriesNames.map((series, index) => (
         <button type="button" aria-pressed={isSeriesVisible(series)} style={{ color: chartColors[index % chartColors.length] }} key={series} onClick={() => toggleSeries(series)}>
           {series}
         </button>
@@ -81,25 +99,39 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
           {barGroups.map((group, groupIndex) => {
             const groupTop = top + groupIndex * groupStep;
             const contentHeight = group.points.length * barStep - (barStep - barHeight);
-            return <g key={`${group.label}-${groupIndex}`}>
+            const childChart = !breakdown && data.breakdowns?.[group.label];
+            const openBreakdown = (metric: string) => {
+              if (childChart) {
+                setSelectedCategory(group.label);
+                setSelectedMetric(metric);
+              }
+            };
+            return <g
+              key={`${group.label}-${groupIndex}`}
+              className={childChart ? "chart-drillable" : undefined}
+            >
               <text x="8" y={groupTop + contentHeight / 2 + 4} textAnchor="start" className="chart-label">{group.label.length > 18 ? `${group.label.slice(0, 17)}…` : group.label}</text>
-              <title>{group.label}</title>
               {group.points.map((point, pointIndex) => {
                 const barWidth = Math.max(3, (Math.abs(point.value) / max) * plotWidth);
                 const y = groupTop + pointIndex * barStep;
                 const seriesIndex = data.seriesNames.indexOf(point.series);
                 const detail = `${group.label}\n${point.series}: ${formatChartValue(point.value)}`;
-                const tooltipX = Math.max(left, Math.min(left + barWidth - 190, width - 190));
-                const tooltipY = Math.max(2, y - 46);
-                return <g key={point.series} className="chart-data-point" tabIndex={0} aria-label={detail}>
-                  <title>{detail}</title>
+                return <g
+                  key={point.series}
+                  className="chart-data-point"
+                  role={childChart ? "button" : undefined}
+                  tabIndex={0}
+                  aria-label={childChart ? `Show ${point.metric} breakdown for ${group.label}` : detail}
+                  onClick={childChart ? () => openBreakdown(point.metric) : undefined}
+                  onKeyDown={childChart ? (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openBreakdown(point.metric);
+                    }
+                  } : undefined}
+                >
                   <rect x={left} y={y} width={barWidth} height={barHeight} rx="3" fill={chartColors[seriesIndex % chartColors.length]} />
                   <text x={left + barWidth + 5} y={y + barHeight - 1} className="chart-label">{formatChartValue(point.value)}</text>
-                  <g className="chart-hover-tooltip" transform={`translate(${tooltipX},${tooltipY})`}>
-                    <rect width="184" height="40" rx="5" />
-                    <text x="8" y="15" className="chart-tooltip-label">{group.label.slice(0, 28)}</text>
-                    <text x="8" y="31" className="chart-tooltip-value">{`${point.series}: ${formatChartValue(point.value)}`.slice(0, 30)}</text>
-                  </g>
                 </g>;
               })}
             </g>;

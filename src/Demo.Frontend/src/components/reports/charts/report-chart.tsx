@@ -105,25 +105,17 @@ function AggregateBarChart({ result, type, report, settings, onSettingsChange, x
     index: result.columns.indexOf(metric),
     rollup: fields.metricRollups[metric] ?? "unsupported",
   }));
-  const rowGroups = new Map<string, string[][]>();
-  result.rows.forEach((row) => {
-    const key = JSON.stringify(groupingIndices.map((index) => row[index] || "Unspecified"));
-    const group = rowGroups.get(key);
-    if (group) group.push(row);
-    else rowGroups.set(key, [row]);
-  });
-  const requiresRollup = [...rowGroups.values()].some((group) => group.length > 1);
-  const unsupportedMetric = requiresRollup && metricIndices.find(({ rollup }) => rollup === "unsupported");
-  if (unsupportedMetric) {
-    return wrapChart(
-      <div className="report-chart-empty" role="alert">
-        <strong>Cannot combine this aggregate</strong>
-        <span>{unsupportedMetric.metric} cannot be accurately rolled up from the current results. Keep all dimensions selected or change the report query to aggregate it at the desired level.</span>
-      </div>,
-    );
-  }
-
-  const chartRows = [...rowGroups.values()].map((group) => {
+  const groupRows = (rows: string[][], indices: number[]) => {
+    const groups = new Map<string, string[][]>();
+    rows.forEach((row) => {
+      const key = JSON.stringify(indices.map((index) => row[index] || "Unspecified"));
+      const group = groups.get(key);
+      if (group) group.push(row);
+      else groups.set(key, [row]);
+    });
+    return groups;
+  };
+  const rollupGroup = (group: string[][]) => {
     const row = [...group[0]];
     metricIndices.forEach(({ index, rollup }) => {
       if (group.length === 1) return;
@@ -139,7 +131,20 @@ function AggregateBarChart({ result, type, report, settings, onSettingsChange, x
       }
     });
     return row;
-  }).slice(0, 12);
+  };
+  const rowGroups = groupRows(result.rows, groupingIndices);
+  const requiresRollup = [...rowGroups.values()].some((group) => group.length > 1);
+  const unsupportedMetric = requiresRollup && metricIndices.find(({ rollup }) => rollup === "unsupported");
+  if (unsupportedMetric) {
+    return wrapChart(
+      <div className="report-chart-empty" role="alert">
+        <strong>Cannot combine this aggregate</strong>
+        <span>{unsupportedMetric.metric} cannot be accurately rolled up from the current results. Keep all dimensions selected or change the report query to aggregate it at the desired level.</span>
+      </div>,
+    );
+  }
+
+  const chartRows = [...rowGroups.values()].map(rollupGroup).slice(0, 12);
   const categoryForRow = (row: string[], index: number) => {
     const label = labelFields.map((field) => row[result.columns.indexOf(field)] || "Unspecified").join(" · ");
     return label || "All records";
@@ -162,12 +167,51 @@ function AggregateBarChart({ result, type, report, settings, onSettingsChange, x
   });
   if (!points.length) return wrapChart(<div className="report-chart-empty"><strong>No data to visualize</strong><span>The selected aggregate fields contain no numeric values.</span></div>);
 
+  const breakdowns: Record<string, AggregateChartData> = {};
+  const breakdownFields = fields.axes.filter((field) => !groupingFields.includes(field));
+  if (groupingFields.length === 1 && breakdownFields.length > 0) {
+    const parentIndex = groupingIndices[0];
+    const breakdownIndices = breakdownFields.map((field) => result.columns.indexOf(field));
+    chartRows.forEach((parentRow, rowIndex) => {
+      const parentValue = parentRow[parentIndex] || "Unspecified";
+      const matchingRows = result.rows.filter((row) => (row[parentIndex] || "Unspecified") === parentValue);
+      const childRows = [...groupRows(matchingRows, breakdownIndices).values()].map(rollupGroup).slice(0, 12);
+      const childLabel = (row: string[]) =>
+        breakdownFields.map((field) => row[result.columns.indexOf(field)] || "Unspecified").join(" · ") || "All records";
+      const childPoints: AggregateChartData["points"] = childRows.flatMap((row, childRowIndex) => {
+        const category = childLabel(row);
+        return metrics.flatMap((metric) => {
+          const metricIndex = result.columns.indexOf(metric);
+          const value = numberValue(row[metricIndex]);
+          return value === null ? [] : [{
+            label: category,
+            series: metric,
+            metric,
+            value,
+            xValue: xIndex >= 0 ? numberValue(row[xIndex]) ?? childRowIndex + 1 : childRowIndex + 1,
+            rowIndex: childRowIndex,
+          }];
+        });
+      });
+      if (childPoints.length) {
+        breakdowns[categoryForRow(parentRow, rowIndex)] = {
+          kind: "aggregate",
+          metrics,
+          points: childPoints,
+          categories: [...new Set(childPoints.map((point) => point.label))],
+          seriesNames: [...new Set(childPoints.map((point) => point.series))],
+        };
+      }
+    });
+  }
+
   return wrapChart(renderChart(type, {
       kind: "aggregate",
       metrics,
       points,
       categories,
       seriesNames: [...new Set(points.map((point) => point.series))],
+      breakdowns,
     }));
 }
 

@@ -17,6 +17,7 @@ export type AggregateChartData = {
   points: AggregateChartPoint[];
   categories: string[];
   seriesNames: string[];
+  breakdowns?: Record<string, AggregateChartData>;
 };
 
 export type ChartData = SimpleChartData | AggregateChartData;
