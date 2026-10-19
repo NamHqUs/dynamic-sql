@@ -55,6 +55,22 @@ function getProjectionDropPosition(element: HTMLElement, clientX: number, client
   return verticalOffset < 0.5 ? "above" : "below";
 }
 
+function getProjectionVisualRowFields(container: HTMLElement, targetField: string): string[] {
+  const cards = Array.from(container.querySelectorAll<HTMLElement>(".field-card[data-projection-field]"));
+  const target = cards.find((card) => card.dataset.projectionField === targetField);
+  if (!target) return [targetField];
+
+  const targetBounds = target.getBoundingClientRect();
+  const targetCenter = targetBounds.top + targetBounds.height / 2;
+  return cards
+    .filter((card) => {
+      const bounds = card.getBoundingClientRect();
+      return Math.abs(bounds.top + bounds.height / 2 - targetCenter) < 2;
+    })
+    .map((card) => card.dataset.projectionField)
+    .filter((field): field is string => field !== undefined);
+}
+
 function FieldCards({
   fields,
   rows,
@@ -92,7 +108,7 @@ function FieldCards({
   setEditingField: (field: string | null) => void;
   replaceColumn: (field: string, replacement: string) => void;
   restoreColumn: (field: string, original: { field: string; alias: string | null }) => void;
-  moveField: (field: string, targetField: string, position: ProjectionDropPosition) => void;
+  moveField: (field: string, targetField: string, position: ProjectionDropPosition, targetRowFields: string[]) => void;
   onFieldDragStart: (field: string | null) => void;
   editExpression: (column: { field: string; alias: string | null; expression?: QueryExpression }) => void;
   addField: (field: string) => void;
@@ -124,7 +140,11 @@ function FieldCards({
         const position = dropTarget?.field === targetField
           ? dropTarget.position
           : getProjectionDropPosition(event.currentTarget, event.clientX, event.clientY);
-        moveField(field, targetField, position);
+        const container = event.currentTarget.closest(".projection-rows");
+        const targetRowFields = container
+          ? getProjectionVisualRowFields(container, targetField)
+          : [targetField];
+        moveField(field, targetField, position, targetRowFields);
       }
       resetDrag();
     }
@@ -172,7 +192,10 @@ function FieldCards({
       const field = event.dataTransfer.getData("application/x-query-field");
       if (field && dropTarget) {
         event.preventDefault();
-        if (field !== dropTarget.field) moveField(field, dropTarget.field, dropTarget.position);
+        if (field !== dropTarget.field) {
+          const targetRowFields = getProjectionVisualRowFields(event.currentTarget, dropTarget.field);
+          moveField(field, dropTarget.field, dropTarget.position, targetRowFields);
+        }
         resetDrag();
       }
     }}
@@ -434,7 +457,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     onDefinitionChange({ ...definition, columns });
   };
 
-  const moveField = (field: string, targetField: string, position: ProjectionDropPosition) => {
+  const moveField = (field: string, targetField: string, position: ProjectionDropPosition, targetRowFields: string[]) => {
     if (field === targetField) return;
     const rows = getProjectionRows(definition).map((row) => [...row]);
     const sourceRow = rows.findIndex((row) => row.includes(field));
@@ -446,7 +469,18 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     const targetRow = rows.findIndex((row) => row.includes(targetField));
     if (targetRow < 0) return;
     if (position === "above" || position === "below") {
-      rows.splice(targetRow + (position === "below" ? 1 : 0), 0, [field]);
+      const row = rows[targetRow];
+      const targetRowIndexes = row
+        .map((item, index) => targetRowFields.includes(item) ? index : -1)
+        .filter((index) => index >= 0);
+      const targetIndex = row.indexOf(targetField);
+      const boundary = position === "above"
+        ? Math.min(...targetRowIndexes, targetIndex)
+        : Math.max(...targetRowIndexes, targetIndex) + 1;
+      const before = row.slice(0, boundary);
+      const after = row.slice(boundary);
+      const replacement = [before, [field], after].filter((items) => items.length > 0);
+      rows.splice(targetRow, 1, ...replacement);
     } else {
       const targetIndex = rows[targetRow].indexOf(targetField);
       rows[targetRow].splice(targetIndex + (position === "right" ? 1 : 0), 0, field);
