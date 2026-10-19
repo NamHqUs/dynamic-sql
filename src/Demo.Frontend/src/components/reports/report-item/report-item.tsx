@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import Icon from "../../icon/icon";
 import type { QueryResult, ReportDto } from "../../query-builder/query-design/query-builder-slice";
 import ReportChart from "../charts/report-chart";
 import {
   categoryTone,
-  chartOptions,
   presentationFor,
   reportTitle,
   type ChartType,
@@ -20,8 +18,6 @@ type ReportItemProps = {
   loading: boolean;
   error?: string;
   dropPosition?: "before" | "after";
-  onChartTypeChange: (chartType: ChartType) => void;
-  onChartSettingsChange: (settings: ReportChartSettings) => void;
   onOpenDetails: () => void;
   onDragStart: (event: DragEvent<HTMLDivElement>) => void;
   onDragEnd: () => void;
@@ -30,32 +26,17 @@ type ReportItemProps = {
   onDrop: (event: DragEvent<HTMLElement>) => void;
   onRun: () => void;
   onEdit: () => void;
+  onEditQuery: () => void;
   onDelete: () => void;
-  onCustomize: () => void;
 };
 
 export default function ReportItem({
   report, chartType, result, chartSettings, loading, error,
-  dropPosition, onChartTypeChange, onOpenDetails, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
-  onChartSettingsChange, onRun, onEdit, onDelete, onCustomize,
+  dropPosition, onOpenDetails, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
+  onRun, onEdit, onEditQuery, onDelete,
 }: ReportItemProps) {
   const presentation = presentationFor(report);
   const title = reportTitle(report);
-  const [chartMenuOpen, setChartMenuOpen] = useState(false);
-  const chartTypePickerRef = useRef<HTMLDivElement>(null);
-  const chartTypeButtonRef = useRef<HTMLButtonElement>(null);
-  const selectedChartOption = chartOptions.find((option) => option.value === chartType) || chartOptions[0];
-
-  useEffect(() => {
-    if (!chartMenuOpen) return;
-    const closeOnOutsideClick = (event: PointerEvent) => {
-      if (event.target instanceof Node && !chartTypePickerRef.current?.contains(event.target)) {
-        setChartMenuOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", closeOnOutsideClick);
-    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
-  }, [chartMenuOpen]);
 
   return (
     <article
@@ -73,48 +54,11 @@ export default function ReportItem({
       >
         <h4>{title}</h4>
         <div className="report-dashboard-card-tools">
-          <div className="chart-type-picker" ref={chartTypePickerRef} onKeyDown={(event) => {
-            if (event.key === "Escape" && chartMenuOpen) {
-              setChartMenuOpen(false);
-              chartTypeButtonRef.current?.focus();
-            }
-          }}>
-            <button
-              className="report-icon-button chart-type-picker-button"
-              type="button"
-              aria-label={`${title} chart type: ${selectedChartOption.label}`}
-              title={`Chart type: ${selectedChartOption.label}`}
-              aria-haspopup="true"
-              aria-expanded={chartMenuOpen}
-              onClick={() => setChartMenuOpen((open) => !open)}
-              ref={chartTypeButtonRef}
-            >
-              <Icon name={selectedChartOption.icon} size={14} />
-            </button>
-            {chartMenuOpen && <div className="chart-type-picker-menu" role="group" aria-label={`${title} chart types`}>
-              {chartOptions.map((option) => (
-                <button
-                  className={`chart-type-picker-option${option.value === chartType ? " selected" : ""}`}
-                  type="button"
-                  key={option.value}
-                  aria-label={option.label}
-                  aria-pressed={option.value === chartType}
-                  title={option.label}
-                  onClick={() => {
-                    onChartTypeChange(option.value);
-                    setChartMenuOpen(false);
-                  }}
-                >
-                  <Icon name={option.icon} size={14} />
-                </button>
-              ))}
-            </div>}
-          </div>
           <button className="report-icon-button" type="button" aria-label={`Run ${title}`} title="Run report" onClick={onRun} disabled={loading}><Icon name="reset" size={13} /></button>
           {report.canDelete ? <>
             <button className="report-icon-button" type="button" aria-label={`Edit ${title}`} title="Edit report" onClick={onEdit}><Icon name="edit" size={13} /></button>
             <button className="report-icon-button report-delete-button" type="button" aria-label={`Delete ${title}`} title="Delete report" onClick={onDelete}><Icon name="trash" size={13} /></button>
-          </> : <button className="report-icon-button" type="button" aria-label={`Customize ${title}`} title="Customize report" onClick={onCustomize}><Icon name="plus" size={13} /></button>}
+          </> : <button className="report-icon-button" type="button" aria-label={`Edit ${title} in Query Builder`} title="Edit in Query Builder" onClick={onEditQuery}><Icon name="edit" size={13} /></button>}
         </div>
       </div>
       <section className="report-card-visual" aria-label={`${title} chart`}>
@@ -129,7 +73,7 @@ export default function ReportItem({
           onOpenDetails();
         }}>
           {result
-            ? <ReportChart key={chartType} result={result} type={chartType} report={report} settings={chartSettings} onSettingsChange={onChartSettingsChange} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
+            ? <ReportChart key={chartType} result={result} type={chartType} report={report} settings={chartSettings} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
             : loading
               ? <div className="report-card-chart-status"><span className="report-spinner" /> Loading chart…</div>
               : <div className="report-card-chart-status">{error ? <span role="alert">{error}</span> : <><span>Run this report to load its chart.</span><button type="button" onClick={onRun}>Run report <Icon name="play" size={11} /></button></>}</div>}

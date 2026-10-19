@@ -41,7 +41,10 @@ function AggregateFunnelChart({ data }: { data: AggregateChartData }) {
     );
   }
   const max = niceChartMax(Math.max(...visiblePoints.map((point) => Math.abs(point.value)), 1));
-  const colorsForSeries = new Map(data.seriesNames.map((series, index) => [series, chartColors[index % chartColors.length]]));
+  const colorsForSeries = new Map(data.seriesNames.map((series, index) => [
+    series,
+    chartColors[(data.seriesColorIndex ?? index) % chartColors.length],
+  ]));
 
   return (
     <>

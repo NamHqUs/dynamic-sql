@@ -23,6 +23,10 @@ export function resetQueryBuilderCache() {
   cachedDefinition = null;
 }
 
+export function setQueryBuilderDefinition(definition: QueryDefinition) {
+  cachedDefinition = definition;
+}
+
 function createDefinition(entity: string, fields: MetadataField[] = []): QueryDefinition {
   return {
     entity,

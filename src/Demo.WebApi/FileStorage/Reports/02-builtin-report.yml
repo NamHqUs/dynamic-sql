@@ -2,9 +2,9 @@ Name: 2. Revenue by customer segment and region
 Query:
   Entity: Invoices
   Fields:
-    - Customer.Segment
-    - Customer.Region
-    - Count() | InvoiceCount
+    - Customer.Segment | Segment
+    - Customer.Region | Region
+    - Count() | Invoice Count
     - Sum(TotalAmount) | Revenue
   Filter: Status <> <Draft>
   Sorts: Revenue DESC

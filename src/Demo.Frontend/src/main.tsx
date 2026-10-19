@@ -3,11 +3,12 @@ import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import Icon from "./components/icon/icon";
 import DataSources from "./components/data-sources/data-sources";
-import QueryBuilder from "./components/query-builder/query-builder";
+import QueryBuilder, { setQueryBuilderDefinition } from "./components/query-builder/query-builder";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
 import SqlFunctions from "./components/sql-functions/sql-functions";
 import Reports from "./components/reports/reports";
 import { MessageBoxProvider } from "./components/message-box/message-box";
+import type { QueryDefinition } from "./components/query-builder/query-design/query-builder-slice";
 import { store } from "./store/store";
 import "./styles.css";
 
@@ -52,11 +53,16 @@ function App() {
         <div className="top-actions"><span className="live-dot" /> Local demo <button className="avatar">N</button></div>
       </header>
 
-      {page === "sources" ? <DataSources /> : null}
-      {page === "reports" ? <Reports /> : null}
-      {metadataVisited && <div hidden={page !== "metadata"}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
-      {page === "builder" ? <QueryBuilder onNavigationGuardChange={updateQueryBuilderNavigationGuard} /> : null}
-      {page === "functions" ? <SqlFunctions onNavigationGuardChange={updateFunctionsNavigationGuard} /> : null}
+      {page === "metadata" ? null : <div key={page} className="page-transition">
+        {page === "sources" ? <DataSources /> : null}
+        {page === "reports" ? <Reports onEditQuery={(definition: QueryDefinition) => {
+          setQueryBuilderDefinition(definition);
+          navigate("builder");
+        }} /> : null}
+        {page === "builder" ? <QueryBuilder onNavigationGuardChange={updateQueryBuilderNavigationGuard} /> : null}
+        {page === "functions" ? <SqlFunctions onNavigationGuardChange={updateFunctionsNavigationGuard} /> : null}
+      </div>}
+      {metadataVisited && <div hidden={page !== "metadata"} className={page === "metadata" ? "page-transition" : undefined}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
       <footer><span><span className="footer-mark">✦</span> DynamicSQL engine</span><span>Metadata-driven queries · Client preview</span></footer>
     </main>
   );

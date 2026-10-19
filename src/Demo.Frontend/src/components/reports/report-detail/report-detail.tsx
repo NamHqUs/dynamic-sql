@@ -106,6 +106,7 @@ export default function ReportDetail({
 }: ReportDetailProps) {
   const presentation = presentationFor(report);
   const title = reportTitle(report);
+  const [mode, setMode] = useState<"view" | "edit">("view");
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -139,23 +140,30 @@ export default function ReportDetail({
             <div><span className="eyebrow">VISUALIZATION</span><h3 id="report-detail-chart-title">Report chart</h3></div>
             <div className="report-detail-chart-controls">
               {result && <span>{result.rows.length} rows</span>}
-              <label className="report-detail-chart-type">
+              <div className="report-mode-switch" role="group" aria-label="Report mode">
+                <button type="button" aria-pressed={mode === "view"} onClick={() => setMode("view")}>View</button>
+                <button type="button" aria-pressed={mode === "edit"} onClick={() => setMode("edit")}>Edit</button>
+              </div>
+              {mode === "edit" && <label className="report-detail-chart-type">
                 Chart type
                 <select aria-label="Chart type" value={chartType} onChange={(event) => onChartTypeChange(event.target.value as ChartType)}>
                   {chartOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
-              </label>
+              </label>}
             </div>
           </div>
-          {result && <ReportChartSettingsPanel
+          {mode === "edit" && result && <div className="report-detail-edit-area" aria-label="Edit chart settings">
+            <ReportChartSettingsPanel
             report={report}
             result={result}
             settings={chartSettings}
+            chartType={chartType}
             onChange={onChartSettingsChange}
-          />}
+            />
+          </div>}
           <div className={`report-detail-chart tone-${categoryTone(presentation.category)}`}>
             {result
-              ? <ReportChart key={chartType} result={result} type={chartType} report={report} settings={chartSettings} onSettingsChange={onChartSettingsChange} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
+              ? <ReportChart key={chartType} result={result} type={chartType} report={report} settings={chartSettings} metric={presentation.metric} groupBy={presentation.groupBy} xMetric={presentation.xMetric} />
               : loading
                 ? <div className="report-detail-status"><span className="report-spinner" /> Running this report…</div>
                 : <div className="report-detail-status">{error ? <span role="alert">{error}</span> : <><span>Run this report to load its chart and data.</span><button className="button primary" type="button" onClick={onRun}><Icon name="play" size={13} /> Run report</button></>}</div>}

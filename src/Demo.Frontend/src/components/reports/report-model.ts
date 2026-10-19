@@ -8,6 +8,7 @@ export type ReportChartSettings = {
   metrics: string[];
   axes: Record<string, ReportAxis>;
   breakdownDisplay?: "subcharts" | "direct";
+  seriesLayout?: "combined" | "separate";
 };
 export type MetricRollup = "sum" | "min" | "max" | "unsupported";
 export type ReportPresentation = {

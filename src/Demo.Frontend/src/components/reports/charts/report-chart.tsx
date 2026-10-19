@@ -9,6 +9,7 @@ import FunnelChart from "./funnel-chart/funnel-chart";
 import LineChart from "./line-chart/line-chart";
 import type { AggregateChartData, ChartData, ChartPoint } from "./chart-types";
 import ScatterChart from "./scatter-chart/scatter-chart";
+import { chartColors } from "./chart-utils";
 
 function numberValue(value: string | undefined): number | null {
   if (value === undefined || value.trim() === "") return null;
@@ -31,93 +32,40 @@ function renderChart(type: ChartType, data: ChartData) {
   }
 }
 
+function dataForSeries(data: AggregateChartData, series: string, seriesColorIndex: number): AggregateChartData {
+  const points = data.points.filter((point) => point.series === series);
+  const breakdowns: Record<string, AggregateChartData> = {};
+  Object.entries(data.breakdowns ?? {}).forEach(([label, breakdown]) => {
+    const seriesBreakdown = dataForSeries(breakdown, series, seriesColorIndex);
+    if (seriesBreakdown.points.length) breakdowns[label] = seriesBreakdown;
+  });
+  return {
+    ...data,
+    metrics: data.metrics.filter((metric) => metric === series),
+    points,
+    seriesNames: [series],
+    seriesColorIndex,
+    showSeriesLegend: false,
+    showBreakdownLegend: false,
+    breakdowns,
+  };
+}
+
 function isDimensionSelected(settings: ReportChartSettings, field: string): boolean {
   return settings.axes[field] === "axis1" || settings.axes[field] === "axis2";
 }
 
-function DimensionControls({ fields, settings, onSettingsChange, showBreakdownDisplay }: {
-  fields: string[];
-  settings: ReportChartSettings;
-  onSettingsChange: (settings: ReportChartSettings) => void;
-  showBreakdownDisplay: boolean;
-}) {
-  const setEnabled = (field: string, enabled: boolean) => {
-    onSettingsChange({
-      ...settings,
-      axes: {
-        ...Object.fromEntries(fields.map((dimension) => [
-          dimension,
-          dimension === field ? enabled ? "axis1" : "none" : isDimensionSelected(settings, dimension) ? "axis1" : "none",
-        ])),
-      },
-    });
-  };
-
-  return (
-    <div className="report-dimension-controls" role="group" aria-label="Group by dimensions">
-      <div className="report-dimension-heading">
-        <span className="report-dimension-title">Dimensions</span>
-      </div>
-      <div className="report-dimension-options">
-        {fields.map((field) => {
-          const enabled = isDimensionSelected(settings, field);
-          return (
-            <button className={`report-dimension-option${enabled ? " selected" : ""}`} type="button" aria-pressed={enabled} key={field} onClick={() => setEnabled(field, !enabled)}>
-              <span title={field}>{field}</span>
-            </button>
-          );
-        })}
-      </div>
-      {showBreakdownDisplay && <div className="report-breakdown-display" role="group" aria-label="Breakdown display style">
-        <span>Display</span>
-        <button
-          type="button"
-          className={settings.breakdownDisplay === "subcharts" ? "selected" : ""}
-          aria-pressed={settings.breakdownDisplay === "subcharts"}
-          onClick={() => onSettingsChange({ ...settings, breakdownDisplay: "subcharts" })}
-        >
-          Sub charts
-        </button>
-        <button
-          type="button"
-          className={settings.breakdownDisplay === "direct" ? "selected" : ""}
-          aria-pressed={settings.breakdownDisplay === "direct"}
-          onClick={() => onSettingsChange({ ...settings, breakdownDisplay: "direct" })}
-        >
-          Direct display
-        </button>
-      </div>}
-    </div>
-  );
-}
-
-function AggregateBarChart({ result, type, report, settings, onSettingsChange, xMetric }: {
+function AggregateBarChart({ result, type, report, settings, xMetric }: {
   result: QueryResult;
   type: ChartType;
   report: ReportDto;
   settings?: ReportChartSettings;
-  onSettingsChange?: (settings: ReportChartSettings) => void;
   xMetric?: string;
 }) {
   const fields = reportChartFields(report, result);
   const defaults = defaultReportChartSettings(report, result);
   const chartSettings = settings ?? defaults;
-  const dimensionControls = onSettingsChange && fields.axes.length > 0
-    ? <DimensionControls
-      fields={fields.axes}
-      settings={chartSettings}
-      onSettingsChange={onSettingsChange}
-      showBreakdownDisplay={type === "bar"
-        && fields.axes.filter((field) => isDimensionSelected(chartSettings, field)).length === 1
-        && fields.axes.some((field) => !isDimensionSelected(chartSettings, field))}
-    />
-    : null;
-  const wrapChart = (content: ReactNode) => (
-    <div className="report-chart-composition">
-      {dimensionControls}
-      {content}
-    </div>
-  );
+  const wrapChart = (content: ReactNode) => <div className="report-chart-composition">{content}</div>;
   const metrics = fields.metrics.filter((metric) => chartSettings.metrics.includes(metric));
   if (!metrics.length) {
     return wrapChart(<div className="report-chart-empty"><strong>No aggregate channels selected</strong><span>Enable at least one aggregate channel in the report details.</span></div>);
@@ -252,21 +200,51 @@ function AggregateBarChart({ result, type, report, settings, onSettingsChange, x
     breakdownDisplay: chartSettings.breakdownDisplay ?? "subcharts",
     breakdowns,
   };
-  return wrapChart(renderChart(type, chartData));
+  const separateSeries = chartSettings.seriesLayout === "separate" && chartData.seriesNames.length > 1;
+  const visibleSeries = chartData.seriesNames;
+  const breakdownNames = [...new Set(Object.values(chartData.breakdowns ?? {}).flatMap((breakdown) =>
+    breakdown.points.map((point) => point.breakdownLabel ?? point.label),
+  ))];
+  const showBreakdownLegend = type === "bar"
+    && chartData.breakdownDisplay === "direct"
+    && breakdownNames.length > 0;
+  const showSeriesChartLegend = !separateSeries || chartData.breakdownDisplay === "direct";
+  const chartContent = separateSeries
+    ? <>
+      {showSeriesChartLegend && (chartData.seriesNames.length > 1 || showBreakdownLegend) && <div className="report-legend" role="group" aria-label="Chart legend">
+        {chartData.seriesNames.length > 1 && chartData.seriesNames.map((series, index) => <span key={`series-${series}`}>
+          <i style={{ backgroundColor: chartColors[index % chartColors.length] }} />
+          {series}
+        </span>)}
+        {showBreakdownLegend && breakdownNames.map((name, index) => <span key={`breakdown-${name}`}>
+          <i style={{ backgroundColor: chartColors[index % chartColors.length] }} />
+          {name}
+        </span>)}
+      </div>}
+      <div className="report-series-charts">
+        {visibleSeries.map((series, seriesColorIndex) => (
+          <section className="report-series-chart" key={series}>
+            {type !== "donut" && <h4>{series}</h4>}
+            {renderChart(type, dataForSeries(chartData, series, seriesColorIndex))}
+          </section>
+        ))}
+      </div>
+    </>
+    : renderChart(type, chartData);
+  return wrapChart(chartContent);
 }
 
-export default function ReportChart({ result, type, report, settings, onSettingsChange, metric, groupBy, xMetric }: {
+export default function ReportChart({ result, type, report, settings, metric, groupBy, xMetric }: {
   result: QueryResult;
   type: ChartType;
   report?: ReportDto;
   settings?: ReportChartSettings;
-  onSettingsChange?: (settings: ReportChartSettings) => void;
   metric?: string;
   groupBy?: string;
   xMetric?: string;
 }) {
   if (report && reportChartFields(report, result).metrics.length) {
-    return <AggregateBarChart result={result} type={type} report={report} settings={settings} onSettingsChange={onSettingsChange} xMetric={xMetric} />;
+    return <AggregateBarChart result={result} type={type} report={report} settings={settings} xMetric={xMetric} />;
   }
 
   const chartData = useMemo<ChartPoint[]>(() => {

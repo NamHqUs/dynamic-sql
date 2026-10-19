@@ -76,7 +76,7 @@ function ReportForm({ report, entities, onClose, onSave }: ReportFormProps) {
   );
 }
 
-export default function Reports() {
+export default function Reports({ onEditQuery }: { onEditQuery: (definition: QueryDefinition) => void }) {
   const dispatch = useDispatch();
   const showMessageBox = useMessageBox();
   const { reports, reportsStatus, reportsError, metadata, metadataStatus, metadataError } = useSelector((state) => state.queryBuilder);
@@ -252,19 +252,6 @@ export default function Reports() {
     window.requestAnimationFrame(() => window.scrollTo(0, detailScrollPosition.current));
   };
 
-  const cloneBuiltin = (request: ReportDto) => {
-    const defaults = presentationFor(request);
-    setEditingReport({
-      ...request,
-      fileName: "",
-      query: { ...request.query, name: `${reportTitle(request)} (copy)` },
-      canDelete: true,
-      description: defaults.description,
-      chartType: defaults.chartType,
-    });
-    setCreatingReport(true);
-  };
-
   return (
     <div className="reports-page">
       <ReportDashboard
@@ -310,7 +297,7 @@ export default function Reports() {
         onChartSettingsChange={changeChartSettings}
         onEdit={setEditingReport}
         onDelete={(report) => void deleteSelectedReport(report)}
-        onCustomize={cloneBuiltin}
+        onEditQuery={(report) => onEditQuery(fromApiQuery(report.query))}
       />
 
       {(creatingReport || editingReport) && <ReportForm

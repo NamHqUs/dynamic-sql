@@ -22,30 +22,16 @@ export default function BarChart({ data }: { data: ChartData }) {
 }
 
 function AggregateBarChart({ data }: { data: AggregateChartData }) {
-  const [hiddenSeries, setHiddenSeries] = useState<string[]>([]);
   const [expandedPoint, setExpandedPoint] = useState<{ category: string; metric: string } | null>(null);
-  const isSeriesVisible = (series: string) => !hiddenSeries.includes(series);
-  const toggleSeries = (series: string) => {
-    setHiddenSeries((hidden) => hidden.includes(series) ? hidden.filter((name) => name !== series) : [...hidden, series]);
-  };
-  const visiblePoints = data.points.filter((point) => isSeriesVisible(point.series));
+  const visiblePoints = data.points;
   if (!visiblePoints.length) {
-    return (
-      <>
-        {data.seriesNames.length > 1 && <div className="report-series-legend" role="group" aria-label="Chart series">{data.seriesNames.map((series, index) => (
-          <button type="button" aria-pressed={isSeriesVisible(series)} style={{ color: chartColors[index % chartColors.length] }} key={series} onClick={() => toggleSeries(series)}>
-            {series}
-          </button>
-        ))}</div>}
-        <div className="report-chart-empty"><strong>No chart series selected</strong><span>Enable a legend item to show it in the chart.</span></div>
-      </>
-    );
+    return <div className="report-chart-empty"><strong>No data to visualize</strong><span>The selected chart has no data.</span></div>;
   }
 
   const rawMax = Math.max(...visiblePoints.map((point) => Math.abs(point.value)), 1);
   const step = niceChartStep(rawMax);
   const max = niceChartMax(rawMax);
-  const visibleSeries = data.seriesNames.filter(isSeriesVisible);
+  const visibleSeries = data.seriesNames;
   const breakdownNames = [...new Set(Object.values(data.breakdowns ?? {}).flatMap((breakdown) =>
     breakdown.points.map((point) => point.breakdownLabel ?? point.label),
   ))];
@@ -57,7 +43,7 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
   ): { point: AggregateChartData["points"][number]; depth: number; path: string }[] => {
     if (!breakdown) return [];
     return breakdown.points
-      .filter((point) => point.metric === metric && isSeriesVisible(point.series))
+      .filter((point) => point.metric === metric)
       .flatMap((point) => {
         const pointPath = path ? `${path}/${point.label}` : point.label;
         return [
@@ -105,17 +91,17 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
 
   return (
     <>
-      {data.seriesNames.length > 1 && <div className="report-series-legend" role="group" aria-label="Chart series">{data.seriesNames.map((series, index) => (
-      <button type="button" aria-pressed={isSeriesVisible(series)} style={{ color: chartColors[index % chartColors.length] }} key={series} onClick={() => toggleSeries(series)}>
-        {series}
-      </button>
-      ))}</div>}
-      {data.breakdownDisplay === "direct" && breakdownNames.length > 0 && <div className="report-breakdown-legend" role="group" aria-label="Breakdown values">
-        {breakdownNames.map((name, index) => <span key={name}>
-          <i style={{ backgroundColor: chartColors[index % chartColors.length] }} />
-          {name}
-        </span>)}
-      </div>}
+      {((data.seriesNames.length > 1)
+        || (data.showBreakdownLegend !== false && data.breakdownDisplay === "direct" && breakdownNames.length > 0)) && <div className="report-legend" role="group" aria-label="Chart legend">
+          {data.seriesNames.length > 1 && data.seriesNames.map((series, index) => <span key={`series-${series}`}>
+            <i style={{ backgroundColor: chartColors[index % chartColors.length] }} />
+            {series}
+          </span>)}
+          {data.showBreakdownLegend !== false && data.breakdownDisplay === "direct" && breakdownNames.map((name, index) => <span key={`breakdown-${name}`}>
+            <i style={{ backgroundColor: chartColors[index % chartColors.length] }} />
+            {name}
+          </span>)}
+        </div>}
       <div className="report-svg-wrap">
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Grouped bar chart of ${data.seriesNames.join(", ")}`}>
           {[0, 1, 2, 3, 4, 5].map((tick) => {
@@ -157,19 +143,35 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
                 const isExpanded = expandedIndex === pointIndex;
                 const shift = childRows.length > 0 && expandedIndex >= 0 && pointIndex > expandedIndex ? childRows.length * barStep + 4 : 0;
                 const y = groupTop + pointIndex * barStep + shift;
-                const seriesIndex = data.seriesNames.indexOf(point.series);
+                const seriesIndex = data.seriesColorIndex ?? data.seriesNames.indexOf(point.series);
                 const detail = `${group.label}\n${point.series}: ${formatChartValue(point.value)}`;
                 const breakdownPoints = data.breakdownDisplay === "direct"
                   ? (data.breakdowns?.[group.label]?.points.filter((breakdownPoint) =>
-                    breakdownPoint.metric === point.metric && isSeriesVisible(breakdownPoint.series),
+                    breakdownPoint.metric === point.metric,
                   ) ?? [])
                   : [];
                 const breakdownTotal = breakdownPoints.reduce((total, breakdownPoint) => total + Math.abs(breakdownPoint.value), 0);
                 let segmentX = left;
-                return <g
-                  key={point.series}
+                return <g key={point.series}>
+                  <g
                   className="chart-drillable"
+                  role={breakdownPoints.length ? "button" : undefined}
+                  tabIndex={breakdownPoints.length ? 0 : undefined}
+                  aria-label={breakdownPoints.length
+                    ? canExpand ? `${isExpanded ? "Collapse" : "Expand"} ${point.metric} breakdown for ${group.label}` : detail
+                    : undefined}
+                  aria-expanded={breakdownPoints.length && canExpand ? isExpanded : undefined}
                   onClick={(event) => {
+                    if (breakdownPoints.length) {
+                      if (canExpand) {
+                        setExpandedPoint(isExpanded ? null : { category: group.label, metric: point.metric });
+                        if (isExpanded) event.currentTarget.blur();
+                        else event.currentTarget.focus();
+                      } else {
+                        event.currentTarget.focus();
+                      }
+                      return;
+                    }
                     const bar = event.currentTarget.querySelector("rect");
                     if (canExpand) {
                       setExpandedPoint(isExpanded ? null : { category: group.label, metric: point.metric });
@@ -179,16 +181,22 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
                       bar?.focus();
                     }
                   }}
+                  onKeyDown={breakdownPoints.length ? (event) => {
+                    if ((event.key === "Enter" || event.key === " ") && canExpand) {
+                      event.preventDefault();
+                      setExpandedPoint(isExpanded ? null : { category: group.label, metric: point.metric });
+                      if (isExpanded) event.currentTarget.blur();
+                    }
+                  } : undefined}
                 >
                   {breakdownPoints.length
-                    ? breakdownPoints.map((breakdownPoint, breakdownIndex) => {
+                    ? breakdownPoints.map((breakdownPoint) => {
                       const segmentWidth = breakdownTotal > 0
                         ? barWidth * Math.abs(breakdownPoint.value) / breakdownTotal
                         : barWidth / breakdownPoints.length;
                       const x = segmentX;
                       segmentX += segmentWidth;
                       const breakdownName = breakdownPoint.breakdownLabel ?? breakdownPoint.label;
-                      const isFocusableSegment = breakdownIndex === 0;
                       return <rect
                         key={`${breakdownPoint.label}-${breakdownPoint.metric}`}
                         x={x}
@@ -196,20 +204,7 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
                         width={segmentWidth}
                         height={barHeight}
                         fill={chartColors[breakdownNames.indexOf(breakdownName) % chartColors.length]}
-                        className={`chart-data-point${isFocusableSegment ? ` chart-drillable${isExpanded ? " chart-expanded-parent" : ""}` : ""}`}
-                        role={isFocusableSegment ? "button" : undefined}
-                        tabIndex={isFocusableSegment ? 0 : undefined}
-                        aria-label={isFocusableSegment
-                          ? canExpand ? `${isExpanded ? "Collapse" : "Expand"} ${point.metric} breakdown for ${group.label}` : detail
-                          : undefined}
-                        aria-expanded={isFocusableSegment && canExpand ? isExpanded : undefined}
-                        onKeyDown={isFocusableSegment ? (event) => {
-                          if ((event.key === "Enter" || event.key === " ") && canExpand) {
-                            event.preventDefault();
-                            setExpandedPoint(isExpanded ? null : { category: group.label, metric: point.metric });
-                            if (isExpanded) event.currentTarget.blur();
-                          }
-                        } : undefined}
+                        className="chart-data-point chart-stacked-segment"
                       >
                         <title>{`${breakdownPoint.breakdownField ?? "Breakdown"}: ${breakdownName}\n${point.metric}: ${formatChartValue(breakdownPoint.value)}`}</title>
                       </rect>;
@@ -236,17 +231,26 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
                         }
                       }}
                     />}
+                  {breakdownPoints.length > 0 && <rect
+                    x={left}
+                    y={y}
+                    width={barWidth}
+                    height={barHeight}
+                    className={`chart-stacked-focus-outline${isExpanded ? " chart-expanded-parent" : ""}`}
+                  />}
+                  </g>
                   <text x={left + barWidth + 5} y={y + barHeight - 1} className={isExpanded ? "chart-label chart-expanded-value" : "chart-label"}>{formatChartValue(point.value)}</text>
                 </g>;
               })}
               {childRows.map(({ point, depth, path }, pointIndex) => {
                 const barWidth = Math.max(3, (Math.abs(point.value) / max) * plotWidth);
                 const y = childTop + pointIndex * barStep;
-                const seriesIndex = data.seriesNames.indexOf(point.series);
+                const seriesIndex = data.seriesColorIndex ?? data.seriesNames.indexOf(point.series);
+                const brightness = Math.max(0.45, 0.8 ** (depth + 1));
                 const label = point.label.length > 16 ? `${point.label.slice(0, 15)}…` : point.label;
                 return <g key={`${path}-${point.series}`} className="chart-breakdown-point">
                   <text x={left - 8 - depth * 10} y={y + barHeight - 1} textAnchor="end" className="chart-label chart-breakdown-label">{label}</text>
-                  <rect x={left} y={y} width={barWidth} height={barHeight} rx="3" fill={chartColors[(depth + seriesIndex) % chartColors.length]}>
+                  <rect x={left} y={y} width={barWidth} height={barHeight} rx="3" fill={chartColors[seriesIndex % chartColors.length]} style={{ filter: `brightness(${brightness})` }}>
                     <title>{`${point.breakdownField ?? "Breakdown"}: ${point.breakdownLabel ?? point.label}\n${point.metric}: ${formatChartValue(point.value)}`}</title>
                   </rect>
                   <text x={left + barWidth + 5} y={y + barHeight - 1} className="chart-label">{formatChartValue(point.value)}</text>

@@ -57,7 +57,7 @@ function AggregateDonutChart({ data }: { data: AggregateChartData }) {
         let start = 0;
         const metricSlices = slices.map((slice) => {
           const angle = (Math.max(0, slice.value) / angleTotal) * Math.PI * 2;
-          const color = chartColors[allSlices.indexOf(slice) % chartColors.length];
+          const color = chartColors[((allSlices.indexOf(slice) + (data.seriesColorIndex ?? 0)) % chartColors.length)];
           const item = { ...slice, start, end: start + angle, color };
           start += angle;
           return item;
@@ -73,7 +73,7 @@ function AggregateDonutChart({ data }: { data: AggregateChartData }) {
               <text x="80" y="95" textAnchor="middle" className="donut-caption">TOTAL</text>
             </svg>
             <div className="report-legend">{allSlices.map((slice, index) => <div className="report-legend-item" key={`${slice.label}-${index}`}>
-              <button className="report-legend-toggle" type="button" aria-label={`Toggle ${slice.label}`} aria-pressed={isLabelVisible(slice.label)} style={{ color: chartColors[index % chartColors.length] }} onClick={() => toggleLabel(slice.label)} />
+              <button className="report-legend-toggle" type="button" aria-label={`Toggle ${slice.label}`} aria-pressed={isLabelVisible(slice.label)} style={{ color: chartColors[(index + (data.seriesColorIndex ?? 0)) % chartColors.length] }} onClick={() => toggleLabel(slice.label)} />
               <span>{slice.label}</span>
               <b>{formatChartValue(slice.value)}</b>
             </div>)}</div>

@@ -19,6 +19,9 @@ export type AggregateChartData = {
   points: AggregateChartPoint[];
   categories: string[];
   seriesNames: string[];
+  seriesColorIndex?: number;
+  showSeriesLegend?: boolean;
+  showBreakdownLegend?: boolean;
   breakdownDisplay?: "subcharts" | "direct";
   breakdowns?: Record<string, AggregateChartData>;
 };

@@ -52,8 +52,8 @@ type ReportDashboardProps = {
   onChartTypeChange: (report: ReportDto, chartType: ChartType) => void;
   onChartSettingsChange: (report: ReportDto, settings: ReportChartSettings) => void;
   onEdit: (report: ReportDto) => void;
+  onEditQuery: (report: ReportDto) => void;
   onDelete: (report: ReportDto) => void;
-  onCustomize: (report: ReportDto) => void;
 };
 
 export default function ReportDashboard({
@@ -61,7 +61,7 @@ export default function ReportDashboard({
   reportsStatus, reportsError, metadataStatus, metadataError, reportResults, reportLoading,
   reportErrors, chartTypeOverrides, chartSettingsOverrides, detailReport, detailResult, detailChartType, detailChartSettings, detailLoading, detailError,
   message, messageIsError, onCreateReport, onSelectCategory, onSearchChange,
-  onDismissMessage, onRun, onOpenDetails, onReorderReports, onCloseDetails, onRunDetails, onChartTypeChange, onChartSettingsChange, onEdit, onDelete, onCustomize,
+  onDismissMessage, onRun, onOpenDetails, onReorderReports, onCloseDetails, onRunDetails, onChartTypeChange, onChartSettingsChange, onEdit, onEditQuery, onDelete,
 }: ReportDashboardProps) {
   const draggedReport = useRef<string | null>(null);
   const dragPreview = useRef<HTMLElement | null>(null);
@@ -207,12 +207,10 @@ export default function ReportDashboard({
                   }
                   setDropIndicator(null);
                 }}
-                onChartTypeChange={(chartType) => onChartTypeChange(report, chartType)}
-                onChartSettingsChange={(settings) => onChartSettingsChange(report, settings)}
                 onRun={() => onRun(report)}
                 onEdit={() => onEdit(report)}
+                onEditQuery={() => onEditQuery(report)}
                 onDelete={() => onDelete(report)}
-                onCustomize={() => onCustomize(report)}
               />;
             })}
           </div>}

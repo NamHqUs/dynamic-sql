@@ -55,7 +55,7 @@ function AggregateLineChart({ data, hiddenSeries, onToggleSeries }: {
   if (!visiblePoints.length) {
     return (
       <>
-        <SeriesLegend data={data} isVisible={isSeriesVisible} onToggle={onToggleSeries} />
+        {data.showSeriesLegend !== false && <SeriesLegend data={data} isVisible={isSeriesVisible} onToggle={onToggleSeries} />}
         <div className="report-chart-empty"><strong>No chart series selected</strong><span>Enable a legend item to show it in the chart.</span></div>
       </>
     );
@@ -71,7 +71,7 @@ function AggregateLineChart({ data, hiddenSeries, onToggleSeries }: {
 
   return (
     <>
-      <SeriesLegend data={data} isVisible={isSeriesVisible} onToggle={onToggleSeries} />
+      {data.showSeriesLegend !== false && <SeriesLegend data={data} isVisible={isSeriesVisible} onToggle={onToggleSeries} />}
       <div className="report-svg-wrap">
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Report trend chart">
           {[0, 1, 2, 3].map((row) => <line key={row} x1="20" x2={width - 16} y1={35 + row * 52} y2={35 + row * 52} className="chart-grid-line" />)}
@@ -80,7 +80,7 @@ function AggregateLineChart({ data, hiddenSeries, onToggleSeries }: {
             const plotted = linePoints(seriesPoints);
             const line = plotted.map((point, index) => `${index ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
             return <g key={series}>
-              <path d={line} className="report-line" style={{ stroke: chartColors[data.seriesNames.indexOf(series) % chartColors.length] }} />
+              <path d={line} className="report-line" style={{ stroke: chartColors[(data.seriesColorIndex ?? data.seriesNames.indexOf(series)) % chartColors.length] }} />
               {plotted.slice(1).map((point, index) => {
                 const previous = plotted[index];
                 const previousValue = seriesPoints[index];
@@ -113,7 +113,7 @@ function AggregateLineChart({ data, hiddenSeries, onToggleSeries }: {
                 return <g key={`${series}-${index}`} className="chart-data-point" tabIndex={0} aria-label={detail}>
                 <title>{detail}</title>
                 <circle cx={point.x} cy={point.y} r="9" fill="transparent" pointerEvents="all" />
-                <circle cx={point.x} cy={point.y} r="4" className="report-point" style={{ fill: chartColors[data.seriesNames.indexOf(series) % chartColors.length] }} />
+                <circle cx={point.x} cy={point.y} r="4" className="report-point" style={{ fill: chartColors[(data.seriesColorIndex ?? data.seriesNames.indexOf(series)) % chartColors.length] }} />
                 <g className="chart-hover-tooltip" transform={`translate(${Math.max(8, Math.min(point.x - 92, width - 192))},${Math.max(2, point.y - 48)})`}>
                   <rect width="184" height="40" rx="5" />
                   <text x="8" y="15" className="chart-tooltip-label">{sourcePoint.label.slice(0, 28)}</text>

@@ -48,7 +48,7 @@ function AggregateScatterChart({ data, hiddenSeries, onToggleSeries }: {
   if (!visiblePoints.length) {
     return (
       <>
-        <SeriesLegend data={data} isVisible={isSeriesVisible} onToggle={onToggleSeries} />
+        {data.showSeriesLegend !== false && <SeriesLegend data={data} isVisible={isSeriesVisible} onToggle={onToggleSeries} />}
         <div className="report-chart-empty"><strong>No chart series selected</strong><span>Enable a legend item to show it in the chart.</span></div>
       </>
     );
@@ -62,7 +62,7 @@ function AggregateScatterChart({ data, hiddenSeries, onToggleSeries }: {
 
   return (
     <>
-      <SeriesLegend data={data} isVisible={isSeriesVisible} onToggle={onToggleSeries} />
+      {data.showSeriesLegend !== false && <SeriesLegend data={data} isVisible={isSeriesVisible} onToggle={onToggleSeries} />}
       <div className="report-svg-wrap">
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Report scatter chart">
           {[0, 1, 2, 3].map((row) => <line key={row} x1="20" x2={width - 16} y1={35 + row * 52} y2={35 + row * 52} className="chart-grid-line" />)}
@@ -73,7 +73,7 @@ function AggregateScatterChart({ data, hiddenSeries, onToggleSeries }: {
                 const x = 22 + ((point.xValue - xMin) / (xMax - xMin)) * (width - 44);
                 const y = height - 25 - ((point.value - minValue) / (maxValue - minValue || 1)) * (height - 55);
                 return <g key={`${series}-${index}`}>
-                  <circle cx={x} cy={y} r="5.5" className="report-point" style={{ fill: chartColors[data.seriesNames.indexOf(series) % chartColors.length] }} />
+                  <circle cx={x} cy={y} r="5.5" className="report-point" style={{ fill: chartColors[(data.seriesColorIndex ?? data.seriesNames.indexOf(series)) % chartColors.length] }} />
                   {data.seriesNames.length === 1 && categories.length < 8 && <text x={x} y={height - 5} textAnchor="middle" className="chart-label">{point.label.slice(0, 12)}</text>}
                 </g>;
               })}
