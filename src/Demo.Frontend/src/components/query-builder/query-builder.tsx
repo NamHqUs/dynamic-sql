@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
-import { createApiQuery, deleteQueryRequest, executeQuery, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, getSqlStatement, MetadataEntity, MetadataField, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
+import { createApiQuery, deleteQueryRequest, executeQuery, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import SavedQueryList from "./saved-query-list/saved-query-list";
 import { addEntityAliasesToMetadata } from "../../utils/query-entity-contexts";
+import { replacePlanTextSectionValue } from "./query-design/plan-text-section-editor";
+import type { PlanTextSection } from "./query-design/plan-text-section-editor";
 import type { AppDispatch, RootState } from "../../store/store";
 import "./query-builder.css";
 
@@ -190,6 +192,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
   const [selectedRequestIsBuiltin, setSelectedRequestIsBuiltin] = useState(false);
   const [queryRequestNotice, setQueryRequestNotice] = useState("");
+  const [isApplyingPlanText, setIsApplyingPlanText] = useState(false);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
   const contextMetadata = useMemo(
     () => addEntityAliasesToMetadata(metadata, definition.entity, definition.entityAliases),
@@ -267,6 +270,33 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
         ...definition,
         filters: definition.filters,
       }));
+    }
+  };
+
+  const loadPlanText = async () => {
+    const resultAction = await dispatch(getQueryRequestString({ name: requestName, definition }));
+    if (getQueryRequestString.fulfilled.match(resultAction)) return resultAction.payload;
+    throw new Error(String(resultAction.payload || "Unable to format query request."));
+  };
+
+  const applyPlanText = async (section: PlanTextSection, value: string) => {
+    setIsApplyingPlanText(true);
+    try {
+      const formatAction = await dispatch(getQueryRequestString({ name: requestName, definition }));
+      if (!getQueryRequestString.fulfilled.match(formatAction)) {
+        throw new Error(String(formatAction.payload || "Unable to format query request."));
+      }
+      const text = replacePlanTextSectionValue(formatAction.payload, section, value);
+      const parseAction = await dispatch(parseQueryRequestString({ text, entity: definition.entity }));
+      if (!parseQueryRequestString.fulfilled.match(parseAction)) {
+        throw new Error(String(parseAction.payload || "Unable to apply query request."));
+      }
+      updateDefinitionFromDesign({
+        ...fromApiQuery(parseAction.payload),
+        projectionRows: definition.projectionRows,
+      });
+    } finally {
+      setIsApplyingPlanText(false);
     }
   };
 
@@ -378,8 +408,11 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               entity={entity}
               requestName={requestName}
               requestNameReadOnly={Boolean(selectedRequestName && !selectedRequestIsBuiltin)}
+              isResolvingPlanChanges={isApplyingPlanText}
               onRequestNameChange={updateRequestName}
               onDefinitionChange={updateDefinitionFromDesign}
+              onLoadPlanText={loadPlanText}
+              onApplyPlanText={applyPlanText}
             />
           </div>
         </div>
