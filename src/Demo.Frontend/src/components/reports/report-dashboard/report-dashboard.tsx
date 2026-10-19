@@ -144,26 +144,52 @@ export default function ReportDashboard({
     <div className="reports-workspace">
     <section className="reports-hero" aria-labelledby="reports-hero-title">
       <div className="reports-hero-copy">
-        <span className="eyebrow">DYNAMICSQL STUDIO <i /> SALES INTELLIGENCE</span>
-        <h1 id="reports-hero-title">Turn sales signals<br /><span>into your next move.</span></h1>
-        <p>Start with a business question, then explore the live reports and data behind your next decision.</p>
+        <span className="eyebrow">ONE QUERY ENGINE <i /> FIVE WAYS TO BUILD</span>
+        <h1 id="reports-hero-title">Build queries your way.<br /><span>Code, config, or clicks.</span></h1>
+        <p>In the visual builder, no SQL is required. For more control, define queries with C# lambda expressions, JSON, YAML, or plan text—then inspect the parameterized SQL and live results.</p>
+        <ul className="query-input-modes" aria-label="Ways to build a query">
+          <li>Visual builder</li>
+          <li>C# lambdas</li>
+          <li>JSON</li>
+          <li>YAML</li>
+          <li>Plan text</li>
+        </ul>
         <div className="reports-hero-actions">
-          <button className="button primary" type="button" onClick={onCreateReport}><Icon name="plus" size={15} /> Create a report</button>
-          <a className="reports-browse-link" href="#report-group-browser">Browse sales questions <Icon name="chevron" size={13} /></a>
+          <button className="button primary" type="button" onClick={onCreateReport}><Icon name="code" size={15} /> Build a query</button>
         </div>
       </div>
-      <div className="reports-hero-summary">
-        <div className="reports-summary-heading"><span className="reports-summary-icon"><Icon name="chart" size={16} /></span><span>SALES REPORT LIBRARY</span><span className="reports-summary-live"><i /> LIVE QUERIES</span></div>
-        <div className="reports-summary-count"><strong>{sortedReports.length}</strong><span>reports ready to explore</span></div>
-        <div className="reports-summary-rule" />
-        <div className="reports-summary-areas"><strong>{groups.length}</strong><span>sales questions</span><small>{numberOfBuiltins} curated · {numberOfCustom} custom reports</small></div>
-        <div className="reports-summary-orbit" aria-hidden="true"><span /><span /><span /></div>
-      </div>
+      <aside className="query-flow-card" aria-label="Query builder workflow">
+        <div className="query-flow-heading">
+          <span className="query-flow-mark"><Icon name="code" size={16} /></span>
+          <div><strong>FROM SCHEMA TO ANSWERS</strong><small>A query, shaped around your data</small></div>
+          <span className="query-flow-live"><i /> LIVE</span>
+        </div>
+        <div className="query-flow-steps">
+          <div className="query-flow-step">
+            <span className="query-flow-number">01</span>
+            <span className="query-flow-copy"><strong>Describe your data</strong><small>Entities · fields · relationships</small></span>
+            <span className="query-flow-icon"><Icon name="database" size={16} /></span>
+          </div>
+          <span className="query-flow-connector" aria-hidden="true" />
+          <div className="query-flow-step">
+            <span className="query-flow-number">02</span>
+            <span className="query-flow-copy"><strong>Shape your query</strong><small>Projections · filters · sorting</small></span>
+            <span className="query-flow-icon"><Icon name="sliders" size={16} /></span>
+          </div>
+          <span className="query-flow-connector" aria-hidden="true" />
+          <div className="query-flow-step">
+            <span className="query-flow-number">03</span>
+            <span className="query-flow-copy"><strong>See the results</strong><small>Parameterized SQL · live data</small></span>
+            <span className="query-flow-icon result"><Icon name="chart" size={16} /></span>
+          </div>
+        </div>
+        <div className="query-flow-footer"><span><i /> SQL SERVER</span><span>SQLITE</span><span>POSTGRESQL</span></div>
+      </aside>
       <div className="reports-hero-glow" />
     </section>
     <section className="report-group-browser" id="report-group-browser" aria-labelledby="report-groups-title">
       <div className="report-groups-heading">
-        <div><span className="eyebrow">START WITH A QUESTION</span><h2 id="report-groups-title">What do you want to understand?</h2><p>Pick a sales question to focus the report dashboard below.</p></div>
+        <div><span className="eyebrow">QUERY BUILDER IN ACTION</span><h2 id="report-groups-title">What can the Query Builder do?</h2><p>Explore live sales reports to see how metadata, relationships, and filters become useful results. Open a report to inspect and customize its query.</p></div>
         <span className="report-group-total">{numberOfBuiltins} curated <i /> {numberOfCustom} custom</span>
       </div>
       <div className="report-group-grid" aria-label="Report groups">

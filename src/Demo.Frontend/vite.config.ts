@@ -10,7 +10,10 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         "/db": backendApiUrl,
-        "/metadata": backendApiUrl,
+        "/metadata": {
+          target: backendApiUrl,
+          bypass: (req) => req.headers.accept?.includes("text/html") ? "/index.html" : undefined,
+        },
         "/dynamic-query": backendApiUrl,
         "^/report(?:/|$)": backendApiUrl,
       },
