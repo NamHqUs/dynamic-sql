@@ -82,6 +82,7 @@ export type QueryDefinition = {
   entity: string;
   entityAliases: EntityAliasDefinition[];
   columns: QueryColumn[];
+  projectionRows?: string[][];
   filters: QueryFilterGroup;
   sorts: { field: string; direction: string; expression?: QueryExpression }[];
   page: number | null;
@@ -171,7 +172,9 @@ async function requestText(url: string, options?: RequestInit) {
 }
 
 export function createApiQuery(definition: QueryDefinition) {
-  const { filters, sorts, columns, ...query } = definition;
+  const queryWithoutProjectionRows = { ...definition };
+  delete queryWithoutProjectionRows.projectionRows;
+  const { filters, sorts, columns, ...query } = queryWithoutProjectionRows;
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   return {
     ...query,
@@ -267,6 +270,11 @@ function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
       alias: projection.alias,
       ...(projection.field.kind === "field" ? {} : { expression: projection.field }),
     })),
+    projectionRows: query.fields.length
+      ? [query.fields.map((projection, index) => projection.field.kind === "field"
+        ? projection.field.field
+        : `__calculated__${projection.alias || index}`)]
+      : [[]],
     filters: query.filter ? restoreGroup(query.filter) : { logicalOperation: 0, filters: [] },
     sorts: query.sorts.map((sort) => typeof sort.field === "string"
       ? { ...sort, direction: sort.direction === 1 ? "desc" : "asc" }

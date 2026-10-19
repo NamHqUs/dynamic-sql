@@ -60,8 +60,48 @@ function parseProjectionColumn(text: string): QueryColumn {
   };
 }
 
+function getProjectionRows(definition: QueryDefinition): string[][] {
+  const rows = definition.projectionRows
+    ? definition.projectionRows.map((row) => [...row])
+    : definition.columns.length ? [definition.columns.map((column) => column.field)] : [];
+  const availableFields = new Set(definition.columns.map((column) => column.field));
+  const assignedFields = new Set<string>();
+
+  for (let rowIndex = rows.length - 1; rowIndex >= 0; rowIndex -= 1) {
+    const row = rows[rowIndex];
+    for (let index = row.length - 1; index >= 0; index -= 1) {
+      const field = row[index];
+      if (!availableFields.has(field) || assignedFields.has(field)) row.splice(index, 1);
+      else assignedFields.add(field);
+    }
+    if (!row.length) rows.splice(rowIndex, 1);
+  }
+
+  const missingFields = definition.columns
+    .map((column) => column.field)
+    .filter((field) => !assignedFields.has(field));
+  if (missingFields.length) {
+    if (rows.length) rows[rows.length - 1].push(...missingFields);
+    else rows.push(missingFields);
+  }
+  return rows;
+}
+
+type ProjectionDropPosition = "left" | "right" | "above" | "below";
+
+function getProjectionDropPosition(element: HTMLElement, clientX: number, clientY: number): ProjectionDropPosition {
+  const bounds = element.getBoundingClientRect();
+  const horizontalOffset = (clientX - bounds.left) / bounds.width;
+  const verticalOffset = (clientY - bounds.top) / bounds.height;
+  if (Math.abs(horizontalOffset - 0.5) >= Math.abs(verticalOffset - 0.5)) {
+    return horizontalOffset < 0.5 ? "left" : "right";
+  }
+  return verticalOffset < 0.5 ? "above" : "below";
+}
+
 function FieldCards({
   fields,
+  rows,
   entity,
   metadata,
   definition,
@@ -75,11 +115,14 @@ function FieldCards({
   setEditingField,
   replaceColumn,
   restoreColumn,
-  moveColumn,
+  moveField,
   onFieldDragStart,
   editExpression,
+  addField,
+  addCalculation,
 }: {
   fields: { name: string }[];
+  rows: string[][];
   entity: MetadataEntity;
   metadata: MetadataEntity[];
   definition: QueryDefinition;
@@ -93,12 +136,14 @@ function FieldCards({
   setEditingField: (field: string | null) => void;
   replaceColumn: (field: string, replacement: string) => void;
   restoreColumn: (field: string, original: { field: string; alias: string | null }) => void;
-  moveColumn: (fromIndex: number, toIndex: number) => void;
+  moveField: (field: string, targetField: string, position: ProjectionDropPosition) => void;
   onFieldDragStart: (field: string | null) => void;
   editExpression: (column: { field: string; alias: string | null; expression?: QueryExpression }) => void;
+  addField: (field: string) => void;
+  addCalculation: () => void;
 }) {
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+  const [draggedField, setDraggedField] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ field: string; position: ProjectionDropPosition } | null>(null);
   const [aliasBeforeEdit, setAliasBeforeEdit] = useState<string | null>(null);
   const [columnBeforeEdit, setColumnBeforeEdit] = useState<{ field: string; alias: string | null } | null>(null);
   const columnBeforeEditRef = useRef<{ field: string; alias: string | null } | null>(null);
@@ -109,31 +154,95 @@ function FieldCards({
     setEditingField(snapshot?.field ?? null);
   };
 
-  return <div className="field-cards" onDragEnd={() => {
-    setDraggedIndex(null);
-    setDropTargetIndex(null);
+  const resetDrag = () => {
+    setDraggedField(null);
+    setDropTarget(null);
     onFieldDragStart(null);
-  }}>{fields.map((field, index) => {
+  };
+  const handleFieldDrop = (event: React.DragEvent, targetField: string) => {
+    const field = event.dataTransfer.getData("application/x-query-field");
+    if (field) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (field !== targetField) {
+        const position = dropTarget?.field === targetField
+          ? dropTarget.position
+          : getProjectionDropPosition(event.currentTarget, event.clientX, event.clientY);
+        moveField(field, targetField, position);
+      }
+      resetDrag();
+    }
+  };
+  const handleProjectionDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    if (!draggedField || (event.target instanceof Element && event.target.closest(".field-card"))) return;
+    const cards = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(".field-card"))
+      .map((card) => ({
+        element: card,
+        field: card.dataset.projectionField,
+        bounds: card.getBoundingClientRect(),
+      }));
+    if (!cards.length) return;
+
+    const nearestCard = cards
+      .map((card) => {
+        const horizontalDistance = event.clientX < card.bounds.left
+          ? card.bounds.left - event.clientX
+          : event.clientX > card.bounds.right ? event.clientX - card.bounds.right : 0;
+        const verticalDistance = event.clientY < card.bounds.top
+          ? card.bounds.top - event.clientY
+          : event.clientY > card.bounds.bottom ? event.clientY - card.bounds.bottom : 0;
+        return {
+          ...card,
+          distance: Math.hypot(horizontalDistance / card.bounds.width, verticalDistance / card.bounds.height),
+        };
+      })
+      .sort((left, right) => left.distance - right.distance)[0];
+
+    if (nearestCard.field) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      setDropTarget({
+        field: nearestCard.field,
+        position: getProjectionDropPosition(nearestCard.element, event.clientX, event.clientY),
+      });
+    }
+  };
+
+  return <div
+    className="projection-rows"
+    onDragEnd={resetDrag}
+    onDragOver={handleProjectionDragOver}
+    onDrop={(event) => {
+      const field = event.dataTransfer.getData("application/x-query-field");
+      if (field && dropTarget) {
+        event.preventDefault();
+        if (field !== dropTarget.field) moveField(field, dropTarget.field, dropTarget.position);
+        resetDrag();
+      }
+    }}
+  >{rows.map((row) => (
+    <div className="projection-row" key={row[0]}>
+      <div className="field-cards projection-row-fields">
+        {row.map((fieldName) => {
+    const field = fields.find((item) => item.name === fieldName);
+    if (!field) return null;
     const column = definition.columns.find((item) => item.field === field.name);
     const fieldLabel = column?.expression ? column.alias || "calculated field" : field.name;
     return (
       <div
-        className={`field-card${column ? " selected" : ""}${draggedIndex === index ? " dragging" : ""}${dropTargetIndex === index && draggedIndex !== index ? " drop-target" : ""}`}
+        className={`field-card${column ? " selected" : ""}${draggedField === field.name ? " dragging" : ""}${dropTarget?.field === field.name ? ` drop-target drop-target-${dropTarget.position}` : ""}`}
         key={field.name}
+        data-projection-field={field.name}
         onDragOver={(event) => {
-          if (draggedIndex !== null && draggedIndex !== index) {
+          if (draggedField && draggedField !== field.name) {
             event.preventDefault();
-            setDropTargetIndex(index);
+            const position = getProjectionDropPosition(event.currentTarget, event.clientX, event.clientY);
+            event.dataTransfer.dropEffect = "move";
+            setDropTarget({ field: field.name, position });
           }
         }}
         onDrop={(event) => {
-          event.preventDefault();
-          const draggedField = event.dataTransfer.getData("application/x-query-field")
-            || event.dataTransfer.getData("text/plain");
-          const sourceIndex = fields.findIndex((item) => item.name === draggedField);
-          if (sourceIndex >= 0 && sourceIndex !== index) moveColumn(sourceIndex, index);
-          setDraggedIndex(null);
-          setDropTargetIndex(null);
+          handleFieldDrop(event, field.name);
         }}
       >
         {column && (
@@ -142,7 +251,7 @@ function FieldCards({
             draggable
             aria-hidden="true"
             onDragStart={(event) => {
-              setDraggedIndex(index);
+              setDraggedField(field.name);
               onFieldDragStart(field.name);
               event.dataTransfer.effectAllowed = "move";
               event.dataTransfer.setData("text/plain", field.name);
@@ -242,7 +351,34 @@ function FieldCards({
         </div>
       </div>
     );
-  })}</div>;
+        })}
+      </div>
+    </div>
+  ))}
+    <div className="projection-row projection-row-builder">
+      <div className="field-cards projection-row-fields">
+        <FieldBuilder
+          key={`${entity.name}-${definition.columns.length}`}
+          entity={entity}
+          metadata={metadata}
+          value=""
+          excludedPaths={definition.columns.map((column) => column.field)}
+          placeholder="Field"
+          placeholderIcon
+          ariaLabel="Field"
+          onChange={addField}
+        />
+        <button
+          type="button"
+          className="text-button"
+          onClick={addCalculation}
+        >
+          <Icon name="plus" size={12} />
+          <span className="action-link-text">Calculation</span>
+        </button>
+      </div>
+    </div>
+  </div>;
 }
 
 export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
@@ -252,6 +388,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
   const [isEditingProjectionText, setIsEditingProjectionText] = useState(false);
   const [projectionText, setProjectionText] = useState(() => definition.columns.map(formatProjectionColumn).join(", "));
   const selectedFields = definition.columns.map((column) => ({ name: column.field }));
+  const projectionRows = getProjectionRows(definition);
 
   useEffect(() => {
     if (!isEditingProjectionText) {
@@ -259,17 +396,36 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     }
   }, [definition.columns, isEditingProjectionText]);
 
+  const changeProjection = (nextDefinition: QueryDefinition, rows = projectionRows) => {
+    const fields = new Set(nextDefinition.columns.map((column) => column.field));
+    const nextRows = rows
+      .map((row) => row.filter((field) => fields.has(field)))
+      .filter((row) => row.length > 0);
+    const assignedFields = new Set(nextRows.flat());
+    const missingFields = nextDefinition.columns
+      .map((column) => column.field)
+      .filter((field) => !assignedFields.has(field));
+    if (missingFields.length) {
+      if (nextRows.length) nextRows[nextRows.length - 1].push(...missingFields);
+      else nextRows.push(missingFields);
+    }
+    onDefinitionChange({ ...nextDefinition, projectionRows: nextRows });
+  };
+
   const applyProjectionText = () => {
     const existingColumns = new Map(definition.columns.map((column) => [formatProjectionColumn(column), column]));
     const columns = splitProjectionText(projectionText).map((item) =>
       existingColumns.get(item) ?? parseProjectionColumn(item));
-    onDefinitionChange({ ...definition, columns });
+    changeProjection({ ...definition, columns });
     setIsEditingProjectionText(false);
   };
 
   const addColumn = (field: string) => {
     if (definition.columns.some((column) => column.field === field)) return;
-    onDefinitionChange({ ...definition, columns: [...definition.columns, { field, alias: null }] });
+    changeProjection(
+      { ...definition, columns: [...definition.columns, { field, alias: null }] },
+      [...getProjectionRows(definition), [field]],
+    );
   };
 
   const applyExpression = (expression: QueryExpression, alias: string) => {
@@ -278,7 +434,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     const columns = editing?.field
       ? definition.columns.map((column) => column.field === field ? { ...column, alias, expression } : column)
       : [...definition.columns, { field, alias, expression }];
-    onDefinitionChange({ ...definition, columns });
+    changeProjection({ ...definition, columns });
     setEditingExpression(null);
   };
 
@@ -290,37 +446,37 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
         .filter((field) => !selectedColumns.has(field.name))
         .map((field) => ({ field: field.name, alias: null })),
     ];
-    if (columns.length !== definition.columns.length) onDefinitionChange({ ...definition, columns });
+    if (columns.length !== definition.columns.length) changeProjection({ ...definition, columns });
   };
 
   const clearProjection = () => {
-    if (definition.columns.length) onDefinitionChange({ ...definition, columns: [] });
+    if (definition.columns.length) changeProjection({ ...definition, columns: [] });
   };
 
   const removeColumn = (field: string) => {
     const columns = definition.columns.filter((column) => column.field !== field);
-    onDefinitionChange({ ...definition, columns });
+    changeProjection({ ...definition, columns });
   };
 
   const updateColumnAlias = (field: string, alias: string) => {
     const columns = definition.columns.map((column) => column.field === field
       ? { ...column, alias }
       : column);
-    onDefinitionChange({ ...definition, columns });
+    changeProjection({ ...definition, columns });
   };
 
   const commitColumnAlias = (field: string) => {
     const columns = definition.columns.map((column) => column.field === field
       ? { ...column, alias: column.alias?.trim() || null }
       : column);
-    onDefinitionChange({ ...definition, columns });
+    changeProjection({ ...definition, columns });
   };
 
   const restoreColumnAlias = (field: string, alias: string | null) => {
     const columns = definition.columns.map((column) => column.field === field
       ? { ...column, alias }
       : column);
-    onDefinitionChange({ ...definition, columns });
+    changeProjection({ ...definition, columns });
   };
 
   const replaceColumn = (field: string, replacement: string) => {
@@ -328,7 +484,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     const columns = definition.columns.map((column) => column.field === field
       ? { field: replacement, alias: null }
       : column);
-    onDefinitionChange({ ...definition, columns });
+    changeProjection({ ...definition, columns });
   };
 
   const restoreColumn = (field: string, original: { field: string; alias: string | null }) => {
@@ -338,12 +494,27 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     onDefinitionChange({ ...definition, columns });
   };
 
-  const moveColumn = (fromIndex: number, toIndex: number) => {
-    if (fromIndex < 0 || toIndex < 0 || fromIndex >= definition.columns.length || toIndex >= definition.columns.length) return;
-    const columns = [...definition.columns];
-    const [column] = columns.splice(fromIndex, 1);
-    columns.splice(toIndex, 0, column);
-    onDefinitionChange({ ...definition, columns });
+  const moveField = (field: string, targetField: string, position: ProjectionDropPosition) => {
+    if (field === targetField) return;
+    const rows = getProjectionRows(definition).map((row) => [...row]);
+    const sourceRow = rows.findIndex((row) => row.includes(field));
+    if (sourceRow < 0 || !rows.some((row) => row.includes(targetField))) return;
+    const sourceIndex = rows[sourceRow].indexOf(field);
+    rows[sourceRow].splice(sourceIndex, 1);
+    if (!rows[sourceRow].length) rows.splice(sourceRow, 1);
+
+    const targetRow = rows.findIndex((row) => row.includes(targetField));
+    if (targetRow < 0) return;
+    if (position === "above" || position === "below") {
+      rows.splice(targetRow + (position === "below" ? 1 : 0), 0, [field]);
+    } else {
+      const targetIndex = rows[targetRow].indexOf(targetField);
+      rows[targetRow].splice(targetIndex + (position === "right" ? 1 : 0), 0, field);
+    }
+
+    const columnsByField = new Map(definition.columns.map((column) => [column.field, column]));
+    const columns = rows.flat().map((item) => columnsByField.get(item)).filter((column): column is QueryColumn => column !== undefined);
+    changeProjection({ ...definition, columns }, rows);
   };
 
   return (
@@ -387,7 +558,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
           <p className="filter-description">
             {isEditingProjectionText
               ? "Edit fields or expressions; Apply to save or Cancel to discard."
-              : "Select fields to include in the query, or choose a relation to browse related fields."}
+              : "Select fields to include. Drag a field to another field's left or right edge to reorder, or top or bottom edge to create a row."}
           </p>
         </div>
         <div className="field-action-buttons">
@@ -435,6 +606,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
         <div className="select-fields-row">
           <FieldCards
             fields={selectedFields}
+            rows={projectionRows}
             entity={entity}
             metadata={metadata}
             definition={definition}
@@ -448,35 +620,16 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
             setEditingField={setEditingField}
             replaceColumn={replaceColumn}
             restoreColumn={restoreColumn}
-            moveColumn={moveColumn}
+            moveField={moveField}
             onFieldDragStart={onFieldDragStart}
+            addField={addColumn}
+            addCalculation={() => setEditingExpression({ field: null })}
             editExpression={(column) => setEditingExpression({
               field: column.field,
               expression: column.expression,
               alias: column.alias ?? "",
             })}
           />
-          <FieldBuilder
-            key={`${entity.name}-${definition.columns.length}`}
-            entity={entity}
-            metadata={metadata}
-            value=""
-            excludedPaths={definition.columns.map((column) => column.field)}
-            placeholder="Field"
-            placeholderIcon
-            ariaLabel="Field"
-            onChange={addColumn}
-          />
-        </div>
-        <div className="projection-actions">
-          <button
-            type="button"
-            className="text-button"
-            onClick={() => setEditingExpression({ field: null })}
-          >
-            <span aria-hidden="true">ƒx</span>
-            <span className="action-link-text">Calculation</span>
-          </button>
         </div>
       </>}
       {editingExpression && (

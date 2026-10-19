@@ -80,6 +80,10 @@ function isQueryDefinition(value: unknown): value is QueryDefinition {
       && typeof column === "object"
       && typeof column.field === "string"
       && (typeof column.alias === "string" || column.alias === null))
+    && (definition.projectionRows === undefined
+      || Array.isArray(definition.projectionRows)
+        && definition.projectionRows.every((row) => Array.isArray(row)
+          && row.every((field) => typeof field === "string")))
     && definition.filters !== null
     && typeof definition.filters === "object"
     && Array.isArray(definition.filters.filters)
