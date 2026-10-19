@@ -65,7 +65,7 @@ function AggregateBarChart({ result, type, report, settings, xMetric }: {
   const fields = reportChartFields(report, result);
   const defaults = defaultReportChartSettings(report, result);
   const chartSettings = settings ?? defaults;
-  const wrapChart = (content: ReactNode) => <div className="report-chart-composition">{content}</div>;
+  const wrapChart = (content: ReactNode) => <div className={`report-chart-composition report-chart-${type}`}>{content}</div>;
   const metrics = fields.metrics.filter((metric) => chartSettings.metrics.includes(metric));
   if (!metrics.length) {
     return wrapChart(<div className="report-chart-empty"><strong>No aggregate channels selected</strong><span>Enable at least one aggregate channel in the report details.</span></div>);

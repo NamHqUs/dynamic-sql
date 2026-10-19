@@ -60,7 +60,8 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
   });
   const barGroups = [...groups.values()];
   const width = 680;
-  const left = 120;
+  const left = 128;
+  const projectionLabelRight = left - 16;
   const plotWidth = 420;
   const barHeight = 8;
   const barStep = 12;
@@ -83,7 +84,7 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
       : groupTop + ((group.points.length - 1) * barStep + lastPointShift) / 2 + barHeight / 2;
     const childTop = groupTop + (expandedIndex + 1) * barStep + 4;
     const longestLabelLength = Math.max(0, ...childRows.map(({ point, depth }) => Math.min(point.label.length + depth * 2, 16)));
-    const spineX = left - 8 - longestLabelLength * 6 - 8 - 2;
+    const spineX = projectionLabelRight - longestLabelLength * 6 - 8 - 2;
     nextGroupTop = groupTop + groupStep + (childRows.length ? childRows.length * barStep + 4 : 0);
     return { group, groupTop, categoryCenterY, childRows, childTop, expandedIndex, spineX };
   });
@@ -131,7 +132,7 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
               key={`${group.label}-${groupIndex}`}
             >
               <text
-                x={left - 8}
+                x={projectionLabelRight}
                 y={categoryCenterY + 4}
                 textAnchor="end"
                 className="chart-label"
@@ -249,7 +250,7 @@ function AggregateBarChart({ data }: { data: AggregateChartData }) {
                 const brightness = Math.max(0.45, 0.8 ** (depth + 1));
                 const label = point.label.length > 16 ? `${point.label.slice(0, 15)}…` : point.label;
                 return <g key={`${path}-${point.series}`} className="chart-breakdown-point">
-                  <text x={left - 8 - depth * 10} y={y + barHeight - 1} textAnchor="end" className="chart-label chart-breakdown-label">{label}</text>
+                  <text x={projectionLabelRight - depth * 10} y={y + barHeight - 1} textAnchor="end" className="chart-label chart-breakdown-label">{label}</text>
                   <rect x={left} y={y} width={barWidth} height={barHeight} rx="3" fill={chartColors[seriesIndex % chartColors.length]} style={{ filter: `brightness(${brightness})` }}>
                     <title>{`${point.breakdownField ?? "Breakdown"}: ${point.breakdownLabel ?? point.label}\n${point.metric}: ${formatChartValue(point.value)}`}</title>
                   </rect>
