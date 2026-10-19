@@ -21,6 +21,7 @@ public static class DependencyInjection
             services.AddSingleton<FilePathResolver>();
             services.AddSingleton<IMetadataRepository, MetadataFileRepository>();
             services.AddSingleton<IFunctionDefinitionRepository, FunctionDefinitionFileRepository>();
+            services.AddSingleton<IQueryRequestRepository, QueryRequestFileRepository>();
             services.AddSingleton<IReportRepository, ReportFileRepository>();
         }
         else if (provider.Equals("Memory", StringComparison.OrdinalIgnoreCase))

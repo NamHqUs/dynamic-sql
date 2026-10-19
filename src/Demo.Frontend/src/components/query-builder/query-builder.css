@@ -5,12 +5,13 @@
 .query-builder-workspace { display: grid; grid-template-columns: var(--panel-width, 260px) minmax(0, 1fr); align-items: stretch; overflow: hidden; background: linear-gradient(135deg, #11141c, #0f1218); border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 14px 40px #00000018; }
 .query-builder-workspace.query-builder-solo { display: block; overflow: visible; }
 .query-builder-solo .query-request-editor { grid-column: 1; border-left: 0; }
-.query-request-workspace { display: contents; }
+.query-request-feedback { margin: 0; padding: 0 28px 16px; color: #a9d8bc; font-size: 12px; }
+.query-request-feedback.error { color: #f0a6ae; }
 .query-builder-error { grid-column: 1 / -1; margin: 0; padding: 12px 28px; border-top: 1px solid var(--line); }
 .query-request-editor { position: relative; grid-column: 2; min-width: 0; padding: 26px 28px 35px; border-left: 1px solid var(--line); }
 .query-request-editor-plan-text { padding-bottom: 14px; }
 .query-request-editor > .panel-splitter { left: 0; }
-.query-request-tab-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+.query-request-tab-header { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
 .query-request-tabs { display: flex; flex: 1; gap: 22px; min-width: 0; }
 .query-request-loading { flex: 0 0 auto; margin: 0; color: var(--muted); font-size: 12px; text-align: right; opacity: 0; filter: blur(4px); visibility: hidden; transition: opacity .35s ease, filter .35s ease, visibility 0s linear .35s; }
 .query-request-loading.is-visible { opacity: 1; filter: blur(0); visibility: visible; transition: opacity .35s ease, filter .35s ease, visibility 0s; }
@@ -28,4 +29,5 @@
 @media (max-width: 760px) {
   .query-builder-workspace { grid-template-columns: 1fr; }
   .query-request-editor { grid-column: 1; border-left: 0; }
+  .query-builder-solo .query-request-editor { padding: 18px 14px; }
 }

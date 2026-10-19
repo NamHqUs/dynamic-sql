@@ -1,0 +1,12 @@
+Name: 12. Low-stock products and inventory value
+Entity: Products
+Fields:
+  - Name
+  - Category
+  - StockQuantity
+  - ReorderLevel
+  - StockQuantity * CostPrice | InventoryCost
+Filter: StockQuantity <= ReorderLevel
+Sorts: StockQuantity ASC
+Page:
+PageSize:

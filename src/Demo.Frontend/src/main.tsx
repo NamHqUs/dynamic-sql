@@ -33,6 +33,8 @@ function App() {
   const routerNavigate = useNavigate();
   const page = pageForPath(location.pathname);
   const [metadataVisited, setMetadataVisited] = useState(() => location.pathname === PAGE_PATHS.metadata);
+  const [queryBuilderVisited, setQueryBuilderVisited] = useState(() => location.pathname === PAGE_PATHS.builder);
+  const [queryBuilderInstance, setQueryBuilderInstance] = useState(0);
   const queryBuilderNavigationGuard = useRef<NavigationGuard | null>(null);
   const metadataNavigationGuard = useRef<NavigationGuard | null>(null);
   const functionsNavigationGuard = useRef<NavigationGuard | null>(null);
@@ -69,6 +71,10 @@ function App() {
       && guardForPage(currentPage) !== null;
   });
 
+  useEffect(() => {
+    if (location.pathname === PAGE_PATHS.builder) setQueryBuilderVisited(true);
+  }, [location.pathname]);
+
   const navigateToPage = (nextPage: Page, fromReport = false) => {
     if (nextPage === page && !(nextPage === "builder" && fromReport)) return;
     const destination = nextPage === "builder" && fromReport
@@ -76,6 +82,7 @@ function App() {
       : PAGE_PATHS[nextPage];
     const continueNavigation = () => {
       if (nextPage === "metadata") setMetadataVisited(true);
+      if (nextPage === "builder") setQueryBuilderVisited(true);
       approvedNavigation.current = destination;
       routerNavigate(destination);
     };
@@ -109,27 +116,30 @@ function App() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <button className="brand" type="button" aria-label="DynamicSQL Studio home" onClick={() => navigateToPage("reports")}><span className="brand-mark"><Icon name="database" size={18} /></span><span>Dynamic<span className="brand-accent">SQL</span></span><span className="brand-divider" /><span className="brand-product">Studio</span></button>
+        <button className="brand" type="button" aria-label="DynamicSQL Studio home" onClick={() => navigateToPage("reports")}><img className="brand-logo" src="/brand-concepts/dynamicsql-studio.svg" alt="" /></button>
         <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="grid" /> Query builder</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "functions" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("functions")}><Icon name="code" /> Function definitions</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button></nav>
         <div className="top-actions"><span className="live-dot" /> Local demo <button className="avatar">N</button></div>
       </header>
 
       <Routes>
-        <Route path={PAGE_PATHS.reports} element={<div className="page-transition"><Reports onEditQuery={(definition: QueryDefinition) => {
+        <Route path={PAGE_PATHS.reports} element={<div className="page-transition"><Reports onNavigateToPage={navigateToPage} onEditQuery={(definition: QueryDefinition) => {
           setQueryBuilderDefinition(definition);
+          setQueryBuilderInstance((current) => current + 1);
           navigateToPage("builder", true);
         }} /></div>} />
-        <Route path={PAGE_PATHS.builder} element={<div className="page-transition"><QueryBuilder
-          onNavigationGuardChange={updateQueryBuilderNavigationGuard}
-          onBackToReports={new URLSearchParams(location.search).get("from") === "reports"
-            ? () => navigateToPage("reports")
-            : undefined}
-        /></div>} />
+        <Route path={PAGE_PATHS.builder} element={null} />
         <Route path={PAGE_PATHS.metadata} element={null} />
         <Route path={PAGE_PATHS.functions} element={<div className="page-transition"><SqlFunctions onNavigationGuardChange={updateFunctionsNavigationGuard} /></div>} />
         <Route path={PAGE_PATHS.sources} element={<div className="page-transition"><DataSources /></div>} />
         <Route path="*" element={<Navigate to={PAGE_PATHS.reports} replace />} />
       </Routes>
+      {queryBuilderVisited && <div hidden={page !== "builder"} className={page === "builder" ? "page-transition" : undefined}><QueryBuilder
+        key={queryBuilderInstance}
+        onNavigationGuardChange={updateQueryBuilderNavigationGuard}
+        onBackToReports={new URLSearchParams(location.search).get("from") === "reports"
+          ? () => navigateToPage("reports")
+          : undefined}
+      /></div>}
       {metadataVisited && <div hidden={page !== "metadata"} className={page === "metadata" ? "page-transition" : undefined}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
       <footer><span><span className="footer-mark">✦</span> DynamicSQL engine</span><span>Metadata-driven queries · Client preview</span></footer>
     </main>

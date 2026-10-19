@@ -7,6 +7,7 @@ const paths = {
   play: <path d="m8 5 11 7-11 7V5Z" fill="currentColor" stroke="none" />,
   code: <><path d="m9 7-5 5 5 5M15 7l5 5-5 5" /></>,
   chart: <><path d="M4 19V5M4 19h17" /><path d="m7 14 4-4 3 2 5-6" /><circle cx="7" cy="14" r="1" /><circle cx="11" cy="10" r="1" /><circle cx="14" cy="12" r="1" /><circle cx="19" cy="6" r="1" /></>,
+  results: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M8 9v11m6-11v4m-1 4 2 2 4-4" /></>,
   "chart-line": <><path d="M4 19V5M4 19h17" /><path d="m7 15 4-5 3 3 5-7" /></>,
   "chart-bar": <><path d="M4 19V5M4 19h17" /><path d="M8 16v-5M12 16V7M16 16v-8M20 16v-4" /></>,
   "chart-donut": <><path d="M12 3a9 9 0 1 0 9 9h-9V3Z" /><path d="M15 3.5A9 9 0 0 1 20.5 9H15V3.5Z" /></>,

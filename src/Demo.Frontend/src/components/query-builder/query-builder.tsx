@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
-import { createApiQuery, executeQuery, executeQueryFromText, fetchFunctionDefinitions, fetchQueryMetadata, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode } from "./query-design/query-builder-slice";
+import { createApiQuery, deleteQueryRequest, executeQuery, executeQueryFromText, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, getSqlStatementFromText, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import PlainText from "./plain-text/plain-text";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
+import SavedQueryList from "./saved-query-list/saved-query-list";
 import { addEntityAliasesToMetadata } from "../../utils/query-entity-contexts";
+import type { AppDispatch, RootState } from "../../store/store";
 import "./query-builder.css";
 
 type QueryBuilderProps = {
@@ -175,12 +177,15 @@ function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity
 }
 
 export default function QueryBuilder({ onNavigationGuardChange, onBackToReports }: QueryBuilderProps) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const showMessageBox = useMessageBox();
-  const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames } = useSelector((state) => state.queryBuilder);
+  const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames, queryRequests, queryRequestsStatus, queryRequestsError } = useSelector((state: RootState) => state.queryBuilder);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
   const definitionRef = useRef(definition);
   const [requestName, setRequestName] = useState("");
+  const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
+  const [selectedRequestIsBuiltin, setSelectedRequestIsBuiltin] = useState(false);
+  const [queryRequestNotice, setQueryRequestNotice] = useState("");
   const [activeRequestTab, setActiveRequestTab] = useState<"design" | "structure">("design");
   const [requestStructureDraft, setRequestStructureDraft] = useState("");
   const [requestStructureOriginal, setRequestStructureOriginal] = useState("");
@@ -204,10 +209,29 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
     definitionRef.current = nextDefinition;
     setDefinition(nextDefinition);
   };
+  const updateDefinitionFromDesign = (nextDefinition: QueryDefinition) => {
+    if (selectedRequestIsBuiltin) {
+      setSelectedRequestName(null);
+      setSelectedRequestIsBuiltin(false);
+      setRequestName("");
+    }
+    updateDefinition(nextDefinition);
+  };
+  const updateRequestName = (name: string) => {
+    if (selectedRequestIsBuiltin) {
+      setSelectedRequestName(null);
+      setSelectedRequestIsBuiltin(false);
+    }
+    setRequestName(name);
+  };
   useEffect(() => {
     dispatch(fetchQueryMetadata());
     dispatch(fetchFunctionDefinitions());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (queryRequestsStatus === "idle") dispatch(fetchQueryRequests());
+  }, [dispatch, queryRequestsStatus]);
 
   useEffect(() => {
     if (metadata.length && !metadata.some((item) => item.name === definition.entity)) {
@@ -282,7 +306,7 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
     const line = requestStructureDraft.split(/\r?\n/)[index];
     const separator = line?.indexOf(":") ?? -1;
     if (separator >= 0 && line.slice(0, separator).trim() === "Name") {
-      setRequestName(value);
+      updateRequestName(value);
     }
     setRequestStructureDraft((current) => {
       const lines = current.split(/\r?\n/);
@@ -332,6 +356,11 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
     const resultAction = await dispatch(parseQueryRequestString({ text: requestStructureDraft, entity: requestEntity }));
     if (parseQueryRequestString.fulfilled.match(resultAction)) {
       const nextDefinition = fromApiQuery(resultAction.payload);
+      if (selectedRequestIsBuiltin) {
+        setSelectedRequestName(null);
+        setSelectedRequestIsBuiltin(false);
+        setRequestName("");
+      }
       updateDefinition(nextDefinition);
       setRequestStructureOriginal(requestStructureDraft);
       setRequestStructureDefinition(JSON.stringify(nextDefinition));
@@ -393,7 +422,10 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
   }, [planTextDirty]);
 
   const startNewRequest = () => {
+    setSelectedRequestName(null);
+    setSelectedRequestIsBuiltin(false);
     setRequestName("");
+    setQueryRequestNotice("");
     setRequestStructureError("");
     const nextDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
     updateDefinition(nextDefinition);
@@ -407,6 +439,54 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
   };
 
   const createNewRequest = () => requestPlanTextNavigation(startNewRequest);
+  const selectSavedRequest = (savedRequest: (typeof queryRequests)[number]) => requestPlanTextNavigation(() => {
+    updateDefinition(fromApiQuery(savedRequest.query));
+    setRequestName(savedRequest.name);
+    setSelectedRequestName(savedRequest.name);
+    setSelectedRequestIsBuiltin(savedRequest.isBuiltin);
+    setQueryRequestNotice("");
+    setRequestStructureDraft("");
+    setRequestStructureOriginal("");
+    setRequestStructureDefinition(null);
+    setRequestStructureStatus("idle");
+    setRequestStructureError("");
+    setActiveRequestTab("design");
+  });
+  const persistCurrentRequest = async (currentDefinition: QueryDefinition) => {
+    const name = requestName.trim();
+    if (!name) return;
+    setQueryRequestNotice("");
+    const resultAction = await dispatch(saveQueryRequest({ name, definition: currentDefinition }));
+    if (saveQueryRequest.fulfilled.match(resultAction)) {
+      setSelectedRequestName(resultAction.payload);
+      setSelectedRequestIsBuiltin(false);
+      setRequestName(resultAction.payload);
+      setQueryRequestNotice("Query saved.");
+    }
+  };
+  const saveCurrentRequest = () => requestPlanTextNavigation(() => {
+    void persistCurrentRequest(definitionRef.current);
+  });
+  const removeCurrentRequest = async () => {
+    if (!selectedRequestName || selectedRequestIsBuiltin) return;
+    const action = await showMessageBox({
+      eyebrow: "DELETE SAVED QUERY",
+      title: `Delete “${selectedRequestName}”?`,
+      message: "This saved query request will be permanently removed.",
+      actions: [
+        { value: "cancel", label: "Keep query", variant: "secondary" },
+        { value: "delete", label: "Delete query", variant: "danger" },
+      ],
+    });
+    if (action !== "delete") return;
+    const resultAction = await dispatch(deleteQueryRequest(selectedRequestName));
+    if (deleteQueryRequest.fulfilled.match(resultAction)) {
+      setSelectedRequestName(null);
+      setSelectedRequestIsBuiltin(false);
+      setRequestName("");
+      setQueryRequestNotice("Query deleted. The current design remains available as a draft.");
+    }
+  };
 
   return (
     <>
@@ -417,12 +497,30 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
         <div className="heading-actions">
           {onBackToReports && <button className="button secondary" onClick={onBackToReports}><Icon name="chart" size={14} /> Back to reports</button>}
           <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>New Query</button>
+          {!selectedRequestIsBuiltin && <>
+            <button className="button primary" onClick={() => void saveCurrentRequest()} disabled={!requestName.trim() || queryStatus === "loading"}>
+              <Icon name="check" size={14} /> Save Query
+            </button>
+            {selectedRequestName && <button className="button secondary" onClick={() => void removeCurrentRequest()}>
+              <Icon name="trash" size={14} /> Delete Query
+            </button>}
+          </>}
         </div>
       </section>
 
       <section className="query-builder-workspace query-builder-solo">
         <div className={`query-request-editor${activeRequestTab === "structure" ? " query-request-editor-plan-text" : ""}`}>
           <div className="query-request-tab-header">
+            <SavedQueryList
+              requests={queryRequests}
+              selectedRequestName={selectedRequestName}
+              status={queryRequestsStatus}
+              error={queryRequestsError}
+              onSelectRequest={selectSavedRequest}
+              onRetry={() => {
+                void dispatch(fetchQueryRequests());
+              }}
+            />
             <div className="query-request-tabs" role="tablist" aria-label="Query request views">
               <button
                 className={`query-request-tab${activeRequestTab === "design" ? " active" : ""}`}
@@ -477,8 +575,9 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
                 definition={definition}
                 entity={entity}
                 requestName={requestName}
-                onRequestNameChange={setRequestName}
-                onDefinitionChange={updateDefinition}
+                requestNameReadOnly={Boolean(selectedRequestName && !selectedRequestIsBuiltin)}
+                onRequestNameChange={updateRequestName}
+                onDefinitionChange={updateDefinitionFromDesign}
               />
             </div>
           ) : (
@@ -518,6 +617,9 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
             ? requestStructureStatus !== "succeeded"
             : !definition.columns.length)}
         />
+        {(queryRequestsError || queryRequestNotice) && <p className={`query-request-feedback${queryRequestsError ? " error" : ""}`} role={queryRequestsError ? "alert" : "status"}>
+          {queryRequestsError || queryRequestNotice}
+        </p>}
       </section>
     </>
   );

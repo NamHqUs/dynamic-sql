@@ -1,0 +1,11 @@
+Name: 1. Monthly revenue and invoice volume
+Entity: Invoices
+Fields:
+  - DateFormat(InvoiceDate, <%Y-%m>) | Month
+  - Count() | InvoiceCount
+  - Sum(TotalAmount) | Revenue
+  - Average(TotalAmount) | AverageOrderValue
+Filter: Status <> <Draft>
+Sorts: Month ASC
+Page:
+PageSize:

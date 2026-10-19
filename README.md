@@ -87,6 +87,11 @@ query-request storage folder
 not saved or deleted. Custom metadata, functions, and reports are stored
 under `FileStorage/UserData/{SectionId}/` and are isolated by section.
 Database connections remain selected separately through `DbServerType`.
+The `IQueryRequestRepository` stores `QueryDefinition` YAML files in
+`FileStorage/QueryRequests` for built-ins and
+`FileStorage/UserData/{SectionId}/QueryRequests` for custom requests. These
+files use the flat `QueryDefinition` YAML shape (for example, `Entity` and
+`Fields` are top-level properties).
 
 ## License
 

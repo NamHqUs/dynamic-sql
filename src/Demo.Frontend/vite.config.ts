@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
         },
         "/dynamic-query": backendApiUrl,
         "^/report(?:/|$)": backendApiUrl,
+        "^/query-request(?:/|$)": backendApiUrl,
       },
     },
   };

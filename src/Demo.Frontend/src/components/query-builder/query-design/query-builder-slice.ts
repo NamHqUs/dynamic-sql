@@ -104,6 +104,12 @@ export type ReportDto = {
   canDelete: boolean;
 };
 
+export type SavedQueryRequestDto = {
+  name: string;
+  query: ApiQueryRequest;
+  isBuiltin: boolean;
+};
+
 function createApiFilter(group: QueryFilterGroup): ApiQueryFilterGroup | null {
   const filters = group.filters.flatMap((filter) => {
     if ("filters" in filter) {
@@ -512,6 +518,55 @@ export const deleteReport = createAsyncThunk(
   },
 );
 
+export const fetchQueryRequests = createAsyncThunk(
+  "queryBuilder/fetchQueryRequests",
+  async (_, { rejectWithValue }) => {
+    try {
+      const payload = await requestJson(apiUrls.queryRequests.list);
+      if (!Array.isArray(payload) || payload.some((item) => !item
+        || typeof item.name !== "string"
+        || typeof item.isBuiltin !== "boolean"
+        || !item.query
+        || typeof item.query.entity !== "string"
+        || !Array.isArray(item.query.fields)
+        || !Array.isArray(item.query.sorts))) {
+        return rejectWithValue("Query request API must return saved query requests.");
+      }
+      return payload as SavedQueryRequestDto[];
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to load saved queries.");
+    }
+  },
+);
+
+export const saveQueryRequest = createAsyncThunk(
+  "queryBuilder/saveQueryRequest",
+  async ({ name, definition }: { name: string; definition: QueryDefinition }, { rejectWithValue }) => {
+    try {
+      await requestJson(apiUrls.queryRequests.byName(name), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...createApiQuery(definition), name }),
+      });
+      return name;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to save query.");
+    }
+  },
+);
+
+export const deleteQueryRequest = createAsyncThunk(
+  "queryBuilder/deleteQueryRequest",
+  async (name: string, { rejectWithValue }) => {
+    try {
+      await requestJson(apiUrls.queryRequests.byName(name), { method: "DELETE" });
+      return name;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to delete query.");
+    }
+  },
+);
+
 const queryBuilderSlice = createSlice({
   name: "queryBuilder",
   initialState: {
@@ -526,6 +581,9 @@ const queryBuilderSlice = createSlice({
     reports: [] as ReportDto[],
     reportsStatus: "idle",
     reportsError: "",
+    queryRequests: [] as SavedQueryRequestDto[],
+    queryRequestsStatus: "idle",
+    queryRequestsError: "",
     functionDefinitions: [] as FunctionDefinition[],
     functionDefinitionsStatus: "idle",
     functionDefinitionsError: "",
@@ -649,6 +707,42 @@ const queryBuilderSlice = createSlice({
       })
       .addCase(deleteReport.fulfilled, (state, action) => {
         state.reports = state.reports.filter((item) => item.fileName !== action.payload);
+      })
+      .addCase(fetchQueryRequests.pending, (state) => {
+        state.queryRequestsStatus = "loading";
+        state.queryRequestsError = "";
+      })
+      .addCase(fetchQueryRequests.fulfilled, (state, action) => {
+        state.queryRequests = action.payload;
+        state.queryRequestsStatus = "succeeded";
+      })
+      .addCase(fetchQueryRequests.rejected, (state, action) => {
+        state.queryRequestsStatus = "failed";
+        state.queryRequestsError = String(action.payload || action.error.message || "Unable to load saved queries.");
+      })
+      .addCase(saveQueryRequest.pending, (state) => {
+        state.queryRequestsError = "";
+      })
+      .addCase(saveQueryRequest.fulfilled, (state, action) => {
+        state.queryRequestsError = "";
+        state.queryRequestsStatus = "succeeded";
+        state.queryRequests = state.queryRequests.filter((item) =>
+          item.isBuiltin || item.name.toLowerCase() !== action.payload.toLowerCase());
+        state.queryRequests.unshift({
+          name: action.payload,
+          query: createApiQuery(action.meta.arg.definition),
+          isBuiltin: false,
+        });
+      })
+      .addCase(saveQueryRequest.rejected, (state, action) => {
+        state.queryRequestsError = String(action.payload || action.error.message || "Unable to save query.");
+      })
+      .addCase(deleteQueryRequest.fulfilled, (state, action) => {
+        state.queryRequests = state.queryRequests.filter((item) =>
+          item.name.toLowerCase() !== action.payload.toLowerCase());
+      })
+      .addCase(deleteQueryRequest.rejected, (state, action) => {
+        state.queryRequestsError = String(action.payload || action.error.message || "Unable to delete query.");
       });
   },
 });

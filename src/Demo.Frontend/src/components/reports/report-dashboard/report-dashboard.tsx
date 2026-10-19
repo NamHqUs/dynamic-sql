@@ -35,6 +35,7 @@ function readReportColumns(): Record<string, number> {
 }
 
 type ReportDashboardProps = {
+  onNavigateToPage: (page: "sources" | "metadata" | "builder") => void;
   groups: ReportGroup[];
   sortedReports: ReportDto[];
   filteredReports: ReportDto[];
@@ -77,6 +78,7 @@ type ReportDashboardProps = {
 };
 
 export default function ReportDashboard({
+  onNavigateToPage,
   groups, sortedReports, filteredReports, category, search, numberOfBuiltins, numberOfCustom,
   reportsStatus, reportsError, metadataStatus, metadataError, reportResults, reportLoading,
   reportErrors, chartTypeOverrides, chartSettingsOverrides, detailReport, detailResult, detailChartType, detailChartSettings, detailLoading, detailError,
@@ -165,22 +167,24 @@ export default function ReportDashboard({
           <span className="query-flow-live"><i /> LIVE</span>
         </div>
         <div className="query-flow-steps">
-          <div className="query-flow-step">
-            <span className="query-flow-number">01</span>
-            <span className="query-flow-copy"><strong>Describe your data</strong><small>Entities · fields · relationships</small></span>
+          <button className="query-flow-step" type="button" onClick={() => onNavigateToPage("sources")}>
             <span className="query-flow-icon"><Icon name="database" size={16} /></span>
-          </div>
+            <span className="query-flow-copy"><strong>Connect to your database</strong><small>Configure your data sources</small></span>
+          </button>
           <span className="query-flow-connector" aria-hidden="true" />
-          <div className="query-flow-step">
-            <span className="query-flow-number">02</span>
-            <span className="query-flow-copy"><strong>Shape your query</strong><small>Projections · filters · sorting</small></span>
+          <button className="query-flow-step" type="button" onClick={() => onNavigateToPage("metadata")}>
             <span className="query-flow-icon"><Icon name="sliders" size={16} /></span>
-          </div>
+            <span className="query-flow-copy"><strong>Describe your data</strong><small>Entities · fields · relationships</small></span>
+          </button>
           <span className="query-flow-connector" aria-hidden="true" />
-          <div className="query-flow-step">
-            <span className="query-flow-number">03</span>
+          <button className="query-flow-step" type="button" onClick={() => onNavigateToPage("builder")}>
+            <span className="query-flow-icon"><Icon name="grid" size={16} /></span>
+            <span className="query-flow-copy"><strong>Shape your query</strong><small>Projections · filters · sorting</small></span>
+          </button>
+          <span className="query-flow-connector" aria-hidden="true" />
+          <div className="query-flow-outcome">
+            <span className="query-flow-icon outcome"><Icon name="results" size={16} /></span>
             <span className="query-flow-copy"><strong>See the results</strong><small>Parameterized SQL · live data</small></span>
-            <span className="query-flow-icon result"><Icon name="chart" size={16} /></span>
           </div>
         </div>
         <div className="query-flow-footer"><span><i /> SQL SERVER</span><span>SQLITE</span><span>POSTGRESQL</span></div>

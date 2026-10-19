@@ -106,7 +106,13 @@ function ReportForm({ report, entities, onClose, onSave }: ReportFormProps) {
   );
 }
 
-export default function Reports({ onEditQuery }: { onEditQuery: (definition: QueryDefinition) => void }) {
+export default function Reports({
+  onEditQuery,
+  onNavigateToPage,
+}: {
+  onEditQuery: (definition: QueryDefinition) => void;
+  onNavigateToPage: (page: "sources" | "metadata" | "builder") => void;
+}) {
   const dispatch = useDispatch();
   const showMessageBox = useMessageBox();
   const { reports, reportsStatus, reportsError, metadata, metadataStatus, metadataError } = useSelector((state) => state.queryBuilder);
@@ -331,6 +337,7 @@ export default function Reports({ onEditQuery }: { onEditQuery: (definition: Que
   return (
     <div className="reports-page">
       <ReportDashboard
+        onNavigateToPage={onNavigateToPage}
         groups={reportGroups}
         sortedReports={sortedReports}
         filteredReports={filteredReports}

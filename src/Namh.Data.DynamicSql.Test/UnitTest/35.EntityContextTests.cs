@@ -216,6 +216,58 @@ internal sealed class _35_EntityContextTests : TestBase
     }
 
     [Test]
+    public void QueryRequestRepositoryReadsFlatBuiltinYamlAndStoresQueriesBySection()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "DynamicSqlTest", Guid.NewGuid().ToString("N"));
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["FileStoragePath"] = Path.GetRelativePath(Environment.CurrentDirectory, root)
+            })
+            .Build();
+        var resolver = new FilePathResolver(configuration);
+        var builtinDirectory = resolver.GetBuiltinStoreFolder("QueryRequests");
+        Directory.CreateDirectory(builtinDirectory);
+        File.WriteAllText(Path.Combine(builtinDirectory, "builtin.yml"),
+            """
+            Name: Built-in query
+            Entity: Products
+            Fields:
+              - ProductName
+            """);
+        var repository = new QueryRequestFileRepository(resolver);
+
+        try
+        {
+            var builtin = repository.GetBuiltin().Single();
+            Assert.That(builtin.Name, Is.EqualTo("Built-in query"));
+            Assert.That(builtin.Entity, Is.EqualTo("Products"));
+
+            var custom = new QueryDefinition
+            {
+                Name = "Custom query",
+                Entity = "Products",
+                Fields = QueryDefinitionParser.ParseProjections("ProductName")
+            };
+            repository.Save("section-a", custom);
+
+            var customPath = Path.Combine(
+                resolver.GetUserStoreFolder("section-a", "QueryRequests"),
+                "Custom query.yml");
+            Assert.That(File.Exists(customPath), Is.True);
+            Assert.That(repository.Get("section-a", "Custom query")?.Entity, Is.EqualTo("Products"));
+            Assert.That(repository.GetUserDefined("section-b"), Is.Empty);
+            Assert.That(repository.Delete("section-a", "Custom query"), Is.True);
+            Assert.That(repository.Get("section-a", "Custom query"), Is.Null);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Test]
     public void BuiltinSqlFunctionsAreReadOnly()
     {
         var repository = new FunctionDefinitionFileRepository(new FilePathResolver(

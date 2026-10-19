@@ -18,6 +18,7 @@ type QueryDesignProps = {
   definition: QueryDefinition;
   entity?: MetadataEntity;
   requestName: string;
+  requestNameReadOnly?: boolean;
   onRequestNameChange: (name: string) => void;
   onDefinitionChange: (definition: QueryDefinition) => void;
 };
@@ -32,6 +33,7 @@ export default function QueryDesign({
   definition,
   entity,
   requestName,
+  requestNameReadOnly = false,
   onRequestNameChange,
   onDefinitionChange,
 }: QueryDesignProps) {
@@ -46,7 +48,7 @@ export default function QueryDesign({
     <section className="query-builder-card">
       <div className="query-name-row">
         <label className="query-name-field"><span className="section-kicker">QUERY NAME</span>
-          <input type="text" value={requestName} onChange={(event) => onRequestNameChange(event.target.value)} placeholder="e.g. recent-invoices" />
+          <input type="text" value={requestName} readOnly={requestNameReadOnly} onChange={(event) => onRequestNameChange(event.target.value)} placeholder="e.g. recent-invoices" />
         </label>
       </div>
       <div className="query-builder-toolbar">
