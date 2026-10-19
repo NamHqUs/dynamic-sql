@@ -35,14 +35,10 @@ function App() {
   const [metadataVisited, setMetadataVisited] = useState(() => location.pathname === PAGE_PATHS.metadata);
   const [queryBuilderVisited, setQueryBuilderVisited] = useState(() => location.pathname === PAGE_PATHS.builder);
   const [queryBuilderInstance, setQueryBuilderInstance] = useState(0);
-  const queryBuilderNavigationGuard = useRef<NavigationGuard | null>(null);
   const metadataNavigationGuard = useRef<NavigationGuard | null>(null);
   const functionsNavigationGuard = useRef<NavigationGuard | null>(null);
   const approvedNavigation = useRef<string | null>(null);
   const handledBlockedLocation = useRef<string | null>(null);
-  const updateQueryBuilderNavigationGuard = useCallback((guard: NavigationGuard | null) => {
-    queryBuilderNavigationGuard.current = guard;
-  }, []);
   const updateMetadataNavigationGuard = useCallback((guard: NavigationGuard | null) => {
     metadataNavigationGuard.current = guard;
   }, []);
@@ -51,7 +47,6 @@ function App() {
   }, []);
 
   const guardForPage = (targetPage: Page | null) => {
-    if (targetPage === "builder") return queryBuilderNavigationGuard.current;
     if (targetPage === "metadata") return metadataNavigationGuard.current;
     if (targetPage === "functions") return functionsNavigationGuard.current;
     return null;
@@ -129,18 +124,17 @@ function App() {
         }} /></div>} />
         <Route path={PAGE_PATHS.builder} element={null} />
         <Route path={PAGE_PATHS.metadata} element={null} />
-        <Route path={PAGE_PATHS.functions} element={<div className="page-transition"><SqlFunctions onNavigationGuardChange={updateFunctionsNavigationGuard} /></div>} />
-        <Route path={PAGE_PATHS.sources} element={<div className="page-transition"><DataSources /></div>} />
+        <Route path={PAGE_PATHS.functions} element={<div className="page-transition page-transition-no-slide"><SqlFunctions onNavigationGuardChange={updateFunctionsNavigationGuard} /></div>} />
+        <Route path={PAGE_PATHS.sources} element={<div className="page-transition page-transition-no-slide"><DataSources /></div>} />
         <Route path="*" element={<Navigate to={PAGE_PATHS.reports} replace />} />
       </Routes>
-      {queryBuilderVisited && <div hidden={page !== "builder"} className={page === "builder" ? "page-transition" : undefined}><QueryBuilder
+      {queryBuilderVisited && <div hidden={page !== "builder"} className={page === "builder" ? "page-transition page-transition-no-slide" : undefined}><QueryBuilder
         key={queryBuilderInstance}
-        onNavigationGuardChange={updateQueryBuilderNavigationGuard}
         onBackToReports={new URLSearchParams(location.search).get("from") === "reports"
           ? () => navigateToPage("reports")
           : undefined}
       /></div>}
-      {metadataVisited && <div hidden={page !== "metadata"} className={page === "metadata" ? "page-transition" : undefined}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
+      {metadataVisited && <div hidden={page !== "metadata"} className={page === "metadata" ? "page-transition page-transition-no-slide" : undefined}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
       <footer><span><span className="footer-mark">✦</span> DynamicSQL engine</span><span>Metadata-driven queries · Client preview</span></footer>
     </main>
   );

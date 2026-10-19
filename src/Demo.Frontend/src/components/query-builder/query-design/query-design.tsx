@@ -5,8 +5,6 @@ import EntityContextBuilder from "./entity-context-builder/entity-context-builde
 import ProjectionBuilder from "./projection-builder/projection-builder";
 import SortBuilder from "./sort-builder/sort-builder";
 import FilterBuilder from "./filter-builder/filter-builder";
-import { usePlanTextSectionEditor } from "./plan-text-section-editor";
-import type { PlanTextSection } from "./plan-text-section-editor";
 import { addEntityAliasesToMetadata } from "../../../utils/query-entity-contexts";
 import "./query-design.css";
 
@@ -21,12 +19,9 @@ type QueryDesignProps = {
   definition: QueryDefinition;
   entity?: MetadataEntity;
   requestName: string;
-  isResolvingPlanChanges: boolean;
   requestNameReadOnly?: boolean;
   onRequestNameChange: (name: string) => void;
   onDefinitionChange: (definition: QueryDefinition) => void;
-  onLoadPlanText: () => Promise<string>;
-  onApplyPlanText: (section: PlanTextSection, value: string) => Promise<void>;
 };
 
 export default function QueryDesign({
@@ -40,12 +35,9 @@ export default function QueryDesign({
   definition,
   entity,
   requestName,
-  isResolvingPlanChanges,
   requestNameReadOnly = false,
   onRequestNameChange,
   onDefinitionChange,
-  onLoadPlanText,
-  onApplyPlanText,
 }: QueryDesignProps) {
   const [draggedProjectionField, setDraggedProjectionField] = useState<string | null>(null);
   const contextMetadata = useMemo(
@@ -53,24 +45,6 @@ export default function QueryDesign({
     [metadata, definition.entity, definition.entityAliases],
   );
   const contextEntity = contextMetadata.find((item) => item.name === definition.entity);
-  const filterPlanText = usePlanTextSectionEditor({
-    section: "Filter",
-    metadata: contextMetadata,
-    entityName: definition.entity,
-    functionNames,
-    disabled: isResolvingPlanChanges,
-    onLoadPlanText,
-    onApplyPlanText,
-  });
-  const sortPlanText = usePlanTextSectionEditor({
-    section: "Sorts",
-    metadata: contextMetadata,
-    entityName: definition.entity,
-    functionNames,
-    disabled: isResolvingPlanChanges,
-    onLoadPlanText,
-    onApplyPlanText,
-  });
 
   return (
     <section className="query-builder-card">
@@ -129,8 +103,6 @@ export default function QueryDesign({
           definition={definition}
           entity={contextEntity ?? entity}
           onDefinitionChange={onDefinitionChange}
-          planTextControl={filterPlanText.control}
-          planTextEditor={filterPlanText.editor}
         />
         <SortBuilder
           metadata={contextMetadata}
@@ -138,8 +110,6 @@ export default function QueryDesign({
           entity={contextEntity ?? entity}
           onDefinitionChange={onDefinitionChange}
           draggedProjectionField={draggedProjectionField}
-          planTextControl={sortPlanText.control}
-          planTextEditor={sortPlanText.editor}
         />
       </div>}
     </section>

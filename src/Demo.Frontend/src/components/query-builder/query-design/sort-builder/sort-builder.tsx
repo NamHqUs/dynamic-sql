@@ -1,4 +1,4 @@
-import { type DragEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type DragEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MetadataEntity, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
@@ -12,8 +12,6 @@ type SortBuilderProps = {
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
   draggedProjectionField: string | null;
-  planTextControl: ReactNode;
-  planTextEditor: ReactNode;
 };
 
 function SortDirectionMenu({
@@ -139,7 +137,7 @@ function SortDirectionMenu({
   );
 }
 
-export default function SortBuilder({ metadata, definition, entity, onDefinitionChange, draggedProjectionField, planTextControl, planTextEditor }: SortBuilderProps) {
+export default function SortBuilder({ metadata, definition, entity, onDefinitionChange, draggedProjectionField }: SortBuilderProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [isDropTarget, setIsDropTarget] = useState(false);
 
@@ -198,7 +196,6 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
         <div className="section-heading">
           <div className="projection-title-row">
             <span className="section-kicker">SORTS</span>
-            {planTextControl}
           </div>
           <p className="filter-description">Select fields to sort the query results and choose the direction for each field.</p>
         </div>
@@ -215,7 +212,6 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
           </button>
         </div>
       </div>
-      {planTextEditor}
       <div
         className={`sort-list${isDropTarget ? " sort-list-drop-target" : ""}`}
         onDragOver={(event) => {

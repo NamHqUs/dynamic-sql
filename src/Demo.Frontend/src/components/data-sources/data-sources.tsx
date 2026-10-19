@@ -10,8 +10,9 @@ import "./data-sources.css";
 
 export default function DataSources() {
   const dispatch = useDispatch();
-  const { selectedTable, tableStatus, dataByTable } = useSelector((state) => state.database);
+  const { tables, selectedTable, tableStatus, dataByTable } = useSelector((state) => state.database);
   const selectedStatus = dataByTable[selectedTable]?.status;
+  const selectedData = dataByTable[selectedTable];
   const panel = useResizablePanel("data-sources");
 
   useEffect(() => {
@@ -26,9 +27,20 @@ export default function DataSources() {
 
   return (
     <>
-      <section className="page-heading">
-        <div>
-          <h2>Database tables</h2>
+      <section className="page-heading database-page-heading">
+        <div className="database-heading-main">
+          <span className="database-heading-mark" aria-hidden="true"><Icon name="database" size={21} /></span>
+          <div className="database-heading-copy">
+            <span className="database-heading-eyebrow">DATA EXPLORER <i /> TABLES · COLUMNS · RECORDS</span>
+            <h2>Explore your database</h2>
+            <p>Browse available tables, inspect their columns, and explore your records.</p>
+            <div className="database-heading-summary" aria-label="Database summary">
+              <span className="database-heading-current"><Icon name="database" size={13} />{selectedTable || "No table selected"}</span>
+              <span><strong>{tableStatus === "succeeded" ? tables.length : "—"}</strong> tables</span>
+              <span><strong>{selectedStatus === "succeeded" && selectedData ? selectedData.columns.length : "—"}</strong> columns</span>
+              <span><strong>{selectedStatus === "succeeded" && selectedData ? selectedData.rows.length : "—"}</strong> records</span>
+            </div>
+          </div>
         </div>
       </section>
       <section className={`database-browser split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>

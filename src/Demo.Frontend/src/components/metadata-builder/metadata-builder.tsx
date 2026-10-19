@@ -39,6 +39,8 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   const [message, setMessage] = useState("");
   const [dirty, setDirty] = useState(false);
   const selectedIsBuiltin = entities.find((entity) => entity.name === selectedName)?.canDelete === false;
+  const fieldCount = entities.reduce((count, entity) => count + entity.fields.length, 0);
+  const relationCount = entities.reduce((count, entity) => count + (entity.relations || []).length, 0);
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!dirty) return;
@@ -222,8 +224,19 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   return (
     <>
       <section className="page-heading metadata-page-heading">
-        <div>
-          <h2>Design entity metadata</h2>
+        <div className="metadata-heading-main">
+          <span className="metadata-heading-mark" aria-hidden="true"><Icon name="sliders" size={21} /></span>
+          <div className="metadata-heading-copy">
+            <span className="metadata-heading-eyebrow">DATA MODEL <i /> ENTITIES · FIELDS · RELATIONSHIPS</span>
+            <h2>Define your data model</h2>
+            <p>Describe your entities and relationships to make your data ready for querying.</p>
+            <div className="metadata-heading-summary" aria-label="Metadata summary">
+              <span className="metadata-heading-current"><Icon name="database" size={13} />{selectedName || "No entity selected"}</span>
+              <span><strong>{status === "succeeded" ? entities.length : "—"}</strong> entities</span>
+              <span><strong>{status === "succeeded" ? fieldCount : "—"}</strong> fields</span>
+              <span><strong>{status === "succeeded" ? relationCount : "—"}</strong> relations</span>
+            </div>
+          </div>
         </div>
         <div className="heading-actions">
           <button className="button secondary" onClick={reset}><Icon name="reset" size={14} /> Reset</button>

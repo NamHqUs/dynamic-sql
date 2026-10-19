@@ -92,6 +92,8 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
   const selectedDefinition = definitions.find((definition) => definition.name === selectedName);
   const selectedIsBuiltin = selectedDefinition?.isBuiltin === true
     || selectedDefinition?.canDelete === false;
+  const argumentCount = definitions.reduce((count, definition) => count + definition.arguments.length, 0);
+  const templateCount = definitions.reduce((count, definition) => count + Object.keys(definition.sqlTemplates).length, 0);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -275,9 +277,20 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
 
   return (
     <>
-      <section className="page-heading">
-        <div>
-          <h2>Manage query functions</h2>
+      <section className="page-heading function-page-heading">
+        <div className="function-heading-main">
+          <span className="function-heading-mark" aria-hidden="true"><Icon name="code" size={21} /></span>
+          <div className="function-heading-copy">
+            <span className="function-heading-eyebrow">FUNCTION LIBRARY <i /> DEFINE · MAP · REUSE</span>
+            <h2>Extend your queries</h2>
+            <p>Define reusable SQL functions and map them across database providers.</p>
+            <div className="function-heading-summary" aria-label="Function definition summary">
+              <span className="function-heading-current"><Icon name="code" size={13} />{selectedName || "No function selected"}</span>
+              <span><strong>{status === "succeeded" ? definitions.length : "—"}</strong> functions</span>
+              <span><strong>{status === "succeeded" ? argumentCount : "—"}</strong> arguments</span>
+              <span><strong>{status === "succeeded" ? templateCount : "—"}</strong> SQL templates</span>
+            </div>
+          </div>
         </div>
         <div className="heading-actions">
           <button className="button secondary" type="button" onClick={() => void reload()}>

@@ -1,4 +1,4 @@
-import type { CSSProperties, DragEvent, ReactNode } from "react";
+import type { CSSProperties, DragEvent } from "react";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Icon from "../../../icon/icon";
 import { MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
@@ -21,8 +21,6 @@ type FilterBuilderProps = {
   definition: QueryDefinition;
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
-  planTextControl: ReactNode;
-  planTextEditor: ReactNode;
 };
 
 const isGroup = (filter: QueryFilterNode): filter is QueryFilterGroup => "filters" in filter;
@@ -627,7 +625,7 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
   );
 }
 
-export default function FilterBuilder({ metadata, definition, entity, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
+export default function FilterBuilder({ metadata, definition, entity, onDefinitionChange }: FilterBuilderProps) {
   const builderRef = useRef<HTMLDivElement>(null);
   const [filterItemWidth, setFilterItemWidth] = useState<number>();
   const [dragPreview, setDragPreview] = useState<DragPreview>();
@@ -850,7 +848,6 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
         <div className="section-heading">
           <div className="projection-title-row">
             <span className="section-kicker">FILTERS</span>
-            {planTextControl}
           </div>
           <p className="filter-description">Drag a selected field here to create a filter.</p>
         </div>
@@ -867,7 +864,6 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
           </button>
         </div>
       </div>
-      {planTextEditor}
       <FilterGroupEditor
         group={definition.filters}
         metadata={metadata}
