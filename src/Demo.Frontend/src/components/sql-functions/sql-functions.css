@@ -1,6 +1,5 @@
 .function-workspace { min-height: 640px; display: grid; grid-template-columns: var(--panel-width, 260px) minmax(0, 1fr); overflow: hidden; background: linear-gradient(135deg, #11141c, #0f1218); border: 0; border-radius: 9px; box-shadow: 0 14px 40px #00000018; }
 section.page-heading.function-page-heading { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 142px; margin: 15px 0 20px; padding: 22px 35px; overflow: hidden; border: 0; border-radius: 11px; background: radial-gradient(ellipse at 88% 5%, #7049b944, transparent 32%), radial-gradient(ellipse at 47% 115%, #126c6740, transparent 39%), linear-gradient(108deg, #171526 0%, #121923 58%, #10191e 100%); box-shadow: 0 16px 38px #00000026; }
-.function-page-heading::after { position: absolute; top: 0; right: 25%; width: 215px; height: 100%; border: 1px solid #b5a0ff12; border-radius: 50%; box-shadow: inset 0 0 0 24px #b5a0ff08, inset 0 0 0 49px #b5a0ff05; content: ""; pointer-events: none; }
 .function-heading-main { position: relative; z-index: 1; display: flex; align-self: flex-start; align-items: flex-start; gap: 16px; min-width: 0; }
 .function-heading-mark { display: grid; flex: 0 0 44px; width: 44px; height: 44px; place-items: center; border: 1px solid #7663ac80; border-radius: 11px; background: linear-gradient(145deg, #45366e, #28213c); color: #d0c2ff; box-shadow: inset 0 1px #ffffff12, 0 7px 18px #00000020; }
 .function-heading-copy { min-width: 0; }
@@ -17,6 +16,5 @@ section.page-heading.function-page-heading p { color: #a4a0b3; font-size: 12px; 
 @media (max-width: 760px) {
   section.page-heading.function-page-heading { align-items: flex-start; flex-direction: column; gap: 17px; padding: 20px 27px; }
   .function-page-heading .heading-actions { justify-content: flex-start; }
-  .function-page-heading::after { right: 5%; }
   .function-workspace { grid-template-columns: 1fr; }
 }
