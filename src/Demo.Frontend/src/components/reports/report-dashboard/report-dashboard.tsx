@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Icon from "../../icon/icon";
 import type { QueryResult, ReportDto } from "../../query-builder/query-design/query-builder-slice";
 import ReportDetail from "../report-detail/report-detail";
@@ -14,6 +14,25 @@ import {
 
 type ReportGroup = { name: string; reports: ReportDto[] };
 type DropPosition = "before" | "after";
+const REPORT_COLUMN_STORAGE_KEY = "dynamic-sql-report-columns";
+
+function readReportColumns(): Record<string, number> {
+  const savedColumns = window.sessionStorage.getItem(REPORT_COLUMN_STORAGE_KEY);
+  if (!savedColumns) return {};
+  const parsedColumns: unknown = JSON.parse(savedColumns);
+  if (typeof parsedColumns !== "object" || parsedColumns === null || Array.isArray(parsedColumns)) {
+    throw new Error("Invalid report columns in browser session storage.");
+  }
+
+  const columns: Record<string, number> = {};
+  Object.entries(parsedColumns).forEach(([fileName, column]) => {
+    if (typeof column !== "number" || !Number.isSafeInteger(column) || column < 0) {
+      throw new Error("Invalid report column index in browser session storage.");
+    }
+    columns[fileName] = column;
+  });
+  return columns;
+}
 
 type ReportDashboardProps = {
   groups: ReportGroup[];
@@ -67,6 +86,24 @@ export default function ReportDashboard({
   const draggedReport = useRef<string | null>(null);
   const dragPreview = useRef<HTMLElement | null>(null);
   const [dropIndicator, setDropIndicator] = useState<{ fileName: string; position: DropPosition } | null>(null);
+  const [columnByFileName, setColumnByFileName] = useState(readReportColumns);
+  const [columnCount, setColumnCount] = useState(() => {
+    const width = window.innerWidth;
+    return width <= 600 ? 1 : width <= 860 ? 2 : 3;
+  });
+
+  useEffect(() => {
+    const updateColumnCount = () => {
+      const width = window.innerWidth;
+      setColumnCount(width <= 600 ? 1 : width <= 860 ? 2 : 3);
+    };
+    window.addEventListener("resize", updateColumnCount);
+    return () => window.removeEventListener("resize", updateColumnCount);
+  }, []);
+
+  useEffect(() => {
+    window.sessionStorage.setItem(REPORT_COLUMN_STORAGE_KEY, JSON.stringify(columnByFileName));
+  }, [columnByFileName]);
 
   const clearDragPreview = () => {
     dragPreview.current?.remove();
@@ -75,10 +112,9 @@ export default function ReportDashboard({
     setDropIndicator(null);
   };
 
-  const dropPositionFor = (targetFileName: string): DropPosition => {
-    const sourceIndex = filteredReports.findIndex((report) => report.fileName === draggedReport.current);
-    const targetIndex = filteredReports.findIndex((report) => report.fileName === targetFileName);
-    return sourceIndex < targetIndex ? "after" : "before";
+  const dropPositionFor = (target: HTMLElement, clientY: number): DropPosition => {
+    const bounds = target.getBoundingClientRect();
+    return clientY < bounds.top + bounds.height / 2 ? "before" : "after";
   };
 
   if (detailReport) {
@@ -97,6 +133,12 @@ export default function ReportDashboard({
       onChartSettingsChange={(settings) => onChartSettingsChange(detailReport, settings)}
     />;
   }
+
+  const reportColumns = Array.from({ length: columnCount }, () => [] as ReportDto[]);
+  filteredReports.forEach((report, index) => {
+    const preferredColumn = columnByFileName[report.fileName] ?? index % columnCount;
+    reportColumns[preferredColumn % columnCount].push(report);
+  });
 
   return (
     <div className="reports-workspace">
@@ -144,7 +186,8 @@ export default function ReportDashboard({
           {reportsStatus === "failed" && <p className="report-list-status error" role="alert">{reportsError}</p>}
           {metadataStatus === "failed" && <p className="report-metadata-error" role="alert">Could not load report datasets: {metadataError}</p>}
           {reportsStatus !== "loading" && reportsStatus !== "failed" && filteredReports.length > 0 && <div className="report-dashboard-grid">
-            {filteredReports.map((report) => {
+            {reportColumns.map((column, columnIndex) => <div className="report-dashboard-column" key={`column-${columnIndex}`}>
+              {column.map((report) => {
               const presentation = presentationFor(report);
               return <ReportItem
                 key={report.fileName}
@@ -188,7 +231,7 @@ export default function ReportDashboard({
                   if (!draggedReport.current || draggedReport.current === report.fileName) return;
                   event.preventDefault();
                   event.dataTransfer.dropEffect = "move";
-                  const position = dropPositionFor(report.fileName);
+                  const position = dropPositionFor(event.currentTarget, event.clientY);
                   setDropIndicator((current) => (
                     current?.fileName === report.fileName && current.position === position
                       ? current
@@ -202,10 +245,20 @@ export default function ReportDashboard({
                 onDrop={(event) => {
                   event.preventDefault();
                   const sourceFileName = draggedReport.current;
-                  const position = dropPositionFor(report.fileName);
+                  const position = dropPositionFor(event.currentTarget, event.clientY);
                   draggedReport.current = null;
                   if (sourceFileName && sourceFileName !== report.fileName) {
                     onReorderReports(sourceFileName, report.fileName, position);
+                    setColumnByFileName((current) => {
+                      const next = { ...current };
+                      filteredReports.forEach((item, index) => {
+                        if (next[item.fileName] === undefined) {
+                          next[item.fileName] = index % columnCount;
+                        }
+                      });
+                      next[sourceFileName] = columnIndex;
+                      return next;
+                    });
                   }
                   setDropIndicator(null);
                 }}
@@ -214,7 +267,8 @@ export default function ReportDashboard({
                 onEditQuery={() => onEditQuery(report)}
                 onDelete={() => onDelete(report)}
               />;
-            })}
+              })}
+            </div>)}
           </div>}
           {reportsStatus !== "loading" && reportsStatus !== "failed" && !filteredReports.length && <p className="report-group-empty">No reports match this group and search.</p>}
       </div>

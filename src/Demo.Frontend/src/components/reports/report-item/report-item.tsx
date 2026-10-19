@@ -48,7 +48,7 @@ export default function ReportItem({
       <div
         className="report-dashboard-card-top"
         draggable
-        title="Drag this header to reorder the report"
+        title="Drag this header to move the report"
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
