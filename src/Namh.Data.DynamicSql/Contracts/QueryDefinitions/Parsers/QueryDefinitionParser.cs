@@ -5,7 +5,7 @@ using YamlDotNet.Serialization;
 
 namespace Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
-public static class QueryDefinitionParser
+public static partial class QueryDefinitionParser
 {
     public static QueryDefinition ParseFromYml(string yml)
     {
@@ -16,9 +16,15 @@ public static class QueryDefinitionParser
             .Deserialize<YamlQueryDefinition>(yml)
             ?? throw new FormatException("The YAML query definition cannot be null.");
 
+        return Parse(definition);
+    }
+
+    public static QueryDefinition Parse(YamlQueryDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+
         return new QueryDefinition
         {
-            Name = definition.Name,
             Entity = !string.IsNullOrWhiteSpace(definition.Entity)
                 ? definition.Entity
                 : throw new FormatException("The YAML query definition requires an entity."),
@@ -127,17 +133,5 @@ public static class QueryDefinitionParser
         if (element.ValueKind != JsonValueKind.Number || !element.TryGetInt32(out var value))
             throw new JsonException($"The {name} value must be an integer or null.");
         return value;
-    }
-
-    private record YamlQueryDefinition()
-    {
-        public string? Name { get; set; }
-        public string? Entity { get; set; }
-        public List<string?>? EntityAliases { get; set; }
-        public List<string?>? Fields { get; set; }
-        public string? Filter { get; set; }
-        public string? Sorts { get; set; }
-        public int? Page { get; set; }
-        public int? PageSize { get; set; }
     }
 }

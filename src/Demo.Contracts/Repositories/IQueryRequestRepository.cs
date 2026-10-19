@@ -1,7 +1,7 @@
-using Namh.Data.DynamicSql;
+using Demo.Contracts.Dto;
 
 namespace Demo.Contracts.Repositories;
 
-public interface IQueryRequestRepository : IRepository<QueryDefinition>
+public interface IQueryRequestRepository : IRepository<SavedQueryRequestDto>
 {
 }

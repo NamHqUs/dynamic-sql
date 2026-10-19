@@ -124,9 +124,8 @@ internal sealed class _35_EntityContextTests : TestBase
         Assert.That(reports, Has.All.Property(nameof(ReportDto.CanDelete)).False);
         foreach (var report in reports)
         {
-            Assert.That(report.Query.Name, Is.Not.Null.And.Not.Empty);
+            Assert.That(report.Name, Is.Not.Null.And.Not.Empty);
             var restored = service.ParseQueryRequestString(report.RequestText!, report.Query.Entity);
-            Assert.That(restored.Name, Is.EqualTo(report.Query.Name));
             Assert.That(restored.Entity, Is.EqualTo(report.Query.Entity));
             Assert.That(restored.Fields.Select(field => field.ToText()),
                 Is.EqualTo(report.Query.Fields.Select(field => field.ToText())));
@@ -157,7 +156,7 @@ internal sealed class _35_EntityContextTests : TestBase
 
             repository.Save("section-a", new ReportDto(
                 id,
-                new QueryDefinition { Name = "test", Entity = "Product" }));
+                new QueryDefinition { Entity = "Product" }));
 
             var path = Path.Combine(resolver.GetUserStoreFolder("section-a", "QueryRequests"), $"{id}.json");
             Assert.That(File.Exists(path), Is.True);
@@ -200,7 +199,7 @@ internal sealed class _35_EntityContextTests : TestBase
             var report = repository.GetBuiltin().Single();
 
             Assert.That(report.FileName, Is.EqualTo("builtin.yml"));
-            Assert.That(report.Query.Name, Is.EqualTo("Built-in report"));
+            Assert.That(report.Name, Is.EqualTo("Built-in report"));
             Assert.That(report.Query.Entity, Is.EqualTo("Products"));
             Assert.That(report.Description, Is.EqualTo("Built-in description"));
             Assert.That(report.CanDelete, Is.False);
@@ -234,6 +233,7 @@ internal sealed class _35_EntityContextTests : TestBase
             Entity: Products
             Fields:
               - ProductName
+            ProjectionRows: [["ProductName"]]
             """);
         var repository = new QueryRequestFileRepository(resolver);
 
@@ -241,21 +241,29 @@ internal sealed class _35_EntityContextTests : TestBase
         {
             var builtin = repository.GetBuiltin().Single();
             Assert.That(builtin.Name, Is.EqualTo("Built-in query"));
-            Assert.That(builtin.Entity, Is.EqualTo("Products"));
+            Assert.That(builtin.Query.Entity, Is.EqualTo("Products"));
+            Assert.That(builtin.ProjectionRows, Is.EqualTo(new[] { new[] { "ProductName" } }));
 
-            var custom = new QueryDefinition
+            var custom = new SavedQueryRequestDto(
+                "Custom query",
+                new QueryDefinition
             {
-                Name = "Custom query",
                 Entity = "Products",
                 Fields = QueryDefinitionParser.ParseProjections("ProductName")
-            };
+            },
+                [["ProductName"]],
+                false);
             repository.Save("section-a", custom);
 
             var customPath = Path.Combine(
                 resolver.GetUserStoreFolder("section-a", "QueryRequests"),
                 "Custom query.yml");
             Assert.That(File.Exists(customPath), Is.True);
-            Assert.That(repository.Get("section-a", "Custom query")?.Entity, Is.EqualTo("Products"));
+            var restoredCustom = repository.Get("section-a", "Custom query");
+            Assert.That(restoredCustom?.Name, Is.EqualTo("Custom query"));
+            Assert.That(restoredCustom?.Query.Entity, Is.EqualTo("Products"));
+            Assert.That(restoredCustom?.ProjectionRows, Is.EqualTo(new[] { new[] { "ProductName" } }));
+            Assert.That(restoredCustom?.IsBuiltin, Is.False);
             Assert.That(repository.GetUserDefined("section-b"), Is.Empty);
             Assert.That(repository.Delete("section-a", "Custom query"), Is.True);
             Assert.That(repository.Get("section-a", "Custom query"), Is.Null);

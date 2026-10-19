@@ -123,7 +123,6 @@ public sealed class ReportService(
 
         return new QueryDefinition
         {
-            Name = values.GetValueOrDefault("Name"),
             Entity = parsedEntity,
             EntityAliases = string.IsNullOrWhiteSpace(parsedEntities)
                 ? []

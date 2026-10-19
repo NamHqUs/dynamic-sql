@@ -1,0 +1,9 @@
+Name: abc
+Entity: Customers
+Fields:
+  - Phone
+  - Region
+  - Segment
+ProjectionRows: [["Phone", "Region"], ["Segment"]]
+Page: 1
+PageSize: 50

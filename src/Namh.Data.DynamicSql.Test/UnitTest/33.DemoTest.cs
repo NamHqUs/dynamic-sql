@@ -23,7 +23,6 @@ internal class _33_DemoTest : TestBase
 
         QueryDefinition qureyBuilder = new()
         {
-            Name = "6. Outstanding receivables and aging",
             Entity = "Invoices",
             Fields = [
                 new (new FieldDefinition("InvoiceNumber")),
@@ -66,7 +65,6 @@ internal class _33_DemoTest : TestBase
         
         QueryDefinition query = new()
         {
-            Name = "7. Paid collection time by payment method",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("PaymentMethod, Count(), AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay, Sum(TotalAmount) | Collected"),
             Filter = QueryDefinitionParser.ParseFilter("Status = 'Paid'"),
@@ -95,7 +93,6 @@ internal class _33_DemoTest : TestBase
 
         QueryDefinition query = new()
         {
-            Name = "9. Product attach and cross-sell pairs",
             Entity = "InvoiceItems",
             EntityAliases =
             [
@@ -195,7 +192,6 @@ internal class _33_DemoTest : TestBase
 
         QueryDefinition query = new()
         {
-            Name = "13. Discount impact by month",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("DateFormat(InvoiceDate, <%Y-%m>) | Month, SUM(DiscountAmount) | Discounts, SUM(TotalAmount) | NetRevenue, ROUND(SUM(DiscountAmount) * <100> / NULLIF(SUM(TotalAmount), <0>), <2>) | DiscountRate"),
             Sorts = [new(new FieldDefinition("Month"))]

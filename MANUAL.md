@@ -278,6 +278,9 @@ Supported properties:
   `alias: relationPath(key[, sourceKey:targetKey])`. A key without a mapping
   maps a column to itself. Every entry creates a distinct context.
 - `fields`: projection expressions; use `|` to specify an output alias.
+- Saved-query names and `projectionRows` live on `SavedQueryRequestDto`;
+  `projectionRows` preserves query-designer row grouping and does not affect
+  query execution.
 - `filter`: field comparisons, `like`, `&&`, `||`, `AND`, `OR`, and parentheses.
 - `sorts`: comma-separated field expressions with an optional `ASC` or `DESC`
   direction (for example, `Manager.Name DESC`).

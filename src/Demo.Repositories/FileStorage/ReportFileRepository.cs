@@ -60,8 +60,8 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
     private static string SerializeYml(ReportDto report)
     {
         var header = new Dictionary<string, string>();
-        if (!string.IsNullOrWhiteSpace(report.Query.Name))
-            header["Name"] = report.Query.Name;
+        if (!string.IsNullOrWhiteSpace(report.Name))
+            header["Name"] = report.Name;
         if (!string.IsNullOrWhiteSpace(report.Description))
             header["Description"] = report.Description;
         if (!string.IsNullOrWhiteSpace(report.ChartType))
@@ -74,7 +74,6 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
         lines.Add("Query:");
         lines.AddRange(report.Query.ToYml()
             .Split(["\r\n", "\n"], StringSplitOptions.None)
-            .Where(line => !line.StartsWith("Name:", StringComparison.Ordinal))
             .Select(line => $"  {line}"));
         return string.Join(Environment.NewLine, lines) + Environment.NewLine;
     }
@@ -91,9 +90,11 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
         var description = root.GetValueOrDefault("Description") as string;
         var chartType = root.GetValueOrDefault("ChartType") as string;
 
-        if (root.GetValueOrDefault("Name") is string name && !string.IsNullOrWhiteSpace(name))
-            query = WithName(query, name);
-        return new ReportDto(fileName, query, query.ToYml(), description, chartType);
+        var name = root.GetValueOrDefault("Name") as string;
+        return new ReportDto(fileName, query, query.ToYml(), description, chartType)
+        {
+            Name = name
+        };
     }
 
     private static string GetNestedQueryText(string fileName, string text)
@@ -140,19 +141,6 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
     private static bool HasExtension(string path, string extension)
         => string.Equals(Path.GetExtension(path), extension, StringComparison.OrdinalIgnoreCase);
 
-    private static QueryDefinition WithName(QueryDefinition query, string name)
-        => new()
-        {
-            Name = name,
-            Entity = query.Entity,
-            EntityAliases = query.EntityAliases,
-            Fields = query.Fields,
-            Filter = query.Filter,
-            Sorts = query.Sorts,
-            Page = query.Page,
-            PageSize = query.PageSize
-        };
-
     public override bool Delete(string userSectionId, string id)
     {
         var path = GetUserFilePath(userSectionId, id);
@@ -180,15 +168,19 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
             descriptionElement.ValueKind == JsonValueKind.String ? descriptionElement.GetString() : null;
         var chartType = TryGetProperty(root, "ChartType", out var chartElement) &&
             chartElement.ValueKind == JsonValueKind.String ? chartElement.GetString() : null;
+        var name = TryGetProperty(root, "Name", out var nameElement) &&
+            nameElement.ValueKind == JsonValueKind.String ? nameElement.GetString() : null;
         var query = JsonSerializer.Deserialize<QueryDefinition>(queryElement.GetRawText(), Options())
             ?? throw new InvalidDataException($"Query request file '{Path.GetFileName(path)}' is empty.");
+        if (name is null && TryGetProperty(queryElement, "Name", out nameElement) &&
+            nameElement.ValueKind == JsonValueKind.String)
+            name = nameElement.GetString();
 
         if (!TryGetProperty(queryElement, "Fields", out _) &&
             TryGetProperty(queryElement, "Columns", out var legacyColumns))
         {
             query = new QueryDefinition
             {
-                Name = query.Name,
                 Entity = query.Entity,
                 Fields = legacyColumns.EnumerateArray().Select(ParseLegacyProjection).ToList(),
                 Filter = query.Filter,
@@ -198,7 +190,10 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
             };
         }
 
-        return new ReportDto(fileName, query, requestText, description, chartType);
+        return new ReportDto(fileName, query, requestText, description, chartType)
+        {
+            Name = name
+        };
     }
 
     private static ProjectionDefinition ParseLegacyProjection(JsonElement column)

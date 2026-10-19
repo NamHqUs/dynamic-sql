@@ -2,7 +2,6 @@ using Demo.Contracts.Application;
 using Demo.Contracts.Dto;
 using Demo.Contracts.Repositories;
 using Demo.Contracts.Services;
-using Namh.Data.DynamicSql;
 
 namespace Demo.Services;
 
@@ -14,35 +13,34 @@ public sealed class QueryRequestService(
     {
         var sectionId = userSectionManager.GetSectionId();
         var builtin = repository.GetBuiltin();
-        var builtinNames = builtin.Select(GetName)
+        var builtinNames = builtin.Select(query => query.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var custom = repository.GetUserDefined(sectionId);
-        var conflict = custom.FirstOrDefault(query => builtinNames.Contains(GetName(query)));
+        var conflict = custom.FirstOrDefault(query => builtinNames.Contains(query.Name));
         if (conflict is not null)
             throw new InvalidDataException(
-                $"Custom query request '{GetName(conflict)}' cannot replace a built-in request.");
+                $"Custom query request '{conflict.Name}' cannot replace a built-in request.");
 
-        return builtin.Select(query => new SavedQueryRequestDto(GetName(query), query, true))
-            .Concat(custom.Select(query => new SavedQueryRequestDto(GetName(query), query, false)))
-            .ToArray();
+        return builtin.Concat(custom).ToArray();
     }
 
-    public void Save(string name, QueryDefinition query)
+    public void Save(string name, SavedQueryRequestDto queryRequest)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        ArgumentNullException.ThrowIfNull(query);
-        if (!string.Equals(query.Name, name, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Query name must match the requested file name.", nameof(query));
+        ArgumentNullException.ThrowIfNull(queryRequest);
+        ArgumentNullException.ThrowIfNull(queryRequest.Query);
+        if (!string.Equals(queryRequest.Name, name, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Query name must match the requested file name.", nameof(queryRequest));
         if (repository.GetBuiltin().Any(item =>
-            string.Equals(GetName(item), name, StringComparison.OrdinalIgnoreCase)))
+            string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException($"Built-in query request '{name}' cannot be changed.");
 
-        repository.Save(userSectionManager.GetSectionId(), query);
+        repository.Save(userSectionManager.GetSectionId(), queryRequest with { IsBuiltin = false });
     }
 
     public bool IsBuiltin(string name)
         => repository.GetBuiltin().Any(item =>
-            string.Equals(GetName(item), name, StringComparison.OrdinalIgnoreCase));
+            string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase));
 
     public bool Delete(string name)
     {
@@ -50,8 +48,4 @@ public sealed class QueryRequestService(
         return !IsBuiltin(name) && repository.Delete(userSectionManager.GetSectionId(), name);
     }
 
-    private static string GetName(QueryDefinition query)
-        => !string.IsNullOrWhiteSpace(query.Name)
-            ? query.Name
-            : throw new InvalidDataException("Query request is missing its name.");
 }

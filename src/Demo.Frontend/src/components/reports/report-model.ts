@@ -140,7 +140,7 @@ export function defaultReportChartSettings(report: ReportDto, result: QueryResul
 }
 
 export function reportTitle(request: ReportDto): string {
-  return request.query.name || request.fileName.replace(/\.(json|yml)$/i, "");
+  return request.name || request.fileName.replace(/\.(json|yml)$/i, "");
 }
 
 export function categoryTone(category: string): string {

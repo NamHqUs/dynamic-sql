@@ -9,7 +9,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
     {
         yield return Case(1, "MonthlyRevenueAndInvoiceVolume", new QueryDefinition
         {
-            Name = "1. Monthly revenue and invoice volume",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("DateFormat[InvoiceDate, <%Y-%m>] | Month, COUNT[] | InvoiceCount, SUM[TotalAmount] | Revenue, AVG[TotalAmount] | AverageOrderValue"),
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
@@ -18,7 +17,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(2, "RevenueByCustomerSegmentAndRegion", new QueryDefinition
         {
-            Name = "2. Revenue by customer segment and region",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("Customer.Segment, Customer.Region, COUNT[] | InvoiceCount, SUM[TotalAmount] | Revenue"),
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
@@ -27,7 +25,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(3, "TopCustomersByLifetimeValue", new QueryDefinition
         {
-            Name = "3. Top customers by lifetime value",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("Customer.Id, Customer.Name, COUNT[] | Orders, SUM[TotalAmount] | LifetimeValue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
@@ -37,7 +34,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(4, "BestSellingProductsByUnitsAndRevenue", new QueryDefinition
         {
-            Name = "4. Best-selling products by units and revenue",
             Entity = "Products",
             Fields = QueryDefinitionParser.ParseProjections("Name, Category, SUM[InvoiceItems.Quantity] | UnitsSold, SUM[InvoiceItems.LineTotal] | Revenue"),
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
@@ -46,7 +42,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(5, "GrossMarginByProduct", new QueryDefinition
         {
-            Name = "5. Gross margin by product",
             Entity = "Products",
             Fields = QueryDefinitionParser.ParseProjections("Name, SUM[InvoiceItems.Quantity] | UnitsSold, SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit, ROUND[SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] * <100> / NULLIF[SUM[InvoiceItems.LineTotal], <0>], <2>] | MarginPercent"),
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
@@ -55,7 +50,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(7, "PaidCollectionTimeByPaymentMethod", new QueryDefinition
         {
-            Name = "7. Paid collection time by payment method",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("PaymentMethod, COUNT[] | PaidInvoices, AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay, SUM[TotalAmount] | Collected"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid")
@@ -63,7 +57,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(8, "SalesChannelPerformance", new QueryDefinition
         {
-            Name = "8. Sales-channel performance",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("SalesChannel, COUNT[] | Orders, SUM[TotalAmount] | Revenue, AVG[TotalAmount] | AverageOrderValue"),
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
@@ -72,7 +65,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(9, "ProductAttachAndCrossSellPairs", new QueryDefinition
         {
-            Name = "9. Product attach and cross-sell pairs",
             Entity = "InvoiceItems",
             Fields = QueryDefinitionParser.ParseProjections("InvoiceId, ProductId, Product.Name | Product"),
             Sorts = [Sort("InvoiceId"), Sort("ProductId")]
@@ -80,7 +72,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(10, "CustomersWithRepeatPurchases", new QueryDefinition
         {
-            Name = "10. Customers with repeat purchases",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("Customer.Name, COUNT[] | OrderCount, Max(InvoiceDate) | LastOrderDate"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
@@ -89,7 +80,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(11, "CustomersWithNoPaidOrder", new QueryDefinition
         {
-            Name = "11. Customers with no paid order",
             Entity = "Customers",
             Fields = QueryDefinitionParser.ParseProjections("Id, Name, Segment, Region"),
             Sorts = [Sort("Name")]
@@ -97,7 +87,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(12, "LowStockProductsAndInventoryValue", new QueryDefinition
         {
-            Name = "12. Low-stock products and inventory value",
             Entity = "Products",
             Fields = QueryDefinitionParser.ParseProjections("Name, Category, StockQuantity, ReorderLevel, StockQuantity * CostPrice | InventoryCost"),
             Filter = Filter("StockQuantity", BinaryOperator.LessThanOrEqual, new FieldDefinition("ReorderLevel")),
@@ -106,7 +95,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(13, "DiscountImpactByMonth", new QueryDefinition
         {
-            Name = "13. Discount impact by month",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("DateFormat[InvoiceDate, <%Y-%m>] | Month, SUM[DiscountAmount] | Discounts, SUM[TotalAmount] | NetRevenue, ROUND[SUM[DiscountAmount] * <100> / NULLIF[SUM[TotalAmount], <0>], <2>] | DiscountRate"),
             Sorts = [Sort("Month")]
@@ -114,7 +102,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(14, "RevenueByWeekday", new QueryDefinition
         {
-            Name = "14. Revenue by weekday",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("DateFormat[InvoiceDate, <%w>] | Weekday, COUNT[] | Orders, SUM[TotalAmount] | Revenue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
@@ -123,7 +110,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(15, "InvoiceStatusFunnel", new QueryDefinition
         {
-            Name = "15. Invoice status funnel",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("Status, COUNT[] | InvoiceCount, SUM[TotalAmount] | PipelineValue"),
             Sorts = [Sort("PipelineValue", QuerySortDirection.Descending)]
@@ -131,7 +117,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(16, "AverageBasketComposition", new QueryDefinition
         {
-            Name = "16. Average basket composition",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("InvoiceNumber, Customer.Name, COUNT[Items.Id] | LineCount, SUM[Items.Quantity] | Units, TotalAmount"),
             Sorts = [Sort("TotalAmount", QuerySortDirection.Descending)]
@@ -139,7 +124,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(17, "CategoryRevenueAndProfitability", new QueryDefinition
         {
-            Name = "17. Category revenue and profitability",
             Entity = "Products",
             Fields = QueryDefinitionParser.ParseProjections("Category, SUM[InvoiceItems.LineTotal] | Revenue, SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit"),
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
@@ -148,7 +132,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(18, "MonthlyRevenueTrendWithPriorMonth", new QueryDefinition
         {
-            Name = "18. Monthly revenue trend with prior month",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("DateFormat[InvoiceDate, <%Y-%m>] | Month, SUM[TotalAmount] | Revenue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
@@ -157,7 +140,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(19, "CustomerRecencyFrequencyAndMonetaryValue", new QueryDefinition
         {
-            Name = "19. Customer recency, frequency, and monetary value",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("Customer.Name, Max(InvoiceDate) | LastPurchase, COUNT[] | Frequency, SUM[TotalAmount] | MonetaryValue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
@@ -166,7 +148,6 @@ internal sealed class _34_SalesReportQueryTests : TestBase
 
         yield return Case(20, "UnpaidRevenueExposureByCustomer", new QueryDefinition
         {
-            Name = "20. Unpaid revenue exposure by customer",
             Entity = "Invoices",
             Fields = QueryDefinitionParser.ParseProjections("Customer.Name, Customer.Segment, COUNT[] | OpenInvoices, SUM[TotalAmount] | AmountDue, Min(DueDate) | OldestDueDate"),
             Filter = Filter("Status", BinaryOperator.Equals, "Sent"),
@@ -175,13 +156,16 @@ internal sealed class _34_SalesReportQueryTests : TestBase
     }
 
     [TestCaseSource(nameof(ReportQueries))]
-    public void QueryDtoExecutesSalesReport(QueryDefinition definition, int? expectedRowCount, string[] groupBy)
+    public void QueryDtoExecutesSalesReport(
+        QueryDefinition definition,
+        string reportName,
+        int? expectedRowCount,
+        string[] groupBy)
     {
         var groupedAndPaged = groupBy.Length > 0 && (definition.Page is not null || definition.PageSize is not null);
         var queryDefinition = groupedAndPaged
             ? new QueryDefinition
             {
-                Name = definition.Name,
                 Entity = definition.Entity,
                 Fields = definition.Fields,
                 Filter = definition.Filter,
@@ -201,17 +185,17 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         var sql = query.ToSql();
         var records = query.ToList();
 
-        Assert.That(sql.CommandText, Is.Not.Empty, definition.Name);
+        Assert.That(sql.CommandText, Is.Not.Empty, reportName);
         if (expectedRowCount is int count)
-            Assert.That(records, Has.Count.EqualTo(count), definition.Name);
+            Assert.That(records, Has.Count.EqualTo(count), reportName);
         else
-            Assert.That(records, Is.Not.Empty, definition.Name);
+            Assert.That(records, Is.Not.Empty, reportName);
 
-        if (definition.Name!.StartsWith("9.", StringComparison.Ordinal))
+        if (reportName.StartsWith("9.", StringComparison.Ordinal))
             AssertProductPairCounts(records);
-        else if (definition.Name.StartsWith("11.", StringComparison.Ordinal))
+        else if (reportName.StartsWith("11.", StringComparison.Ordinal))
             AssertCustomersWithoutPaidOrders(records);
-        else if (definition.Name.StartsWith("18.", StringComparison.Ordinal))
+        else if (reportName.StartsWith("18.", StringComparison.Ordinal))
             AssertMonthlyRevenueChanges(records);
     }
 
@@ -263,7 +247,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
     }
 
     private static TestCaseData Case(int number, string name, QueryDefinition query, int? expectedRowCount, params string[] groupBy)
-        => new TestCaseData(query, expectedRowCount, groupBy)
+        => new TestCaseData(query, name, expectedRowCount, groupBy)
             .SetName($"Demo{number}_{name}");
 
     private static FilterDefinition Filter(string field, BinaryOperator operation, object? value)

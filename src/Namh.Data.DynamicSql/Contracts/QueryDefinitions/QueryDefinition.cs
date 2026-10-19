@@ -7,7 +7,6 @@ using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
 public sealed class QueryDefinition
 {
-    public string? Name { get; init; }
     public required string Entity { get; init; }
     public List<EntityContextDefinition> EntityAliases { get; init; } = [];
     public List<ProjectionDefinition> Fields { get; init; } = [];
@@ -22,7 +21,6 @@ public sealed class QueryDefinition
     public string ToYml()
     {
         List<string> lines = [];
-        lines.Add($"Name: {Name}");
         lines.Add($"Entity: {Entity}");
 
         if (EntityAliases.Count > 0)

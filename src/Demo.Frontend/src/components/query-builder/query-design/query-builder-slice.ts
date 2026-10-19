@@ -89,8 +89,7 @@ export type QueryDefinition = {
   pageSize: number | null;
 };
 
-export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns"> & {
-  name?: string;
+export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns" | "projectionRows"> & {
   filter: ApiQueryFilterGroup | null;
   sorts: { field: string | QueryExpression; direction: number }[];
   fields: { field: QueryExpression; alias: string | null }[];
@@ -98,6 +97,7 @@ export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "colum
 
 export type ReportDto = {
   fileName: string;
+  name?: string | null;
   query: ApiQueryRequest;
   requestText?: string | null;
   description?: string | null;
@@ -108,6 +108,7 @@ export type ReportDto = {
 export type SavedQueryRequestDto = {
   name: string;
   query: ApiQueryRequest;
+  projectionRows: string[][];
   isBuiltin: boolean;
 };
 
@@ -172,9 +173,8 @@ async function requestText(url: string, options?: RequestInit) {
 }
 
 export function createApiQuery(definition: QueryDefinition) {
-  const queryWithoutProjectionRows = { ...definition };
-  delete queryWithoutProjectionRows.projectionRows;
-  const { filters, sorts, columns, ...query } = queryWithoutProjectionRows;
+  const { filters, sorts, columns, ...query } = definition;
+  delete query.projectionRows;
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   return {
     ...query,
@@ -230,7 +230,7 @@ function filterOperandToText(operand: ApiFilterOperand | string): string {
   }
 }
 
-function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
+function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): QueryDefinition {
   const restoreGroup = (group: ApiQueryFilterGroup): QueryFilterGroup => ({
     ...group,
     filters: group.filters.map((node): QueryFilterNode => {
@@ -270,7 +270,9 @@ function fromApiQuery(query: ApiQueryRequest): QueryDefinition {
       alias: projection.alias,
       ...(projection.field.kind === "field" ? {} : { expression: projection.field }),
     })),
-    projectionRows: query.fields.length
+    projectionRows: projectionRows?.length
+      ? projectionRows.map((row) => [...row])
+      : query.fields.length
       ? [query.fields.map((projection, index) => projection.field.kind === "field"
         ? projection.field.field
         : `__calculated__${projection.alias || index}`)]
@@ -427,12 +429,12 @@ export const getSqlStatementFromText = createAsyncThunk(
 
 export const getQueryRequestString = createAsyncThunk(
   "queryBuilder/getQueryRequestString",
-  async ({ name, definition }: { name: string; definition: QueryDefinition }, { rejectWithValue }) => {
+  async ({ definition }: { definition: QueryDefinition }, { rejectWithValue }) => {
     try {
       return await requestText(apiUrls.reports.toString, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...createApiQuery(definition), name }),
+        body: JSON.stringify(createApiQuery(definition)),
       });
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to format query request.");
@@ -534,6 +536,9 @@ export const fetchQueryRequests = createAsyncThunk(
       if (!Array.isArray(payload) || payload.some((item) => !item
         || typeof item.name !== "string"
         || typeof item.isBuiltin !== "boolean"
+        || !Array.isArray(item.projectionRows)
+        || item.projectionRows.some((row: unknown) => !Array.isArray(row)
+          || row.some((field: unknown) => typeof field !== "string"))
         || !item.query
         || typeof item.query.entity !== "string"
         || !Array.isArray(item.query.fields)
@@ -554,7 +559,12 @@ export const saveQueryRequest = createAsyncThunk(
       await requestJson(apiUrls.queryRequests.byName(name), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...createApiQuery(definition), name }),
+        body: JSON.stringify({
+          name,
+          query: createApiQuery(definition),
+          projectionRows: definition.projectionRows ?? [],
+          isBuiltin: false,
+        }),
       });
       return name;
     } catch (error) {

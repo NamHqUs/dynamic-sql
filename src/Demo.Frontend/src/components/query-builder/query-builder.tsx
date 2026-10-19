@@ -192,6 +192,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
   const [selectedRequestIsBuiltin, setSelectedRequestIsBuiltin] = useState(false);
   const [queryRequestNotice, setQueryRequestNotice] = useState("");
+  const [isSavingQuery, setIsSavingQuery] = useState(false);
   const [isApplyingPlanText, setIsApplyingPlanText] = useState(false);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
   const contextMetadata = useMemo(
@@ -274,7 +275,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
 
   const loadPlanText = async () => {
-    const resultAction = await dispatch(getQueryRequestString({ name: requestName, definition }));
+    const resultAction = await dispatch(getQueryRequestString({ definition }));
     if (getQueryRequestString.fulfilled.match(resultAction)) return resultAction.payload;
     throw new Error(String(resultAction.payload || "Unable to format query request."));
   };
@@ -282,7 +283,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const applyPlanText = async (section: PlanTextSection, value: string) => {
     setIsApplyingPlanText(true);
     try {
-      const formatAction = await dispatch(getQueryRequestString({ name: requestName, definition }));
+      const formatAction = await dispatch(getQueryRequestString({ definition }));
       if (!getQueryRequestString.fulfilled.match(formatAction)) {
         throw new Error(String(formatAction.payload || "Unable to format query request."));
       }
@@ -310,7 +311,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
 
   const selectSavedRequest = (savedRequest: (typeof queryRequests)[number]) => {
-    updateDefinition(fromApiQuery(savedRequest.query));
+    updateDefinition(fromApiQuery(savedRequest.query, savedRequest.projectionRows));
     setRequestName(savedRequest.name);
     setSelectedRequestName(savedRequest.name);
     setSelectedRequestIsBuiltin(savedRequest.isBuiltin);
@@ -318,14 +319,22 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
   const persistCurrentRequest = async (currentDefinition: QueryDefinition) => {
     const name = requestName.trim();
-    if (!name) return;
+    if (!name) {
+      setQueryRequestNotice("Enter a query name before saving.");
+      return;
+    }
     setQueryRequestNotice("");
-    const resultAction = await dispatch(saveQueryRequest({ name, definition: currentDefinition }));
-    if (saveQueryRequest.fulfilled.match(resultAction)) {
-      setSelectedRequestName(resultAction.payload);
-      setSelectedRequestIsBuiltin(false);
-      setRequestName(resultAction.payload);
-      setQueryRequestNotice("Query saved.");
+    setIsSavingQuery(true);
+    try {
+      const resultAction = await dispatch(saveQueryRequest({ name, definition: currentDefinition }));
+      if (saveQueryRequest.fulfilled.match(resultAction)) {
+        setSelectedRequestName(resultAction.payload);
+        setSelectedRequestIsBuiltin(false);
+        setRequestName(resultAction.payload);
+        setQueryRequestNotice("Query saved.");
+      }
+    } finally {
+      setIsSavingQuery(false);
     }
   };
   const saveCurrentRequest = () => void persistCurrentRequest(definition);
@@ -386,12 +395,15 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
             {selectedRequestName && <button className="button secondary" onClick={() => void removeCurrentRequest()}>
               <Icon name="trash" size={14} /> Delete Query
             </button>}
-            <button className="button primary" onClick={() => void saveCurrentRequest()} disabled={!requestName.trim() || queryStatus === "loading"}>
-              <Icon name="check" size={14} /> Save Query
+            <button type="button" className="button primary" onClick={() => void saveCurrentRequest()} disabled={queryStatus === "loading" || isSavingQuery}>
+              <Icon name="check" size={14} /> {isSavingQuery ? "Saving..." : "Save Query"}
             </button>
           </>}
         </div>
       </section>
+      {(queryRequestsError || queryRequestNotice) && <p className={`query-request-feedback${queryRequestsError ? " error" : ""}`} role={queryRequestsError ? "alert" : "status"}>
+        {queryRequestsError || queryRequestNotice}
+      </p>}
 
       <section className="query-builder-workspace query-builder-solo">
         <div className="query-request-editor">
@@ -430,9 +442,6 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
           queryLoading={queryStatus === "loading"}
           queryDisabled={!definition.columns.length}
         />
-        {(queryRequestsError || queryRequestNotice) && <p className={`query-request-feedback${queryRequestsError ? " error" : ""}`} role={queryRequestsError ? "alert" : "status"}>
-          {queryRequestsError || queryRequestNotice}
-        </p>}
       </section>
     </>
   );

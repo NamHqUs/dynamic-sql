@@ -10,4 +10,5 @@ public sealed record ReportDto(
     string? ChartType = null)
 {
     public bool CanDelete { get; init; } = true;
+    public string? Name { get; init; }
 }

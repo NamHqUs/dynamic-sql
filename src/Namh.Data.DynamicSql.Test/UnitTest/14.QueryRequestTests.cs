@@ -321,6 +321,29 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
+    public void DefinitionYamlOmitsSavedRequestMetadata()
+    {
+        const string json = """
+            {
+              "entity": "Customers",
+              "name": "Customer segments",
+              "fields": [
+                { "field": { "kind": "field", "field": "Phone" }, "alias": null },
+                { "field": { "kind": "field", "field": "Region" }, "alias": null },
+                { "field": { "kind": "field", "field": "Segment" }, "alias": null }
+              ],
+              "projectionRows": [["Phone", "Region"], ["Segment"]]
+            }
+            """;
+
+        var definition = QueryDefinitionParser.Parse(json);
+        var yml = definition.ToYml();
+
+        Assert.That(yml, Does.Not.Contain("Name:"));
+        Assert.That(yml, Does.Not.Contain("ProjectionRows:"));
+    }
+
+    [Test]
     public void DefinitionJsonDeserializesRecursiveFilterValues()
     {
         const string json = """

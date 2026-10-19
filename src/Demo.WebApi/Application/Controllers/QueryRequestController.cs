@@ -1,7 +1,6 @@
 using Demo.Contracts.Dto;
 using Demo.Contracts.Services;
 using Microsoft.AspNetCore.Mvc;
-using Namh.Data.DynamicSql;
 
 namespace Demo.WebApi.Application.Controllers;
 
@@ -14,11 +13,11 @@ public sealed class QueryRequestController(IQueryRequestService queryRequestServ
         => Ok(queryRequestService.List());
 
     [HttpPut("{name}")]
-    public IActionResult Save(string name, [FromBody] QueryDefinition query)
+    public IActionResult Save(string name, [FromBody] SavedQueryRequestDto queryRequest)
     {
         try
         {
-            queryRequestService.Save(name, query);
+            queryRequestService.Save(name, queryRequest);
             return NoContent();
         }
         catch (ArgumentException exception)
