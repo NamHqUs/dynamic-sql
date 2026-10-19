@@ -24,7 +24,7 @@ async function request(url: string, options?: RequestInit) {
 }
 
 type MetadataBuilderProps = {
-  onNavigationGuardChange?: (guard: ((continueNavigation: () => void) => void) | null) => void;
+  onNavigationGuardChange?: (guard: ((continueNavigation: () => void, cancelNavigation?: () => void) => void) | null) => void;
 };
 
 export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBuilderProps) {
@@ -138,9 +138,10 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   };
 
   useEffect(() => {
-    const guard = (continueNavigation: () => void) => {
+    const guard = (continueNavigation: () => void, cancelNavigation?: () => void) => {
       void (async () => {
         if (await resolveDirtyChanges()) continueNavigation();
+        else cancelNavigation?.();
       })();
     };
     onNavigationGuardChange?.(guard);

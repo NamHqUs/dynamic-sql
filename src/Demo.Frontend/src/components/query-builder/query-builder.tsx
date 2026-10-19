@@ -10,10 +10,12 @@ import { addEntityAliasesToMetadata } from "../../utils/query-entity-contexts";
 import "./query-builder.css";
 
 type QueryBuilderProps = {
-  onNavigationGuardChange: (guard: ((continueNavigation: () => void) => void) | null) => void;
+  onNavigationGuardChange: (guard: ((continueNavigation: () => void, cancelNavigation?: () => void) => void) | null) => void;
+  onBackToReports?: () => void;
 };
 
 let cachedDefinition: QueryDefinition | null = null;
+const QUERY_DEFINITION_STORAGE_KEY = "dynamic-sql-query-builder-definition";
 
 function charIsIndent(character: string | undefined): boolean {
   return character !== undefined && /\s/.test(character);
@@ -21,10 +23,12 @@ function charIsIndent(character: string | undefined): boolean {
 
 export function resetQueryBuilderCache() {
   cachedDefinition = null;
+  window.sessionStorage.removeItem(QUERY_DEFINITION_STORAGE_KEY);
 }
 
 export function setQueryBuilderDefinition(definition: QueryDefinition) {
   cachedDefinition = definition;
+  window.sessionStorage.setItem(QUERY_DEFINITION_STORAGE_KEY, JSON.stringify(definition));
 }
 
 function createDefinition(entity: string, fields: MetadataField[] = []): QueryDefinition {
@@ -40,12 +44,44 @@ function createDefinition(entity: string, fields: MetadataField[] = []): QueryDe
 }
 
 function loadDefinition(): QueryDefinition {
-  if (!cachedDefinition) return createDefinition("");
+  if (!cachedDefinition) {
+    const savedDefinition = window.sessionStorage.getItem(QUERY_DEFINITION_STORAGE_KEY);
+    if (!savedDefinition) return createDefinition("");
+
+    let parsedDefinition: unknown;
+    try {
+      parsedDefinition = JSON.parse(savedDefinition);
+    } catch {
+      throw new Error("Saved Query Builder definition is not valid JSON.");
+    }
+    if (!isQueryDefinition(parsedDefinition)) {
+      throw new Error("Saved Query Builder definition has an invalid shape.");
+    }
+    cachedDefinition = parsedDefinition;
+  }
 
   return {
     ...cachedDefinition,
     filters: cachedDefinition.filters,
   };
+}
+
+function isQueryDefinition(value: unknown): value is QueryDefinition {
+  if (!value || typeof value !== "object") return false;
+  const definition = value as Partial<QueryDefinition>;
+  return typeof definition.entity === "string"
+    && Array.isArray(definition.entityAliases)
+    && Array.isArray(definition.columns)
+    && definition.columns.every((column) => column !== null
+      && typeof column === "object"
+      && typeof column.field === "string"
+      && (typeof column.alias === "string" || column.alias === null))
+    && definition.filters !== null
+    && typeof definition.filters === "object"
+    && Array.isArray(definition.filters.filters)
+    && Array.isArray(definition.sorts)
+    && (definition.page === null || typeof definition.page === "number")
+    && (definition.pageSize === null || typeof definition.pageSize === "number");
 }
 
 function pruneFilters(group: QueryFilterGroup, entity: MetadataEntity, metadata: MetadataEntity[]): QueryFilterGroup {
@@ -138,7 +174,7 @@ function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity
   return unchanged ? definition : { ...definition, columns, sorts, filters };
 }
 
-export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderProps) {
+export default function QueryBuilder({ onNavigationGuardChange, onBackToReports }: QueryBuilderProps) {
   const dispatch = useDispatch();
   const showMessageBox = useMessageBox();
   const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames } = useSelector((state) => state.queryBuilder);
@@ -164,7 +200,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     [contextMetadata, definition.entity],
   );
   const updateDefinition = (nextDefinition: QueryDefinition) => {
-    cachedDefinition = nextDefinition;
+    setQueryBuilderDefinition(nextDefinition);
     definitionRef.current = nextDefinition;
     setDefinition(nextDefinition);
   };
@@ -308,8 +344,11 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     return false;
   };
 
-  const requestPlanTextNavigation = async (continueNavigation: () => void) => {
-    if (isResolvingPlanChanges) return;
+  const requestPlanTextNavigation = async (continueNavigation: () => void, cancelNavigation?: () => void) => {
+    if (isResolvingPlanChanges) {
+      cancelNavigation?.();
+      return;
+    }
     if (!planTextDirty) {
       continueNavigation();
       return;
@@ -326,15 +365,19 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
     });
     if (action === "apply") {
       if (await applyRequestStructure()) continueNavigation();
+      else cancelNavigation?.();
     } else if (action === "discard") {
       setRequestStructureDraft(requestStructureOriginal);
       setRequestStructureError("");
       continueNavigation();
+    } else {
+      cancelNavigation?.();
     }
   };
 
   useEffect(() => {
-    const guard = (continueNavigation: () => void) => requestPlanTextNavigation(continueNavigation);
+    const guard = (continueNavigation: () => void, cancelNavigation?: () => void) =>
+      requestPlanTextNavigation(continueNavigation, cancelNavigation);
     onNavigationGuardChange(guard);
     return () => onNavigationGuardChange(null);
   }, [onNavigationGuardChange, planTextDirty, requestStructureOriginal, isResolvingPlanChanges]);
@@ -372,6 +415,7 @@ export default function QueryBuilder({ onNavigationGuardChange }: QueryBuilderPr
           <h2>Query Builder</h2>
         </div>
         <div className="heading-actions">
+          {onBackToReports && <button className="button secondary" onClick={onBackToReports}><Icon name="chart" size={14} /> Back to reports</button>}
           <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>New Query</button>
         </div>
       </section>

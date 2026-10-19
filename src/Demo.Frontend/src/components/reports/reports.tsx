@@ -22,15 +22,45 @@ import {
   presentationFor,
   reportTitle,
   type ChartType,
+  type ReportLayout,
   type ReportChartSettings,
 } from "./report-model";
 import "./reports.css";
 
-function getNewDefinition(entity: MetadataEntity): QueryDefinition {
+const reportLayoutsStorageKey = "dynamic-sql-report-layouts";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isReportChartSettings(value: unknown): value is ReportChartSettings {
+  if (!isRecord(value) || !Array.isArray(value.metrics) || !value.metrics.every((metric) => typeof metric === "string")) return false;
+  if (!isRecord(value.axes) || !Object.values(value.axes).every((axis) => axis === "axis1" || axis === "axis2" || axis === "none")) return false;
+  return (value.breakdownDisplay === undefined || value.breakdownDisplay === "subcharts" || value.breakdownDisplay === "direct")
+    && (value.seriesLayout === undefined || value.seriesLayout === "combined" || value.seriesLayout === "separate");
+}
+
+function isReportLayout(value: unknown): value is ReportLayout {
+  return isRecord(value)
+    && chartOptions.some((option) => option.value === value.chartType)
+    && (value.chartSettings === undefined || isReportChartSettings(value.chartSettings));
+}
+
+function readReportLayouts(): Record<string, ReportLayout> {
+  const storedLayouts = window.localStorage.getItem(reportLayoutsStorageKey);
+  if (!storedLayouts) return {};
+  const parsedLayouts: unknown = JSON.parse(storedLayouts);
+  if (!isRecord(parsedLayouts) || !Object.values(parsedLayouts).every(isReportLayout)) {
+    throw new Error("Invalid report layouts in browser local storage.");
+  }
+  return parsedLayouts as Record<string, ReportLayout>;
+}
+
+function getNewDefinition(entity?: MetadataEntity): QueryDefinition {
   return {
-    entity: entity.name,
+    entity: entity?.name ?? "",
     entityAliases: [],
-    columns: entity.fields.map((field) => ({ field: field.name, alias: null })),
+    columns: entity?.fields.map((field) => ({ field: field.name, alias: null })) ?? [],
     filters: { logicalOperation: 0, filters: [] },
     sorts: [],
     page: 1,
@@ -95,8 +125,9 @@ export default function Reports({ onEditQuery }: { onEditQuery: (definition: Que
     return parsedOrder;
   });
   const requestedReports = useRef(new Set<string>());
-  const [chartTypeOverrides, setChartTypeOverrides] = useState<Record<string, ChartType>>({});
-  const [chartSettingsOverrides, setChartSettingsOverrides] = useState<Record<string, ReportChartSettings>>({});
+  const [reportLayouts, setReportLayouts] = useState<Record<string, ReportLayout>>(readReportLayouts);
+  const [chartTypeDrafts, setChartTypeDrafts] = useState<Record<string, ChartType>>({});
+  const [chartSettingsDrafts, setChartSettingsDrafts] = useState<Record<string, ReportChartSettings>>({});
   const [editingReport, setEditingReport] = useState<ReportDto | null>(null);
   const [detailReport, setDetailReport] = useState<ReportDto | null>(null);
   const detailScrollPosition = useRef(0);
@@ -135,6 +166,10 @@ export default function Reports({ onEditQuery }: { onEditQuery: (definition: Que
   }), [category, search, sortedReports]);
   const numberOfBuiltins = sortedReports.filter((request) => !request.canDelete).length;
   const numberOfCustom = sortedReports.length - numberOfBuiltins;
+  const chartTypeOverrides = Object.fromEntries(Object.entries(reportLayouts).map(([fileName, layout]) => [fileName, layout.chartType]));
+  const chartSettingsOverrides = Object.fromEntries(Object.entries(reportLayouts)
+    .filter((entry): entry is [string, ReportLayout & { chartSettings: ReportChartSettings }] => Boolean(entry[1].chartSettings))
+    .map(([fileName, layout]) => [fileName, layout.chartSettings]));
 
   const runReport = async (request: ReportDto) => {
     setReportLoading((current) => ({ ...current, [request.fileName]: true }));
@@ -159,11 +194,43 @@ export default function Reports({ onEditQuery }: { onEditQuery: (definition: Que
   }, [filteredReports, reportsStatus]);
 
   const changeChartType = (request: ReportDto, chartType: ChartType) => {
-    setChartTypeOverrides((current) => ({ ...current, [request.fileName]: chartType }));
+    setChartTypeDrafts((current) => ({ ...current, [request.fileName]: chartType }));
   };
 
   const changeChartSettings = (request: ReportDto, settings: ReportChartSettings) => {
-    setChartSettingsOverrides((current) => ({ ...current, [request.fileName]: settings }));
+    setChartSettingsDrafts((current) => ({ ...current, [request.fileName]: settings }));
+  };
+
+  const applyReportLayout = (request: ReportDto): string | null => {
+    const savedLayout = reportLayouts[request.fileName];
+    const result = reportResults[request.fileName];
+    const chartSettings = chartSettingsDrafts[request.fileName]
+      || savedLayout?.chartSettings
+      || (result ? defaultReportChartSettings(request, result) : undefined);
+    const layout: ReportLayout = {
+      chartType: chartTypeDrafts[request.fileName] || savedLayout?.chartType || presentationFor(request).chartType,
+      ...(chartSettings ? { chartSettings } : {}),
+    };
+    const updatedLayouts = { ...reportLayouts, [request.fileName]: layout };
+    try {
+      window.localStorage.setItem(reportLayoutsStorageKey, JSON.stringify(updatedLayouts));
+    } catch (error) {
+      return error instanceof Error
+        ? `Unable to save this report layout: ${error.message}`
+        : "Unable to save this report layout.";
+    }
+    setReportLayouts(updatedLayouts);
+    setChartTypeDrafts((current) => {
+      const next = { ...current };
+      delete next[request.fileName];
+      return next;
+    });
+    setChartSettingsDrafts((current) => {
+      const next = { ...current };
+      delete next[request.fileName];
+      return next;
+    });
+    return null;
   };
 
   const reorderReports = (sourceFileName: string, targetFileName: string, position: "before" | "after") => {
@@ -237,13 +304,22 @@ export default function Reports({ onEditQuery }: { onEditQuery: (definition: Que
   };
 
   const createReport = () => {
-    setEditingReport(null);
-    setCreatingReport(true);
+    onEditQuery(getNewDefinition(metadata[0]));
   };
 
   const openReportDetails = (report: ReportDto) => {
     detailScrollPosition.current = window.scrollY;
     window.scrollTo(0, 0);
+    setChartTypeDrafts((current) => {
+      const next = { ...current };
+      delete next[report.fileName];
+      return next;
+    });
+    setChartSettingsDrafts((current) => {
+      const next = { ...current };
+      delete next[report.fileName];
+      return next;
+    });
     setDetailReport(report);
   };
 
@@ -273,9 +349,12 @@ export default function Reports({ onEditQuery }: { onEditQuery: (definition: Que
         chartSettingsOverrides={chartSettingsOverrides}
         detailReport={detailReport}
         detailResult={detailReport ? reportResults[detailReport.fileName] : undefined}
-        detailChartType={detailReport ? chartTypeOverrides[detailReport.fileName] || presentationFor(detailReport).chartType : "bar"}
+        detailChartType={detailReport
+          ? chartTypeDrafts[detailReport.fileName] || reportLayouts[detailReport.fileName]?.chartType || presentationFor(detailReport).chartType
+          : "bar"}
         detailChartSettings={detailReport
-          ? chartSettingsOverrides[detailReport.fileName]
+          ? chartSettingsDrafts[detailReport.fileName]
+            || reportLayouts[detailReport.fileName]?.chartSettings
             || (reportResults[detailReport.fileName]
               ? defaultReportChartSettings(detailReport, reportResults[detailReport.fileName])
               : { metrics: [], axes: {} })
@@ -293,6 +372,7 @@ export default function Reports({ onEditQuery }: { onEditQuery: (definition: Que
         onOpenDetails={openReportDetails}
         onCloseDetails={closeReportDetails}
         onRunDetails={() => { if (detailReport) void runReport(detailReport); }}
+        onApplyLayout={applyReportLayout}
         onChartTypeChange={changeChartType}
         onChartSettingsChange={changeChartSettings}
         onEdit={setEditingReport}

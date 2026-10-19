@@ -20,6 +20,7 @@ type ReportDetailProps = {
   chartSettings: ReportChartSettings;
   loading: boolean;
   error?: string;
+  onApplyLayout: () => string | null;
   onClose: () => void;
   onRun: () => void;
   onChartTypeChange: (chartType: ChartType) => void;
@@ -102,11 +103,21 @@ function ReportDataTable({ result }: { result: QueryResult }) {
 }
 
 export default function ReportDetail({
-  report, result, chartType, chartSettings, loading, error, onClose, onRun, onChartTypeChange, onChartSettingsChange,
+  report, result, chartType, chartSettings, loading, error, onApplyLayout, onClose, onRun, onChartTypeChange, onChartSettingsChange,
 }: ReportDetailProps) {
   const presentation = presentationFor(report);
   const title = reportTitle(report);
   const [mode, setMode] = useState<"view" | "edit">("view");
+  const [applyStatus, setApplyStatus] = useState<{ message: string; isError: boolean } | null>(null);
+
+  const applyLayout = () => {
+    const error = onApplyLayout();
+    if (error) {
+      setApplyStatus({ message: error, isError: true });
+      return;
+    }
+    onClose();
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -129,6 +140,7 @@ export default function ReportDetail({
             <button className="button secondary" type="button" onClick={onRun} disabled={loading}>
               <Icon name="reset" size={13} /> {loading ? "Running…" : "Refresh"}
             </button>
+            {mode === "edit" && <button className="button primary report-detail-apply-button" type="button" onClick={applyLayout}>Apply Changes</button>}
             <button className="report-icon-button" type="button" aria-label="Close report details" onClick={onClose} autoFocus>
               <Icon name="close" />
             </button>
@@ -152,6 +164,7 @@ export default function ReportDetail({
               </label>}
             </div>
           </div>
+          {applyStatus && <p className="report-detail-apply-status" role={applyStatus.isError ? "alert" : "status"}>{applyStatus.message}</p>}
           {mode === "edit" && result && <div className="report-detail-edit-area" aria-label="Edit chart settings">
             <ReportChartSettingsPanel
             report={report}

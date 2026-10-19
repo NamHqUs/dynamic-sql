@@ -49,6 +49,7 @@ type ReportDashboardProps = {
   onReorderReports: (sourceFileName: string, targetFileName: string, position: DropPosition) => void;
   onCloseDetails: () => void;
   onRunDetails: () => void;
+  onApplyLayout: (report: ReportDto) => string | null;
   onChartTypeChange: (report: ReportDto, chartType: ChartType) => void;
   onChartSettingsChange: (report: ReportDto, settings: ReportChartSettings) => void;
   onEdit: (report: ReportDto) => void;
@@ -61,7 +62,7 @@ export default function ReportDashboard({
   reportsStatus, reportsError, metadataStatus, metadataError, reportResults, reportLoading,
   reportErrors, chartTypeOverrides, chartSettingsOverrides, detailReport, detailResult, detailChartType, detailChartSettings, detailLoading, detailError,
   message, messageIsError, onCreateReport, onSelectCategory, onSearchChange,
-  onDismissMessage, onRun, onOpenDetails, onReorderReports, onCloseDetails, onRunDetails, onChartTypeChange, onChartSettingsChange, onEdit, onEditQuery, onDelete,
+  onDismissMessage, onRun, onOpenDetails, onReorderReports, onCloseDetails, onRunDetails, onApplyLayout, onChartTypeChange, onChartSettingsChange, onEdit, onEditQuery, onDelete,
 }: ReportDashboardProps) {
   const draggedReport = useRef<string | null>(null);
   const dragPreview = useRef<HTMLElement | null>(null);
@@ -89,6 +90,7 @@ export default function ReportDashboard({
       chartSettings={detailChartSettings}
       loading={detailLoading}
       error={detailError}
+      onApplyLayout={() => onApplyLayout(detailReport)}
       onClose={onCloseDetails}
       onRun={onRunDetails}
       onChartTypeChange={(chartType) => onChartTypeChange(detailReport, chartType)}

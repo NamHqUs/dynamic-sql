@@ -1,6 +1,7 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
+import { createBrowserRouter, Navigate, Route, RouterProvider, Routes, useBlocker, useLocation, useNavigate } from "react-router-dom";
 import Icon from "./components/icon/icon";
 import DataSources from "./components/data-sources/data-sources";
 import QueryBuilder, { setQueryBuilderDefinition } from "./components/query-builder/query-builder";
@@ -12,64 +13,133 @@ import type { QueryDefinition } from "./components/query-builder/query-design/qu
 import { store } from "./store/store";
 import "./styles.css";
 
+const PAGE_PATHS = {
+  reports: "/reports",
+  builder: "/query-builder",
+  metadata: "/metadata",
+  functions: "/functions",
+  sources: "/data-sources",
+} as const;
+
+type Page = keyof typeof PAGE_PATHS;
+type NavigationGuard = (continueNavigation: () => void, cancelNavigation?: () => void) => void;
+
+function pageForPath(path: string): Page | null {
+  return (Object.keys(PAGE_PATHS) as Page[]).find((page) => PAGE_PATHS[page] === path) ?? null;
+}
+
 function App() {
-  const [page, setPage] = useState("reports");
-  const [metadataVisited, setMetadataVisited] = useState(false);
-  const queryBuilderNavigationGuard = useRef<((continueNavigation: () => void) => void) | null>(null);
-  const metadataNavigationGuard = useRef<((continueNavigation: () => void) => void) | null>(null);
-  const functionsNavigationGuard = useRef<((continueNavigation: () => void) => void) | null>(null);
-  const updateQueryBuilderNavigationGuard = useCallback((guard: ((continueNavigation: () => void) => void) | null) => {
+  const location = useLocation();
+  const routerNavigate = useNavigate();
+  const page = pageForPath(location.pathname);
+  const [metadataVisited, setMetadataVisited] = useState(() => location.pathname === PAGE_PATHS.metadata);
+  const queryBuilderNavigationGuard = useRef<NavigationGuard | null>(null);
+  const metadataNavigationGuard = useRef<NavigationGuard | null>(null);
+  const functionsNavigationGuard = useRef<NavigationGuard | null>(null);
+  const approvedNavigation = useRef<string | null>(null);
+  const handledBlockedLocation = useRef<string | null>(null);
+  const updateQueryBuilderNavigationGuard = useCallback((guard: NavigationGuard | null) => {
     queryBuilderNavigationGuard.current = guard;
   }, []);
-  const updateMetadataNavigationGuard = useCallback((guard: ((continueNavigation: () => void) => void) | null) => {
+  const updateMetadataNavigationGuard = useCallback((guard: NavigationGuard | null) => {
     metadataNavigationGuard.current = guard;
   }, []);
-  const updateFunctionsNavigationGuard = useCallback((guard: ((continueNavigation: () => void) => void) | null) => {
+  const updateFunctionsNavigationGuard = useCallback((guard: NavigationGuard | null) => {
     functionsNavigationGuard.current = guard;
   }, []);
 
-  const navigate = (nextPage: string) => {
-    if (nextPage === page) return;
+  const guardForPage = (targetPage: Page | null) => {
+    if (targetPage === "builder") return queryBuilderNavigationGuard.current;
+    if (targetPage === "metadata") return metadataNavigationGuard.current;
+    if (targetPage === "functions") return functionsNavigationGuard.current;
+    return null;
+  };
+
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
+    const currentPage = pageForPath(currentLocation.pathname);
+    const nextPage = pageForPath(nextLocation.pathname);
+    const target = `${nextLocation.pathname}${nextLocation.search}${nextLocation.hash}`;
+    if (approvedNavigation.current === target) {
+      approvedNavigation.current = null;
+      return false;
+    }
+    return currentPage !== null
+      && nextPage !== null
+      && currentPage !== nextPage
+      && guardForPage(currentPage) !== null;
+  });
+
+  const navigateToPage = (nextPage: Page, fromReport = false) => {
+    if (nextPage === page && !(nextPage === "builder" && fromReport)) return;
+    const destination = nextPage === "builder" && fromReport
+      ? `${PAGE_PATHS.builder}?from=reports`
+      : PAGE_PATHS[nextPage];
     const continueNavigation = () => {
       if (nextPage === "metadata") setMetadataVisited(true);
-      setPage(nextPage);
+      approvedNavigation.current = destination;
+      routerNavigate(destination);
     };
-    if (page === "builder" && queryBuilderNavigationGuard.current) {
-      queryBuilderNavigationGuard.current(continueNavigation);
-    } else if (page === "metadata" && metadataNavigationGuard.current) {
-      metadataNavigationGuard.current(continueNavigation);
-    } else if (page === "functions" && functionsNavigationGuard.current) {
-      functionsNavigationGuard.current(continueNavigation);
-    } else {
-      continueNavigation();
+    const guard = guardForPage(page);
+    if (guard) {
+      guard(continueNavigation);
+      return;
     }
+    continueNavigation();
   };
+
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    const blockedLocation = `${blocker.location.key}:${blocker.location.pathname}${blocker.location.search}${blocker.location.hash}`;
+    if (handledBlockedLocation.current === blockedLocation) return;
+    handledBlockedLocation.current = blockedLocation;
+
+    const guard = guardForPage(page);
+    const continueNavigation = () => {
+      handledBlockedLocation.current = null;
+      blocker.proceed();
+    };
+    const cancelNavigation = () => {
+      handledBlockedLocation.current = null;
+      blocker.reset();
+    };
+    if (guard) guard(continueNavigation, cancelNavigation);
+    else continueNavigation();
+  }, [blocker, page]);
 
   return (
     <main className="app-shell">
       <header className="topbar">
         <div className="brand"><span className="brand-mark"><Icon name="database" size={18} /></span><span>Dynamic<span className="brand-accent">SQL</span></span><span className="brand-divider" /><span className="brand-product">Studio</span></div>
-        <nav className="topnav"><button className={page === "reports" ? "nav-item active" : "nav-item"} onClick={() => navigate("reports")}><Icon name="chart" /> Reports</button><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigate("builder")}><Icon name="grid" /> Query builder</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigate("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "functions" ? "nav-item active" : "nav-item"} onClick={() => navigate("functions")}><Icon name="code" /> Function definitions</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigate("sources")}><Icon name="database" /> Data sources</button></nav>
+        <nav className="topnav"><button className={page === "reports" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("reports")}><Icon name="chart" /> Reports</button><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="grid" /> Query builder</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "functions" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("functions")}><Icon name="code" /> Function definitions</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button></nav>
         <div className="top-actions"><span className="live-dot" /> Local demo <button className="avatar">N</button></div>
       </header>
 
-      {page === "metadata" ? null : <div key={page} className="page-transition">
-        {page === "sources" ? <DataSources /> : null}
-        {page === "reports" ? <Reports onEditQuery={(definition: QueryDefinition) => {
+      <Routes>
+        <Route path={PAGE_PATHS.reports} element={<div className="page-transition"><Reports onEditQuery={(definition: QueryDefinition) => {
           setQueryBuilderDefinition(definition);
-          navigate("builder");
-        }} /> : null}
-        {page === "builder" ? <QueryBuilder onNavigationGuardChange={updateQueryBuilderNavigationGuard} /> : null}
-        {page === "functions" ? <SqlFunctions onNavigationGuardChange={updateFunctionsNavigationGuard} /> : null}
-      </div>}
+          navigateToPage("builder", true);
+        }} /></div>} />
+        <Route path={PAGE_PATHS.builder} element={<div className="page-transition"><QueryBuilder
+          onNavigationGuardChange={updateQueryBuilderNavigationGuard}
+          onBackToReports={new URLSearchParams(location.search).get("from") === "reports"
+            ? () => navigateToPage("reports")
+            : undefined}
+        /></div>} />
+        <Route path={PAGE_PATHS.metadata} element={null} />
+        <Route path={PAGE_PATHS.functions} element={<div className="page-transition"><SqlFunctions onNavigationGuardChange={updateFunctionsNavigationGuard} /></div>} />
+        <Route path={PAGE_PATHS.sources} element={<div className="page-transition"><DataSources /></div>} />
+        <Route path="*" element={<Navigate to={PAGE_PATHS.reports} replace />} />
+      </Routes>
       {metadataVisited && <div hidden={page !== "metadata"} className={page === "metadata" ? "page-transition" : undefined}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
       <footer><span><span className="footer-mark">✦</span> DynamicSQL engine</span><span>Metadata-driven queries · Client preview</span></footer>
     </main>
   );
 }
 
-createRoot(document.getElementById("root")).render(
+const router = createBrowserRouter([{ path: "*", element: <App /> }]);
+
+createRoot(document.getElementById("root")!).render(
   <Provider store={store}>
-    <MessageBoxProvider><App /></MessageBoxProvider>
+    <MessageBoxProvider><RouterProvider router={router} /></MessageBoxProvider>
   </Provider>,
 );

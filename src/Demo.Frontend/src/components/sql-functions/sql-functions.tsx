@@ -22,7 +22,7 @@ async function request<T = unknown>(url: string, options?: RequestInit): Promise
 }
 
 type SqlFunctionsProps = {
-  onNavigationGuardChange?: (guard: ((continueNavigation: () => void) => void) | null) => void;
+  onNavigationGuardChange?: (guard: ((continueNavigation: () => void, cancelNavigation?: () => void) => void) | null) => void;
 };
 
 function parseArgumentDefault(argument: EditableFunctionDefinition["arguments"][number]): unknown {
@@ -213,9 +213,10 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
   };
 
   useEffect(() => {
-    const guard = (continueNavigation: () => void) => {
+    const guard = (continueNavigation: () => void, cancelNavigation?: () => void) => {
       void (async () => {
         if (await resolveDirtyChanges()) continueNavigation();
+        else cancelNavigation?.();
       })();
     };
     onNavigationGuardChange?.(guard);

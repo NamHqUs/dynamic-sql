@@ -10,6 +10,10 @@ export type ReportChartSettings = {
   breakdownDisplay?: "subcharts" | "direct";
   seriesLayout?: "combined" | "separate";
 };
+export type ReportLayout = {
+  chartType: ChartType;
+  chartSettings?: ReportChartSettings;
+};
 export type MetricRollup = "sum" | "min" | "max" | "unsupported";
 export type ReportPresentation = {
   description: string;
