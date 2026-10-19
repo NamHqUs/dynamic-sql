@@ -1,4 +1,4 @@
-import type { CSSProperties, DragEvent } from "react";
+import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Icon from "../../../icon/icon";
 import { MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
@@ -21,6 +21,8 @@ type FilterBuilderProps = {
   definition: QueryDefinition;
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
+  planTextControl: ReactNode;
+  planTextEditor: ReactNode;
 };
 
 const isGroup = (filter: QueryFilterNode): filter is QueryFilterGroup => "filters" in filter;
@@ -625,7 +627,7 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
   );
 }
 
-export default function FilterBuilder({ metadata, definition, entity, onDefinitionChange }: FilterBuilderProps) {
+export default function FilterBuilder({ metadata, definition, entity, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
   const builderRef = useRef<HTMLDivElement>(null);
   const [filterItemWidth, setFilterItemWidth] = useState<number>();
   const [dragPreview, setDragPreview] = useState<DragPreview>();
@@ -846,20 +848,26 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
     >
       <div className="section-header">
         <div className="section-heading">
-          <span className="section-kicker">FILTERS</span>
+          <div className="projection-title-row">
+            <span className="section-kicker">FILTERS</span>
+            {planTextControl}
+          </div>
           <p className="filter-description">Drag a selected field here to create a filter.</p>
         </div>
-        <button
-          type="button"
-          className="field-action field-action-icon"
-          aria-label="Clear filters"
-          title="Clear filters"
-          onClick={clearFilters}
-          disabled={!definition.filters.filters.length}
-        >
-          <Icon name="close" size={14} />
-        </button>
+        <div className="section-header-actions">
+          <button
+            type="button"
+            className="field-action field-action-icon"
+            aria-label="Clear filters"
+            title="Clear filters"
+            onClick={clearFilters}
+            disabled={!definition.filters.filters.length}
+          >
+            <Icon name="close" size={14} />
+          </button>
+        </div>
       </div>
+      {planTextEditor}
       <FilterGroupEditor
         group={definition.filters}
         metadata={metadata}

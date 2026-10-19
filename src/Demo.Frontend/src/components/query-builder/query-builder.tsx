@@ -8,6 +8,8 @@ import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import SavedQueryList from "./saved-query-list/saved-query-list";
 import { addEntityAliasesToMetadata } from "../../utils/query-entity-contexts";
+import { replacePlanTextSectionValue } from "./query-design/plan-text-section-editor";
+import type { PlanTextSection } from "./query-design/plan-text-section-editor";
 import type { AppDispatch, RootState } from "../../store/store";
 import "./query-builder.css";
 
@@ -302,6 +304,15 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
     }
   };
 
+  const loadSectionPlanText = async () => {
+    const resultAction = await dispatch(getQueryRequestString({
+      name: requestName,
+      definition: definitionRef.current,
+    }));
+    if (getQueryRequestString.fulfilled.match(resultAction)) return resultAction.payload;
+    throw new Error(String(resultAction.payload || "Unable to format query request."));
+  };
+
   const updateRequestStructureField = (index: number, value: string) => {
     const line = requestStructureDraft.split(/\r?\n/)[index];
     const separator = line?.indexOf(":") ?? -1;
@@ -335,10 +346,13 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
     });
   };
 
-  const applyRequestStructure = async (keepResolving = false) => {
+  const applyRequestStructure = async (
+    keepResolving = false,
+    text = requestStructureDraft,
+  ): Promise<string | null> => {
     setIsResolvingPlanChanges(true);
     setRequestStructureError("");
-    const requestLines = requestStructureDraft.split(/\r?\n/);
+    const requestLines = text.split(/\r?\n/);
     const entityLine = requestLines.find((line) => {
       const separator = line.indexOf(":");
       return separator >= 0 && line.slice(0, separator).trim() === "Entity";
@@ -353,7 +367,7 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
     const requestEntity = entityLine
       ? entityLine.slice(entityLine.indexOf(":") + 1).trim()
       : rootFromEntities ?? definition.entity;
-    const resultAction = await dispatch(parseQueryRequestString({ text: requestStructureDraft, entity: requestEntity }));
+    const resultAction = await dispatch(parseQueryRequestString({ text, entity: requestEntity }));
     if (parseQueryRequestString.fulfilled.match(resultAction)) {
       const nextDefinition = fromApiQuery(resultAction.payload);
       if (selectedRequestIsBuiltin) {
@@ -362,15 +376,41 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
         setRequestName("");
       }
       updateDefinition(nextDefinition);
-      setRequestStructureOriginal(requestStructureDraft);
+      setRequestStructureDraft(text);
+      setRequestStructureOriginal(text);
       setRequestStructureDefinition(JSON.stringify(nextDefinition));
+      setRequestStructureStatus("succeeded");
+      setRequestStructureError("");
       if (!keepResolving) setIsResolvingPlanChanges(false);
-      return true;
+      return null;
     } else {
-      setRequestStructureError(String(resultAction.payload || "Unable to apply query request structure."));
+      const error = String(resultAction.payload || "Unable to apply query request structure.");
+      setRequestStructureError(error);
+      if (!keepResolving) setIsResolvingPlanChanges(false);
+      return error;
     }
-    if (!keepResolving) setIsResolvingPlanChanges(false);
-    return false;
+  };
+
+  const applySectionPlanText = async (section: PlanTextSection, value: string) => {
+    setIsResolvingPlanChanges(true);
+    setRequestStructureError("");
+    try {
+      const formatAction = await dispatch(getQueryRequestString({
+        name: requestName,
+        definition: definitionRef.current,
+      }));
+      if (!getQueryRequestString.fulfilled.match(formatAction)) {
+        const error = String(formatAction.payload || "Unable to format query request.");
+        setRequestStructureError(error);
+        throw new Error(error);
+      }
+
+      const text = replacePlanTextSectionValue(formatAction.payload, section, value);
+      const error = await applyRequestStructure(true, text);
+      if (error) throw new Error(error);
+    } finally {
+      setIsResolvingPlanChanges(false);
+    }
   };
 
   const requestPlanTextNavigation = async (continueNavigation: () => void, cancelNavigation?: () => void) => {
@@ -393,7 +433,7 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
       ],
     });
     if (action === "apply") {
-      if (await applyRequestStructure()) continueNavigation();
+      if (await applyRequestStructure() === null) continueNavigation();
       else cancelNavigation?.();
     } else if (action === "discard") {
       setRequestStructureDraft(requestStructureOriginal);
@@ -496,14 +536,16 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
         </div>
         <div className="heading-actions">
           {onBackToReports && <button className="button secondary" onClick={onBackToReports}><Icon name="chart" size={14} /> Back to reports</button>}
-          <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>New Query</button>
+          <button className="button secondary" onClick={() => void createNewRequest()} disabled={isResolvingPlanChanges}>
+            <Icon name="plus" size={14} /> New Query
+          </button>
           {!selectedRequestIsBuiltin && <>
-            <button className="button primary" onClick={() => void saveCurrentRequest()} disabled={!requestName.trim() || queryStatus === "loading"}>
-              <Icon name="check" size={14} /> Save Query
-            </button>
             {selectedRequestName && <button className="button secondary" onClick={() => void removeCurrentRequest()}>
               <Icon name="trash" size={14} /> Delete Query
             </button>}
+            <button className="button primary" onClick={() => void saveCurrentRequest()} disabled={!requestName.trim() || queryStatus === "loading"}>
+              <Icon name="check" size={14} /> Save Query
+            </button>
           </>}
         </div>
       </section>
@@ -572,12 +614,16 @@ export default function QueryBuilder({ onNavigationGuardChange, onBackToReports 
                 functionDefinitions={functionDefinitions}
                 functionDefinitionsStatus={functionDefinitionsStatus}
                 functionDefinitionsError={functionDefinitionsError}
+                functionNames={functionNames}
                 definition={definition}
                 entity={entity}
                 requestName={requestName}
+                isResolvingPlanChanges={isResolvingPlanChanges}
                 requestNameReadOnly={Boolean(selectedRequestName && !selectedRequestIsBuiltin)}
                 onRequestNameChange={updateRequestName}
                 onDefinitionChange={updateDefinitionFromDesign}
+                onLoadPlanText={loadSectionPlanText}
+                onApplyPlanText={applySectionPlanText}
               />
             </div>
           ) : (

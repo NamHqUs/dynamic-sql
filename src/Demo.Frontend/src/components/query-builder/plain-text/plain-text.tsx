@@ -20,6 +20,118 @@ type PlainTextProps = {
   functionNamesError: string;
 };
 
+type HighlightedTextAreaProps = {
+  metadata: MetadataEntity[];
+  entityName?: string;
+  functionNames: string[];
+  value: string;
+  ariaLabel: string;
+  disabled: boolean;
+  placeholder?: string;
+  onChange: (value: string) => void;
+};
+
+function getEntityFieldNames(metadata: MetadataEntity[], entityName?: string): Set<string> {
+  const fieldNames = new Set<string>();
+  const addEntityFields = (entity: MetadataEntity, prefix = "", visited = new Set<string>()) => {
+    if (visited.has(entity.name)) return;
+    const nextVisited = new Set(visited).add(entity.name);
+    entity.fields.forEach(({ name }) => fieldNames.add(prefix ? `${prefix}.${name}` : name));
+    entity.relations?.forEach((relation) => {
+      const relatedEntity = metadata.find((candidate) => candidate.name === relation.relatedEntity);
+      if (relatedEntity) addEntityFields(relatedEntity, prefix ? `${prefix}.${relation.name}` : relation.name, nextVisited);
+    });
+  };
+  const entity = metadata.find((item) => item.name === entityName);
+  if (entity) addEntityFields(entity);
+  return fieldNames;
+}
+
+function createTextHighlighter(fieldNames: string[], functionNames: string[]) {
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const alternatives = (values: string[]) => [...new Set(values)]
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length)
+    .map(escapeRegExp)
+    .join("|");
+  const tokenPatterns = [
+    alternatives(functionNames) && {
+      type: "function",
+      pattern: `(?<![\\w.])(${alternatives(functionNames)})(?=\\s*\\()`,
+    },
+    alternatives(fieldNames) && {
+      type: "field",
+      pattern: `(?<![\\w.])(${alternatives(fieldNames)})(?![\\w.])`,
+    },
+  ].filter((entry): entry is { type: string; pattern: string } => Boolean(entry));
+  const highlightPattern = tokenPatterns.length
+    ? new RegExp(tokenPatterns.map(({ pattern }) => pattern).join("|"), "gi")
+    : null;
+
+  return (value: string): ReactNode => {
+    if (!highlightPattern) return value;
+
+    const parts: ReactNode[] = [];
+    let previousIndex = 0;
+    highlightPattern.lastIndex = 0;
+    for (const match of value.matchAll(highlightPattern)) {
+      const token = match[0];
+      const matchIndex = match.index ?? 0;
+      const tokenType = tokenPatterns.findIndex((_, index) => Boolean(match[index + 1]));
+      const className = tokenPatterns[tokenType]?.type ?? "field";
+      if (matchIndex > previousIndex) parts.push(value.slice(previousIndex, matchIndex));
+      parts.push(
+        <span className={`query-request-structure-${className}`} key={matchIndex}>{token}</span>,
+      );
+      previousIndex = matchIndex + token.length;
+    }
+    if (previousIndex < value.length) parts.push(value.slice(previousIndex));
+    return parts;
+  };
+}
+
+function syncHighlightScroll(element: HTMLInputElement | HTMLTextAreaElement) {
+  const highlight = element.parentElement?.querySelector<HTMLDivElement>(
+    ".query-request-structure-highlight",
+  );
+  if (highlight) {
+    highlight.scrollLeft = element.scrollLeft;
+    highlight.scrollTop = element.scrollTop;
+  }
+}
+
+export function HighlightedTextArea({
+  metadata,
+  entityName,
+  functionNames,
+  value,
+  ariaLabel,
+  disabled,
+  placeholder,
+  onChange,
+}: HighlightedTextAreaProps) {
+  const fieldNames = getEntityFieldNames(metadata, entityName);
+  const renderHighlightedText = createTextHighlighter([...fieldNames], functionNames);
+
+  return (
+    <div className="query-request-structure-input-container query-request-structure-input-container-multiline projection-text-area-container">
+      <div className="query-request-structure-highlight" aria-hidden="true">
+        {renderHighlightedText(value)}
+      </div>
+      <textarea
+        className="query-request-structure-input query-request-structure-input-highlighted query-request-structure-input-multiline"
+        aria-label={ariaLabel}
+        spellCheck={false}
+        placeholder={placeholder}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onScroll={(event) => syncHighlightScroll(event.currentTarget)}
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+
 export default function PlainText({
   id,
   labelledBy,
@@ -55,72 +167,11 @@ export default function PlainText({
     });
   });
 
-  const syncHighlightScroll = (element: HTMLInputElement | HTMLTextAreaElement) => {
-    const highlight = element.parentElement?.querySelector<HTMLDivElement>(
-      ".query-request-structure-highlight",
-    );
-    if (highlight) {
-      highlight.scrollLeft = element.scrollLeft;
-      highlight.scrollTop = element.scrollTop;
-    }
-  };
-  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const entityList = fields.find(({ label }) => label === "Entities")?.value;
   const selectedEntityName = fields.find(({ label }) => label === "Entity")?.value
     ?? entityList?.split(/\r?\n/).find((value) => value.trim())?.trim();
-  const selectedEntity = metadata.find((entity) => entity.name === selectedEntityName);
-  const fieldNames = new Set<string>();
-  const addEntityFields = (entity: MetadataEntity, prefix = "", visited = new Set<string>()) => {
-    if (visited.has(entity.name)) return;
-    const nextVisited = new Set(visited).add(entity.name);
-    entity.fields.forEach(({ name }) => fieldNames.add(prefix ? `${prefix}.${name}` : name));
-    entity.relations?.forEach((relation) => {
-      const relatedEntity = metadata.find((candidate) => candidate.name === relation.relatedEntity);
-      if (relatedEntity) addEntityFields(relatedEntity, prefix ? `${prefix}.${relation.name}` : relation.name, nextVisited);
-    });
-  };
-  if (selectedEntity) addEntityFields(selectedEntity);
-
-  const alternatives = (values: string[]) => [...new Set(values)]
-    .filter(Boolean)
-    .sort((left, right) => right.length - left.length)
-    .map(escapeRegExp)
-    .join("|");
-  const functionAlternatives = alternatives(functionNames);
-  const fieldAlternatives = alternatives([...fieldNames]);
-  const tokenPatterns = [
-    functionAlternatives && {
-      type: "function",
-      pattern: `(?<![\\w.])(${functionAlternatives})(?=\\s*\\()`,
-    },
-    fieldAlternatives && {
-      type: "field",
-      pattern: `(?<![\\w.])(${fieldAlternatives})(?![\\w.])`,
-    },
-  ].filter((entry): entry is { type: string; pattern: string } => Boolean(entry));
-  const highlightPattern = tokenPatterns.length
-    ? new RegExp(tokenPatterns.map(({ pattern }) => pattern).join("|"), "gi")
-    : null;
-  const renderHighlightedText = (value: string) => {
-    if (!highlightPattern) return value;
-
-    const parts: ReactNode[] = [];
-    let previousIndex = 0;
-    highlightPattern.lastIndex = 0;
-    for (const match of value.matchAll(highlightPattern)) {
-      const token = match[0];
-      const matchIndex = match.index ?? 0;
-      const tokenType = tokenPatterns.findIndex((_, index) => Boolean(match[index + 1]));
-      const className = tokenPatterns[tokenType]?.type ?? "field";
-      if (matchIndex > previousIndex) parts.push(value.slice(previousIndex, matchIndex));
-      parts.push(
-        <span className={`query-request-structure-${className}`} key={matchIndex}>{token}</span>,
-      );
-      previousIndex = matchIndex + token.length;
-    }
-    if (previousIndex < value.length) parts.push(value.slice(previousIndex));
-    return parts;
-  };
+  const fieldNames = getEntityFieldNames(metadata, selectedEntityName);
+  const renderHighlightedText = createTextHighlighter([...fieldNames], functionNames);
   const fieldsAreVisible = status === "succeeded" || (status === "loading" && text.length > 0);
   const fieldsAreDisabled = disabled || status === "loading";
 
