@@ -22,7 +22,7 @@ section.page-heading.database-page-heading {
   overflow: hidden;
   border: 0;
   border-radius: 11px;
-  background: radial-gradient(ellipse at 8% 0%, #34275b 0, transparent 40%), linear-gradient(112deg, #171522 0%, #11141c 65%, #10131a 100%);
+  background: radial-gradient(ellipse at 88% 5%, #7049b944, transparent 32%), radial-gradient(ellipse at 47% 115%, #126c6740, transparent 39%), linear-gradient(108deg, #171526 0%, #121923 58%, #10191e 100%);
   box-shadow: 0 16px 38px #00000026;
 }
 
