@@ -6,8 +6,7 @@ import { useMessageBox } from "../message-box/message-box";
 import Icon from "../icon/icon";
 import PanelSplitter from "../panel-splitter/panel-splitter";
 import { useResizablePanel } from "../../utils/use-resizable-panel";
-import { MetadataEntity, clearQueryResult, invalidateQueryMetadata } from "../query-builder/query-design/query-builder-slice";
-import { resetQueryBuilderCache } from "../query-builder/query-builder";
+import { MetadataEntity, invalidateQueryMetadata } from "../query-builder/query-design/query-builder-slice";
 import EntityList from "./entity-definition/entity-list/entity-list";
 import EntityBuilder from "./entity-definition/entity-builder/entity-builder";
 import { EditableEntity, emptyEntity, toEditable } from "./types";
@@ -205,31 +204,6 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
     }
   };
 
-  const reset = async () => {
-    const action = await showMessageBox({
-      eyebrow: "RESET METADATA",
-      title: "Restore original definitions?",
-      message: "All current metadata changes will be lost and the original definitions will be restored.",
-      actions: [
-        { value: "cancel", label: "Cancel", variant: "secondary" },
-        { value: "reset", label: "Reset metadata", variant: "danger" },
-      ],
-    });
-    if (action !== "reset") return;
-    setStatus("saving");
-    setMessage("");
-    try {
-      await request(apiUrls.metadata.reset, { method: "POST" });
-      resetQueryBuilderCache();
-      dispatch(clearQueryResult());
-      dispatch(invalidateQueryMetadata());
-      await loadEntities(true);
-    } catch (error) {
-      setStatus("failed");
-      setMessage(error instanceof Error ? error.message : "Unable to reset metadata.");
-    }
-  };
-
   const addEntity = async () => {
     setSelectedName("");
     setDraft(emptyEntity());
@@ -269,21 +243,18 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
             </div>
           </div>
         </div>
-        {activeSection === "entities" && <div className="heading-actions">
-          <button className="button secondary" onClick={reset}><Icon name="reset" size={14} /> Reset</button>
-        </div>}
+        <nav className="metadata-section-tabs" role="tablist" aria-label="Metadata definition types">
+          <button type="button" role="tab" aria-selected={activeSection === "entities"} className={activeSection === "entities" ? "active" : ""} onClick={() => selectSection("entities")}>
+            <Icon name="database" size={14} /> Entity definitions
+          </button>
+          <button type="button" role="tab" aria-selected={activeSection === "functions"} className={activeSection === "functions" ? "active" : ""} onClick={() => selectSection("functions")}>
+            <Icon name="code" size={14} /> Function definitions
+          </button>
+          <button type="button" role="tab" aria-selected={activeSection === "operators"} className={activeSection === "operators" ? "active" : ""} onClick={() => selectSection("operators")}>
+            <Icon name="sliders" size={14} /> Operator definitions
+          </button>
+        </nav>
       </section>
-      <nav className="metadata-section-tabs" role="tablist" aria-label="Metadata definition types">
-        <button type="button" role="tab" aria-selected={activeSection === "entities"} className={activeSection === "entities" ? "active" : ""} onClick={() => selectSection("entities")}>
-          <Icon name="database" size={14} /> Entity definitions
-        </button>
-        <button type="button" role="tab" aria-selected={activeSection === "functions"} className={activeSection === "functions" ? "active" : ""} onClick={() => selectSection("functions")}>
-          <Icon name="code" size={14} /> Function definitions
-        </button>
-        <button type="button" role="tab" aria-selected={activeSection === "operators"} className={activeSection === "operators" ? "active" : ""} onClick={() => selectSection("operators")}>
-          <Icon name="sliders" size={14} /> Operator definitions
-        </button>
-      </nav>
       <div className="metadata-workspace-panel" hidden={activeSection !== "entities"}>
         <section className={`metadata-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>
           <EntityList
