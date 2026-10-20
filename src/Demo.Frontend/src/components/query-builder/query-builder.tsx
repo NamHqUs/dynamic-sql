@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
@@ -231,6 +231,10 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const [queryRequestNotice, setQueryRequestNotice] = useState("");
   const [isSavingQuery, setIsSavingQuery] = useState(false);
   const [isApplyingPlanText, setIsApplyingPlanText] = useState(false);
+  const planTextCommitRef = useRef<(definition: QueryDefinition) => Promise<QueryDefinition | null>>(async (currentDefinition) => currentDefinition);
+  const registerPlanTextCommit = useCallback((commit: ((definition: QueryDefinition) => Promise<QueryDefinition | null>) | null) => {
+    planTextCommitRef.current = commit ?? (async (currentDefinition) => currentDefinition);
+  }, []);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
   const contextMetadata = useMemo(
     () => addRelationsToMetadata(metadata, definition.entity, definition.relations),
@@ -277,11 +281,12 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     }
   }, [metadata, definition.entity, definition.relations]);
 
-  const runQuery = () => {
-    if (definition.entity && definition.columns.length) {
+  const runQuery = async () => {
+    const queryDefinition = await planTextCommitRef.current(definition);
+    if (queryDefinition?.entity && queryDefinition.columns.length) {
       dispatch(executeQuery({
-        ...definition,
-        filters: definition.filters,
+        ...queryDefinition,
+        filters: queryDefinition.filters,
       }));
     }
   };
@@ -308,22 +313,28 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     throw new Error(String(resultAction.payload || "Unable to format query request."));
   };
 
-  const applyPlanText = async (section: PlanTextSection, value: string) => {
+  const applyPlanText = async (
+    section: PlanTextSection,
+    value: string,
+    currentDefinition: QueryDefinition = definition,
+  ): Promise<QueryDefinition> => {
     setIsApplyingPlanText(true);
     try {
-      const formatAction = await dispatch(getQueryRequestString({ definition }));
+      const formatAction = await dispatch(getQueryRequestString({ definition: currentDefinition }));
       if (!getQueryRequestString.fulfilled.match(formatAction)) {
         throw new Error(String(formatAction.payload || "Unable to format query request."));
       }
       const text = replacePlanTextSectionValue(formatAction.payload, section, value);
-      const parseAction = await dispatch(parseQueryRequestString({ text, entity: definition.entity }));
+      const parseAction = await dispatch(parseQueryRequestString({ text, entity: currentDefinition.entity }));
       if (!parseQueryRequestString.fulfilled.match(parseAction)) {
         throw new Error(String(parseAction.payload || "Unable to apply query request."));
       }
-      updateDefinitionFromDesign({
+      const nextDefinition = {
         ...fromApiQuery(parseAction.payload),
-        projectionRows: definition.projectionRows,
-      });
+        projectionRows: currentDefinition.projectionRows,
+      };
+      updateDefinitionFromDesign(nextDefinition);
+      return nextDefinition;
     } finally {
       setIsApplyingPlanText(false);
     }
@@ -453,6 +464,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               onDefinitionChange={updateDefinitionFromDesign}
               onLoadPlanText={loadPlanText}
               onApplyPlanText={applyPlanText}
+              onRegisterPlanTextCommit={registerPlanTextCommit}
             />
           </div>
         </div>

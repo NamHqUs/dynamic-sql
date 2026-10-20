@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MetadataEntity, QueryDefinition } from "./query-builder-slice";
 import { FunctionDefinition } from "../../sql-functions/types";
 import ProjectionBuilder from "./projection-builder/projection-builder";
@@ -25,7 +25,8 @@ type QueryDesignProps = {
   onRequestNameChange: (name: string) => void;
   onDefinitionChange: (definition: QueryDefinition) => void;
   onLoadPlanText: () => Promise<string>;
-  onApplyPlanText: (section: PlanTextSection, value: string) => Promise<void>;
+  onApplyPlanText: (section: PlanTextSection, value: string, definition?: QueryDefinition) => Promise<QueryDefinition>;
+  onRegisterPlanTextCommit: (commit: ((definition: QueryDefinition) => Promise<QueryDefinition | null>) | null) => void;
 };
 
 export default function QueryDesign({
@@ -45,6 +46,7 @@ export default function QueryDesign({
   onDefinitionChange,
   onLoadPlanText,
   onApplyPlanText,
+  onRegisterPlanTextCommit,
 }: QueryDesignProps) {
   const [draggedProjectionField, setDraggedProjectionField] = useState<string | null>(null);
   const contextMetadata = useMemo(
@@ -61,6 +63,7 @@ export default function QueryDesign({
     readOnly: isBuiltin,
     onLoadPlanText,
     onApplyPlanText,
+    definition,
   });
   const sortPlanText = usePlanTextSectionEditor({
     section: "Sorts",
@@ -71,7 +74,23 @@ export default function QueryDesign({
     readOnly: isBuiltin,
     onLoadPlanText,
     onApplyPlanText,
+    definition,
   });
+
+  useEffect(() => {
+    const commitPlanText = async (currentDefinition: QueryDefinition): Promise<QueryDefinition | null> => {
+      let nextDefinition = currentDefinition;
+      for (const applyPending of [filterPlanText.applyPending, sortPlanText.applyPending]) {
+        const appliedDefinition = await applyPending(nextDefinition, true);
+        if (!appliedDefinition) return null;
+        nextDefinition = appliedDefinition;
+      }
+      return nextDefinition;
+    };
+
+    onRegisterPlanTextCommit(commitPlanText);
+    return () => onRegisterPlanTextCommit(null);
+  }, [filterPlanText.applyPending, onRegisterPlanTextCommit, sortPlanText.applyPending]);
 
   return (
     <section className={`query-builder-card${isBuiltin ? " is-read-only" : ""}`}>
@@ -129,6 +148,7 @@ export default function QueryDesign({
           definition={definition}
           entity={contextEntity ?? entity}
           isReadOnly={isBuiltin}
+          isPlanTextEditing={filterPlanText.isEditing}
           onDefinitionChange={onDefinitionChange}
           planTextControl={filterPlanText.control}
           planTextEditor={filterPlanText.editor}
@@ -140,6 +160,7 @@ export default function QueryDesign({
           onDefinitionChange={onDefinitionChange}
           draggedProjectionField={draggedProjectionField}
           isReadOnly={isBuiltin}
+          isPlanTextEditing={sortPlanText.isEditing}
           planTextControl={sortPlanText.control}
           planTextEditor={sortPlanText.editor}
         />

@@ -21,6 +21,7 @@ type FilterBuilderProps = {
   definition: QueryDefinition;
   entity: MetadataEntity;
   isReadOnly: boolean;
+  isPlanTextEditing: boolean;
   onDefinitionChange: (definition: QueryDefinition) => void;
   planTextControl: ReactNode;
   planTextEditor: ReactNode;
@@ -628,7 +629,7 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
   );
 }
 
-export default function FilterBuilder({ metadata, definition, entity, isReadOnly, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
+export default function FilterBuilder({ metadata, definition, entity, isReadOnly, isPlanTextEditing, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
   const builderRef = useRef<HTMLDivElement>(null);
   const [filterItemWidth, setFilterItemWidth] = useState<number>();
   const [dragPreview, setDragPreview] = useState<DragPreview>();
@@ -855,7 +856,7 @@ export default function FilterBuilder({ metadata, definition, entity, isReadOnly
           <p className="filter-description">{isReadOnly ? "Built-in query filters are read-only." : "Drag a selected field here to create a filter."}</p>
         </div>
         <div className="section-header-actions">
-          <button
+          {!isPlanTextEditing && <button
             type="button"
             className="field-action field-action-icon"
             aria-label="Clear filters"
@@ -864,30 +865,32 @@ export default function FilterBuilder({ metadata, definition, entity, isReadOnly
             disabled={!definition.filters.filters.length}
           >
             <Icon name="close" size={14} />
-          </button>
+          </button>}
           {planTextControl}
         </div>
       </div>
       {planTextEditor}
-      <div inert={isReadOnly}>
-        <FilterGroupEditor
-          group={definition.filters}
-          metadata={metadata}
-          entity={entity}
-          depth={0}
-          path={[]}
-          onMoveFilter={moveFilter}
-          onDragPreview={(path, position) => setDragPreview({ path, position })}
-          onDragPreviewClear={() => setDragPreview(undefined)}
-          dragPreview={dragPreview}
-          onGroupFilter={groupFilter}
-          onAddFilter={addFilterAfter}
-          onAddField={addFilterField}
-          onUngroupFilter={ungroupFilter}
-          showLogicalOperator={false}
-          onChange={(filters) => onDefinitionChange({ ...definition, filters })}
-        />
-      </div>
+      {!isPlanTextEditing && (
+        <div inert={isReadOnly}>
+          <FilterGroupEditor
+            group={definition.filters}
+            metadata={metadata}
+            entity={entity}
+            depth={0}
+            path={[]}
+            onMoveFilter={moveFilter}
+            onDragPreview={(path, position) => setDragPreview({ path, position })}
+            onDragPreviewClear={() => setDragPreview(undefined)}
+            dragPreview={dragPreview}
+            onGroupFilter={groupFilter}
+            onAddFilter={addFilterAfter}
+            onAddField={addFilterField}
+            onUngroupFilter={ungroupFilter}
+            showLogicalOperator={false}
+            onChange={(filters) => onDefinitionChange({ ...definition, filters })}
+          />
+        </div>
+      )}
     </div>
   );
 }

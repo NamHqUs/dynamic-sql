@@ -13,6 +13,7 @@ type SortBuilderProps = {
   onDefinitionChange: (definition: QueryDefinition) => void;
   draggedProjectionField: string | null;
   isReadOnly: boolean;
+  isPlanTextEditing: boolean;
   planTextControl: ReactNode;
   planTextEditor: ReactNode;
 };
@@ -140,7 +141,7 @@ function SortDirectionMenu({
   );
 }
 
-export default function SortBuilder({ metadata, definition, entity, onDefinitionChange, draggedProjectionField, isReadOnly, planTextControl, planTextEditor }: SortBuilderProps) {
+export default function SortBuilder({ metadata, definition, entity, onDefinitionChange, draggedProjectionField, isReadOnly, isPlanTextEditing, planTextControl, planTextEditor }: SortBuilderProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [isDropTarget, setIsDropTarget] = useState(false);
 
@@ -203,7 +204,7 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
           <p className="filter-description">{isReadOnly ? "Built-in query sort order is read-only." : "Select fields to sort the query results and choose the direction for each field."}</p>
         </div>
         <div className="section-header-actions">
-          <button
+          {!isPlanTextEditing && <button
             type="button"
             className="field-action field-action-icon"
             aria-label="Clear sorts"
@@ -212,12 +213,12 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
             disabled={!definition.sorts.length}
           >
             <Icon name="close" size={14} />
-          </button>
+          </button>}
           {planTextControl}
         </div>
       </div>
       {planTextEditor}
-      <div
+      {!isPlanTextEditing && <div
         inert={isReadOnly}
         className={`sort-list${isDropTarget ? " sort-list-drop-target" : ""}`}
         onDragOver={(event) => {
@@ -298,7 +299,7 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
           />
         </div>
        
-      </div>
+      </div>}
     </div>
   );
 }

@@ -36,7 +36,7 @@ internal sealed class FilterDefinitionParser
         string separator,
         LogicalOperator logicalOperator)
     {
-        var expression = operand();
+        var expressions = new List<IFilterDto> { operand() };
 
         while (Match(separator))
         {
@@ -44,10 +44,12 @@ internal sealed class FilterDefinitionParser
             if (next is FilterItemDto filter)
                 next = filter with { LogicalOperator = logicalOperator };
 
-            expression = new FilterDefinition(logicalOperator, expression, next);
+            expressions.Add(next);
         }
 
-        return expression;
+        return expressions.Count == 1
+            ? expressions[0]
+            : new FilterDefinition(logicalOperator, expressions.ToArray());
     }
 
     private IFilterDto ParsePrimary()

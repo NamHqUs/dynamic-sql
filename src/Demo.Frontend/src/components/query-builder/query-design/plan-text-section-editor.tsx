@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import Icon from "../../icon/icon";
-import type { MetadataEntity } from "./query-builder-slice";
+import type { MetadataEntity, QueryDefinition } from "./query-builder-slice";
 
 export type PlanTextSection = "Filter" | "Sorts";
 
@@ -13,7 +13,7 @@ type PlanTextSectionEditorProps = {
   disabled: boolean;
   readOnly: boolean;
   onLoadPlanText: () => Promise<string>;
-  onApplyPlanText: (section: PlanTextSection, value: string) => Promise<void>;
+  onApplyPlanText: (section: PlanTextSection, value: string, definition?: QueryDefinition) => Promise<QueryDefinition>;
 };
 
 const sectionKeys: Record<PlanTextSection, string[]> = {
@@ -197,7 +197,13 @@ export function usePlanTextSectionEditor({
   readOnly,
   onLoadPlanText,
   onApplyPlanText,
-}: PlanTextSectionEditorProps): { control: ReactNode; editor: ReactNode } {
+  definition,
+}: PlanTextSectionEditorProps & { definition: QueryDefinition }): {
+  control: ReactNode;
+  editor: ReactNode;
+  isEditing: boolean;
+  applyPending: (definition: QueryDefinition, keepEditing?: boolean) => Promise<QueryDefinition | null>;
+} {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
@@ -219,14 +225,17 @@ export function usePlanTextSectionEditor({
     }
   };
 
-  const apply = async () => {
+  const applyPending = async (currentDefinition: QueryDefinition, keepEditing = false): Promise<QueryDefinition | null> => {
+    if (!isEditing) return currentDefinition;
     setIsApplying(true);
     setError("");
     try {
-      await onApplyPlanText(section, value);
-      setIsEditing(false);
+      const nextDefinition = await onApplyPlanText(section, value, currentDefinition);
+      if (!keepEditing) setIsEditing(false);
+      return nextDefinition;
     } catch (applyError) {
       setError(applyError instanceof Error ? applyError.message : String(applyError));
+      return null;
     } finally {
       setIsApplying(false);
     }
@@ -238,7 +247,7 @@ export function usePlanTextSectionEditor({
         setIsEditing(false);
         return;
       }
-      await apply();
+      await applyPending(definition);
       return;
     }
     await openEditor();
@@ -278,5 +287,5 @@ export function usePlanTextSectionEditor({
     <p className="query-message error" role="alert">{error}</p>
   ) : null;
 
-  return { control, editor };
+  return { control, editor, isEditing, applyPending };
 }
