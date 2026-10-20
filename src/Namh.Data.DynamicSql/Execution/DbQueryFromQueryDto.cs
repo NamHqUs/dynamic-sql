@@ -110,7 +110,9 @@ internal static class DbQueryFromQueryDto
         ParameterExpression parameter)
     {
         var field = CreateFieldAccess(filter.Left, parameter);
-        var value = CreateFilterValue(filter, parameter);
+        var value = filter.Operation is BinaryOperator.Between or BinaryOperator.NotBetween or BinaryOperator.In or BinaryOperator.NotIn
+            ? null
+            : CreateFilterValue(filter, parameter);
 
         if (filter.OperatorId is not null)
         {
@@ -119,7 +121,7 @@ internal static class DbQueryFromQueryDto
             return Expression.Call(
                 field,
                 typeof(DataValue).GetMethod(nameof(DataValue.CompareTemplate))!,
-                value,
+                value!,
                 Expression.Constant(filter.CustomSqlTemplate));
         }
 
@@ -131,19 +133,93 @@ internal static class DbQueryFromQueryDto
             return Expression.Call(
                 field,
                 typeof(DataValue).GetMethod(nameof(DataValue.Like))!,
-                value);
+                value!);
         }
 
         return filter.Operation switch
         {
-            BinaryOperator.Equals => Expression.Equal(field, value),
-            BinaryOperator.NotEquals => Expression.NotEqual(field, value),
-            BinaryOperator.GreaterThan => Expression.GreaterThan(field, value),
-            BinaryOperator.LessThan => Expression.LessThan(field, value),
-            BinaryOperator.GreaterThanOrEqual => Expression.GreaterThanOrEqual(field, value),
-            BinaryOperator.LessThanOrEqual => Expression.LessThanOrEqual(field, value),
+            BinaryOperator.Equals => Expression.Equal(field, value!),
+            BinaryOperator.NotEquals => Expression.NotEqual(field, value!),
+            BinaryOperator.GreaterThan => Expression.GreaterThan(field, value!),
+            BinaryOperator.LessThan => Expression.LessThan(field, value!),
+            BinaryOperator.GreaterThanOrEqual => Expression.GreaterThanOrEqual(field, value!),
+            BinaryOperator.LessThanOrEqual => Expression.LessThanOrEqual(field, value!),
+            BinaryOperator.NotLike => Expression.Call(
+                field,
+                typeof(DataValue).GetMethod(nameof(DataValue.NotLike))!,
+                value!),
+            BinaryOperator.IsNull => Expression.Call(
+                field,
+                typeof(DataValue).GetMethod(nameof(DataValue.IsNull))!),
+            BinaryOperator.IsNotNull => Expression.Call(
+                field,
+                typeof(DataValue).GetMethod(nameof(DataValue.IsNotNull))!),
+            BinaryOperator.Between or BinaryOperator.NotBetween => CreateRangeCondition(filter, field, parameter),
+            BinaryOperator.In or BinaryOperator.NotIn => CreateSetCondition(filter, field, parameter),
             _ => throw new ArgumentOutOfRangeException(nameof(filter.Operation))
         };
+    }
+
+    private static Expression CreateRangeCondition(
+        FilterItemDefinition filter,
+        Expression field,
+        ParameterExpression parameter)
+    {
+        var values = GetMultipleFilterValues(filter, parameter, 2);
+        return Expression.Call(
+            field,
+            typeof(DataValue).GetMethod(
+                filter.Operation == BinaryOperator.Between
+                    ? nameof(DataValue.Between)
+                    : nameof(DataValue.NotBetween))!,
+            values[0],
+            values[1]);
+    }
+
+    private static Expression CreateSetCondition(
+        FilterItemDefinition filter,
+        Expression field,
+        ParameterExpression parameter)
+    {
+        var values = GetMultipleFilterValues(filter, parameter, null);
+        var array = Expression.NewArrayInit(typeof(object), values);
+        return Expression.Call(
+            field,
+            typeof(DataValue).GetMethod(
+                filter.Operation == BinaryOperator.In
+                    ? nameof(DataValue.In)
+                    : nameof(DataValue.NotIn))!,
+            array);
+    }
+
+    private static Expression[] GetMultipleFilterValues(
+        FilterItemDefinition filter,
+        ParameterExpression parameter,
+        int? expectedCount)
+    {
+        var fields = filter.Right switch
+        {
+            GroupFieldDefintion group => group.Fields,
+            null => Array.Empty<IFieldDefinition>(),
+            _ => new[] { filter.Right }
+        };
+        if (fields.Length == 0 || expectedCount is not null && fields.Length != expectedCount)
+            throw new FormatException(
+                expectedCount is null
+                    ? "Set comparison values cannot be empty."
+                    : $"The {filter.Operation} operator requires exactly {expectedCount} values.");
+
+        return fields
+            .Select(field => CreateFilterValue(
+                new FilterItemDefinition(null, filter.Left, filter.Operation, field)
+                {
+                    Parameterized = filter.Parameterized
+                },
+                parameter))
+            .Select(value => value.Type == typeof(object)
+                ? value
+                : Expression.Convert(value, typeof(object)))
+            .ToArray();
     }
 
     private static string GetFilterFieldName(IFieldDefinition field)

@@ -10,6 +10,13 @@ public abstract class DataValue
     public T As<T>() =>  throw new NotImplementedException();
     public bool RawCompare(string statement) => throw new NotImplementedException();
     public bool Like(object value) => throw new NotImplementedException();
+    public bool NotLike(object value) => throw new NotImplementedException();
+    public bool Between(object lower, object upper) => throw new NotImplementedException();
+    public bool NotBetween(object lower, object upper) => throw new NotImplementedException();
+    public bool In(params object[] values) => throw new NotImplementedException();
+    public bool NotIn(params object[] values) => throw new NotImplementedException();
+    public bool IsNull() => throw new NotImplementedException();
+    public bool IsNotNull() => throw new NotImplementedException();
     public bool CompareTemplate(object value, string template) => throw new NotImplementedException();
     public static DataValue Parameter(object? value) => throw new NotImplementedException();
 

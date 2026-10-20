@@ -139,8 +139,16 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             TemplateCompareSqlExpression compare => RenderTemplateComparison(compare),
 
+            RangePredicateExpression range =>
+                $"({RenderExpression(range.Left)} {range.Operator} {RenderExpression(range.Lower)} AND {RenderExpression(range.Upper)})",
+
+            SetPredicateExpression set =>
+                $"({RenderExpression(set.Left)} {set.Operator} ({string.Join(", ", set.Values.Select(RenderExpression))}))",
+
             PredicateExpression predicate => predicate.Right is null
-                ? RenderExpression(predicate.Left)
+                ? predicate.Operator is "IS NULL" or "IS NOT NULL"
+                    ? $"({RenderExpression(predicate.Left)} {predicate.Operator})"
+                    : RenderExpression(predicate.Left)
                 : $"({RenderExpression(predicate.Left)} {predicate.Operator} {RenderExpression(predicate.Right)})",
 
             ProjectionExpression projection => $"{(projection.Parenthesize ? "(" : "")}{RenderExpression(projection.Expression)}{(projection.Parenthesize ? ")" : "")} {dialect.QuoteIdentifier(projection.Alias)}",

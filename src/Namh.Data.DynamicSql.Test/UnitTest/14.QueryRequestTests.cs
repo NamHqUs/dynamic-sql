@@ -90,6 +90,79 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
+    public void DefinitionSupportsExtendedFilterOperators()
+    {
+        var filters = new (BinaryOperator Operation, IFieldDefinition? Right, string Sql)[]
+        {
+            (BinaryOperator.Between,
+                new GroupFieldDefintion([new ConstFieldDefinition(18), new ConstFieldDefinition(65)]),
+                "BETWEEN"),
+            (BinaryOperator.NotBetween,
+                new GroupFieldDefintion([new ConstFieldDefinition(18), new ConstFieldDefinition(65)]),
+                "NOT BETWEEN"),
+            (BinaryOperator.In,
+                new GroupFieldDefintion([new ConstFieldDefinition("Alice"), new ConstFieldDefinition("Bob")]),
+                " IN "),
+            (BinaryOperator.NotIn,
+                new GroupFieldDefintion([new ConstFieldDefinition("Alice"), new ConstFieldDefinition("Bob")]),
+                "NOT IN"),
+            (BinaryOperator.IsNull, null, "IS NULL"),
+            (BinaryOperator.IsNotNull, null, "IS NOT NULL"),
+            (BinaryOperator.NotLike, new ConstFieldDefinition("A%"), "NOT LIKE")
+        };
+
+        foreach (var (operation, right, sqlOperator) in filters)
+        {
+            var definition = new QueryDefinition
+            {
+                Entity = "User",
+                Projection = QueryDefinitionParser.ParseProjection("Name"),
+                Filter = new FilterDefinition(
+                    LogicalOperator.And,
+                    new FilterItemDefinition(
+                        LogicalOperator.And,
+                        new FieldDefinition("Name"),
+                        operation,
+                        right))
+            };
+
+            var sql = _db.Query(definition).ToSql();
+
+            Assert.That(sql.CommandText, Does.Contain(sqlOperator), operation.ToString());
+        }
+    }
+
+    [Test]
+    public void DefinitionRejectsInvalidRangeAndEmptySetFilters()
+    {
+        var invalidRange = new QueryDefinition
+        {
+            Entity = "User",
+            Filter = new FilterDefinition(
+                LogicalOperator.And,
+                new FilterItemDefinition(
+                    LogicalOperator.And,
+                    new FieldDefinition("Age"),
+                    BinaryOperator.Between,
+                    new GroupFieldDefintion([new ConstFieldDefinition(18)])))
+        };
+        var emptySet = new QueryDefinition
+        {
+            Entity = "User",
+            Filter = new FilterDefinition(
+                LogicalOperator.And,
+                new FilterItemDefinition(
+                    LogicalOperator.And,
+                    new FieldDefinition("Name"),
+                    BinaryOperator.In,
+                    new GroupFieldDefintion([])))
+        };
+
+        Assert.Throws<FormatException>(() => _db.Query(invalidRange).ToSql());
+        Assert.Throws<FormatException>(() => _db.Query(emptySet).ToSql());
+    }
+
+    [Test]
     public void DefinitionSupportsAggregateOnRootEntity()
     {
         var definition = new QueryDefinition

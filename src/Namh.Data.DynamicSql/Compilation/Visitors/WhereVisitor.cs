@@ -57,6 +57,53 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
         }
 
         if (node.Method.DeclaringType == typeof(DataValue) &&
+            node.Method.Name is nameof(DataValue.NotLike) or nameof(DataValue.Between) or nameof(DataValue.NotBetween))
+        {
+            var left = (SqlExpression)Visit(node.Object!);
+            var values = node.Arguments.Select(argument => (SqlExpression)Visit(argument)).ToArray();
+            return node.Method.Name switch
+            {
+                nameof(DataValue.NotLike) => new PredicateExpression(left, "NOT LIKE", values[0]),
+                nameof(DataValue.Between) => new RangePredicateExpression(left, "BETWEEN", values[0], values[1]),
+                nameof(DataValue.NotBetween) => new RangePredicateExpression(left, "NOT BETWEEN", values[0], values[1]),
+                _ => throw new InvalidOperationException()
+            };
+        }
+
+        if (node.Method.DeclaringType == typeof(DataValue) &&
+            node.Method.Name is nameof(DataValue.In) or nameof(DataValue.NotIn))
+        {
+            var left = (SqlExpression)Visit(node.Object!);
+            if (node.Arguments[0] is not NewArrayExpression values)
+                throw new FormatException("Set comparison values must be an array.");
+
+            var sqlValues = values.Expressions
+                .Select(argument => argument is UnaryExpression
+                    {
+                        NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked
+                    } converted
+                    ? (SqlExpression)Visit(converted.Operand)
+                    : (SqlExpression)Visit(argument))
+                .ToArray();
+            if (sqlValues.Length == 0)
+                throw new FormatException("Set comparison values cannot be empty.");
+
+            return new SetPredicateExpression(
+                left,
+                node.Method.Name == nameof(DataValue.In) ? "IN" : "NOT IN",
+                sqlValues);
+        }
+
+        if (node.Method.DeclaringType == typeof(DataValue) &&
+            node.Method.Name is nameof(DataValue.IsNull) or nameof(DataValue.IsNotNull))
+        {
+            var left = (SqlExpression)Visit(node.Object!);
+            return new PredicateExpression(
+                left,
+                node.Method.Name == nameof(DataValue.IsNull) ? "IS NULL" : "IS NOT NULL");
+        }
+
+        if (node.Method.DeclaringType == typeof(DataValue) &&
             node.Method.Name == nameof(DataValue.CompareTemplate))
         {
             var left = (SqlExpression)Visit(node.Object!);

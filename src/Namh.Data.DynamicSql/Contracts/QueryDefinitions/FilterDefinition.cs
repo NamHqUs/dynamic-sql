@@ -68,6 +68,13 @@ public record FilterItemDefinition(
             BinaryOperator.LessThan => "<",
             BinaryOperator.GreaterThanOrEqual => ">=",
             BinaryOperator.LessThanOrEqual => "<=",
+            BinaryOperator.Between => "BETWEEN",
+            BinaryOperator.NotBetween => "NOT BETWEEN",
+            BinaryOperator.In => "IN",
+            BinaryOperator.NotIn => "NOT IN",
+            BinaryOperator.IsNull => "IS NULL",
+            BinaryOperator.IsNotNull => "IS NOT NULL",
+            BinaryOperator.NotLike => "NOT LIKE",
             _ => throw new ArgumentOutOfRangeException(nameof(operation))
         };
 }
@@ -77,10 +84,18 @@ public enum BinaryOperator
     Equals,
     NotEquals,
     Like,
+    NotLike,
     GreaterThan,
     LessThan,
     GreaterThanOrEqual,
-    LessThanOrEqual
+    LessThanOrEqual,
+
+    Between,
+    NotBetween,
+    In,
+    NotIn,
+    IsNull,
+    IsNotNull,
 }
 
 public enum LogicalOperator
