@@ -72,7 +72,8 @@ export default function SavedQueryList({
           <div className="saved-query-flyout-heading">
             <div>
               <span className="section-kicker">QUERY LIBRARY</span>
-              <h3>Saved queries</h3>
+              <h3>Saved queries <span className="saved-query-total">{requests.length}</span></h3>
+              <p>Pick a query to continue where you left off.</p>
             </div>
             <button
               type="button"
@@ -131,7 +132,15 @@ export default function SavedQueryList({
                           }}
                           aria-current={selectedRequestName === item.name ? "page" : undefined}
                         >
-                          <span className="saved-query-item-name">{item.name}</span>
+                          <span className="saved-query-item-icon">
+                            <Icon name={item.isBuiltin ? "database" : "file-text"} size={14} />
+                          </span>
+                          <span className="saved-query-item-copy">
+                            <span className="saved-query-item-name">{item.name}</span>
+                            <span className="saved-query-item-description">
+                              {item.isBuiltin ? "Ready-to-use query" : "Your saved query"}
+                            </span>
+                          </span>
                           <span className={`saved-query-kind ${kind}`}>{kind}</span>
                         </button>
                       </li>

@@ -377,6 +377,18 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
           </div>
         </div>
         <div className="heading-actions">
+          {onBackToReports && <button className="button secondary" onClick={onBackToReports}><Icon name="chart" size={14} /> Back to reports</button>}
+          <button className="button secondary" onClick={startNewRequest}>
+            <Icon name="plus" size={14} /> New Query
+          </button>
+          {!selectedRequestIsBuiltin && <>
+            {selectedRequestName && <button className="button secondary" onClick={() => void removeCurrentRequest()}>
+              <Icon name="trash" size={14} /> Delete Query
+            </button>}
+            <button type="button" className="button primary query-save-button" onClick={() => void saveCurrentRequest()} disabled={queryStatus === "loading" || isSavingQuery}>
+              <Icon name="check" size={14} /> {isSavingQuery ? "Saving..." : "Save Query"}
+            </button>
+          </>}
           <SavedQueryList
             requests={queryRequests}
             selectedRequestName={selectedRequestName}
@@ -387,18 +399,6 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               void dispatch(fetchQueryRequests());
             }}
           />
-          {onBackToReports && <button className="button secondary" onClick={onBackToReports}><Icon name="chart" size={14} /> Back to reports</button>}
-          <button className="button secondary" onClick={startNewRequest}>
-            <Icon name="plus" size={14} /> New Query
-          </button>
-          {!selectedRequestIsBuiltin && <>
-            {selectedRequestName && <button className="button secondary" onClick={() => void removeCurrentRequest()}>
-              <Icon name="trash" size={14} /> Delete Query
-            </button>}
-            <button type="button" className="button primary" onClick={() => void saveCurrentRequest()} disabled={queryStatus === "loading" || isSavingQuery}>
-              <Icon name="check" size={14} /> {isSavingQuery ? "Saving..." : "Save Query"}
-            </button>
-          </>}
         </div>
       </section>
       {(queryRequestsError || queryRequestNotice) && <p className={`query-request-feedback${queryRequestsError ? " error" : ""}`} role={queryRequestsError ? "alert" : "status"}>
