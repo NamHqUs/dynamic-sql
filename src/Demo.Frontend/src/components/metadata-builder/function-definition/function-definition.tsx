@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { apiUrls } from "../../../const/api-urls";
+import PanelSplitter from "../../panel-splitter/panel-splitter";
+import { useResizablePanel } from "../../../utils/use-resizable-panel";
 import { useMessageBox } from "../../message-box/message-box";
 import FunctionDetail from "./function-detail/function-detail";
 import FunctionList from "./function-list/function-list";
-import { resolveDefinitionChanges, useDefinitionUnsavedWarning } from "../definition-actions/definition-actions";
+import {
+  resolveDefinitionChanges,
+  useDefinitionUnsavedWarning,
+} from "../definition-actions/definition-actions";
 import type { DefinitionActionAdapter } from "../definition-actions/definition-actions";
 import {
   EditableFunctionDefinition,
@@ -84,6 +89,7 @@ function toPayload(draft: EditableFunctionDefinition): FunctionDefinition {
 
 export default function FunctionDefinitionWorkspace({ onNavigationGuardChange }: FunctionDefinitionWorkspaceProps) {
   const showMessageBox = useMessageBox();
+  const panel = useResizablePanel("metadata-functions");
   const [definitions, setDefinitions] = useState<FunctionDefinition[]>([]);
   const [selectedName, setSelectedName] = useState("");
   const [draft, setDraft] = useState<EditableFunctionDefinition | null>(null);
@@ -202,7 +208,7 @@ export default function FunctionDefinitionWorkspace({ onNavigationGuardChange }:
   }, [onNavigationGuardChange, dirty, draft, definitions, selectedName]);
 
   const selectDefinition = async (definition: FunctionDefinition) => {
-    if (!(await resolveDirtyChanges())) return;
+    if (definition.name === selectedName || !(await resolveDirtyChanges())) return;
     setSelectedName(definition.name);
     setDraft(toEditableFunction(definition));
     setDirty(false);
@@ -254,13 +260,17 @@ export default function FunctionDefinitionWorkspace({ onNavigationGuardChange }:
   };
 
   return (
-      <section className="function-workspace">
+      <section
+        className={`function-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`}
+        style={panel.style}
+      >
         <FunctionList
           definitions={definitions}
           selectedName={selectedName}
           status={status}
           onSelect={(definition) => void selectDefinition(definition)}
         />
+        <PanelSplitter panel={panel} label="functions panel" />
         <FunctionDetail
           draft={draft}
           selectedName={selectedName}

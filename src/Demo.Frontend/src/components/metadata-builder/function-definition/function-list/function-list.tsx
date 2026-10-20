@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Icon from "../../../icon/icon";
 import { FunctionDefinition } from "../types";
+import MetadataSidebar, { type MetadataSidebarGroup } from "../../metadata-sidebar/metadata-sidebar";
 import "./function-list.css";
 
 type FunctionListProps = {
@@ -20,46 +21,57 @@ export default function FunctionList({
   const visibleDefinitions = definitions.filter((definition) =>
     definition.name.toLowerCase().includes(filter.toLowerCase()),
   );
+  const customDefinitions = visibleDefinitions.filter((definition) =>
+    definition.isBuiltin !== true && definition.canDelete !== false,
+  );
+  const builtInDefinitions = visibleDefinitions.filter((definition) =>
+    definition.isBuiltin === true || definition.canDelete === false,
+  );
+  const renderDefinition = (definition: FunctionDefinition) => (
+    <button
+      className={`metadata-entity${definition.name === selectedName ? " active" : ""}`}
+      key={definition.name}
+      type="button"
+      onClick={() => onSelect(definition)}
+    >
+      <span className="entity-icon"><Icon name="code" size={14} /></span>
+      <span>
+        <b>{definition.name}</b>
+        <small>
+          {definition.arguments.length} arguments · {definition.resultType}
+          {definition.isAggregate ? " · aggregate" : ""}
+        </small>
+      </span>
+      <Icon name="chevron" size={14} />
+    </button>
+  );
+  const groups: MetadataSidebarGroup[] = [
+    {
+      id: "function-custom-list",
+      title: "Custom",
+      count: customDefinitions.length,
+      content: customDefinitions.map(renderDefinition),
+      emptyMessage: status !== "loading" && !customDefinitions.length ? "No custom functions." : undefined,
+    },
+    {
+      id: "function-builtin-list",
+      title: "Builtin",
+      count: builtInDefinitions.length,
+      content: builtInDefinitions.map(renderDefinition),
+      emptyMessage: status !== "loading" && !builtInDefinitions.length ? "No built-in functions." : undefined,
+    },
+  ];
 
   return (
-    <aside className="function-list">
-      <div className="metadata-list-head">
-        <span className="section-kicker">FUNCTIONS</span>
-        <span className="tab-number">{definitions.length}</span>
-      </div>
-      <label className="metadata-search">
-        <Icon name="search" size={14} />
-        <input
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
-          placeholder="Find a function"
-        />
-      </label>
-      {status === "loading" && <p className="metadata-message">Loading function definitions…</p>}
-      {status !== "loading" &&
-        visibleDefinitions.map((definition) => (
-          <button
-            className={`metadata-entity${definition.name === selectedName ? " active" : ""}`}
-            key={definition.name}
-            type="button"
-            onClick={() => onSelect(definition)}
-          >
-            <span className="entity-icon"><Icon name="code" size={14} /></span>
-            <span>
-              <b>{definition.name}</b>
-              <small>
-                {definition.arguments.length} arguments · {definition.resultType}
-                {definition.isAggregate ? " · aggregate" : ""}
-              </small>
-            </span>
-            <Icon name="chevron" size={14} />
-          </button>
-        ))}
-      {status !== "loading" && !visibleDefinitions.length && (
-        <p className="metadata-message">
-          {definitions.length ? "No matching functions." : "No function definitions found."}
-        </p>
-      )}
-    </aside>
+    <MetadataSidebar
+      className="function-list split-panel"
+      title="FUNCTIONS"
+      totalCount={definitions.length}
+      filter={filter}
+      searchPlaceholder="Find a function"
+      loadingMessage={status === "loading" ? "Loading function definitions…" : undefined}
+      groups={groups}
+      onFilterChange={setFilter}
+    />
   );
 }

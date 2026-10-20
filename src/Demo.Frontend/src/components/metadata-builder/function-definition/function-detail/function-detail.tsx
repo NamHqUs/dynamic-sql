@@ -69,8 +69,7 @@ export default function FunctionDetail({
     <main className="metadata-editor">
       <div className="editor-head">
         <div>
-          <span className="section-kicker">FUNCTION DEFINITION</span>
-          <h2>{selectedName || (draft ? "New Function…" : "Select a function")}</h2>
+          <span className="section-kicker">{selectedName || (draft ? "New Function…" : "Select a function")}</span>
         </div>
         <DefinitionActions adapter={actionAdapter} />
       </div>

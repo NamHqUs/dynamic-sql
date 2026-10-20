@@ -40,8 +40,13 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   const showMessageBox = useMessageBox();
   const [searchParams, setSearchParams] = useSearchParams();
   const [functionNavigationGuard, setFunctionNavigationGuard] = useState<NavigationGuard | null>(null);
+  const [operatorNavigationGuard, setOperatorNavigationGuard] = useState<NavigationGuard | null>(null);
   const updateFunctionNavigationGuard = useCallback(
     (guard: NavigationGuard | null) => setFunctionNavigationGuard(() => guard),
+    [],
+  );
+  const updateOperatorNavigationGuard = useCallback(
+    (guard: NavigationGuard | null) => setOperatorNavigationGuard(() => guard),
     [],
   );
   const [entities, setEntities] = useState<MetadataEntity[]>([]);
@@ -58,7 +63,8 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   const activeSection: MetadataSection = requestedSection === "functions" || requestedSection === "operators"
     ? requestedSection
     : "entities";
-  const selectSection = (section: MetadataSection) => {
+  const selectSection = async (section: MetadataSection) => {
+    if (section === activeSection || !(await resolveAllDirtyChanges(activeSection))) return;
     const nextSearchParams = new URLSearchParams(searchParams);
     if (section === "entities") nextSearchParams.delete("section");
     else nextSearchParams.set("section", section);
@@ -150,11 +156,14 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
 
   const resolveAllDirtyChanges = async () => {
     if (!(await resolveEntityDirtyChanges())) return false;
-    if (!functionNavigationGuard) return true;
-    return new Promise<boolean>((resolve) => {
-      functionNavigationGuard(() => resolve(true), () => resolve(false));
-    });
+    if (functionNavigationGuard && !(await runNavigationGuard(functionNavigationGuard))) return false;
+    if (operatorNavigationGuard && !(await runNavigationGuard(operatorNavigationGuard))) return false;
+    return true;
   };
+
+  const runNavigationGuard = (guard: NavigationGuard) => new Promise<boolean>((resolve) => {
+    guard(() => resolve(true), () => resolve(false));
+  });
 
   useEffect(() => {
     const guard = (continueNavigation: () => void, cancelNavigation?: () => void) => {
@@ -165,10 +174,10 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
     };
     onNavigationGuardChange?.(guard);
     return () => onNavigationGuardChange?.(null);
-  }, [onNavigationGuardChange, dirty, draft, entities, selectedName, functionNavigationGuard]);
+  }, [onNavigationGuardChange, dirty, draft, entities, selectedName, functionNavigationGuard, operatorNavigationGuard, activeSection]);
 
   const selectEntity = async (entity: MetadataEntity) => {
-    if (!(await resolveEntityDirtyChanges())) return;
+    if (entity.name === selectedName || !(await resolveEntityDirtyChanges())) return;
     setSelectedName(entity.name);
     setDraft(toEditable(entity));
     setDirty(false);
@@ -301,7 +310,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
         <FunctionDefinitionsWorkspace onNavigationGuardChange={updateFunctionNavigationGuard} />
       </div>
       <div className="metadata-workspace-panel" hidden={activeSection !== "operators"}>
-        <OperatorDefinition />
+        <OperatorDefinition onNavigationGuardChange={updateOperatorNavigationGuard} />
       </div>
     </>
   );

@@ -30,8 +30,7 @@ export default function EntityBuilder({
     <main className="metadata-editor">
       <div className="editor-head">
         <div>
-          <span className="section-kicker">ENTITY DEFINITION</span>
-          <h2>{selectedName || (draft ? "New Entity…" : "Select an entity")}</h2>
+          <span className="section-kicker">{selectedName || (draft ? "New Entity…" : "Select an entity")}</span>
         </div>
         <DefinitionActions adapter={actionAdapter} />
       </div>

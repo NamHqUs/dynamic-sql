@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Icon from "../../icon/icon";
+import PanelSplitter from "../../panel-splitter/panel-splitter";
 import { useMessageBox } from "../../message-box/message-box";
+import { useResizablePanel } from "../../../utils/use-resizable-panel";
 import DefinitionActions, {
   resolveDefinitionChanges,
   useDefinitionUnsavedWarning,
 } from "../definition-actions/definition-actions";
 import type { DefinitionActionAdapter } from "../definition-actions/definition-actions";
+import MetadataSidebar, { type MetadataSidebarGroup } from "../metadata-sidebar/metadata-sidebar";
 import "./operator-definition.css";
 
 type OperatorDefinitionData = {
@@ -21,6 +24,10 @@ type OperatorDraft = Omit<OperatorDefinitionData, "id"> & { id: string | null };
 
 const operandTypes = ["String", "Number", "Datetime", "Boolean"];
 let nextOperatorId = 1;
+type NavigationGuard = (continueNavigation: () => void, cancelNavigation?: () => void) => void;
+type OperatorDefinitionProps = {
+  onNavigationGuardChange?: (guard: NavigationGuard | null) => void;
+};
 
 function emptyOperator(): OperatorDraft {
   return {
@@ -33,8 +40,9 @@ function emptyOperator(): OperatorDraft {
   };
 }
 
-export default function OperatorDefinition() {
+export default function OperatorDefinition({ onNavigationGuardChange }: OperatorDefinitionProps) {
   const showMessageBox = useMessageBox();
+  const panel = useResizablePanel("metadata-operators");
   const [definitions, setDefinitions] = useState<OperatorDefinitionData[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [draft, setDraft] = useState<OperatorDraft | null>(null);
@@ -120,8 +128,21 @@ export default function OperatorDefinition() {
     onNew: create,
   };
 
+  const resolveDirtyChanges = async () => resolveDefinitionChanges(actionAdapter, showMessageBox);
+
+  useEffect(() => {
+    const guard: NavigationGuard = (continueNavigation, cancelNavigation) => {
+      void (async () => {
+        if (await resolveDirtyChanges()) continueNavigation();
+        else cancelNavigation?.();
+      })();
+    };
+    onNavigationGuardChange?.(guard);
+    return () => onNavigationGuardChange?.(null);
+  }, [onNavigationGuardChange, dirty, draft, definitions, selectedId]);
+
   const selectOperator = async (definition: OperatorDefinitionData) => {
-    if (!(await resolveDefinitionChanges(actionAdapter, showMessageBox))) return;
+    if (definition.id === selectedId || !(await resolveDirtyChanges())) return;
     setSelectedId(definition.id);
     setDraft({ ...definition });
     setDirty(false);
@@ -137,49 +158,59 @@ export default function OperatorDefinition() {
   const visibleDefinitions = definitions.filter((definition) =>
     `${definition.name} ${definition.symbol}`.toLowerCase().includes(filter.toLowerCase()),
   );
+  const renderDefinition = (definition: OperatorDefinitionData) => (
+    <button
+      className={`metadata-entity${definition.id === selectedId ? " active" : ""}`}
+      key={definition.id}
+      type="button"
+      onClick={() => void selectOperator(definition)}
+    >
+      <span className="entity-icon"><Icon name="code" size={14} /></span>
+      <span>
+        <b>{definition.name}</b>
+        <small>{definition.symbol} · {definition.leftOperandType} → {definition.rightOperandType}</small>
+      </span>
+      <Icon name="chevron" size={14} />
+    </button>
+  );
+  const groups: MetadataSidebarGroup[] = [
+    {
+      id: "operator-custom-list",
+      title: "Custom",
+      count: visibleDefinitions.length,
+      content: visibleDefinitions.map(renderDefinition),
+      emptyMessage: definitions.length
+        ? "No matching custom operators."
+        : "No custom operators yet.",
+    },
+    {
+      id: "operator-builtin-list",
+      title: "Builtin",
+      count: 0,
+      content: null,
+      emptyMessage: "No built-in operators.",
+    },
+  ];
 
   return (
-    <section className="operator-workspace">
-      <aside className="operator-list">
-        <div className="metadata-list-head">
-          <span className="section-kicker">OPERATORS</span>
-          <span className="tab-number">{definitions.length}</span>
-        </div>
-        <label className="metadata-search">
-          <Icon name="search" size={14} />
-          <input
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-            placeholder="Find an operator"
-          />
-        </label>
-        {visibleDefinitions.map((definition) => (
-          <button
-            className={`metadata-entity${definition.id === selectedId ? " active" : ""}`}
-            key={definition.id}
-            type="button"
-            onClick={() => void selectOperator(definition)}
-          >
-            <span className="entity-icon"><Icon name="code" size={14} /></span>
-            <span>
-              <b>{definition.name}</b>
-              <small>{definition.symbol} · {definition.leftOperandType} → {definition.rightOperandType}</small>
-            </span>
-            <Icon name="chevron" size={14} />
-          </button>
-        ))}
-        {!visibleDefinitions.length && (
-          <p className="operator-empty">
-            <Icon name="code" size={18} />
-            {definitions.length ? "No matching operators." : "No operator definitions yet."}
-          </p>
-        )}
-      </aside>
+    <section
+      className={`operator-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`}
+      style={panel.style}
+    >
+      <MetadataSidebar
+        className="operator-list split-panel"
+        title="OPERATORS"
+        totalCount={definitions.length}
+        filter={filter}
+        searchPlaceholder="Find an operator"
+        groups={groups}
+        onFilterChange={setFilter}
+      />
+      <PanelSplitter panel={panel} label="operators panel" />
       <main className="operator-editor">
         <div className="editor-head">
           <div>
-            <span className="section-kicker">OPERATOR DEFINITION</span>
-            <h2>{selectedName || (draft ? "New Operator…" : "Select an operator")}</h2>
+            <span className="section-kicker">{selectedName || (draft ? "New Operator…" : "Select an operator")}</span>
           </div>
           <DefinitionActions adapter={actionAdapter} />
         </div>

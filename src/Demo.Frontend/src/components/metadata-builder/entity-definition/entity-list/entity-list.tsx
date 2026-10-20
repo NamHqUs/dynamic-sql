@@ -1,5 +1,6 @@
 import Icon from "../../../icon/icon";
 import { MetadataEntity } from "../../../query-builder/query-design/query-builder-slice";
+import MetadataSidebar, { type MetadataSidebarGroup } from "../../metadata-sidebar/metadata-sidebar";
 import "./entity-list.css";
 
 type EntityListProps = {
@@ -22,44 +23,49 @@ export default function EntityList({
   const visibleEntities = entities.filter((entity) =>
     entity.name.toLowerCase().includes(filter.toLowerCase()),
   );
+  const customEntities = visibleEntities.filter((entity) => entity.canDelete !== false);
+  const builtInEntities = visibleEntities.filter((entity) => entity.canDelete === false);
+  const renderEntity = (entity: MetadataEntity) => (
+    <button
+      className={`metadata-entity${entity.name === selectedName ? " active" : ""}`}
+      key={entity.name}
+      onClick={() => onSelectEntity(entity)}
+    >
+      <span className="entity-icon"><Icon name="grid" size={14} /></span>
+      <span>
+        <b>{entity.name}</b>
+        <small>{entity.fields.length} fields · {(entity.relations || []).length} relations</small>
+      </span>
+      <Icon name="chevron" size={14} />
+    </button>
+  );
+  const groups: MetadataSidebarGroup[] = [
+    {
+      id: "entity-custom-list",
+      title: "Custom",
+      count: customEntities.length,
+      content: customEntities.map(renderEntity),
+      emptyMessage: status !== "loading" && !customEntities.length ? "No custom entities." : undefined,
+    },
+    {
+      id: "entity-builtin-list",
+      title: "Builtin",
+      count: builtInEntities.length,
+      content: builtInEntities.map(renderEntity),
+      emptyMessage: status !== "loading" && !builtInEntities.length ? "No built-in entities." : undefined,
+    },
+  ];
 
   return (
-    <aside className="metadata-list split-panel">
-      <div className="metadata-list-head">
-        <span className="section-kicker">ENTITIES</span>
-        <span className="tab-number">{entities.length}</span>
-      </div>
-      <label className="metadata-search">
-        <Icon name="search" size={14} />
-        <input
-          value={filter}
-          onChange={(event) => onFilterChange(event.target.value)}
-          placeholder="Find an entity"
-        />
-      </label>
-      {status === "loading" && <p className="metadata-message">Loading metadata…</p>}
-      {status !== "loading" &&
-        visibleEntities.map((entity) => (
-          <button
-            className={`metadata-entity${entity.name === selectedName ? " active" : ""}`}
-            key={entity.name}
-            onClick={() => onSelectEntity(entity)}
-          >
-            <span className="entity-icon">
-              <Icon name="grid" size={14} />
-            </span>
-            <span>
-              <b>{entity.name}</b>
-              <small>
-                {entity.fields.length} fields · {(entity.relations || []).length} relations
-              </small>
-            </span>
-            <Icon name="chevron" size={14} />
-          </button>
-        ))}
-      {status !== "loading" && !visibleEntities.length && (
-        <p className="metadata-message">No matching entities.</p>
-      )}
-    </aside>
+    <MetadataSidebar
+      className="metadata-list split-panel"
+      title="ENTITIES"
+      totalCount={entities.length}
+      filter={filter}
+      searchPlaceholder="Find an entity"
+      loadingMessage={status === "loading" ? "Loading metadata…" : undefined}
+      groups={groups}
+      onFilterChange={onFilterChange}
+    />
   );
 }
