@@ -448,7 +448,6 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               entity={entity}
               requestName={requestName}
               isBuiltin={selectedRequestIsBuiltin}
-              requestNameReadOnly={Boolean(selectedRequestName && !selectedRequestIsBuiltin)}
               isResolvingPlanChanges={isApplyingPlanText}
               onRequestNameChange={updateRequestName}
               onDefinitionChange={updateDefinitionFromDesign}

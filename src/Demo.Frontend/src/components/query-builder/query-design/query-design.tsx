@@ -22,7 +22,6 @@ type QueryDesignProps = {
   requestName: string;
   isBuiltin?: boolean;
   isResolvingPlanChanges: boolean;
-  requestNameReadOnly?: boolean;
   onRequestNameChange: (name: string) => void;
   onDefinitionChange: (definition: QueryDefinition) => void;
   onLoadPlanText: () => Promise<string>;
@@ -42,7 +41,6 @@ export default function QueryDesign({
   requestName,
   isBuiltin = false,
   isResolvingPlanChanges,
-  requestNameReadOnly = false,
   onRequestNameChange,
   onDefinitionChange,
   onLoadPlanText,
@@ -79,9 +77,9 @@ export default function QueryDesign({
     <section className={`query-builder-card${isBuiltin ? " is-read-only" : ""}`}>
       <div className="query-name-row" inert={isBuiltin}>
         <label className="query-name-field"><span className="section-kicker">QUERY NAME</span>
-          {isBuiltin || requestNameReadOnly
+          {isBuiltin
             ? <output className="query-static-value">{requestName}</output>
-            : <input type="text" value={requestName} readOnly={requestNameReadOnly} onChange={(event) => onRequestNameChange(event.target.value)} placeholder="e.g. recent-invoices" />}
+            : <input type="text" value={requestName} onChange={(event) => onRequestNameChange(event.target.value)} placeholder="e.g. recent-invoices" />}
         </label>
       </div>
       <div className="query-builder-toolbar" inert={isBuiltin}>
