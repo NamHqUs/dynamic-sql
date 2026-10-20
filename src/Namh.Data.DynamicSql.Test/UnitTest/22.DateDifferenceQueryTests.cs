@@ -39,7 +39,7 @@ internal sealed class _22_DateDifferenceQueryTests
         => new()
         {
             Entity = "Invoices",
-            Fields =
+            Projection =
             [
                 new(new FieldDefinition("InvoiceNumber")),
                 new(new FieldDefinition("Customer.Name")),

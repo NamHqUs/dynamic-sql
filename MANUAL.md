@@ -260,7 +260,7 @@ var rows = db.QueryYml("""
 Entity: User
 EntityAliases:
   - "Manager2: Manager(ManagerId)"
-Fields:
+Projection:
   - Name
   - Manager.Name | Manager-Name
   - Manager2.Name | Second-Manager-Name
@@ -277,9 +277,10 @@ Supported properties:
 - `entityAliases`: optional independent entity contexts written as
   `alias: relationPath(key[, sourceKey:targetKey])`. A key without a mapping
   maps a column to itself. Every entry creates a distinct context.
-- `fields`: projection expressions; use `|` to specify an output alias.
-- Saved-query names and `projectionRows` live on `SavedQueryRequestDto`;
-  `projectionRows` preserves query-designer row grouping and does not affect
+- `projection`: projection expressions; use `|` to specify an output alias.
+- Legacy YAML and JSON definitions using `Fields` remain readable.
+- Saved-query names and grouped projections live on `QueryRequestDto`;
+  `Projection` preserves query-designer row grouping and does not affect
   query execution.
 - `filter`: field comparisons, `like`, `&&`, `||`, `AND`, `OR`, and parentheses.
 - `sorts`: comma-separated field expressions with an optional `ASC` or `DESC`
@@ -301,7 +302,7 @@ context under `Entities`:
 Entities:
   InvoiceItems
   OtherItem: Invoice.Items(Id:InvoiceId)
-Fields: Product.Name, OtherItem.Product.Name
+Projection: Product.Name, OtherItem.Product.Name
 Filters: Product.Id < OtherItem.Product.Id
 ```
 
@@ -332,7 +333,7 @@ Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
 ```json
 {
   "entity": "Products",
-  "fields": [
+  "projection": [
     {
       "alias": "GrossProfit",
       "field": {
@@ -467,7 +468,7 @@ Name: Product totals
 Entity: InvoiceItems
 EntityAliases:
   - "b: InvoiceItems(InvoiceId)"
-Fields:
+Projection:
   - Product.Name|Product
   - Count()|ItemCount
 Sorts: ItemCount DESC
@@ -478,10 +479,10 @@ var fileQuery = QueryDefinitionParser.ParseFromYml(new FileInfo("query.yml"));
 
 YAML query definitions use the same properties as `QueryDefinition`. Entity
 aliases and sorts are plain-text expressions parsed by their respective
-definition parsers. Fields and filters use the existing query expression
+definition parsers. Projection and filters use the existing query expression
 syntax. Entity aliases use the string form `alias: RelationPath(key[, ...])`;
 quote the value so YAML treats it as a string. A key can map different columns
-with `fromColumn:toColumn`. Fields are a list of expressions, and sorts are a
+with `fromColumn:toColumn`. Projection is a list of expressions, and sorts are a
 comma-separated string with an optional `ASC` or `DESC` direction.
 
 ## SQL diagnostics

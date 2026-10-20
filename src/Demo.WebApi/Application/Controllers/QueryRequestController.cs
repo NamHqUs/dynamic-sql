@@ -9,11 +9,11 @@ namespace Demo.WebApi.Application.Controllers;
 public sealed class QueryRequestController(IQueryRequestService queryRequestService) : ControllerBase
 {
     [HttpGet]
-    public ActionResult<IReadOnlyList<SavedQueryRequestDto>> List()
+    public ActionResult<IReadOnlyList<QueryRequestDto>> List()
         => Ok(queryRequestService.List());
 
     [HttpPut("{name}")]
-    public IActionResult Save(string name, [FromBody] SavedQueryRequestDto queryRequest)
+    public IActionResult Save(string name, [FromBody] QueryRequestDto queryRequest)
     {
         try
         {

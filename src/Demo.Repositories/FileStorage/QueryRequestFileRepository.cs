@@ -1,45 +1,45 @@
 using Demo.Contracts.Repositories;
 using Demo.Contracts.Dto;
-using Namh.Data.DynamicSql;
-using Namh.Data.DynamicSql.Contracts.QueryDefinitions;
-using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using System.Text.Json;
-using YamlDotNet.Serialization;
 
 namespace Demo.Repositories.FileStorage;
 
 public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver)
-    : FileRepositoryBase<SavedQueryRequestDto>(filePathResolver, FOLDER_NAME, FILE_EXTENSION),
+    : FileRepositoryBase<QueryRequestDto>(filePathResolver, FOLDER_NAME, FILE_EXTENSION),
         IQueryRequestRepository
 {
     private const string FOLDER_NAME = "QueryRequests";
-    private const string FILE_EXTENSION = ".yml";
+    private const string FILE_EXTENSION = ".json";
+    private static readonly JsonSerializerOptions JSON_OPTIONS = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
 
-    public override IReadOnlyCollection<SavedQueryRequestDto> GetBuiltin()
+    public override IReadOnlyCollection<QueryRequestDto> GetBuiltin()
     {
         var dir = GetBuiltinStoreFolder();
         Directory.CreateDirectory(dir);
         return Directory.EnumerateFiles(dir)
-            .Where(path => HasExtension(path, FILE_EXTENSION))
+            .Where(IsJsonFile)
             .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
             .Select(path => ReadQueryRequest(path, isBuiltin: true))
             .ToArray();
     }
 
-    public override IReadOnlyCollection<SavedQueryRequestDto> GetUserDefined(string userSectionId)
+    public override IReadOnlyCollection<QueryRequestDto> GetUserDefined(string userSectionId)
     {
         var dir = GetUserStoreFolder(userSectionId);
         if (!Directory.Exists(dir))
             return [];
-
         return Directory.EnumerateFiles(dir)
-            .Where(path => HasExtension(path, FILE_EXTENSION))
+            .Where(IsJsonFile)
             .OrderByDescending(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
             .Select(path => ReadQueryRequest(path, isBuiltin: false))
             .ToArray();
     }
 
-    public override SavedQueryRequestDto? Get(string userSectionId, string id)
+    public override QueryRequestDto? Get(string userSectionId, string id)
     {
         var path = GetUserFilePath(userSectionId, id);
         return File.Exists(path)
@@ -47,12 +47,13 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
             : null;
     }
 
-    public override void Save(string userSectionId, SavedQueryRequestDto queryRequest)
+    public override void Save(string userSectionId, QueryRequestDto queryRequest)
     {
         ArgumentNullException.ThrowIfNull(queryRequest);
         ArgumentException.ThrowIfNullOrWhiteSpace(queryRequest.Name);
-        ArgumentNullException.ThrowIfNull(queryRequest.Query);
-        ArgumentNullException.ThrowIfNull(queryRequest.ProjectionRows);
+        ArgumentException.ThrowIfNullOrWhiteSpace(queryRequest.Entity);
+        ArgumentNullException.ThrowIfNull(queryRequest.Projection);
+        ArgumentNullException.ThrowIfNull(queryRequest.EntityAliases);
 
         Directory.CreateDirectory(GetUserStoreFolder(userSectionId));
         File.WriteAllText(
@@ -69,34 +70,24 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
         return true;
     }
 
-    private static bool HasExtension(string path, string extension)
-        => string.Equals(Path.GetExtension(path), extension, StringComparison.OrdinalIgnoreCase);
+    private static bool IsJsonFile(string path)
+        => string.Equals(Path.GetExtension(path), FILE_EXTENSION, StringComparison.OrdinalIgnoreCase);
 
-    private static SavedQueryRequestDto ReadQueryRequest(string path, bool isBuiltin)
+    private static QueryRequestDto ReadQueryRequest(string path, bool isBuiltin)
     {
-        var definition = new DeserializerBuilder()
-            .Build()
-            .Deserialize<YamlQueryDefinition>(File.ReadAllText(path))
+        var queryRequest = JsonSerializer.Deserialize<QueryRequestDto>(
+            File.ReadAllText(path),
+            JSON_OPTIONS)
             ?? throw new InvalidDataException($"Query request file '{path}' is empty.");
-        if (string.IsNullOrWhiteSpace(definition.Name))
-            throw new InvalidDataException($"Query request file '{path}' is missing its name.");
+        if (string.IsNullOrWhiteSpace(queryRequest.Name) ||
+            string.IsNullOrWhiteSpace(queryRequest.Entity) ||
+            queryRequest.Projection is null ||
+            queryRequest.EntityAliases is null)
+            throw new InvalidDataException($"Query request file '{path}' is missing required data.");
 
-        return new SavedQueryRequestDto(
-            definition.Name,
-            QueryDefinitionParser.Parse(definition),
-            definition.ProjectionRows ?? [],
-            isBuiltin);
+        return queryRequest with { IsBuiltin = isBuiltin };
     }
 
-    private static string Serialize(SavedQueryRequestDto queryRequest)
-    {
-        var lines = new List<string>
-        {
-            $"Name: {JsonSerializer.Serialize(queryRequest.Name)}"
-        };
-        if (queryRequest.ProjectionRows.Count > 0)
-            lines.Add($"ProjectionRows: {JsonSerializer.Serialize(queryRequest.ProjectionRows)}");
-        lines.Add(queryRequest.Query.ToYml());
-        return string.Join(Environment.NewLine, lines) + Environment.NewLine;
-    }
+    private static string Serialize(QueryRequestDto queryRequest)
+        => JsonSerializer.Serialize(queryRequest, JSON_OPTIONS);
 }

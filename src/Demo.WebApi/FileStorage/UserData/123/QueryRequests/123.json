@@ -1,0 +1,84 @@
+{
+  "Name": "123",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Name"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Email"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Phone"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Address"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Segment"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Region"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "CustomerSince"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "CreatedOn"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "UpdatedOn"
+        },
+        "alias": null
+      }
+    ]
+  ],
+  "Filters": null,
+  "Sorts": null,
+  "Page": 1,
+  "PageSize": 50,
+  "IsBuiltin": false,
+  "Entity": "Customers",
+  "EntityAliases": []
+}

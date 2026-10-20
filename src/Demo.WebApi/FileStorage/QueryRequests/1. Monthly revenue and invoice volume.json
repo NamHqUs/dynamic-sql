@@ -1,0 +1,94 @@
+{
+  "Name": "1. Monthly revenue and invoice volume",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "function",
+          "function": "DateFormat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "InvoiceDate"
+            },
+            {
+              "kind": "value",
+              "value": "%Y-%m"
+            }
+          ]
+        },
+        "alias": "Month"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Count",
+          "arguments": []
+        },
+        "alias": "InvoiceCount"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "TotalAmount"
+            }
+          ]
+        },
+        "alias": "Revenue"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Average",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "TotalAmount"
+            }
+          ]
+        },
+        "alias": "AverageOrderValue"
+      }
+    ]
+  ],
+  "Filters": [
+    {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Status"
+          },
+          "operation": 1,
+          "right": {
+            "kind": "value",
+            "value": "Draft"
+          },
+          "parameterized": true
+        }
+      ]
+    }
+  ],
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "Month"
+        },
+        "Direction": 0
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": true,
+  "Entity": "Invoices",
+  "EntityAliases": []
+}

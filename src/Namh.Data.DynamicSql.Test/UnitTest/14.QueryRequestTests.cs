@@ -11,7 +11,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Fields = QueryDefinitionParser.ParseProjections("Name, Manager.Name | ManagerName"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, Manager.Name | ManagerName"),
             Filter = QueryDefinitionParser.ParseFilter("Age > 18"),
             Sorts =
             [
@@ -36,7 +36,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Fields = QueryDefinitionParser.ParseProjections("Name, Average(Age) | AverageAge"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, Average(Age) | AverageAge"),
             Filter = QueryDefinitionParser.ParseFilter("Average(Age) > 12"),
             PageSize = 50
         };
@@ -55,7 +55,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Fields = QueryDefinitionParser.ParseProjections("Name"),
+            Projection = QueryDefinitionParser.ParseProjection("Name"),
             Filter = QueryDefinitionParser.ParseFilter("Name = 'Alice'"),
         };
 
@@ -95,7 +95,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Fields = QueryDefinitionParser.ParseProjections("Name, Count() | InvoiceCount, Sum(Age) | Revenue, Average(Age) | AverageOrderValue"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, Count() | InvoiceCount, Sum(Age) | Revenue, Average(Age) | AverageOrderValue"),
             Filter = null
         };
 
@@ -118,7 +118,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Fields = QueryDefinitionParser.ParseProjections("Name, Count[Id] | InvoiceCount, Sum[Age] | TotalAge, Average[Age] | AverageAge"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, Count[Id] | InvoiceCount, Sum[Age] | TotalAge, Average[Age] | AverageAge"),
             Filter = null
         };
 
@@ -136,7 +136,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Fields = QueryDefinitionParser.ParseProjections("Name, Count[*] | WildcardCount, Count[] | EmptyCount"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, Count[*] | WildcardCount, Count[] | EmptyCount"),
             Filter = null
         };
 
@@ -156,7 +156,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Fields = QueryDefinitionParser.ParseProjections("Name, Sum(Members.Age) | TotalMemberAge"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, Sum(Members.Age) | TotalMemberAge"),
             Sorts = [new SortDefinition(new FunctionFieldDefinition("Sum", [new FieldDefinition("Members.Age")]))]
         };
 
@@ -261,7 +261,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Fields = QueryDefinitionParser.ParseProjections("Id, Name"),
+            Projection = QueryDefinitionParser.ParseProjection("Id, Name"),
             Filter = new FilterDefinition(
                 LogicalOperator.And,
                 new FilterDefinition(
@@ -295,8 +295,10 @@ public class _14_QueryRequestTests : TestBase
 
         var expected = string.Join(Environment.NewLine,
             "Entity: User",
-            "Fields: Id, Name",
-            "Filters: (Id > <3> AND Invoices.Id < <3>) AND (Name = <abc> OR Age > <18>)",
+            "Projection:",
+            "  - Id",
+            "  - Name",
+            "Filter: (Id > <3> AND Invoices.Id < <3>) AND (Name = <abc> OR Age > <18>)",
             "Sorts: Name ASC",
             "Page: 1",
             "PageSize: 25");
@@ -310,12 +312,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition { Entity = "User" };
 
         var expected = string.Join(Environment.NewLine,
-            "Entity: User",
-            "Fields: ",
-            "Filters: ",
-            "Sorts: ",
-            "Page: ",
-            "PageSize: ");
+            "Entity: User");
 
         Assert.That(definition.ToString(), Is.EqualTo(expected));
     }
@@ -341,6 +338,7 @@ public class _14_QueryRequestTests : TestBase
 
         Assert.That(yml, Does.Not.Contain("Name:"));
         Assert.That(yml, Does.Not.Contain("ProjectionRows:"));
+        Assert.That(yml, Does.Contain("Projection:"));
     }
 
     [Test]
@@ -390,7 +388,7 @@ public class _14_QueryRequestTests : TestBase
             Filter: "Name = <Alice Smith>"
             """);
 
-        Assert.That(definition.ToString(), Does.Contain("Filters: Name = <Alice Smith>"));
+        Assert.That(definition.ToString(), Does.Contain("Filter: Name = <Alice Smith>"));
     }
 
     [Test]
@@ -409,7 +407,7 @@ public class _14_QueryRequestTests : TestBase
     {
         const string yml = """
             Entity: User
-            Fields:
+            Projection:
               - Name
               - Manager.Name | Manager-Name
             Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.TotalMembers] < 12)"

@@ -12,7 +12,7 @@ relationships are selected at runtime.
 ```csharp
 var rows = db.QueryYml("""
 Entity: User
-Fields:
+Projection:
   - Name
   - Manager.Name | Manager-Name
 Filter: "[Name] like 'Dav%' && [Age] >= 18"

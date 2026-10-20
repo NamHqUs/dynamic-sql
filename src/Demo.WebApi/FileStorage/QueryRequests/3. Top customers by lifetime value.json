@@ -1,0 +1,83 @@
+{
+  "Name": "3. Top customers by lifetime value",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Name"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Count",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Invoices.Id"
+            }
+          ]
+        },
+        "alias": "Orders"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Invoices.TotalAmount"
+            }
+          ]
+        },
+        "alias": "LifetimeValue"
+      }
+    ]
+  ],
+  "Filters": [
+    {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Invoices.Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Paid"
+          },
+          "parameterized": true
+        }
+      ]
+    }
+  ],
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "LifetimeValue"
+        },
+        "Direction": 1
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": 10,
+  "IsBuiltin": true,
+  "Entity": "Customers",
+  "EntityAliases": []
+}

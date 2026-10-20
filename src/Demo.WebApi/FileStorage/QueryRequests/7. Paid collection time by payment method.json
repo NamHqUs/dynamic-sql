@@ -1,0 +1,84 @@
+{
+  "Name": "7. Paid collection time by payment method",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "PaymentMethod"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Count",
+          "arguments": []
+        },
+        "alias": "PaidInvoices"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Average",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "DateSub",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "InvoiceDate"
+                },
+                {
+                  "kind": "field",
+                  "field": "PaidOn"
+                }
+              ]
+            }
+          ]
+        },
+        "alias": "AverageDaysToPay"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "TotalAmount"
+            }
+          ]
+        },
+        "alias": "Collected"
+      }
+    ]
+  ],
+  "Filters": [
+    {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Paid"
+          },
+          "parameterized": true
+        }
+      ]
+    }
+  ],
+  "Sorts": null,
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": true,
+  "Entity": "Invoices",
+  "EntityAliases": []
+}

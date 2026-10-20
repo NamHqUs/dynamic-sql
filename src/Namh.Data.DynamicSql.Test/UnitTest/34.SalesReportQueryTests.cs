@@ -10,7 +10,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(1, "MonthlyRevenueAndInvoiceVolume", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("DateFormat[InvoiceDate, <%Y-%m>] | Month, COUNT[] | InvoiceCount, SUM[TotalAmount] | Revenue, AVG[TotalAmount] | AverageOrderValue"),
+            Projection = QueryDefinitionParser.ParseProjection("DateFormat[InvoiceDate, <%Y-%m>] | Month, COUNT[] | InvoiceCount, SUM[TotalAmount] | Revenue, AVG[TotalAmount] | AverageOrderValue"),
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
             Sorts = [Sort("Month")]
         }, 3, "DateFormat[InvoiceDate, <%Y-%m>]");
@@ -18,7 +18,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(2, "RevenueByCustomerSegmentAndRegion", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("Customer.Segment, Customer.Region, COUNT[] | InvoiceCount, SUM[TotalAmount] | Revenue"),
+            Projection = QueryDefinitionParser.ParseProjection("Customer.Segment, Customer.Region, COUNT[] | InvoiceCount, SUM[TotalAmount] | Revenue"),
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, null, "Customer.Segment", "Customer.Region");
@@ -26,7 +26,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(3, "TopCustomersByLifetimeValue", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("Customer.Id, Customer.Name, COUNT[] | Orders, SUM[TotalAmount] | LifetimeValue"),
+            Projection = QueryDefinitionParser.ParseProjection("Customer.Id, Customer.Name, COUNT[] | Orders, SUM[TotalAmount] | LifetimeValue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("LifetimeValue", QuerySortDirection.Descending)],
             PageSize = 10
@@ -35,7 +35,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(4, "BestSellingProductsByUnitsAndRevenue", new QueryDefinition
         {
             Entity = "Products",
-            Fields = QueryDefinitionParser.ParseProjections("Name, Category, SUM[InvoiceItems.Quantity] | UnitsSold, SUM[InvoiceItems.LineTotal] | Revenue"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, Category, SUM[InvoiceItems.Quantity] | UnitsSold, SUM[InvoiceItems.LineTotal] | Revenue"),
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, 9, "Id", "Name", "Category");
@@ -43,7 +43,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(5, "GrossMarginByProduct", new QueryDefinition
         {
             Entity = "Products",
-            Fields = QueryDefinitionParser.ParseProjections("Name, SUM[InvoiceItems.Quantity] | UnitsSold, SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit, ROUND[SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] * <100> / NULLIF[SUM[InvoiceItems.LineTotal], <0>], <2>] | MarginPercent"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, SUM[InvoiceItems.Quantity] | UnitsSold, SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit, ROUND[SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] * <100> / NULLIF[SUM[InvoiceItems.LineTotal], <0>], <2>] | MarginPercent"),
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("GrossProfit", QuerySortDirection.Descending)]
         }, 9, "Id", "Name");
@@ -51,14 +51,14 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(7, "PaidCollectionTimeByPaymentMethod", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("PaymentMethod, COUNT[] | PaidInvoices, AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay, SUM[TotalAmount] | Collected"),
+            Projection = QueryDefinitionParser.ParseProjection("PaymentMethod, COUNT[] | PaidInvoices, AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay, SUM[TotalAmount] | Collected"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid")
         }, 3, "PaymentMethod");
 
         yield return Case(8, "SalesChannelPerformance", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("SalesChannel, COUNT[] | Orders, SUM[TotalAmount] | Revenue, AVG[TotalAmount] | AverageOrderValue"),
+            Projection = QueryDefinitionParser.ParseProjection("SalesChannel, COUNT[] | Orders, SUM[TotalAmount] | Revenue, AVG[TotalAmount] | AverageOrderValue"),
             Filter = Filter("Status", BinaryOperator.NotEquals, "Draft"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, 3, "SalesChannel");
@@ -66,14 +66,14 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(9, "ProductAttachAndCrossSellPairs", new QueryDefinition
         {
             Entity = "InvoiceItems",
-            Fields = QueryDefinitionParser.ParseProjections("InvoiceId, ProductId, Product.Name | Product"),
+            Projection = QueryDefinitionParser.ParseProjection("InvoiceId, ProductId, Product.Name | Product"),
             Sorts = [Sort("InvoiceId"), Sort("ProductId")]
         }, 57);
 
         yield return Case(10, "CustomersWithRepeatPurchases", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("Customer.Name, COUNT[] | OrderCount, Max(InvoiceDate) | LastOrderDate"),
+            Projection = QueryDefinitionParser.ParseProjection("Customer.Name, COUNT[] | OrderCount, Max(InvoiceDate) | LastOrderDate"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("LastOrderDate", QuerySortDirection.Descending)]
         }, 10, "Customer.Id", "Customer.Name");
@@ -81,14 +81,14 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(11, "CustomersWithNoPaidOrder", new QueryDefinition
         {
             Entity = "Customers",
-            Fields = QueryDefinitionParser.ParseProjections("Id, Name, Segment, Region"),
+            Projection = QueryDefinitionParser.ParseProjection("Id, Name, Segment, Region"),
             Sorts = [Sort("Name")]
         }, 10);
 
         yield return Case(12, "LowStockProductsAndInventoryValue", new QueryDefinition
         {
             Entity = "Products",
-            Fields = QueryDefinitionParser.ParseProjections("Name, Category, StockQuantity, ReorderLevel, StockQuantity * CostPrice | InventoryCost"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, Category, StockQuantity, ReorderLevel, StockQuantity * CostPrice | InventoryCost"),
             Filter = Filter("StockQuantity", BinaryOperator.LessThanOrEqual, new FieldDefinition("ReorderLevel")),
             Sorts = [Sort("StockQuantity")]
         }, 0);
@@ -96,14 +96,14 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(13, "DiscountImpactByMonth", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("DateFormat[InvoiceDate, <%Y-%m>] | Month, SUM[DiscountAmount] | Discounts, SUM[TotalAmount] | NetRevenue, ROUND[SUM[DiscountAmount] * <100> / NULLIF[SUM[TotalAmount], <0>], <2>] | DiscountRate"),
+            Projection = QueryDefinitionParser.ParseProjection("DateFormat[InvoiceDate, <%Y-%m>] | Month, SUM[DiscountAmount] | Discounts, SUM[TotalAmount] | NetRevenue, ROUND[SUM[DiscountAmount] * <100> / NULLIF[SUM[TotalAmount], <0>], <2>] | DiscountRate"),
             Sorts = [Sort("Month")]
         }, 4, "DateFormat[InvoiceDate, <%Y-%m>]");
 
         yield return Case(14, "RevenueByWeekday", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("DateFormat[InvoiceDate, <%w>] | Weekday, COUNT[] | Orders, SUM[TotalAmount] | Revenue"),
+            Projection = QueryDefinitionParser.ParseProjection("DateFormat[InvoiceDate, <%w>] | Weekday, COUNT[] | Orders, SUM[TotalAmount] | Revenue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, null, "DateFormat[InvoiceDate, <%w>]");
@@ -111,21 +111,21 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(15, "InvoiceStatusFunnel", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("Status, COUNT[] | InvoiceCount, SUM[TotalAmount] | PipelineValue"),
+            Projection = QueryDefinitionParser.ParseProjection("Status, COUNT[] | InvoiceCount, SUM[TotalAmount] | PipelineValue"),
             Sorts = [Sort("PipelineValue", QuerySortDirection.Descending)]
         }, 3, "Status");
 
         yield return Case(16, "AverageBasketComposition", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("InvoiceNumber, Customer.Name, COUNT[Items.Id] | LineCount, SUM[Items.Quantity] | Units, TotalAmount"),
+            Projection = QueryDefinitionParser.ParseProjection("InvoiceNumber, Customer.Name, COUNT[Items.Id] | LineCount, SUM[Items.Quantity] | Units, TotalAmount"),
             Sorts = [Sort("TotalAmount", QuerySortDirection.Descending)]
         }, 20, "Id", "InvoiceNumber", "Customer.Name", "TotalAmount");
 
         yield return Case(17, "CategoryRevenueAndProfitability", new QueryDefinition
         {
             Entity = "Products",
-            Fields = QueryDefinitionParser.ParseProjections("Category, SUM[InvoiceItems.LineTotal] | Revenue, SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit"),
+            Projection = QueryDefinitionParser.ParseProjection("Category, SUM[InvoiceItems.LineTotal] | Revenue, SUM[InvoiceItems.LineTotal - (InvoiceItems.Quantity * CostPrice)] | GrossProfit"),
             Filter = Filter("InvoiceItems.Invoice.Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Revenue", QuerySortDirection.Descending)]
         }, 4, "Category");
@@ -133,7 +133,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(18, "MonthlyRevenueTrendWithPriorMonth", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("DateFormat[InvoiceDate, <%Y-%m>] | Month, SUM[TotalAmount] | Revenue"),
+            Projection = QueryDefinitionParser.ParseProjection("DateFormat[InvoiceDate, <%Y-%m>] | Month, SUM[TotalAmount] | Revenue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("Month")]
         }, 2, "DateFormat[InvoiceDate, <%Y-%m>]");
@@ -141,7 +141,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(19, "CustomerRecencyFrequencyAndMonetaryValue", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("Customer.Name, Max(InvoiceDate) | LastPurchase, COUNT[] | Frequency, SUM[TotalAmount] | MonetaryValue"),
+            Projection = QueryDefinitionParser.ParseProjection("Customer.Name, Max(InvoiceDate) | LastPurchase, COUNT[] | Frequency, SUM[TotalAmount] | MonetaryValue"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid"),
             Sorts = [Sort("LastPurchase", QuerySortDirection.Descending), Sort("MonetaryValue", QuerySortDirection.Descending)]
         }, 10, "Customer.Id", "Customer.Name");
@@ -149,7 +149,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         yield return Case(20, "UnpaidRevenueExposureByCustomer", new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("Customer.Name, Customer.Segment, COUNT[] | OpenInvoices, SUM[TotalAmount] | AmountDue, Min(DueDate) | OldestDueDate"),
+            Projection = QueryDefinitionParser.ParseProjection("Customer.Name, Customer.Segment, COUNT[] | OpenInvoices, SUM[TotalAmount] | AmountDue, Min(DueDate) | OldestDueDate"),
             Filter = Filter("Status", BinaryOperator.Equals, "Sent"),
             Sorts = [Sort("AmountDue", QuerySortDirection.Descending)]
         }, 6, "Customer.Id", "Customer.Name", "Customer.Segment");
@@ -167,7 +167,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
             ? new QueryDefinition
             {
                 Entity = definition.Entity,
-                Fields = definition.Fields,
+                Projection = definition.Projection,
                 Filter = definition.Filter,
                 Sorts = definition.Sorts,
             }
@@ -215,7 +215,7 @@ internal sealed class _34_SalesReportQueryTests : TestBase
         var paidCustomerIds = _db.Query(new QueryDefinition
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("CustomerId"),
+            Projection = QueryDefinitionParser.ParseProjection("CustomerId"),
             Filter = Filter("Status", BinaryOperator.Equals, "Paid")
         }).ToList()
             .Select(record => Convert.ToInt32(record["CustomerId"]))

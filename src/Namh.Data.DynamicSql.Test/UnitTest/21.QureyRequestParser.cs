@@ -61,7 +61,7 @@ internal class _21_QureyRequestParser : TestBase
     [Test]
     public void TextToFunctionFieldDto_LegacyBracketSyntax()
     {
-        var field = (FunctionFieldDefinition)QueryDefinitionParser.ParseProjections("Round[Sum[Id], <2>]")[0].Field;
+        var field = (FunctionFieldDefinition)QueryDefinitionParser.ParseProjection("Round[Sum[Id], <2>]")[0].Field;
 
         Assert.That(field.ToText(), Is.EqualTo("Round(Sum(Id), <2>)"));
     }

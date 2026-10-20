@@ -9,7 +9,7 @@ public sealed class QueryDefinition
 {
     public required string Entity { get; init; }
     public List<EntityContextDefinition> EntityAliases { get; init; } = [];
-    public List<ProjectionDefinition> Fields { get; init; } = [];
+    public List<ProjectionDefinition> Projection { get; init; } = [];
     public FilterDefinition? Filter { get; init; }
     public List<SortDefinition> Sorts { get; init; } = [];
     public int? Page { get; init; }
@@ -30,10 +30,10 @@ public sealed class QueryDefinition
                 $"  - \"{alias.Alias}: {alias.RelationPath}({string.Join(", ", alias.RelatedKeys.Select(key => $"{key.FromDbColumn}:{key.ToDbColumn}"))})\""));
         }
 
-        if (Fields.Count > 0)
+        if (Projection.Count > 0)
         {
-            lines.Add("Fields:");
-            lines.AddRange(Fields.Select(field => $"  - {field.ToText()}"));
+            lines.Add("Projection:");
+            lines.AddRange(Projection.Select(field => $"  - {field.ToText()}"));
         }
 
         if (Filter is not null)

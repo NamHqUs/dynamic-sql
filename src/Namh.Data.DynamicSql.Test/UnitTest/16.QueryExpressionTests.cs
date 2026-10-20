@@ -57,7 +57,7 @@ public sealed class _16_QueryExpressionTests
         const string json = """
             {
               "entity": "Products",
-              "fields": [
+              "projection": [
                 { "field": { "kind": "field", "field": "Name" } },
                 {
                   "alias": "UnitsSold",
@@ -230,7 +230,7 @@ public sealed class _16_QueryExpressionTests
         var request = new QueryDefinition
         {
             Entity = "Products",
-            Fields =
+            Projection =
             [
                 new ProjectionDefinition(
                     new FunctionFieldDefinition(

@@ -29,7 +29,7 @@ public static partial class QueryDefinitionParser
                 ? definition.Entity
                 : throw new FormatException("The YAML query definition requires an entity."),
             EntityAliases = EntityContextDefinitionParser.Parse(definition.EntityAliases ?? []),
-            Fields = ProjectionDefinitionParser.Parse(definition.Fields),
+            Projection = ProjectionDefinitionParser.Parse(definition.Projection ?? []),
             Filter = FilterDefinitionParser.Parse(definition.Filter),
             Sorts = SortDefinitionParser.Parse(definition.Sorts),
             Page = definition.Page,
@@ -47,6 +47,24 @@ public static partial class QueryDefinitionParser
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
+        var projectionElement = TryGetProperty(root, "projection", out var projection)
+            ? projection
+            : TryGetProperty(root, "fields", out var legacyProjection)
+                ? legacyProjection
+                : (JsonElement?)null;
+        List<ProjectionDefinition> projections = [];
+        if (projectionElement is { } projectionValue)
+        {
+            if (projectionValue.ValueKind != JsonValueKind.Array)
+                throw new JsonException("The projection value must be an array.");
+
+            projections = projectionValue.EnumerateArray()
+                .Select(field => JsonSerializer.Deserialize<ProjectionDefinition>(
+                    field.GetRawText(),
+                    new JsonSerializerOptions(JsonSerializerDefaults.Web))
+                    ?? throw new JsonException("A projection field cannot be null."))
+                .ToList();
+        }
 
         return new QueryDefinition
         {
@@ -57,14 +75,7 @@ public static partial class QueryDefinitionParser
                     new JsonSerializerOptions(JsonSerializerDefaults.Web))
                     ?? throw new JsonException("Entity aliases cannot be null.")
                 : [],
-            Fields = root.TryGetProperty("fields", out var fields)
-                ? fields.EnumerateArray()
-                    .Select(field => JsonSerializer.Deserialize<ProjectionDefinition>(
-                        field.GetRawText(),
-                        new JsonSerializerOptions(JsonSerializerDefaults.Web))
-                        ?? throw new JsonException("A projection field cannot be null."))
-                    .ToList()
-                : [],
+            Projection = projections,
             Filter = root.TryGetProperty("filter", out var filter)
                 ? filter.ValueKind == JsonValueKind.String
                     ? FilterDefinitionParser.Parse(filter.GetString() ?? string.Empty)
@@ -81,7 +92,7 @@ public static partial class QueryDefinitionParser
     }
 
     public static IFieldDto ParseField(string plainText) => FieldDefinitionParser.Parse(plainText);
-    public static List<ProjectionDefinition> ParseProjections(string plainText) => ProjectionDefinitionParser.Parse(plainText);
+    public static List<ProjectionDefinition> ParseProjection(string plainText) => ProjectionDefinitionParser.Parse(plainText);
     public static FilterDefinition? ParseFilter(string plainText) => FilterDefinitionParser.Parse(plainText);
     public static List<SortDefinition> ParseSorts(string plainText) => SortDefinitionParser.Parse(plainText);
 

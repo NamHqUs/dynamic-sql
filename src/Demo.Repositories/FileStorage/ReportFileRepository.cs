@@ -176,18 +176,38 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
             nameElement.ValueKind == JsonValueKind.String)
             name = nameElement.GetString();
 
-        if (!TryGetProperty(queryElement, "Fields", out _) &&
-            TryGetProperty(queryElement, "Columns", out var legacyColumns))
+        if (!TryGetProperty(queryElement, "Projection", out _))
         {
-            query = new QueryDefinition
+            if (TryGetProperty(queryElement, "Fields", out var legacyFields))
             {
-                Entity = query.Entity,
-                Fields = legacyColumns.EnumerateArray().Select(ParseLegacyProjection).ToList(),
-                Filter = query.Filter,
-                Sorts = query.Sorts,
-                Page = query.Page,
-                PageSize = query.PageSize
-            };
+                query = new QueryDefinition
+                {
+                    Entity = query.Entity,
+                    EntityAliases = query.EntityAliases,
+                    Projection = legacyFields.EnumerateArray()
+                        .Select(field => JsonSerializer.Deserialize<ProjectionDefinition>(
+                            field.GetRawText(),
+                            Options()) ?? throw new InvalidDataException("A saved projection field is empty."))
+                        .ToList(),
+                    Filter = query.Filter,
+                    Sorts = query.Sorts,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            }
+            else if (TryGetProperty(queryElement, "Columns", out var legacyColumns))
+            {
+                query = new QueryDefinition
+                {
+                    Entity = query.Entity,
+                    EntityAliases = query.EntityAliases,
+                    Projection = legacyColumns.EnumerateArray().Select(ParseLegacyProjection).ToList(),
+                    Filter = query.Filter,
+                    Sorts = query.Sorts,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            }
         }
 
         return new ReportDto(fileName, query, requestText, description, chartType)

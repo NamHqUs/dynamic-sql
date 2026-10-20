@@ -73,11 +73,46 @@ function splitProjectionText(text: string): string[][] {
   return rows;
 }
 
-function parseProjectionColumn(text: string): QueryColumn {
-  const aliasMatch = text.match(/^(.+?)\s+AS\s+([A-Za-z_][A-Za-z0-9_]*)$/i);
+function getProjectionAlias(column: QueryColumn): string | null {
+  return column.alias ?? column.field.match(/\s*\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*$/)?.[1] ?? null;
+}
+
+function parseProjectionExpression(text: string, entity: MetadataEntity): QueryExpression | undefined {
+  const expressionText = text.replace(/\s*\|\s*[A-Za-z_][A-Za-z0-9_]*\s*$/, "").trim();
+  const functionMatch = expressionText.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\(([\s\S]*)\)$/);
+  if (!functionMatch) return undefined;
+
+  const arguments_ = splitProjectionText(functionMatch[2]).flat().map((argument): QueryExpression => {
+    const value = argument.trim();
+    const nestedExpression = parseProjectionExpression(value, entity);
+    if (nestedExpression) return nestedExpression;
+
+    const quote = value[0];
+    if ((quote === "'" || quote === "\"") && value.endsWith(quote)) {
+      return { kind: "value", value: value.slice(1, -1).split(quote + quote).join(quote) };
+    }
+    if (entity.fields.some((field) => field.name === value)
+      || /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+$/.test(value)) {
+      return { kind: "field", field: value };
+    }
+    if (/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value)) {
+      return { kind: "value", value: Number(value) };
+    }
+    return { kind: "value", value };
+  });
+
+  return { kind: "function", function: functionMatch[1], arguments: arguments_ };
+}
+
+function parseProjectionColumn(text: string, entity: MetadataEntity): QueryColumn {
+  const aliasMatch = text.match(/^(.+?)\s+AS\s+([A-Za-z_][A-Za-z0-9_]*)$/i)
+    ?? text.match(/^(.+?)\s*\|\s*([A-Za-z_][A-Za-z0-9_]*)$/);
+  const field = (aliasMatch?.[1] ?? text).trim();
+  const expression = parseProjectionExpression(field, entity);
   return {
-    field: (aliasMatch?.[1] ?? text).trim(),
+    field,
     alias: aliasMatch?.[2] ?? null,
+    ...(expression ? { expression } : {}),
   };
 }
 
@@ -271,7 +306,19 @@ function FieldCards({
     const field = fields.find((item) => item.name === fieldName);
     if (!field) return null;
     const column = definition.columns.find((item) => item.field === field.name);
-    const fieldLabel = column?.expression ? column.alias || "calculated field" : field.name;
+    const columnExpression = column
+      ? column.expression ?? parseProjectionExpression(column.field, entity)
+      : undefined;
+    const columnAlias = column ? getProjectionAlias(column) : null;
+    const fieldLabel = columnExpression ? columnAlias || "calculated field" : field.name;
+    const openColumnEditor = () => {
+      if (!column) return;
+      if (columnExpression) {
+        editExpression({ ...column, alias: columnAlias, expression: columnExpression });
+      } else {
+        startFieldEdit(column);
+      }
+    };
     return (
       <div
         className={`field-card${column ? " selected" : ""}${draggedField === field.name ? " dragging" : ""}${dropTarget?.field === field.name ? ` drop-target drop-target-${dropTarget.position}` : ""}`}
@@ -311,7 +358,7 @@ function FieldCards({
           type="button"
           className="field-card-edit"
           onClick={() => {
-            setAliasBeforeEdit(column?.alias ?? null);
+            setAliasBeforeEdit(columnAlias);
             setEditingAliasField(field.name);
           }}
           aria-label={`Edit alias for ${fieldLabel}`}
@@ -323,14 +370,14 @@ function FieldCards({
           <div className="field-card-primary">
             {column && editingAliasField === field.name
               ? <>
-                <span className="field-name">{column.expression ? formatExpression(column.expression) : field.name}</span>
+                <span className="field-name">{columnExpression ? formatExpression(columnExpression) : field.name}</span>
                 <span className="field-alias-separator" aria-hidden="true">|</span>
                 <input
                   autoFocus
                   className="field-alias-input"
                   aria-label={`Alias for ${fieldLabel}`}
                   placeholder="Alias"
-                  value={column.alias ?? ""}
+                  value={columnAlias ?? ""}
                   onFocus={(event) => event.currentTarget.select()}
                   onChange={(event) => updateColumnAlias(field.name, event.target.value)}
                   onBlur={() => {
@@ -368,29 +415,29 @@ function FieldCards({
                       columnBeforeEditRef.current = null;
                     }}
                   />
-                  {column?.alias && <><span className="field-alias-separator" aria-hidden="true">|</span><span className="field-alias-value">{column.alias}</span></>}
+                  {columnAlias && <><span className="field-alias-separator" aria-hidden="true">|</span><span className="field-alias-value">{columnAlias}</span></>}
                 </>
-                : column?.alias
+                : columnAlias
                   ? <><span
                     className="field-name editable"
-                    onClick={() => column.expression ? editExpression(column) : startFieldEdit(column)}
+                    onClick={openColumnEditor}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ")
-                        column.expression ? editExpression(column) : startFieldEdit(column);
+                        openColumnEditor();
                     }}
-                  >{column.expression ? formatExpression(column.expression) : field.name}</span><span className="field-alias-separator" aria-hidden="true">|</span><span className="field-alias-value">{column.alias}</span></>
+                  >{columnExpression ? formatExpression(columnExpression) : field.name}</span><span className="field-alias-separator" aria-hidden="true">|</span><span className="field-alias-value">{columnAlias}</span></>
                   : <span
                     className="field-name editable"
-                    onClick={() => column?.expression ? editExpression(column) : startFieldEdit(column)}
+                    onClick={openColumnEditor}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ")
-                        column?.expression ? editExpression(column) : startFieldEdit(column);
+                        openColumnEditor();
                     }}
-                  >{column?.expression ? formatExpression(column.expression) : field.name}</span>}
+                  >{columnExpression ? formatExpression(columnExpression) : field.name}</span>}
           </div>
         </div>
       </div>
@@ -460,9 +507,11 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
   const applyProjectionText = () => {
     const existingColumns = new Map(definition.columns.map((column) => [formatProjectionColumn(column), column]));
     const projectionRows = splitProjectionText(projectionText);
-    const columns = projectionRows.flatMap((row) => row.map((item) =>
-      existingColumns.get(item) ?? parseProjectionColumn(item)));
-    changeProjection({ ...definition, columns }, projectionRows.map((row) => [...row]));
+    const columnsByRow = projectionRows.map((row) => row.map((item) =>
+      existingColumns.get(item) ?? parseProjectionColumn(item, entity)));
+    const columns = columnsByRow.flat();
+    changeProjection({ ...definition, columns }, columnsByRow.map((row) =>
+      row.map((column) => column.field)));
     setIsEditingProjectionText(false);
   };
 

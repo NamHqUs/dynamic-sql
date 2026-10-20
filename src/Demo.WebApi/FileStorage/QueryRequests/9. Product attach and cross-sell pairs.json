@@ -1,0 +1,90 @@
+{
+  "Name": "9. Product attach and cross-sell pairs",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "Product.Name"
+        },
+        "alias": "Product"
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "b.Product.Name"
+        },
+        "alias": "FrequentlyBoughtWith"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Count",
+          "arguments": []
+        },
+        "alias": "OrdersTogether"
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Product.Id"
+        },
+        "alias": "ProductId"
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "b.Product.Id"
+        },
+        "alias": "FrequentlyBoughtWithProductId"
+      }
+    ]
+  ],
+  "Filters": [
+    {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Product.Id"
+          },
+          "operation": 4,
+          "right": {
+            "kind": "field",
+            "field": "b.Product.Id"
+          },
+          "parameterized": true
+        }
+      ]
+    }
+  ],
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "OrdersTogether"
+        },
+        "Direction": 1
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": true,
+  "Entity": "InvoiceItems",
+  "EntityAliases": [
+    {
+      "Alias": "b",
+      "RelationPath": "InvoiceItems",
+      "RelatedKeys": [
+        {
+          "FromDbColumn": "InvoiceId",
+          "ToDbColumn": "InvoiceId"
+        }
+      ]
+    }
+  ]
+}

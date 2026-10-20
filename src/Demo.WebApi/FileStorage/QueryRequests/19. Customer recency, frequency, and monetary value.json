@@ -1,0 +1,103 @@
+{
+  "Name": "19. Customer recency, frequency, and monetary value",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "Name"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Max",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Invoices.InvoiceDate"
+            }
+          ]
+        },
+        "alias": "LastPurchase"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Count",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Invoices.Id"
+            }
+          ]
+        },
+        "alias": "Frequency"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Invoices.TotalAmount"
+            }
+          ]
+        },
+        "alias": "MonetaryValue"
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
+        "alias": "CustomerId"
+      }
+    ]
+  ],
+  "Filters": [
+    {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Invoices.Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Paid"
+          },
+          "parameterized": true
+        }
+      ]
+    }
+  ],
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "LastPurchase"
+        },
+        "Direction": 1
+      },
+      {
+        "Field": {
+          "kind": "field",
+          "field": "MonetaryValue"
+        },
+        "Direction": 1
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": true,
+  "Entity": "Customers",
+  "EntityAliases": []
+}

@@ -5,8 +5,8 @@ namespace Demo.Contracts.Services;
 
 public interface IQueryRequestService
 {
-    IReadOnlyList<SavedQueryRequestDto> List();
-    void Save(string name, SavedQueryRequestDto queryRequest);
+    IReadOnlyList<QueryRequestDto> List();
+    void Save(string name, QueryRequestDto queryRequest);
     bool IsBuiltin(string name);
     bool Delete(string name);
 }

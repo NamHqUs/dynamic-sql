@@ -51,13 +51,16 @@ public sealed class ReportService(
     public QueryDefinition ParseQueryRequestString(string text, string entity)
     {
         var textLines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
-        var fieldsHeader = Array.FindIndex(textLines, line =>
-            line.Trim().Equals("Fields:", StringComparison.OrdinalIgnoreCase));
-        var hasYamlFieldList = fieldsHeader >= 0 && textLines
-            .Skip(fieldsHeader + 1)
+        var projectionHeader = Array.FindIndex(textLines, line =>
+            line.Trim().Equals("Projection:", StringComparison.OrdinalIgnoreCase));
+        if (projectionHeader < 0)
+            projectionHeader = Array.FindIndex(textLines, line =>
+                line.Trim().Equals("Fields:", StringComparison.OrdinalIgnoreCase));
+        var hasYamlProjectionList = projectionHeader >= 0 && textLines
+            .Skip(projectionHeader + 1)
             .TakeWhile(line => string.IsNullOrWhiteSpace(line) || char.IsWhiteSpace(line[0]))
             .Any(line => line.TrimStart().StartsWith("- ", StringComparison.Ordinal));
-        if (hasYamlFieldList)
+        if (hasYamlProjectionList)
         {
             var query = QueryDefinitionParser.ParseFromYml(text);
             if (!string.Equals(query.Entity, entity, StringComparison.Ordinal))
@@ -105,8 +108,8 @@ public sealed class ReportService(
         if (values.ContainsKey("Entity") && values.ContainsKey("Entities"))
             throw new FormatException("Use either Entity or Entities, not both.");
 
-        var fieldText = values.GetValueOrDefault("Fields");
-        var fields = QueryDefinitionParser.ParseProjections(fieldText ?? string.Empty);
+        var projectionText = values.GetValueOrDefault("Projection") ?? values.GetValueOrDefault("Fields");
+        var projection = QueryDefinitionParser.ParseProjection(projectionText ?? string.Empty);
         var sorts = ParseSorts(values.GetValueOrDefault("Sorts"));
 
         if (values.ContainsKey("Filter") && values.ContainsKey("Filters"))
@@ -127,7 +130,7 @@ public sealed class ReportService(
             EntityAliases = string.IsNullOrWhiteSpace(parsedEntities)
                 ? []
                 : ParseEntityList(parsedEntities).Aliases,
-            Fields = fields,
+            Projection = projection,
             Filter = filter,
             Sorts = sorts,
             Page = page,

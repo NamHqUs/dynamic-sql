@@ -13,7 +13,7 @@ internal static class DbQueryFromQueryDto
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);
-        ArgumentNullException.ThrowIfNull(definition.Fields);
+        ArgumentNullException.ThrowIfNull(definition.Projection);
 
         var query = context.Query(
             definition.Entity,
@@ -22,10 +22,10 @@ internal static class DbQueryFromQueryDto
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));
 
-        if (definition.Fields.Count > 0)
+        if (definition.Projection.Count > 0)
         {
             var selection = new DataRecord();
-            foreach (var field in definition.Fields)
+            foreach (var field in definition.Projection)
             {
                 var alias = string.IsNullOrWhiteSpace(field.Alias)
                     ? field.Field.ToText()

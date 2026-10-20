@@ -4,6 +4,7 @@ using Demo.Services;
 using Demo.WebApi.Application.Middlewares;
 using Namh.Data.DynamicSql;
 using System.Text.Json.Serialization;
+using Demo.Contracts.Repositories;
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -36,6 +37,12 @@ builder.Services.AddDemoServices();
 builder.Services.AddSingleton<IUserSectionManager, UserSectionManager>();
 
 var app = builder.Build();
+
+//var service = app.Services.GetRequiredService<IQueryRequestRepository>();
+//var queryRequest = service.GetBuiltin();
+//foreach (var request in queryRequest)
+//    service.Save("builtin", request);
+
 app.UseExceptionHandler();
 app.UseSwagger();
 app.UseSwaggerUI(options =>

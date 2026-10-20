@@ -92,7 +92,7 @@ export type QueryDefinition = {
 export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns" | "projectionRows"> & {
   filter: ApiQueryFilterGroup | null;
   sorts: { field: string | QueryExpression; direction: number }[];
-  fields: { field: QueryExpression; alias: string | null }[];
+  projection: { field: QueryExpression; alias: string | null }[];
 };
 
 export type ReportDto = {
@@ -109,6 +109,18 @@ export type SavedQueryRequestDto = {
   name: string;
   query: ApiQueryRequest;
   projectionRows: string[][];
+  isBuiltin: boolean;
+};
+
+type ApiSavedQueryRequestDto = {
+  name: string;
+  entity: string;
+  entityAliases: EntityAliasDefinition[];
+  projection: { field: QueryExpression; alias: string | null }[][];
+  filters: ApiQueryFilterGroup[] | null;
+  sorts: { field: QueryExpression; direction: number }[][] | null;
+  page: number | null;
+  pageSize: number | null;
   isBuiltin: boolean;
 };
 
@@ -178,7 +190,7 @@ export function createApiQuery(definition: QueryDefinition) {
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   return {
     ...query,
-    fields: columns.map(({ field, alias, expression }) => ({
+    projection: columns.map(({ field, alias, expression }) => ({
       field: expression ?? { kind: "field", field },
       alias,
     })),
@@ -263,7 +275,7 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
   return {
     entity: query.entity,
     entityAliases: query.entityAliases ?? [],
-    columns: query.fields.map((projection, index) => ({
+    columns: query.projection.map((projection, index) => ({
       field: projection.field.kind === "field"
         ? projection.field.field
         : `__calculated__${projection.alias || index}`,
@@ -272,8 +284,8 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
     })),
     projectionRows: projectionRows?.length
       ? projectionRows.map((row) => [...row])
-      : query.fields.length
-      ? [query.fields.map((projection, index) => projection.field.kind === "field"
+      : query.projection.length
+      ? [query.projection.map((projection, index) => projection.field.kind === "field"
         ? projection.field.field
         : `__calculated__${projection.alias || index}`)]
       : [[]],
@@ -289,6 +301,65 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
         }),
         page: query.page,
         pageSize: query.pageSize,
+  };
+}
+
+function fromApiSavedRequest(request: ApiSavedQueryRequestDto): SavedQueryRequestDto {
+  const fields = request.projection.flat();
+  const projectionRows = request.projection.map((group, groupIndex) =>
+    group.map((projection, index) => projection.field.kind === "field"
+      ? projection.field.field
+      : `__calculated__${projection.alias || request.projection
+        .slice(0, groupIndex)
+        .reduce((count, previous) => count + previous.length, 0) + index}`));
+  const filters = request.filters ?? [];
+  const filter = filters.length === 0
+    ? null
+    : filters.length === 1
+      ? filters[0]
+      : { logicalOperation: 0, filters };
+
+  return {
+    name: request.name,
+    query: {
+      entity: request.entity,
+      entityAliases: request.entityAliases,
+      fields,
+      filter,
+      sorts: request.sorts?.flat() ?? [],
+      page: request.page,
+      pageSize: request.pageSize,
+    },
+    projectionRows,
+    isBuiltin: request.isBuiltin,
+  };
+}
+
+function toApiSavedRequest(request: { name: string; definition: QueryDefinition }): Omit<ApiSavedQueryRequestDto, "isBuiltin"> & { isBuiltin: false } {
+  const apiQuery = createApiQuery(request.definition);
+  const rows = request.definition.projectionRows?.length
+    ? request.definition.projectionRows
+    : request.definition.columns.length
+      ? [request.definition.columns.map((column) => column.field)]
+      : [];
+  const projection = rows.map((row) => row.map((field) => {
+    const index = request.definition.columns.findIndex((candidate) => candidate.field === field);
+    return apiQuery.projection[index] ?? {
+      field: { kind: "field" as const, field },
+      alias: null,
+    };
+  }));
+
+  return {
+    name: request.name,
+    entity: apiQuery.entity,
+    entityAliases: apiQuery.entityAliases,
+    projection,
+    filters: apiQuery.filter ? [apiQuery.filter] : null,
+    sorts: apiQuery.sorts.length ? [apiQuery.sorts] : null,
+    page: apiQuery.page,
+    pageSize: apiQuery.pageSize,
+    isBuiltin: false,
   };
 }
 
@@ -451,10 +522,11 @@ export const parseQueryRequestString = createAsyncThunk(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, entity }),
       });
-      if (!payload || typeof payload.entity !== "string" || !Array.isArray(payload.fields) || !Array.isArray(payload.sorts)) {
+      const projection = payload?.projection ?? payload?.fields;
+      if (!payload || typeof payload.entity !== "string" || !Array.isArray(projection) || !Array.isArray(payload.sorts)) {
         return rejectWithValue("Query request API returned an invalid request.");
       }
-      return payload as ApiQueryRequest;
+      return { ...payload, projection } as ApiQueryRequest;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to apply query request structure.");
     }
@@ -535,17 +607,23 @@ export const fetchQueryRequests = createAsyncThunk(
       const payload = await requestJson(apiUrls.queryRequests.list);
       if (!Array.isArray(payload) || payload.some((item) => !item
         || typeof item.name !== "string"
+        || typeof item.entity !== "string"
+        || !Array.isArray(item.entityAliases)
         || typeof item.isBuiltin !== "boolean"
-        || !Array.isArray(item.projectionRows)
-        || item.projectionRows.some((row: unknown) => !Array.isArray(row)
-          || row.some((field: unknown) => typeof field !== "string"))
-        || !item.query
-        || typeof item.query.entity !== "string"
-        || !Array.isArray(item.query.fields)
-        || !Array.isArray(item.query.sorts))) {
+        || !Array.isArray(item.projection)
+        || item.projection.some((group: unknown) => !Array.isArray(group)
+          || group.some((projection: unknown) => !projection
+            || typeof projection !== "object"
+            || !("field" in projection)
+            || !("alias" in projection)))
+        || (item.filters !== null && !Array.isArray(item.filters))
+        || (item.sorts !== null && (!Array.isArray(item.sorts)
+          || item.sorts.some((group: unknown) => !Array.isArray(group))))
+        || (item.page !== null && typeof item.page !== "number")
+        || (item.pageSize !== null && typeof item.pageSize !== "number"))) {
         return rejectWithValue("Query request API must return saved query requests.");
       }
-      return payload as SavedQueryRequestDto[];
+      return payload.map((item) => fromApiSavedRequest(item as ApiSavedQueryRequestDto));
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to load saved queries.");
     }
@@ -559,12 +637,7 @@ export const saveQueryRequest = createAsyncThunk(
       await requestJson(apiUrls.queryRequests.byName(name), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          query: createApiQuery(definition),
-          projectionRows: definition.projectionRows ?? [],
-          isBuiltin: false,
-        }),
+        body: JSON.stringify(toApiSavedRequest({ name, definition })),
       });
       return name;
     } catch (error) {

@@ -1,0 +1,104 @@
+{
+  "Name": "16. Average basket composition",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "InvoiceNumber"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Customer.Name"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Count",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Items.Id"
+            }
+          ]
+        },
+        "alias": "LineCount"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Items.Quantity"
+            }
+          ]
+        },
+        "alias": "Units"
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "TotalAmount"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
+        "alias": "InvoiceId"
+      }
+    ]
+  ],
+  "Filters": [
+    {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Items.Id"
+          },
+          "operation": 1,
+          "right": null,
+          "parameterized": true
+        },
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Customer.Id"
+          },
+          "operation": 1,
+          "right": null,
+          "parameterized": true
+        }
+      ]
+    }
+  ],
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "TotalAmount"
+        },
+        "Direction": 1
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": true,
+  "Entity": "Invoices",
+  "EntityAliases": []
+}

@@ -1,4 +1,4 @@
-﻿using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
+using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using NUnit.Framework.Internal;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -24,7 +24,7 @@ internal class _33_DemoTest : TestBase
         QueryDefinition qureyBuilder = new()
         {
             Entity = "Invoices",
-            Fields = [
+            Projection = [
                 new (new FieldDefinition("InvoiceNumber")),
                 new (new FieldDefinition("Customer.Name"), "Name"),
                 new (new FieldDefinition("InvoiceDate")),
@@ -66,7 +66,7 @@ internal class _33_DemoTest : TestBase
         QueryDefinition query = new()
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("PaymentMethod, Count(), AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay, Sum(TotalAmount) | Collected"),
+            Projection = QueryDefinitionParser.ParseProjection("PaymentMethod, Count(), AVG[DateSub[InvoiceDate, PaidOn]] | AverageDaysToPay, Sum(TotalAmount) | Collected"),
             Filter = QueryDefinitionParser.ParseFilter("Status = 'Paid'"),
         };
 
@@ -98,7 +98,7 @@ internal class _33_DemoTest : TestBase
             [
                 new("b", "InvoiceItems", [new("InvoiceId")])
             ],
-            Fields = QueryDefinitionParser.ParseProjections("Product.Name|Product, b.Product.Name|FrequentlyBoughtWith, Count()|OrdersTogether"),
+            Projection = QueryDefinitionParser.ParseProjection("Product.Name|Product, b.Product.Name|FrequentlyBoughtWith, Count()|OrdersTogether"),
             Filter = QueryDefinitionParser.ParseFilter("Product.Id < b.Product.Id"),
             Sorts = [new(new FieldDefinition("OrdersTogether"), QuerySortDirection.Descending)]
         };
@@ -136,7 +136,7 @@ internal class _33_DemoTest : TestBase
             Entity: InvoiceItems
             EntityAliases:
               - "b: InvoiceItems(InvoiceId)"
-            Fields: 
+            Projection: 
               - Product.Name|Product 
               - b.Product.Name|FrequentlyBoughtWith
               - Count()|OrdersTogether
@@ -151,7 +151,7 @@ internal class _33_DemoTest : TestBase
         QueryDefinition query2 = QueryDefinitionParser.ParseFromYml(text);
 
         Assert.That(query2.Entity, Is.EqualTo("InvoiceItems"));
-        Assert.That(string.Join(",", query2.Fields.Select(e => e.ToText())), Is.EqualTo(string.Join(",", query.Fields.Select(e => e.ToText()))));
+        Assert.That(string.Join(",", query2.Projection.Select(e => e.ToText())), Is.EqualTo(string.Join(",", query.Projection.Select(e => e.ToText()))));
 
         var data = _db.Query(query).ToList();
         Assert.That(data, Is.Not.Empty);
@@ -159,7 +159,7 @@ internal class _33_DemoTest : TestBase
         Assert.That(alias.Alias, Is.EqualTo("b"));
         Assert.That(alias.RelationPath, Is.EqualTo("InvoiceItems"));
         Assert.That(alias.RelatedKeys.Single(), Is.EqualTo(new RelationItem("InvoiceId")));
-        Assert.That(query.Fields, Has.Count.EqualTo(3));
+        Assert.That(query.Projection, Has.Count.EqualTo(3));
         Assert.That(query.Sorts.Single().Direction, Is.EqualTo(QuerySortDirection.Descending));
     }
 
@@ -193,7 +193,7 @@ internal class _33_DemoTest : TestBase
         QueryDefinition query = new()
         {
             Entity = "Invoices",
-            Fields = QueryDefinitionParser.ParseProjections("DateFormat(InvoiceDate, <%Y-%m>) | Month, SUM(DiscountAmount) | Discounts, SUM(TotalAmount) | NetRevenue, ROUND(SUM(DiscountAmount) * <100> / NULLIF(SUM(TotalAmount), <0>), <2>) | DiscountRate"),
+            Projection = QueryDefinitionParser.ParseProjection("DateFormat(InvoiceDate, <%Y-%m>) | Month, SUM(DiscountAmount) | Discounts, SUM(TotalAmount) | NetRevenue, ROUND(SUM(DiscountAmount) * <100> / NULLIF(SUM(TotalAmount), <0>), <2>) | DiscountRate"),
             Sorts = [new(new FieldDefinition("Month"))]
         };
         var queryable = _db.Query(query);

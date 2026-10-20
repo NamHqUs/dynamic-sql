@@ -9,7 +9,7 @@ public sealed class QueryRequestService(
     IQueryRequestRepository repository,
     IUserSectionManager userSectionManager) : IQueryRequestService
 {
-    public IReadOnlyList<SavedQueryRequestDto> List()
+    public IReadOnlyList<QueryRequestDto> List()
     {
         var sectionId = userSectionManager.GetSectionId();
         var builtin = repository.GetBuiltin();
@@ -24,11 +24,11 @@ public sealed class QueryRequestService(
         return builtin.Concat(custom).ToArray();
     }
 
-    public void Save(string name, SavedQueryRequestDto queryRequest)
+    public void Save(string name, QueryRequestDto queryRequest)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(queryRequest);
-        ArgumentNullException.ThrowIfNull(queryRequest.Query);
+        ArgumentException.ThrowIfNullOrWhiteSpace(queryRequest.Entity);
         if (!string.Equals(queryRequest.Name, name, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Query name must match the requested file name.", nameof(queryRequest));
         if (repository.GetBuiltin().Any(item =>

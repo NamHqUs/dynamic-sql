@@ -1,0 +1,96 @@
+{
+  "Name": "6. Outstanding receivables and aging",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "InvoiceNumber"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Customer.Name"
+        },
+        "alias": "Name"
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "InvoiceDate"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "DueDate"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "TotalAmount"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "DateSub",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "DueDate"
+            },
+            {
+              "kind": "function",
+              "function": "GETDATE",
+              "arguments": []
+            }
+          ]
+        },
+        "alias": "DaysOverdue"
+      }
+    ]
+  ],
+  "Filters": [
+    {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Sent"
+          },
+          "parameterized": true
+        }
+      ]
+    }
+  ],
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "DaysOverdue"
+        },
+        "Direction": 1
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": true,
+  "Entity": "Invoices",
+  "EntityAliases": []
+}

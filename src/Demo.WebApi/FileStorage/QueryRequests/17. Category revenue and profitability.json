@@ -1,0 +1,96 @@
+{
+  "Name": "17. Category revenue and profitability",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "Category"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "InvoiceItems.LineTotal"
+            }
+          ]
+        },
+        "alias": "Revenue"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "binary",
+              "operator": "-",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "InvoiceItems.LineTotal"
+                },
+                {
+                  "kind": "binary",
+                  "operator": "*",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "InvoiceItems.Quantity"
+                    },
+                    {
+                      "kind": "field",
+                      "field": "CostPrice"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "alias": "GrossProfit"
+      }
+    ]
+  ],
+  "Filters": [
+    {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "InvoiceItems.Invoice.Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Paid"
+          },
+          "parameterized": true
+        }
+      ]
+    }
+  ],
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "Revenue"
+        },
+        "Direction": 1
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": true,
+  "Entity": "Products",
+  "EntityAliases": []
+}

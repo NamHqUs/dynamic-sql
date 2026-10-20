@@ -1,0 +1,84 @@
+{
+  "Name": "8. Sales-channel performance",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "SalesChannel"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Count",
+          "arguments": []
+        },
+        "alias": "Orders"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "TotalAmount"
+            }
+          ]
+        },
+        "alias": "Revenue"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Average",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "TotalAmount"
+            }
+          ]
+        },
+        "alias": "AverageOrderValue"
+      }
+    ]
+  ],
+  "Filters": [
+    {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Status"
+          },
+          "operation": 1,
+          "right": {
+            "kind": "value",
+            "value": "Draft"
+          },
+          "parameterized": true
+        }
+      ]
+    }
+  ],
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "Revenue"
+        },
+        "Direction": 1
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": true,
+  "Entity": "Invoices",
+  "EntityAliases": []
+}

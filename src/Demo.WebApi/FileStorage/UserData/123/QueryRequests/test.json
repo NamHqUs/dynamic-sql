@@ -1,0 +1,1 @@
+{"Name":"test","Projection":[[{"field":{"kind":"field","field":"Name"},"alias":null},{"field":{"kind":"field","field":"Address"},"alias":null}],[{"field":{"kind":"field","field":"Region"},"alias":null}]],"Filters":null,"Sorts":null,"Page":1,"PageSize":50,"IsBuiltin":false,"Entity":"Customers","EntityAliases":[]}

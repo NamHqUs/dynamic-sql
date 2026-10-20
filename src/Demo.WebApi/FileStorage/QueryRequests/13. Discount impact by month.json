@@ -1,0 +1,126 @@
+{
+  "Name": "13. Discount impact by month",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "function",
+          "function": "DateFormat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "InvoiceDate"
+            },
+            {
+              "kind": "value",
+              "value": "%Y-%m"
+            }
+          ]
+        },
+        "alias": "Month"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "DiscountAmount"
+            }
+          ]
+        },
+        "alias": "Discounts"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "TotalAmount"
+            }
+          ]
+        },
+        "alias": "NetRevenue"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Round",
+          "arguments": [
+            {
+              "kind": "binary",
+              "operator": "/",
+              "arguments": [
+                {
+                  "kind": "binary",
+                  "operator": "*",
+                  "arguments": [
+                    {
+                      "kind": "function",
+                      "function": "Sum",
+                      "arguments": [
+                        {
+                          "kind": "field",
+                          "field": "DiscountAmount"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "value",
+                      "value": 100
+                    }
+                  ]
+                },
+                {
+                  "kind": "function",
+                  "function": "NullIf",
+                  "arguments": [
+                    {
+                      "kind": "function",
+                      "function": "Sum",
+                      "arguments": [
+                        {
+                          "kind": "field",
+                          "field": "TotalAmount"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "value",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
+        "alias": "DiscountRate"
+      }
+    ]
+  ],
+  "Filters": null,
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "Month"
+        },
+        "Direction": 0
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": true,
+  "Entity": "Invoices",
+  "EntityAliases": []
+}

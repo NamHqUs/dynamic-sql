@@ -271,7 +271,7 @@ public sealed class _24_FunctionMetadataTests
             var record = context.Query(new QueryDefinition
             {
                 Entity = "Items",
-                Fields =
+                Projection =
                 [
                     new ProjectionDefinition(
                         new FunctionFieldDefinition(functionName,
@@ -369,7 +369,7 @@ public sealed class _24_FunctionMetadataTests
         return context.Query(new QueryDefinition
         {
             Entity = "Items",
-            Fields = [new ProjectionDefinition(expression, "Result")]
+            Projection = [new ProjectionDefinition(expression, "Result")]
         }).ToSql();
     }
 

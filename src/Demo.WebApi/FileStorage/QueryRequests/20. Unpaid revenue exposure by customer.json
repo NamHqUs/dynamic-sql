@@ -1,0 +1,103 @@
+{
+  "Name": "20. Unpaid revenue exposure by customer",
+  "Projection": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "Name"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Segment"
+        },
+        "alias": null
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Count",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Invoices.Id"
+            }
+          ]
+        },
+        "alias": "OpenInvoices"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Sum",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Invoices.TotalAmount"
+            }
+          ]
+        },
+        "alias": "AmountDue"
+      },
+      {
+        "field": {
+          "kind": "function",
+          "function": "Min",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Invoices.DueDate"
+            }
+          ]
+        },
+        "alias": "OldestDueDate"
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
+        "alias": "CustomerId"
+      }
+    ]
+  ],
+  "Filters": [
+    {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Invoices.Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Sent"
+          },
+          "parameterized": true
+        }
+      ]
+    }
+  ],
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "AmountDue"
+        },
+        "Direction": 1
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": true,
+  "Entity": "Customers",
+  "EntityAliases": []
+}
