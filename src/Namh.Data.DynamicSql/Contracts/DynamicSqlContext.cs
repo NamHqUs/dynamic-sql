@@ -20,14 +20,14 @@ public class DynamicSqlContext(
 
     public IDbQueryable Query(
         string entity,
-        IReadOnlyList<EntityContextDefinition>? entityAliases = null)
+        IReadOnlyList<RelationDefinition>? relations = null)
     {
         var queryProvider = new DbQueryProvider(
             metaProvider,
             dbConnection,
             _sqlDialect,
             entity,
-            entityAliases ?? []);
+            relations ?? []);
 
         return new DbQueryable(queryProvider);
     }

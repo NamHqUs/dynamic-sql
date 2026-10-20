@@ -79,5 +79,5 @@
   "PageSize": 10,
   "IsBuiltin": true,
   "Entity": "Customers",
-  "EntityAliases": []
+  "Relations": []
 }

@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import type { EntityAliasDefinition, MetadataEntity, QueryDefinition, RelationKey } from "../query-builder-slice";
-import { defaultEntityAlias, getRelationPathOptions } from "../../../../utils/query-entity-contexts";
+import type { RelationDefinition, MetadataEntity, QueryDefinition, RelationKey } from "../query-builder-slice";
+import { defaultRelationName, getRelationPathOptions } from "../../../../utils/query-relations";
 import Icon from "../../../icon/icon";
-import "./entity-context-builder.css";
+import "./relation-builder.css";
 
-type EntityContextBuilderProps = {
+type RelationBuilderProps = {
   metadata: MetadataEntity[];
   entity: MetadataEntity;
   definition: QueryDefinition;
@@ -15,30 +15,30 @@ function relationKeys(option: ReturnType<typeof getRelationPathOptions>[number] 
   return option?.relation.relatedKeys?.map((key) => ({ ...key })) ?? [{ fromDbColumn: "", toDbColumn: "" }];
 }
 
-export default function EntityContextBuilder({
+export default function RelationBuilder({
   metadata,
   entity,
   definition,
   onDefinitionChange,
-}: EntityContextBuilderProps) {
+}: RelationBuilderProps) {
   const options = useMemo(() => getRelationPathOptions(entity, metadata), [entity, metadata]);
   const [relationPath, setRelationPath] = useState(options[0]?.path ?? "");
   const selectedRelationPath = options.some((option) => option.path === relationPath)
     ? relationPath
     : options[0]?.path ?? "";
   const selectedOption = options.find((option) => option.path === selectedRelationPath);
-  const updateAliases = (entityAliases: EntityAliasDefinition[]) => onDefinitionChange({
+  const updateRelations = (relations: RelationDefinition[]) => onDefinitionChange({
     ...definition,
-    entityAliases,
+    relations,
   });
 
-  const addAlias = () => {
+  const addRelation = () => {
     if (!selectedOption) return;
-    updateAliases([
-      ...definition.entityAliases,
+    updateRelations([
+      ...definition.relations,
       {
-        alias: defaultEntityAlias(selectedOption.path, [
-          ...definition.entityAliases.map((alias) => alias.alias),
+        name: defaultRelationName(selectedOption.path, [
+          ...definition.relations.map((relation) => relation.name),
           ...options.map((option) => option.path),
         ]),
         relationPath: selectedOption.path,
@@ -47,51 +47,51 @@ export default function EntityContextBuilder({
     ]);
   };
 
-  const updateAlias = (index: number, update: Partial<EntityAliasDefinition>) => {
-    updateAliases(definition.entityAliases.map((alias, aliasIndex) =>
-      aliasIndex === index ? { ...alias, ...update } : alias));
+  const updateRelation = (index: number, update: Partial<RelationDefinition>) => {
+    updateRelations(definition.relations.map((relation, relationIndex) =>
+      relationIndex === index ? { ...relation, ...update } : relation));
   };
 
   const changeRelationPath = (index: number, path: string) => {
     const option = options.find((candidate) => candidate.path === path);
     if (!option) return;
-    updateAlias(index, {
+    updateRelation(index, {
       relationPath: path,
       relatedKeys: relationKeys(option),
     });
   };
 
   return (
-    <section className="builder-section entity-context-section" aria-labelledby="entity-context-heading">
+    <section className="builder-section relation-section" aria-labelledby="relation-heading">
       <div className="section-header">
         <div className="section-heading">
-          <span className="section-kicker" id="entity-context-heading">ENTITY CONTEXTS</span>
-          <p className="filter-description">Add another named context from a relation path. Each context is independent and needs its own key mapping.</p>
+          <span className="section-kicker" id="relation-heading">RELATIONS</span>
+          <p className="filter-description">Add another named relation from a relation path. Each relation is independent and needs its own key mapping.</p>
         </div>
       </div>
 
-      {definition.entityAliases.map((alias, index) => {
-        const option = options.find((candidate) => candidate.path === alias.relationPath);
+      {definition.relations.map((relation, index) => {
+        const option = options.find((candidate) => candidate.path === relation.relationPath);
         const parentFields = option?.parentEntity.fields ?? [];
         const targetFields = option?.targetEntity.fields ?? [];
 
         return (
-          <div className="entity-context-card" key={`${index}-${alias.relationPath}`}>
-            <div className="entity-context-main">
+          <div className="relation-card" key={`${index}-${relation.relationPath}`}>
+            <div className="relation-main">
               <label>
-                <span>Context name</span>
+                <span>Relation name</span>
                 <input
-                  aria-label={`Context ${index + 1} name`}
-                  value={alias.alias}
-                  onChange={(event) => updateAlias(index, { alias: event.target.value })}
+                  aria-label={`Relation ${index + 1} name`}
+                  value={relation.name}
+                  onChange={(event) => updateRelation(index, { name: event.target.value })}
                   placeholder="e.g. Invoice.Customer1"
                 />
               </label>
               <label>
                 <span>Based on</span>
                 <select
-                  aria-label={`Context ${index + 1} relation path`}
-                  value={alias.relationPath}
+                  aria-label={`Relation ${index + 1} relation path`}
+                  value={relation.relationPath}
                   onChange={(event) => changeRelationPath(index, event.target.value)}
                 >
                   {options.map((candidate) => (
@@ -101,25 +101,25 @@ export default function EntityContextBuilder({
               </label>
               <button
                 type="button"
-                className="entity-context-remove"
-                aria-label={`Remove context ${alias.alias || index + 1}`}
-                title="Remove context"
-                onClick={() => updateAliases(definition.entityAliases.filter((_, aliasIndex) => aliasIndex !== index))}
+                className="relation-remove"
+                aria-label={`Remove relation ${relation.name || index + 1}`}
+                title="Remove relation"
+                onClick={() => updateRelations(definition.relations.filter((_, relationIndex) => relationIndex !== index))}
               >
                 <Icon name="close" size={14} />
               </button>
             </div>
-            <div className="entity-context-key-list">
-              <span className="entity-context-key-heading">Key mapping</span>
-              {alias.relatedKeys.map((key, keyIndex) => (
-                <div className="entity-context-key-row" key={keyIndex}>
+            <div className="relation-key-list">
+              <span className="relation-key-heading">Key mapping</span>
+              {relation.relatedKeys.map((key, keyIndex) => (
+                <div className="relation-key-row" key={keyIndex}>
                   <select
-                    aria-label={`Context ${index + 1} source key ${keyIndex + 1}`}
+                    aria-label={`Relation ${index + 1} source key ${keyIndex + 1}`}
                     value={key.fromDbColumn}
                     onChange={(event) => {
-                      const relatedKeys = alias.relatedKeys.map((item, itemIndex) =>
+                      const relatedKeys = relation.relatedKeys.map((item, itemIndex) =>
                         itemIndex === keyIndex ? { ...item, fromDbColumn: event.target.value } : item);
-                      updateAlias(index, { relatedKeys });
+                      updateRelation(index, { relatedKeys });
                     }}
                   >
                     <option value="">Select source field</option>
@@ -127,12 +127,12 @@ export default function EntityContextBuilder({
                   </select>
                   <span aria-hidden="true">→</span>
                   <select
-                    aria-label={`Context ${index + 1} target key ${keyIndex + 1}`}
+                    aria-label={`Relation ${index + 1} target key ${keyIndex + 1}`}
                     value={key.toDbColumn}
                     onChange={(event) => {
-                      const relatedKeys = alias.relatedKeys.map((item, itemIndex) =>
+                      const relatedKeys = relation.relatedKeys.map((item, itemIndex) =>
                         itemIndex === keyIndex ? { ...item, toDbColumn: event.target.value } : item);
-                      updateAlias(index, { relatedKeys });
+                      updateRelation(index, { relatedKeys });
                     }}
                   >
                     <option value="">Select target field</option>
@@ -140,12 +140,12 @@ export default function EntityContextBuilder({
                   </select>
                   <button
                     type="button"
-                    className="entity-context-key-remove"
-                    aria-label={`Remove key mapping ${keyIndex + 1} from context ${index + 1}`}
-                    onClick={() => updateAlias(index, {
-                      relatedKeys: alias.relatedKeys.filter((_, itemIndex) => itemIndex !== keyIndex),
+                    className="relation-key-remove"
+                    aria-label={`Remove key mapping ${keyIndex + 1} from relation ${index + 1}`}
+                    onClick={() => updateRelation(index, {
+                      relatedKeys: relation.relatedKeys.filter((_, itemIndex) => itemIndex !== keyIndex),
                     })}
-                    disabled={alias.relatedKeys.length === 1}
+                    disabled={relation.relatedKeys.length === 1}
                   >
                     <Icon name="close" size={12} />
                   </button>
@@ -153,9 +153,9 @@ export default function EntityContextBuilder({
               ))}
               <button
                 type="button"
-                className="text-button entity-context-add-key"
-                onClick={() => updateAlias(index, {
-                  relatedKeys: [...alias.relatedKeys, { fromDbColumn: "", toDbColumn: "" }],
+                className="text-button relation-add-key"
+                onClick={() => updateRelation(index, {
+                  relatedKeys: [...relation.relatedKeys, { fromDbColumn: "", toDbColumn: "" }],
                 })}
               >
                 Add key pair
@@ -168,16 +168,16 @@ export default function EntityContextBuilder({
       {options.length === 0
         ? <p className="empty-builder">This entity has no metadata relation paths to add.</p>
         : (
-          <div className="entity-context-add-row">
+          <div className="relation-add-row">
             <label>
               <span>Relation path</span>
               <select value={selectedRelationPath} onChange={(event) => setRelationPath(event.target.value)}>
                 {options.map((option) => <option value={option.path} key={option.path}>{option.path}</option>)}
               </select>
             </label>
-            <button type="button" className="text-button" onClick={addAlias} disabled={!selectedOption}>
+            <button type="button" className="text-button" onClick={addRelation} disabled={!selectedOption}>
               <Icon name="plus" size={14} />
-              Add entity context
+              Add relation
             </button>
           </div>
         )}

@@ -17,7 +17,7 @@ internal static class DbQueryFromQueryDto
 
         var query = context.Query(
             definition.Entity,
-            definition.EntityAliases);
+            definition.Relations);
 
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));

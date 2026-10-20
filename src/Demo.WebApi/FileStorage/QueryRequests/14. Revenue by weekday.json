@@ -77,5 +77,5 @@
   "PageSize": null,
   "IsBuiltin": true,
   "Entity": "Invoices",
-  "EntityAliases": []
+  "Relations": []
 }

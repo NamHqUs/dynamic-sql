@@ -55,7 +55,7 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
         ArgumentException.ThrowIfNullOrWhiteSpace(queryRequest.Name);
         ArgumentException.ThrowIfNullOrWhiteSpace(queryRequest.Entity);
         ArgumentNullException.ThrowIfNull(queryRequest.Projection);
-        ArgumentNullException.ThrowIfNull(queryRequest.EntityAliases);
+        ArgumentNullException.ThrowIfNull(queryRequest.Relations);
 
         Directory.CreateDirectory(GetUserStoreFolder(userSectionId));
         File.WriteAllText(
@@ -85,7 +85,7 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
         if (string.IsNullOrWhiteSpace(queryRequest.Name) ||
             string.IsNullOrWhiteSpace(queryRequest.Entity) ||
             queryRequest.Projection is null ||
-            queryRequest.EntityAliases is null)
+            queryRequest.Relations is null)
             throw new InvalidDataException($"Query request file '{path}' is missing required data.");
 
         return queryRequest with { IsBuiltin = isBuiltin };
@@ -148,6 +148,41 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
                 }
             };
             wasNormalized = true;
+        }
+
+        var legacyRelationsProperty = queryRequest.FirstOrDefault(property =>
+            string.Equals(property.Key, "EntityAliases", StringComparison.OrdinalIgnoreCase));
+        var relationsProperty = queryRequest.FirstOrDefault(property =>
+            string.Equals(property.Key, "Relations", StringComparison.OrdinalIgnoreCase));
+        if (legacyRelationsProperty.Value is not null)
+        {
+            if (relationsProperty.Value is not null)
+                throw new JsonException("A query request cannot contain both Relations and EntityAliases.");
+
+            queryRequest["Relations"] = legacyRelationsProperty.Value.DeepClone();
+            queryRequest.Remove(legacyRelationsProperty.Key);
+            relationsProperty = queryRequest.First(property =>
+                string.Equals(property.Key, "Relations", StringComparison.OrdinalIgnoreCase));
+            wasNormalized = true;
+        }
+
+        if (relationsProperty.Value is JsonArray relations)
+        {
+            foreach (var relation in relations.OfType<JsonObject>())
+            {
+                var legacyNameProperty = relation.FirstOrDefault(property =>
+                    string.Equals(property.Key, "Alias", StringComparison.OrdinalIgnoreCase));
+                if (legacyNameProperty.Value is null)
+                    continue;
+
+                if (relation.Any(property =>
+                    string.Equals(property.Key, "Name", StringComparison.OrdinalIgnoreCase)))
+                    throw new JsonException("A relation cannot contain both Name and Alias.");
+
+                relation["Name"] = legacyNameProperty.Value.DeepClone();
+                relation.Remove(legacyNameProperty.Key);
+                wasNormalized = true;
+            }
         }
 
         return wasNormalized ? queryRequest.ToJsonString() : json;

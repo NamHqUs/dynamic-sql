@@ -1,4 +1,4 @@
-import type { EntityAliasDefinition, MetadataEntity, MetadataRelation } from "../components/query-builder/query-design/query-builder-slice";
+import type { RelationDefinition, MetadataEntity, MetadataRelation } from "../components/query-builder/query-design/query-builder-slice";
 
 export type RelationPathOption = {
   path: string;
@@ -43,10 +43,10 @@ function resolveEntityPath(root: MetadataEntity, metadata: MetadataEntity[], pat
   return current;
 }
 
-export function addEntityAliasesToMetadata(
+export function addRelationsToMetadata(
   metadata: MetadataEntity[],
   rootName: string,
-  aliases: EntityAliasDefinition[],
+  relations: RelationDefinition[],
 ): MetadataEntity[] {
   const result = metadata.map((entity) => ({
     ...entity,
@@ -56,12 +56,12 @@ export function addEntityAliasesToMetadata(
   const root = result.find((entity) => entity.name === rootName);
   if (!root) return result;
 
-  for (const alias of aliases) {
-    const path = alias.alias.split(".");
+  for (const relation of relations) {
+    const path = relation.name.split(".");
     const relationName = path.pop();
     if (!relationName) continue;
     const parent = resolveEntityPath(root, result, path.join("."));
-    const target = resolveEntityPath(root, result, alias.relationPath);
+    const target = resolveEntityPath(root, result, relation.relationPath);
     if (!parent || !target) continue;
     parent.relations = [
       ...(parent.relations ?? []).filter((relation) =>
@@ -70,7 +70,7 @@ export function addEntityAliasesToMetadata(
         name: relationName,
         relatedEntity: target.name,
         type: "Lookup",
-        relatedKeys: alias.relatedKeys,
+        relatedKeys: relation.relatedKeys,
       },
     ];
   }
@@ -78,16 +78,16 @@ export function addEntityAliasesToMetadata(
   return result;
 }
 
-export function defaultEntityAlias(path: string, existingAliases: string[]): string {
+export function defaultRelationName(path: string, existingNames: string[]): string {
   const segments = path.split(".");
   const relationName = segments.pop() ?? "Entity";
   const parentPath = segments.join(".");
   let suffix = 1;
-  let alias = "";
+  let name = "";
   do {
-    const name = `${relationName}${suffix}`;
-    alias = parentPath ? `${parentPath}.${name}` : name;
+    const candidate = `${relationName}${suffix}`;
+    name = parentPath ? `${parentPath}.${candidate}` : candidate;
     suffix++;
-  } while (existingAliases.some((existing) => existing.toLowerCase() === alias.toLowerCase()));
-  return alias;
+  } while (existingNames.some((existing) => existing.toLowerCase() === name.toLowerCase()));
+  return name;
 }

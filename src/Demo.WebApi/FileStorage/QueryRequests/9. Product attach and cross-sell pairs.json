@@ -75,9 +75,9 @@
   "PageSize": null,
   "IsBuiltin": true,
   "Entity": "InvoiceItems",
-  "EntityAliases": [
+  "Relations": [
     {
-      "Alias": "b",
+      "Name": "b",
       "RelationPath": "InvoiceItems",
       "RelatedKeys": [
         {

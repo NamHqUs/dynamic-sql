@@ -92,5 +92,5 @@
   "PageSize": 50,
   "IsBuiltin": false,
   "Entity": "Customers",
-  "EntityAliases": []
+  "Relations": []
 }

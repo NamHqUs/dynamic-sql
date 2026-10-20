@@ -84,5 +84,5 @@
   "PageSize": null,
   "IsBuiltin": true,
   "Entity": "Products",
-  "EntityAliases": []
+  "Relations": []
 }

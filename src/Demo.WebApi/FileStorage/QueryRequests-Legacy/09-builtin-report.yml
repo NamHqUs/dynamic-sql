@@ -1,7 +1,7 @@
 Name: 9. Product attach and cross-sell pairs
 # Product IDs preserve the source grouping by a.ProductId and b.ProductId.
 Entity: InvoiceItems
-EntityAliases:
+Relations:
   - "b: InvoiceItems(InvoiceId)"
 Fields:
   - Product.Name | Product

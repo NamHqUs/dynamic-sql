@@ -15,8 +15,8 @@ export type MetadataRelation = {
 };
 
 export type RelationKey = { fromDbColumn: string; toDbColumn: string };
-export type EntityAliasDefinition = {
-  alias: string;
+export type RelationDefinition = {
+  name: string;
   relationPath: string;
   relatedKeys: RelationKey[];
 };
@@ -80,7 +80,7 @@ type ApiQueryFilterGroup = Omit<QueryFilterGroup, "filters"> & {
 
 export type QueryDefinition = {
   entity: string;
-  entityAliases: EntityAliasDefinition[];
+  relations: RelationDefinition[];
   columns: QueryColumn[];
   projectionRows?: string[][];
   filters: QueryFilterGroup;
@@ -115,7 +115,7 @@ export type SavedQueryRequestDto = {
 type ApiSavedQueryRequestDto = {
   name: string;
   entity: string;
-  entityAliases: EntityAliasDefinition[];
+  relations: RelationDefinition[];
   projection: { field: QueryExpression; alias: string | null }[];
   filters: ApiQueryFilterGroup | null;
   sorts: { field: QueryExpression; direction: number }[][] | null;
@@ -274,7 +274,7 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
 
   return {
     entity: query.entity,
-    entityAliases: query.entityAliases ?? [],
+    relations: query.relations ?? [],
     columns: query.projection.map((projection, index) => ({
       field: projection.field.kind === "field"
         ? projection.field.field
@@ -326,7 +326,7 @@ function fromApiSavedRequest(request: ApiSavedQueryRequestDto): SavedQueryReques
     name: request.name,
     query: {
       entity: request.entity,
-      entityAliases: request.entityAliases,
+      relations: request.relations,
       projection: fields,
       filter: request.filters,
       sorts: request.sorts?.flat() ?? [],
@@ -366,7 +366,7 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition 
   return {
     name: request.name,
     entity: apiQuery.entity,
-    entityAliases: apiQuery.entityAliases,
+    relations: apiQuery.relations,
     projection,
     filters: apiQuery.filter,
     sorts: apiQuery.sorts.length ? [apiQuery.sorts] : null,
@@ -621,7 +621,7 @@ export const fetchQueryRequests = createAsyncThunk(
       if (!Array.isArray(payload) || payload.some((item) => !item
         || typeof item.name !== "string"
         || typeof item.entity !== "string"
-        || !Array.isArray(item.entityAliases)
+        || !Array.isArray(item.relations)
         || typeof item.isBuiltin !== "boolean"
         || !Array.isArray(item.projection)
         || item.projection.some((projection: unknown) => !projection

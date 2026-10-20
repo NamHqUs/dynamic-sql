@@ -12,15 +12,15 @@ using Microsoft.Extensions.Configuration;
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
 [TestFixture]
-internal sealed class _35_EntityContextTests : TestBase
+internal sealed class _35_RelationTests : TestBase
 {
     [Test]
-    public void QueryDefinitionCreatesIndependentContextsWithDifferentKeyMappings()
+    public void QueryDefinitionCreatesIndependentRelationsWithDifferentKeyMappings()
     {
         var query = _db.Query(new QueryDefinition
         {
             Entity = "InvoiceItems",
-            EntityAliases =
+            Relations =
             [
                 new("Product1", "Product", [new("ProductId", "Id")]),
                 new("Product2", "Product", [new("Id", "Id")])
@@ -40,26 +40,26 @@ internal sealed class _35_EntityContextTests : TestBase
     }
 
     [Test]
-    public void QueryDefinitionYmlParsesEntityAliases()
+    public void QueryDefinitionYmlParsesRelations()
     {
         var definition = QueryDefinitionParser.ParseFromYml("""
             Entity: InvoiceItems
-            EntityAliases:
+            Relations:
               - "Product2: Product(Id)"
             """);
 
-        Assert.That(definition.EntityAliases, Has.Count.EqualTo(1));
-        Assert.That(definition.EntityAliases[0].Alias, Is.EqualTo("Product2"));
-        Assert.That(definition.EntityAliases[0].RelatedKeys[0], Is.EqualTo(new RelationItem("Id", "Id")));
+        Assert.That(definition.Relations, Has.Count.EqualTo(1));
+        Assert.That(definition.Relations[0].Name, Is.EqualTo("Product2"));
+        Assert.That(definition.Relations[0].RelatedKeys[0], Is.EqualTo(new RelationItem("Id", "Id")));
     }
 
     [Test]
-    public void EntityAliasCanCloneNestedRelationPathForCrossEntityComparison()
+    public void RelationCanCloneNestedRelationPathForCrossEntityComparison()
     {
         var query = _db.Query(new QueryDefinition
         {
             Entity = "InvoiceItems",
-            EntityAliases = [new("OtherItem", "Invoice.Items", [new("Id", "InvoiceId")])],
+            Relations = [new("OtherItem", "Invoice.Items", [new("Id", "InvoiceId")])],
             Projection = QueryDefinitionParser.ParseProjection(
                 "Product.Name|Product, OtherItem.Product.Name|FrequentlyBoughtWith, Count()|OrdersTogether"),
             Filter = QueryDefinitionParser.ParseFilter("Product.Id < OtherItem.Product.Id")
@@ -74,17 +74,17 @@ internal sealed class _35_EntityContextTests : TestBase
     }
 
     [Test]
-    public void QueryDefinitionRequiresKeysForEveryEntityAlias()
+    public void QueryDefinitionRequiresKeysForEveryRelation()
     {
         var query = _db.Query(new QueryDefinition
         {
             Entity = "InvoiceItems",
-            EntityAliases = [new("Product2", "Product", [])],
+            Relations = [new("Product2", "Product", [])],
             Projection = QueryDefinitionParser.ParseProjection("Product2.Name")
         });
 
         var exception = Assert.Throws<FormatException>(() => query.ToSql());
 
-        Assert.That(exception!.Message, Is.EqualTo("Entity alias [Product2] requires at least one relation key."));
+        Assert.That(exception!.Message, Is.EqualTo("Relation [Product2] requires at least one relation key."));
     }
 }

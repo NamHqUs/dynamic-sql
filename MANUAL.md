@@ -258,7 +258,7 @@ Use `QueryYml` when a screen, API, or report supplies query rules at runtime:
 ```csharp
 var rows = db.QueryYml("""
 Entity: User
-EntityAliases:
+Relations:
   - "Manager2: Manager(ManagerId)"
 Projection:
   - Name
@@ -274,9 +274,9 @@ PageSize: 50
 Supported properties:
 
 - `entity`: metadata entity name.
-- `entityAliases`: optional independent entity contexts written as
-  `alias: relationPath(key[, sourceKey:targetKey])`. A key without a mapping
-  maps a column to itself. Every entry creates a distinct context.
+- `relations`: optional independent relations written as
+  `name: relationPath(key[, sourceKey:targetKey])`. A key without a mapping
+  maps a column to itself. Every entry creates a distinct named relation.
 - `projection`: projection expressions; use `|` to specify an output alias.
 - Legacy YAML and JSON definitions using `Fields` remain readable.
 - Saved-query projections on `QueryRequestDto` are stored as a flat list.
@@ -298,21 +298,21 @@ Plan-text filters use `=`/`<>`, quote string values with double quotes, and
 write right-side field references in brackets; this text can be parsed back
 into the same filter structure.
 
-When entity aliases are present, plan text lists the root and each independent
-context under `Entities`:
+When relations are present, plan text lists the root under `Entity` and each
+independent relation under `Relations`:
 
 ```text
-Entities:
-  InvoiceItems
+Entity: InvoiceItems
+Relations:
   OtherItem: Invoice.Items(Id:InvoiceId)
 Projection: Product.Name, OtherItem.Product.Name
 Filters: Product.Id < OtherItem.Product.Id
 ```
 
-The alias on the left of `:` is the field-path prefix used by projections,
+The name on the left of `:` is the field-path prefix used by projections,
 filters, and sorts. The relation path on the right identifies the metadata
 relationship being reused; the parent-to-target key pairs in parentheses are
-required for every alias. To create a self-join directly from the root entity,
+required for every relation. To create a self-join directly from the root entity,
 use the root entity name as the relation path (for example,
 `b: InvoiceItems(InvoiceId:InvoiceId)`).
 
@@ -469,7 +469,7 @@ and `GETDATE()` renders the provider's current date and time.
 var query = QueryDefinitionParser.ParseFromYml("""
 Name: Product totals
 Entity: InvoiceItems
-EntityAliases:
+Relations:
   - "b: InvoiceItems(InvoiceId)"
 Projection:
   - Product.Name|Product
@@ -483,7 +483,7 @@ var fileQuery = QueryDefinitionParser.ParseFromYml(new FileInfo("query.yml"));
 YAML query definitions use the same properties as `QueryDefinition`. Entity
 aliases and sorts are plain-text expressions parsed by their respective
 definition parsers. Projection and filters use the existing query expression
-syntax. Entity aliases use the string form `alias: RelationPath(key[, ...])`;
+syntax. Relations use the string form `alias: RelationPath(key[, ...])`;
 quote the value so YAML treats it as a string. A key can map different columns
 with `fromColumn:toColumn`. Projection is a list of expressions, and sorts are a
 comma-separated string with an optional `ASC` or `DESC` direction.

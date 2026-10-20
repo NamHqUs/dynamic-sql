@@ -59,7 +59,7 @@ function readReportLayouts(): Record<string, ReportLayout> {
 function getNewDefinition(entity?: MetadataEntity): QueryDefinition {
   return {
     entity: entity?.name ?? "",
-    entityAliases: [],
+    relations: [],
     columns: entity?.fields.map((field) => ({ field: field.name, alias: null })) ?? [],
     filters: { logicalOperation: 0, filters: [] },
     sorts: [],

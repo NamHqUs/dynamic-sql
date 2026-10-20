@@ -22,13 +22,16 @@ public static partial class QueryDefinitionParser
     public static QueryDefinition Parse(YamlQueryDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
+        if (definition.Relations is not null && definition.LegacyEntityAliases is not null)
+            throw new FormatException("Use either Relations or the legacy EntityAliases field, not both.");
 
         return new QueryDefinition
         {
             Entity = !string.IsNullOrWhiteSpace(definition.Entity)
                 ? definition.Entity
                 : throw new FormatException("The YAML query definition requires an entity."),
-            EntityAliases = EntityContextDefinitionParser.Parse(definition.EntityAliases ?? []),
+            Relations = RelationDefinitionParser.Parse(
+                definition.Relations ?? definition.LegacyEntityAliases ?? []),
             Projection = ProjectionDefinitionParser.Parse(definition.Projection ?? []),
             Filter = FilterDefinitionParser.Parse(definition.Filter),
             Sorts = SortDefinitionParser.Parse(definition.Sorts),
@@ -67,14 +70,19 @@ public static partial class QueryDefinitionParser
                 .ToList();
         }
 
+        var hasRelations = TryGetProperty(root, "relations", out var relations);
+        var hasLegacyRelations = TryGetProperty(root, "entityAliases", out var legacyRelations);
+        if (hasRelations && hasLegacyRelations)
+            throw new JsonException("Use either relations or the legacy entityAliases field, not both.");
+
         return new QueryDefinition
         {
             Entity = root.GetProperty("entity").GetString()
                 ?? throw new JsonException("The entity value cannot be null."),
-            EntityAliases = root.TryGetProperty("entityAliases", out var aliases)
-                ? aliases.Deserialize<List<EntityContextDefinition>>(
+            Relations = (hasRelations ? relations : legacyRelations).ValueKind != JsonValueKind.Undefined
+                ? (hasRelations ? relations : legacyRelations).Deserialize<List<RelationDefinition>>(
                     new JsonSerializerOptions(JsonSerializerDefaults.Web))
-                    ?? throw new JsonException("Entity aliases cannot be null.")
+                    ?? throw new JsonException("Relations cannot be null.")
                 : [],
             Projection = projections,
             Filter = root.TryGetProperty("filter", out var filter)

@@ -3,6 +3,8 @@
 .query-name-row { margin-bottom: 16px; }
 .query-name-row label { display: flex; flex-direction: column; gap: 7px; color: #aab3c2; font: 11px "DM Mono", monospace; letter-spacing: .7px; text-transform: uppercase; }
 .query-name-row input { width: 100%; height: var(--field-box-height); box-sizing: border-box; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 9px; font-size: 13px; outline: 0; }
+.query-static-value { display: block; color: #dce1eb; font: 13px "Manrope", sans-serif; letter-spacing: normal; text-transform: none; }
+.query-builder-toolbar .query-static-value { min-width: 220px; }
 .query-name-row input:focus { border-color: #7054d4; }
 .query-name-row input::placeholder { color: #687284; }
 .query-builder-toolbar label { display: flex; flex-direction: column; gap: 7px; color: #aab3c2; font: 11px "DM Mono", monospace; letter-spacing: .7px; text-transform: uppercase; }

@@ -6,7 +6,7 @@ import { createApiQuery, deleteQueryRequest, executeQuery, fetchFunctionDefiniti
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import SavedQueryList from "./saved-query-list/saved-query-list";
-import { addEntityAliasesToMetadata } from "../../utils/query-entity-contexts";
+import { addRelationsToMetadata } from "../../utils/query-relations";
 import { replacePlanTextSectionValue } from "./query-design/plan-text-section-editor";
 import type { PlanTextSection } from "./query-design/plan-text-section-editor";
 import type { AppDispatch, RootState } from "../../store/store";
@@ -32,7 +32,7 @@ export function setQueryBuilderDefinition(definition: QueryDefinition) {
 function createDefinition(entity: string, fields: MetadataField[] = []): QueryDefinition {
   return {
     entity,
-    entityAliases: [],
+    relations: [],
     columns: fields.map((field) => ({ field: field.name, alias: null })),
     filters: { logicalOperation: 0, filters: [] },
     sorts: [],
@@ -59,10 +59,12 @@ function loadDefinition(): QueryDefinition {
     } catch {
       throw new Error("Saved Query Builder definition is not valid JSON.");
     }
-    if (!isQueryDefinition(parsedDefinition)) {
+    const normalizedDefinition = normalizeQueryDefinition(parsedDefinition);
+    if (!normalizedDefinition) {
       throw new Error("Saved Query Builder definition has an invalid shape.");
     }
-    cachedDefinition = parsedDefinition;
+    cachedDefinition = normalizedDefinition;
+    window.sessionStorage.setItem(QUERY_DEFINITION_STORAGE_KEY, JSON.stringify(normalizedDefinition));
   }
 
   return {
@@ -71,11 +73,32 @@ function loadDefinition(): QueryDefinition {
   };
 }
 
+function normalizeQueryDefinition(value: unknown): QueryDefinition | null {
+  if (!isRecord(value) || ("relations" in value && "entityAliases" in value)) return null;
+
+  const savedRelations = value.relations ?? value.entityAliases;
+  if (!Array.isArray(savedRelations)) return null;
+
+  const relations = savedRelations.map((savedRelation) => {
+    if (!isRecord(savedRelation)) return savedRelation;
+    const { alias, ...relation } = savedRelation;
+    return {
+      ...relation,
+      name: typeof relation.name === "string" ? relation.name : alias,
+    };
+  });
+  const normalized = { ...value, relations };
+  delete normalized.entityAliases;
+
+  return isQueryDefinition(normalized) ? normalized : null;
+}
+
 function isQueryDefinition(value: unknown): value is QueryDefinition {
-  if (!value || typeof value !== "object") return false;
+  if (!isRecord(value)) return false;
   const definition = value as Partial<QueryDefinition>;
   return typeof definition.entity === "string"
-    && Array.isArray(definition.entityAliases)
+    && Array.isArray(definition.relations)
+    && definition.relations.every(isRelationDefinition)
     && Array.isArray(definition.columns)
     && definition.columns.every((column) => column !== null
       && typeof column === "object"
@@ -91,6 +114,20 @@ function isQueryDefinition(value: unknown): value is QueryDefinition {
     && Array.isArray(definition.sorts)
     && (definition.page === null || typeof definition.page === "number")
     && (definition.pageSize === null || typeof definition.pageSize === "number");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isRelationDefinition(value: unknown): value is QueryDefinition["relations"][number] {
+  return isRecord(value)
+    && typeof value.name === "string"
+    && typeof value.relationPath === "string"
+    && Array.isArray(value.relatedKeys)
+    && value.relatedKeys.every((key) => isRecord(key)
+      && typeof key.fromDbColumn === "string"
+      && typeof key.toDbColumn === "string");
 }
 
 function pruneFilters(group: QueryFilterGroup, entity: MetadataEntity, metadata: MetadataEntity[]): QueryFilterGroup {
@@ -196,8 +233,8 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const [isApplyingPlanText, setIsApplyingPlanText] = useState(false);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
   const contextMetadata = useMemo(
-    () => addEntityAliasesToMetadata(metadata, definition.entity, definition.entityAliases),
-    [metadata, definition.entity, definition.entityAliases],
+    () => addRelationsToMetadata(metadata, definition.entity, definition.relations),
+    [metadata, definition.entity, definition.relations],
   );
   const contextEntity = useMemo(
     () => contextMetadata.find((item) => item.name === definition.entity),
@@ -208,18 +245,9 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     setDefinition(nextDefinition);
   };
   const updateDefinitionFromDesign = (nextDefinition: QueryDefinition) => {
-    if (selectedRequestIsBuiltin) {
-      setSelectedRequestName(null);
-      setSelectedRequestIsBuiltin(false);
-      setRequestName("");
-    }
     updateDefinition(nextDefinition);
   };
   const updateRequestName = (name: string) => {
-    if (selectedRequestIsBuiltin) {
-      setSelectedRequestName(null);
-      setSelectedRequestIsBuiltin(false);
-    }
     setRequestName(name);
   };
   useEffect(() => {
@@ -247,7 +275,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     } else if (reconciled !== definition) {
       updateDefinition(reconciled);
     }
-  }, [metadata, definition.entity, definition.entityAliases]);
+  }, [metadata, definition.entity, definition.relations]);
 
   const runQuery = () => {
     if (definition.entity && definition.columns.length) {
@@ -366,7 +394,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
           <span className="query-heading-mark"><Icon name="grid" size={21} /></span>
           <div className="query-heading-copy">
             <span className="query-heading-eyebrow">QUERY WORKSPACE <i /> DESIGN · RUN · REFINE</span>
-            <h2>{selectedRequestName || "Explore your data"}</h2>
+            <h2>Explore your data</h2>
             <p>Shape a query visually, then inspect its SQL and live results.</p>
             <div className="query-heading-summary" aria-label="Current query summary">
               <span className="query-heading-source"><Icon name="database" size={13} />{entity?.name || "Choose a data source"}</span>
@@ -419,6 +447,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               definition={definition}
               entity={entity}
               requestName={requestName}
+              isBuiltin={selectedRequestIsBuiltin}
               requestNameReadOnly={Boolean(selectedRequestName && !selectedRequestIsBuiltin)}
               isResolvingPlanChanges={isApplyingPlanText}
               onRequestNameChange={updateRequestName}

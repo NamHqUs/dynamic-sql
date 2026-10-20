@@ -94,7 +94,7 @@ internal class _33_DemoTest : TestBase
         QueryDefinition query = new()
         {
             Entity = "InvoiceItems",
-            EntityAliases =
+            Relations =
             [
                 new("b", "InvoiceItems", [new("InvoiceId")])
             ],
@@ -134,7 +134,7 @@ internal class _33_DemoTest : TestBase
         string yml = """
             Name: 9. Product attach and cross-sell pairs
             Entity: InvoiceItems
-            EntityAliases:
+            Relations:
               - "b: InvoiceItems(InvoiceId)"
             Projection: 
               - Product.Name|Product 
@@ -155,10 +155,10 @@ internal class _33_DemoTest : TestBase
 
         var data = _db.Query(query).ToList();
         Assert.That(data, Is.Not.Empty);
-        var alias = query.EntityAliases.Single();
-        Assert.That(alias.Alias, Is.EqualTo("b"));
-        Assert.That(alias.RelationPath, Is.EqualTo("InvoiceItems"));
-        Assert.That(alias.RelatedKeys.Single(), Is.EqualTo(new RelationItem("InvoiceId")));
+        var relation = query.Relations.Single();
+        Assert.That(relation.Name, Is.EqualTo("b"));
+        Assert.That(relation.RelationPath, Is.EqualTo("InvoiceItems"));
+        Assert.That(relation.RelatedKeys.Single(), Is.EqualTo(new RelationItem("InvoiceId")));
         Assert.That(query.Projection, Has.Count.EqualTo(3));
         Assert.That(query.Sorts.Single().Direction, Is.EqualTo(QuerySortDirection.Descending));
     }

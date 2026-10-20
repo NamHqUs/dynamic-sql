@@ -8,7 +8,7 @@ namespace Namh.Data.DynamicSql.Compilation;
 
 class QueryContext(
     IMetaProvider metaProvider,
-    IReadOnlyList<EntityContextDefinition> entityAliases)
+    IReadOnlyList<RelationDefinition> relations)
 {
     private int _aliasCount;
     public readonly Stack<(string ArgumentName, TableExpression TableContext)> Arguments = new();
@@ -20,7 +20,7 @@ class QueryContext(
     {
         var table = new TableExpression(entity, GetNextAlias());
 
-        RegisterEntityAliases(table);
+        RegisterRelations(table);
         return table;
     }
 
@@ -35,13 +35,13 @@ class QueryContext(
             return ParseFunctionExpression(tableContext, wrappedAggregate, 0);
 
         var queryRoot = tableContext.JoinHost;
-        var entityAlias = queryRoot.EntityContexts
+        var relation = queryRoot.Relations
             .OrderByDescending(pair => pair.Key.Length)
             .FirstOrDefault(pair => fieldPath.StartsWith($"{pair.Key}.", StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrEmpty(entityAlias.Key))
+        if (!string.IsNullOrEmpty(relation.Key))
         {
-            tableContext = entityAlias.Value;
-            fieldPath = fieldPath[(entityAlias.Key.Length + 1)..];
+            tableContext = relation.Value;
+            fieldPath = fieldPath[(relation.Key.Length + 1)..];
         }
 
         var i = fieldPath.LastIndexOf('.');
@@ -255,22 +255,22 @@ class QueryContext(
                 .ToList();
     }
 
-    private void RegisterEntityAliases(TableExpression tableContext)
+    private void RegisterRelations(TableExpression tableContext)
     {
-        foreach (var entityAlias in entityAliases)
+        foreach (var relation in relations)
         {
-            if (entityAlias is null)
-                throw new FormatException("An entity alias cannot be null.");
-            if (string.IsNullOrWhiteSpace(entityAlias.Alias) ||
-                string.IsNullOrWhiteSpace(entityAlias.RelationPath))
-                throw new FormatException("An entity alias requires an alias and a relation path.");
-            if (entityAlias.RelatedKeys is not { Count: > 0 })
-                throw new FormatException($"Entity alias [{entityAlias.Alias}] requires at least one relation key.");
+            if (relation is null)
+                throw new FormatException("A relation cannot be null.");
+            if (string.IsNullOrWhiteSpace(relation.Name) ||
+                string.IsNullOrWhiteSpace(relation.RelationPath))
+                throw new FormatException("A relation requires a name and a relation path.");
+            if (relation.RelatedKeys is not { Count: > 0 })
+                throw new FormatException($"Relation [{relation.Name}] requires at least one relation key.");
 
             TableExpression parentTable;
             Entity targetEntity;
             if (string.Equals(
-                entityAlias.RelationPath,
+                relation.RelationPath,
                 tableContext.Entity.Name,
                 StringComparison.OrdinalIgnoreCase))
             {
@@ -279,34 +279,34 @@ class QueryContext(
             }
             else
             {
-                var relationPath = ParseRelationPath(tableContext, entityAlias.RelationPath).ToArray();
+                var relationPath = ParseRelationPath(tableContext, relation.RelationPath).ToArray();
                 if (relationPath.Length == 0)
-                    throw new FormatException($"Entity alias [{entityAlias.Alias}] requires a relation path.");
+                    throw new FormatException($"Relation [{relation.Name}] requires a relation path.");
 
                 parentTable = ApplyJoin(tableContext, relationPath.Take(relationPath.Length - 1));
                 targetEntity = relationPath[^1].joinedEntity;
             }
-            if (string.IsNullOrWhiteSpace(entityAlias.Alias) ||
-                entityAlias.Alias.Split('.').Any(segment => string.IsNullOrWhiteSpace(segment)))
-                throw new FormatException($"Entity alias [{entityAlias.Alias}] is invalid.");
-            if (string.Equals(entityAlias.Alias, entityAlias.RelationPath, StringComparison.OrdinalIgnoreCase))
-                throw new FormatException($"Entity alias [{entityAlias.Alias}] must differ from its relation path.");
+            if (string.IsNullOrWhiteSpace(relation.Name) ||
+                relation.Name.Split('.').Any(segment => string.IsNullOrWhiteSpace(segment)))
+                throw new FormatException($"Relation [{relation.Name}] is invalid.");
+            if (string.Equals(relation.Name, relation.RelationPath, StringComparison.OrdinalIgnoreCase))
+                throw new FormatException($"Relation [{relation.Name}] must differ from its relation path.");
 
-            if (tableContext.EntityContexts.ContainsKey(entityAlias.Alias))
-                throw new FormatException($"Entity alias [{entityAlias.Alias}] is defined more than once.");
+            if (tableContext.Relations.ContainsKey(relation.Name))
+                throw new FormatException($"Relation [{relation.Name}] is defined more than once.");
 
             var aliasTable = new TableExpression(targetEntity, GetNextAlias())
             {
                 JoinRoot = tableContext.JoinHost
             };
             var conditions = new List<SqlExpression>();
-            foreach (var key in entityAlias.RelatedKeys)
+            foreach (var key in relation.RelatedKeys)
             {
                 if (key is null)
-                    throw new FormatException($"Entity alias [{entityAlias.Alias}] contains an empty relation key.");
+                    throw new FormatException($"Relation [{relation.Name}] contains an empty relation key.");
                 if (string.IsNullOrWhiteSpace(key.FromDbColumn) ||
                     string.IsNullOrWhiteSpace(key.ToDbColumn))
-                    throw new FormatException($"Entity alias [{entityAlias.Alias}] contains an incomplete relation key.");
+                    throw new FormatException($"Relation [{relation.Name}] contains an incomplete relation key.");
 
                 conditions.Add(new BinarySqlExpression(
                     new FieldExpression(aliasTable.Alias, targetEntity.GetField(key.ToDbColumn)),
@@ -315,7 +315,7 @@ class QueryContext(
                     typeof(bool)));
             }
 
-            tableContext.EntityContexts.Add(entityAlias.Alias, aliasTable);
+            tableContext.Relations.Add(relation.Name, aliasTable);
             tableContext.JoinHost.Joins.Add(new JoinExpression(aliasTable, "LEFT JOIN", conditions));
         }
     }
