@@ -74,7 +74,7 @@ internal static class DbQueryFromQueryDto
     }
 
     private static Expression CreateFilterBody(
-        IFilterDto filter,
+        IFilterDefintion filter,
         ParameterExpression parameter)
         => filter switch
         {

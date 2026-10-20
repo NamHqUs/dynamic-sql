@@ -6,17 +6,17 @@ namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
 [JsonConverter(typeof(FilterDefinitionJsonConverter))]
-public interface IFilterDto
+public interface IFilterDefintion
 {
     string ToText();
 }
 
 [JsonConverter(typeof(GroupFilterDtoJsonConverter))]
-public class FilterDefinition(LogicalOperator logicalOperator = LogicalOperator.And, params IFilterDto[] filter) : IFilterDto
+public class FilterDefinition(LogicalOperator logicalOperator = LogicalOperator.And, params IFilterDefintion[] filter) : IFilterDefintion
 {
     public LogicalOperator LogicalOperation { get; set; } = logicalOperator;
     public string Note { get; set; } = string.Empty;
-    public List<IFilterDto> Filters { get; set; } = filter.ToList();
+    public List<IFilterDefintion> Filters { get; set; } = filter.ToList();
 
     public string ToText()
     {
@@ -44,12 +44,12 @@ public class FilterDefinition(LogicalOperator logicalOperator = LogicalOperator.
     }
 }
 
-[JsonConverter(typeof(FilterItemDtoJsonConverter))]
+[JsonConverter(typeof(FilterItemDefinitionJsonConverter))]
 public record FilterItemDefinition(
     LogicalOperator? LogicalOperator,
     IFieldDefinition Left,
     BinaryOperator Operation,
-    IFieldDefinition? Right = null) : IFilterDto
+    IFieldDefinition? Right = null) : IFilterDefintion
 {
     public bool Parameterized { get; init; }
 

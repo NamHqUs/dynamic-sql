@@ -25,18 +25,18 @@ internal sealed class FilterDefinitionParser
             ?? new FilterDefinition(LogicalOperator.And, expression);
     }
 
-    private IFilterDto ParseOr()
+    private IFilterDefintion ParseOr()
         => ParseGroup(ParseAnd, "OR", LogicalOperator.Or);
 
-    private IFilterDto ParseAnd()
+    private IFilterDefintion ParseAnd()
         => ParseGroup(ParsePrimary, "AND", LogicalOperator.And);
 
-    private IFilterDto ParseGroup(
-        Func<IFilterDto> operand,
+    private IFilterDefintion ParseGroup(
+        Func<IFilterDefintion> operand,
         string separator,
         LogicalOperator logicalOperator)
     {
-        var expressions = new List<IFilterDto> { operand() };
+        var expressions = new List<IFilterDefintion> { operand() };
 
         while (Match(separator))
         {
@@ -52,7 +52,7 @@ internal sealed class FilterDefinitionParser
             : new FilterDefinition(logicalOperator, expressions.ToArray());
     }
 
-    private IFilterDto ParsePrimary()
+    private IFilterDefintion ParsePrimary()
     {
         if (Match("("))
         {

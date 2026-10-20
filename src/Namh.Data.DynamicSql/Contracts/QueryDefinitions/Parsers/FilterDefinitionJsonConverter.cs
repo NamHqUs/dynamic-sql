@@ -3,9 +3,9 @@ using System.Text.Json.Serialization;
 
 namespace Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
-internal sealed class FilterDefinitionJsonConverter : JsonConverter<IFilterDto>
+internal sealed class FilterDefinitionJsonConverter : JsonConverter<IFilterDefintion>
 {
-    public override IFilterDto Read(
+    public override IFilterDefintion Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
         JsonSerializerOptions options)
@@ -22,7 +22,7 @@ internal sealed class FilterDefinitionJsonConverter : JsonConverter<IFilterDto>
 
     public override void Write(
         Utf8JsonWriter writer,
-        IFilterDto value,
+        IFilterDefintion value,
         JsonSerializerOptions options)
         => JsonSerializer.Serialize(writer, value, value.GetType(), options);
 
@@ -44,7 +44,7 @@ internal sealed class GroupFilterDtoJsonConverter : JsonConverter<FilterDefiniti
             ? operation.Deserialize<LogicalOperator>(options)
             : LogicalOperator.And;
         var filters = TryGetProperty(root, "filters", out var filterElement)
-            ? filterElement.Deserialize<List<IFilterDto>>(options) ?? []
+            ? filterElement.Deserialize<List<IFilterDefintion>>(options) ?? []
             : [];
 
         return new FilterDefinition(logicalOperation, filters.ToArray());
@@ -67,7 +67,7 @@ internal sealed class GroupFilterDtoJsonConverter : JsonConverter<FilterDefiniti
             element.TryGetProperty(char.ToUpperInvariant(name[0]) + name[1..], out value);
 }
 
-internal sealed class FilterItemDtoJsonConverter : JsonConverter<FilterItemDefinition>
+internal sealed class FilterItemDefinitionJsonConverter : JsonConverter<FilterItemDefinition>
 {
     public override FilterItemDefinition Read(
         ref Utf8JsonReader reader,
