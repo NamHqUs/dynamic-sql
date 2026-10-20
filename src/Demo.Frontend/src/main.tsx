@@ -117,7 +117,7 @@ function App() {
       </header>
 
       <Routes>
-        <Route path={PAGE_PATHS.reports} element={<div className="page-transition"><Reports onNavigateToPage={navigateToPage} onEditQuery={(definition: QueryDefinition) => {
+        <Route path={PAGE_PATHS.reports} element={<div className="page-transition page-transition-no-slide"><Reports onNavigateToPage={navigateToPage} onEditQuery={(definition: QueryDefinition) => {
           setQueryBuilderDefinition(definition);
           setQueryBuilderInstance((current) => current + 1);
           navigateToPage("builder", true);
