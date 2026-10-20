@@ -66,7 +66,7 @@
 .field-action-icon:focus-visible { outline: 2px solid var(--purple); outline-offset: 1px; }
 .field-action:focus-visible { outline: 0; }
 .field-action:disabled { opacity: .5; cursor: default; }
-.filter-description { max-width: 760px; margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; text-align: left; }
+.filter-description { display: flex; align-items: flex-end; min-height: 2.8em; max-width: 760px; margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; text-align: left; }
 .text-button { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; padding: 0; font: 13px "Manrope", sans-serif; cursor: pointer; }
 .text-button:focus-visible { outline: 0; }
 .filter-row { position: relative; display: flex; align-items: center; gap: 6px; width: 100%; max-width: 100%; margin-top: 10px; }
@@ -175,9 +175,13 @@
 .filter-row.filter-drop-preview-after { border-bottom: 2px solid #a78bfa; }
 @media (max-width: 760px) { .query-builder-toolbar { flex-wrap: wrap; } .filter-row { flex-wrap: wrap; } .filter-row select, .filter-row input { min-width: 130px; } }
 .section-plan-text-editor { margin-bottom: 14px; }
-.section-plan-text-editor .projection-text-area-container { margin-top: 0; }
+.section-plan-text-editor .projection-text-area-container,
+.projection-plan-text-editor .projection-text-area-container { margin-top: 10px; }
+.projection-plan-text-editor,
+.filters-section > .section-plan-text-editor,
+.sorts-section > .section-plan-text-editor { box-sizing: border-box; width: calc(100% - 92px); margin-left: 46px; }
 .projection-text-control { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 10px; width: fit-content; max-width: 100%; height: 28px; box-sizing: border-box; padding: 0 9px; border: 1px solid #39334c; border-radius: 5px; background: #191722; }
-.plan-text-mode-control { flex: 0 0 176px; width: 176px; border-color: transparent; background: transparent; }
+.plan-text-mode-control { flex: 0 0 auto; width: auto; border-color: transparent; background: transparent; }
 .plan-text-mode-control.is-editing { border-color: #39334c; background: #191722; }
 .projection-text-mode-label { flex: 1 1 auto; color: var(--muted); font: 11px "DM Mono", monospace; white-space: nowrap; }
 .projection-text-action { flex: 0 0 auto; color: #b9a5ff; border: 0; background: transparent; padding: 2px 0; font: 11px "DM Mono", monospace; cursor: pointer; white-space: nowrap; }
@@ -235,6 +239,10 @@
   box-shadow: none;
   cursor: default;
 }
+.query-builder-card.is-read-only .projection-text-action {
+  color: #b9a5ff;
+  cursor: pointer;
+}
 .query-builder-card.is-read-only .field-action,
 .query-builder-card.is-read-only .text-button,
 .query-builder-card.is-read-only .field-card-remove,
@@ -247,8 +255,6 @@
 .query-builder-card.is-read-only .filter-group-drag-handle,
 .query-builder-card.is-read-only .filter-drop-zone,
 .query-builder-card.is-read-only .filter-group-edge-drop,
-.query-builder-card.is-read-only .projection-text-control,
-.query-builder-card.is-read-only .section-plan-text-editor,
 .query-builder-card.is-read-only .projection-row-builder,
 .query-builder-card.is-read-only .sort-row-add,
 .query-builder-card.is-read-only .field-builder-remove {

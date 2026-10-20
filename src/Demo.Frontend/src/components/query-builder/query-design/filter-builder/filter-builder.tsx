@@ -851,7 +851,6 @@ export default function FilterBuilder({ metadata, definition, entity, isReadOnly
         <div className="section-heading">
           <div className="projection-title-row">
             <span className="section-kicker">FILTERS</span>
-            {planTextControl}
           </div>
           <p className="filter-description">{isReadOnly ? "Built-in query filters are read-only." : "Drag a selected field here to create a filter."}</p>
         </div>
@@ -866,26 +865,29 @@ export default function FilterBuilder({ metadata, definition, entity, isReadOnly
           >
             <Icon name="close" size={14} />
           </button>
+          {planTextControl}
         </div>
       </div>
       {planTextEditor}
-      <FilterGroupEditor
-        group={definition.filters}
-        metadata={metadata}
-        entity={entity}
-        depth={0}
-        path={[]}
-        onMoveFilter={moveFilter}
-        onDragPreview={(path, position) => setDragPreview({ path, position })}
-        onDragPreviewClear={() => setDragPreview(undefined)}
-        dragPreview={dragPreview}
-        onGroupFilter={groupFilter}
-        onAddFilter={addFilterAfter}
-        onAddField={addFilterField}
-        onUngroupFilter={ungroupFilter}
-        showLogicalOperator={false}
-        onChange={(filters) => onDefinitionChange({ ...definition, filters })}
-      />
+      <div inert={isReadOnly}>
+        <FilterGroupEditor
+          group={definition.filters}
+          metadata={metadata}
+          entity={entity}
+          depth={0}
+          path={[]}
+          onMoveFilter={moveFilter}
+          onDragPreview={(path, position) => setDragPreview({ path, position })}
+          onDragPreviewClear={() => setDragPreview(undefined)}
+          dragPreview={dragPreview}
+          onGroupFilter={groupFilter}
+          onAddFilter={addFilterAfter}
+          onAddField={addFilterField}
+          onUngroupFilter={ungroupFilter}
+          showLogicalOperator={false}
+          onChange={(filters) => onDefinitionChange({ ...definition, filters })}
+        />
+      </div>
     </div>
   );
 }

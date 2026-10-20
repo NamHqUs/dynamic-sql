@@ -194,12 +194,11 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
     Array.from(event.dataTransfer.types).includes(QUERY_FIELD_DRAG_TYPE);
 
   return (
-    <div className="builder-section">
+    <div className="builder-section sorts-section">
       <div className="section-header">
         <div className="section-heading">
           <div className="projection-title-row">
             <span className="section-kicker">SORTS</span>
-            {planTextControl}
           </div>
           <p className="filter-description">{isReadOnly ? "Built-in query sort order is read-only." : "Select fields to sort the query results and choose the direction for each field."}</p>
         </div>
@@ -214,10 +213,12 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
           >
             <Icon name="close" size={14} />
           </button>
+          {planTextControl}
         </div>
       </div>
       {planTextEditor}
       <div
+        inert={isReadOnly}
         className={`sort-list${isDropTarget ? " sort-list-drop-target" : ""}`}
         onDragOver={(event) => {
           if (draggedProjectionField || isProjectFieldDrag(event)) {

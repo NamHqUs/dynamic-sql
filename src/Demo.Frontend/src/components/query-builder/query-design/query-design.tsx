@@ -60,6 +60,7 @@ export default function QueryDesign({
     entityName: definition.entity,
     functionNames,
     disabled: isResolvingPlanChanges,
+    readOnly: isBuiltin,
     onLoadPlanText,
     onApplyPlanText,
   });
@@ -69,20 +70,21 @@ export default function QueryDesign({
     entityName: definition.entity,
     functionNames,
     disabled: isResolvingPlanChanges,
+    readOnly: isBuiltin,
     onLoadPlanText,
     onApplyPlanText,
   });
 
   return (
-    <section className={`query-builder-card${isBuiltin ? " is-read-only" : ""}`} inert={isBuiltin}>
-      <div className="query-name-row">
+    <section className={`query-builder-card${isBuiltin ? " is-read-only" : ""}`}>
+      <div className="query-name-row" inert={isBuiltin}>
         <label className="query-name-field"><span className="section-kicker">QUERY NAME</span>
           {isBuiltin || requestNameReadOnly
             ? <output className="query-static-value">{requestName}</output>
             : <input type="text" value={requestName} readOnly={requestNameReadOnly} onChange={(event) => onRequestNameChange(event.target.value)} placeholder="e.g. recent-invoices" />}
         </label>
       </div>
-      <div className="query-builder-toolbar">
+      <div className="query-builder-toolbar" inert={isBuiltin}>
         <label><span className="section-kicker">ENTITY</span>
           {isBuiltin
             ? <output className="query-static-value">{entity?.name ?? definition.entity}</output>

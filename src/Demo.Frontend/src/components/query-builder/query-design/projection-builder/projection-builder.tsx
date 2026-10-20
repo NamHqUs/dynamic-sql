@@ -625,54 +625,22 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
   };
 
   return (
-    <div className="builder-section">
+    <div className="builder-section projection-section">
       <div className="section-header">
         <div className="section-heading">
           <div className="projection-title-row">
             <span className="section-kicker">PROJECTION</span>
-            <div className={`projection-text-control plan-text-mode-control${isEditingProjectionText ? " is-editing" : ""}`}>
-              {isEditingProjectionText ? (
-                <>
-                  <span className="projection-text-mode-label">Plan text</span>
-                  <button type="button" className="projection-text-action apply" onClick={applyProjectionText}>
-                    <span className="action-link-text">Apply</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="projection-text-action"
-                    onClick={() => {
-                      setProjectionText(formatProjectionText(definition.columns, projectionRows));
-                      setIsEditingProjectionText(false);
-                    }}
-                  >
-                    <span className="action-link-text">Cancel</span>
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  className="projection-text-action"
-                  aria-label="Edit projection text"
-                  title="Edit projection text"
-                  onClick={() => {
-                    setProjectionText(formatProjectionText(definition.columns, projectionRows));
-                    setIsEditingProjectionText(true);
-                  }}
-                >
-                  <Icon name="file-text" size={12} />
-                </button>
-              )}
-            </div>
           </div>
           <p className="filter-description">
             {isReadOnly
               ? "Built-in query projection is read-only."
               : isEditingProjectionText
-              ? "Edit fields or expressions; Apply to save or Cancel to discard."
+              ? "Edit fields or expressions, then switch back to Design UI to apply changes."
               : "Select fields to include. Drag a field to another field's left or right edge to reorder, or top or bottom edge to create a row."}
           </p>
         </div>
-        <div className="field-action-buttons">
+        <div className="section-header-actions">
+          <div className="field-action-buttons">
           {!isEditingProjectionText && <>
             <button
               type="button"
@@ -695,10 +663,31 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
               <Icon name="close" size={14} />
             </button>
           </>}
+          </div>
+          <div className={`projection-text-control plan-text-mode-control${isEditingProjectionText ? " is-editing" : ""}`}>
+            <button
+              type="button"
+              className="projection-text-action"
+              aria-label={isEditingProjectionText ? "Show projection design" : "Edit projection as plan text"}
+              aria-expanded={isEditingProjectionText}
+              title={isEditingProjectionText ? "Show projection design" : "Edit projection as plan text"}
+              onClick={() => {
+                if (isEditingProjectionText) {
+                  if (!isReadOnly) applyProjectionText();
+                  else setIsEditingProjectionText(false);
+                } else {
+                  setProjectionText(formatProjectionText(definition.columns, projectionRows));
+                  setIsEditingProjectionText(true);
+                }
+              }}
+            >
+              <Icon name="file-text" size={14} />
+            </button>
+          </div>
         </div>
       </div>
       {isEditingProjectionText ? (
-        <>
+        <div className="projection-plan-text-editor">
           {functionDefinitionsStatus === "failed" && (
             <p className="query-message error" role="alert">Function highlighting unavailable: {functionDefinitionsError}</p>
           )}
@@ -708,12 +697,12 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
             functionNames={functionDefinitions.map((definition) => definition.name)}
             value={projectionText}
             ariaLabel="Projection fields"
-            disabled={false}
+            disabled={isReadOnly}
             placeholder="e.g. Customer.Name, Count(*)"
             onChange={setProjectionText}
           />
-        </>
-      ) : <div className="select-fields-row">
+        </div>
+      ) : <div className="select-fields-row" inert={isReadOnly}>
         <FieldCards
           fields={selectedFields}
           rows={projectionRows}
@@ -742,6 +731,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
         />
       </div>}
       {editingExpression && (
+        <div inert={isReadOnly}>
         <ExpressionBuilder
           key={editingExpression.field ?? "new-expression"}
           entity={entity}
@@ -757,6 +747,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
           onApply={applyExpression}
           onCancel={() => setEditingExpression(null)}
         />
+        </div>
       )}
     </div>
   );

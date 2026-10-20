@@ -11,6 +11,7 @@ type PlanTextSectionEditorProps = {
   entityName: string;
   functionNames: string[];
   disabled: boolean;
+  readOnly: boolean;
   onLoadPlanText: () => Promise<string>;
   onApplyPlanText: (section: PlanTextSection, value: string) => Promise<void>;
 };
@@ -193,6 +194,7 @@ export function usePlanTextSectionEditor({
   entityName,
   functionNames,
   disabled,
+  readOnly,
   onLoadPlanText,
   onApplyPlanText,
 }: PlanTextSectionEditorProps): { control: ReactNode; editor: ReactNode } {
@@ -230,38 +232,31 @@ export function usePlanTextSectionEditor({
     }
   };
 
+  const toggleEditor = async () => {
+    if (isEditing) {
+      if (readOnly) {
+        setIsEditing(false);
+        return;
+      }
+      await apply();
+      return;
+    }
+    await openEditor();
+  };
+
   const control = (
     <div className={`projection-text-control plan-text-mode-control${isEditing ? " is-editing" : ""}`}>
-      {isEditing ? (
-        <>
-          <span className="projection-text-mode-label">Plan text</span>
-          <button type="button" className="projection-text-action apply" disabled={disabled || isApplying} onClick={() => void apply()}>
-            <span className="action-link-text">Apply</span>
-          </button>
-          <button
-            type="button"
-            className="projection-text-action"
-            disabled={disabled || isApplying}
-            onClick={() => {
-              setError("");
-              setIsEditing(false);
-            }}
-          >
-            <span className="action-link-text">Cancel</span>
-          </button>
-        </>
-      ) : (
-        <button
-          type="button"
-          className="projection-text-action"
-          aria-label={`Edit ${title.toLowerCase()} as plan text`}
-          title={`Edit ${title.toLowerCase()} as plan text`}
-          disabled={disabled || isLoading}
-          onClick={() => void openEditor()}
-        >
-          <Icon name="file-text" size={12} />
-        </button>
-      )}
+      <button
+        type="button"
+        className="projection-text-action"
+        aria-label={isEditing ? `Show ${title.toLowerCase()} design` : `Edit ${title.toLowerCase()} as plan text`}
+        aria-expanded={isEditing}
+        title={isEditing ? `Show ${title.toLowerCase()} design` : `Edit ${title.toLowerCase()} as plan text`}
+        disabled={disabled || isLoading || isApplying}
+        onClick={() => void toggleEditor()}
+      >
+        <Icon name="file-text" size={14} />
+      </button>
     </div>
   );
 
@@ -273,7 +268,7 @@ export function usePlanTextSectionEditor({
         functionNames={functionNames}
         value={value}
         ariaLabel={`${title} plan text`}
-        disabled={disabled || isApplying}
+        disabled={disabled || readOnly || isApplying}
         placeholder={`Enter ${title.toLowerCase()} plan text`}
         onChange={setValue}
       />
