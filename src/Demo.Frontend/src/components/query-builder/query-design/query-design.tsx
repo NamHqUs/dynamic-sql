@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { MetadataEntity, QueryDefinition } from "./query-builder-slice";
-import { FunctionDefinition } from "../../sql-functions/types";
+import { FunctionDefinition } from "../../metadata-builder/function-definition/types";
 import ProjectionBuilder from "./projection-builder/projection-builder";
 import SortBuilder from "./sort-builder/sort-builder";
 import FilterBuilder from "./filter-builder/filter-builder";

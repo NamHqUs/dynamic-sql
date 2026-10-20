@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { apiUrls } from "../../../const/api-urls";
-import type { FunctionDefinition } from "../../sql-functions/types";
+import type { FunctionDefinition } from "../../metadata-builder/function-definition/types";
 
 export type MetadataField = {
   name: string;

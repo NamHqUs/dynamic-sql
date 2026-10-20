@@ -3,7 +3,7 @@ import Icon from "../../../icon/icon";
 import { MetadataEntity, QueryColumn, QueryDefinition, QueryExpression } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
 import ExpressionBuilder, { formatExpression } from "../field-builder/expression-builder";
-import { FunctionDefinition } from "../../../sql-functions/types";
+import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
 import { HighlightedTextArea } from "../plan-text-section-editor";
 
 type ProjectionBuilderProps = {

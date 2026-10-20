@@ -1,6 +1,6 @@
 import { useState } from "react";
-import Icon from "../../../icon/icon";
-import { EditableEntity, dataTypes, emptyField } from "../../types";
+import Icon from "../../../../icon/icon";
+import { EditableEntity, dataTypes, emptyField } from "../../../types";
 import "./fields-builder.css";
 
 type FieldsBuilderProps = {

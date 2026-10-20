@@ -6,7 +6,6 @@ import Icon from "./components/icon/icon";
 import DataSources from "./components/data-sources/data-sources";
 import QueryBuilder, { setQueryBuilderDefinition } from "./components/query-builder/query-builder";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
-import SqlFunctions from "./components/sql-functions/sql-functions";
 import Reports from "./components/reports/reports";
 import { MessageBoxProvider } from "./components/message-box/message-box";
 import type { QueryDefinition } from "./components/query-builder/query-design/query-builder-slice";
@@ -17,9 +16,10 @@ const PAGE_PATHS = {
   reports: "/reports",
   builder: "/query-builder",
   metadata: "/metadata",
-  functions: "/functions",
   sources: "/data-sources",
 } as const;
+
+const LEGACY_FUNCTIONS_PATH = "/functions";
 
 type Page = keyof typeof PAGE_PATHS;
 type NavigationGuard = (continueNavigation: () => void, cancelNavigation?: () => void) => void;
@@ -36,19 +36,13 @@ function App() {
   const [queryBuilderVisited, setQueryBuilderVisited] = useState(() => location.pathname === PAGE_PATHS.builder);
   const [queryBuilderInstance, setQueryBuilderInstance] = useState(0);
   const metadataNavigationGuard = useRef<NavigationGuard | null>(null);
-  const functionsNavigationGuard = useRef<NavigationGuard | null>(null);
   const approvedNavigation = useRef<string | null>(null);
   const handledBlockedLocation = useRef<string | null>(null);
   const updateMetadataNavigationGuard = useCallback((guard: NavigationGuard | null) => {
     metadataNavigationGuard.current = guard;
   }, []);
-  const updateFunctionsNavigationGuard = useCallback((guard: NavigationGuard | null) => {
-    functionsNavigationGuard.current = guard;
-  }, []);
-
   const guardForPage = (targetPage: Page | null) => {
     if (targetPage === "metadata") return metadataNavigationGuard.current;
-    if (targetPage === "functions") return functionsNavigationGuard.current;
     return null;
   };
 
@@ -67,6 +61,7 @@ function App() {
   });
 
   useEffect(() => {
+    if (location.pathname === PAGE_PATHS.metadata) setMetadataVisited(true);
     if (location.pathname === PAGE_PATHS.builder) setQueryBuilderVisited(true);
   }, [location.pathname]);
 
@@ -112,7 +107,7 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         <button className="brand" type="button" aria-label="DynamicSQL Studio home" onClick={() => navigateToPage("reports")}><img className="brand-logo" src="/brand-concepts/dynamicsql-studio.svg" alt="" /></button>
-        <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="grid" /> Query builder</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "functions" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("functions")}><Icon name="code" /> Function definitions</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button></nav>
+        <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="grid" /> Query builder</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="sliders" /> Metadata</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button></nav>
         <div className="top-actions"><span className="live-dot" /> Local demo <button className="avatar">N</button></div>
       </header>
 
@@ -124,7 +119,7 @@ function App() {
         }} /></div>} />
         <Route path={PAGE_PATHS.builder} element={null} />
         <Route path={PAGE_PATHS.metadata} element={null} />
-        <Route path={PAGE_PATHS.functions} element={<div className="page-transition page-transition-no-slide"><SqlFunctions onNavigationGuardChange={updateFunctionsNavigationGuard} /></div>} />
+        <Route path={LEGACY_FUNCTIONS_PATH} element={<Navigate to={`${PAGE_PATHS.metadata}?section=functions`} replace />} />
         <Route path={PAGE_PATHS.sources} element={<div className="page-transition page-transition-no-slide"><DataSources /></div>} />
         <Route path="*" element={<Navigate to={PAGE_PATHS.reports} replace />} />
       </Routes>

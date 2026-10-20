@@ -1,5 +1,5 @@
-import Icon from "../../icon/icon";
-import { MetadataEntity } from "../../query-builder/query-design/query-builder-slice";
+import Icon from "../../../icon/icon";
+import { MetadataEntity } from "../../../query-builder/query-design/query-builder-slice";
 import "./entity-list.css";
 
 type EntityListProps = {

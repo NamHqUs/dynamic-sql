@@ -1,6 +1,6 @@
-import Icon from "../../../icon/icon";
-import { MetadataEntity } from "../../../query-builder/query-design/query-builder-slice";
-import { EditableRelation, emptyRelation, relationTypes } from "../../types";
+import Icon from "../../../../icon/icon";
+import { MetadataEntity } from "../../../../query-builder/query-design/query-builder-slice";
+import { EditableRelation, emptyRelation, relationTypes } from "../../../types";
 import "./relations-builder.css";
 
 type RelationsBuilderProps = {

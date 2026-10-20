@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import { apiUrls } from "../../const/api-urls";
-import Icon from "../icon/icon";
-import { useMessageBox } from "../message-box/message-box";
+import { apiUrls } from "../../../const/api-urls";
+import { useMessageBox } from "../../message-box/message-box";
 import FunctionDetail from "./function-detail/function-detail";
 import FunctionList from "./function-list/function-list";
+import { resolveDefinitionChanges, useDefinitionUnsavedWarning } from "../definition-actions/definition-actions";
+import type { DefinitionActionAdapter } from "../definition-actions/definition-actions";
 import {
   EditableFunctionDefinition,
   FunctionDefinition,
   emptyFunction,
   toEditableFunction,
 } from "./types";
-import "./sql-functions.css";
+import "./function-definition.css";
 
 async function request<T = unknown>(url: string, options?: RequestInit): Promise<T | null> {
   const response = await fetch(url, options);
@@ -21,7 +22,7 @@ async function request<T = unknown>(url: string, options?: RequestInit): Promise
   return response.status === 204 ? null : response.json() as Promise<T>;
 }
 
-type SqlFunctionsProps = {
+type FunctionDefinitionWorkspaceProps = {
   onNavigationGuardChange?: (guard: ((continueNavigation: () => void, cancelNavigation?: () => void) => void) | null) => void;
 };
 
@@ -81,7 +82,7 @@ function toPayload(draft: EditableFunctionDefinition): FunctionDefinition {
   };
 }
 
-export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsProps) {
+export default function FunctionDefinitionWorkspace({ onNavigationGuardChange }: FunctionDefinitionWorkspaceProps) {
   const showMessageBox = useMessageBox();
   const [definitions, setDefinitions] = useState<FunctionDefinition[]>([]);
   const [selectedName, setSelectedName] = useState("");
@@ -92,18 +93,8 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
   const selectedDefinition = definitions.find((definition) => definition.name === selectedName);
   const selectedIsBuiltin = selectedDefinition?.isBuiltin === true
     || selectedDefinition?.canDelete === false;
-  const argumentCount = definitions.reduce((count, definition) => count + definition.arguments.length, 0);
-  const templateCount = definitions.reduce((count, definition) => count + Object.keys(definition.sqlTemplates).length, 0);
 
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!dirty) return;
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [dirty]);
+  useDefinitionUnsavedWarning(dirty);
 
   const loadDefinitions = async (selectFirst = false, preferredName = selectedName) => {
     setStatus("loading");
@@ -166,12 +157,11 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
         throw new Error("Function definition API did not return the saved definition.");
       }
       setDefinitions((current) => {
-        const existingIndex = current.findIndex(
-          (definition) => definition.name.toLowerCase() === savedDefinition.name.toLowerCase(),
+        const updated = current.filter((definition) =>
+          definition.name.toLowerCase() !== selectedName.toLowerCase()
+          && definition.name.toLowerCase() !== savedDefinition.name.toLowerCase(),
         );
-        const updated = [...current];
-        if (existingIndex === -1) updated.push(savedDefinition);
-        else updated[existingIndex] = savedDefinition;
+        updated.push(savedDefinition);
         return updated.sort((left, right) =>
           left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),
         );
@@ -190,28 +180,14 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
   };
 
   const resolveDirtyChanges = async () => {
-    if (!dirty) return true;
-    const action = await showMessageBox({
-      eyebrow: "UNSAVED FUNCTION DEFINITION",
-      title: "Apply your function changes?",
-      message: "Save your changes before continuing, discard them, or stay here to keep editing.",
-      actions: [
-        { value: "stay", label: "Stay here", variant: "secondary" },
-        { value: "discard", label: "Discard changes", variant: "secondary" },
-        { value: "apply", label: "Apply changes", variant: "primary" },
-      ],
-    });
-    if (action === "apply") return save();
-    if (action === "discard") {
-      discardChanges();
-      return true;
-    }
-    return false;
-  };
-
-  const reload = async () => {
-    if (!(await resolveDirtyChanges())) return;
-    await loadDefinitions();
+    return resolveDefinitionChanges({
+      resourceName: "function",
+      selectedName,
+      dirty,
+      saving: status === "saving",
+      onSave: save,
+      onDiscard: discardChanges,
+    }, showMessageBox);
   };
 
   useEffect(() => {
@@ -234,26 +210,14 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
   };
 
   const createDefinition = async () => {
-    if (!(await resolveDirtyChanges())) return;
     setSelectedName("");
     setDraft(emptyFunction());
-    setDirty(true);
+    setDirty(false);
     setMessage("");
   };
 
   const removeDefinition = async () => {
-    if (!selectedName || selectedIsBuiltin || !(await resolveDirtyChanges())) return;
-    const action = await showMessageBox({
-      eyebrow: "DELETE FUNCTION",
-      title: `Delete ${selectedName}?`,
-      message: "This function definition will be permanently removed.",
-      actions: [
-        { value: "cancel", label: "Cancel", variant: "secondary" },
-        { value: "delete", label: "Delete function", variant: "danger" },
-      ],
-    });
-    if (action !== "delete") return;
-
+    if (!selectedName || selectedIsBuiltin) return;
     setStatus("saving");
     setMessage("");
     try {
@@ -275,32 +239,21 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
     setDirty(true);
   };
 
+  const actionAdapter: DefinitionActionAdapter = {
+    resourceName: "function",
+    selectedName,
+    hasSelection: Boolean(selectedName),
+    isBuiltIn: selectedIsBuiltin,
+    hasDraft: Boolean(draft),
+    dirty,
+    saving: status === "saving",
+    onSave: save,
+    onDiscard: discardChanges,
+    onDelete: removeDefinition,
+    onNew: () => void createDefinition(),
+  };
+
   return (
-    <>
-      <section className="page-heading function-page-heading">
-        <div className="function-heading-main">
-          <span className="function-heading-mark" aria-hidden="true"><Icon name="code" size={21} /></span>
-          <div className="function-heading-copy">
-            <span className="function-heading-eyebrow">FUNCTION LIBRARY <i /> DEFINE · MAP · REUSE</span>
-            <h2>Extend your queries</h2>
-            <p>Define reusable SQL functions and map them across database providers.</p>
-            <div className="function-heading-summary" aria-label="Function definition summary">
-              <span className="function-heading-current"><Icon name="code" size={13} />{selectedName || "No function selected"}</span>
-              <span><strong>{status === "succeeded" ? definitions.length : "—"}</strong> functions</span>
-              <span><strong>{status === "succeeded" ? argumentCount : "—"}</strong> arguments</span>
-              <span><strong>{status === "succeeded" ? templateCount : "—"}</strong> SQL templates</span>
-            </div>
-          </div>
-        </div>
-        <div className="heading-actions">
-          <button className="button secondary" type="button" onClick={() => void reload()}>
-            <Icon name="reset" size={14} /> Reload
-          </button>
-          <button className="button primary" type="button" onClick={() => void createDefinition()}>
-            <Icon name="plus" size={14} /> New function
-          </button>
-        </div>
-      </section>
       <section className="function-workspace">
         <FunctionList
           definitions={definitions}
@@ -312,15 +265,10 @@ export default function SqlFunctions({ onNavigationGuardChange }: SqlFunctionsPr
           draft={draft}
           selectedName={selectedName}
           canEdit={canEditSelectedDefinition}
-          dirty={dirty}
-          status={status}
           message={message}
           onDraftChange={updateDraft}
-          onSave={() => void save()}
-          onDelete={() => void removeDefinition()}
-          onRetry={() => void loadDefinitions()}
+          actionAdapter={actionAdapter}
         />
       </section>
-    </>
   );
 }

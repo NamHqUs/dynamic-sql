@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MetadataEntity, QueryExpression } from "../query-builder-slice";
 import FieldBuilder from "./field-builder";
 import Icon from "../../../icon/icon";
-import { FunctionDefinition } from "../../../sql-functions/types";
+import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
 import "./expression-builder.css";
 
 type ExpressionBuilderProps = {

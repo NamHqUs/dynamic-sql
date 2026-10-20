@@ -1,4 +1,4 @@
-import Icon from "../../icon/icon";
+import Icon from "../../../icon/icon";
 import {
   EditableFunctionArgument,
   EditableFunctionDefinition,
@@ -11,32 +11,26 @@ import {
   FunctionDatabaseType,
   FunctionResultDataType,
 } from "../types";
+import DefinitionActions from "../../definition-actions/definition-actions";
+import type { DefinitionActionAdapter } from "../../definition-actions/definition-actions";
 import "./function-detail.css";
 
 type FunctionDetailProps = {
   draft: EditableFunctionDefinition | null;
   selectedName: string;
   canEdit: boolean;
-  dirty: boolean;
-  status: string;
   message: string;
+  actionAdapter: DefinitionActionAdapter;
   onDraftChange: (update: (current: EditableFunctionDefinition) => EditableFunctionDefinition) => void;
-  onSave: () => void;
-  onDelete: () => void;
-  onRetry: () => void;
 };
 
 export default function FunctionDetail({
   draft,
   selectedName,
   canEdit,
-  dirty,
-  status,
   message,
+  actionAdapter,
   onDraftChange,
-  onSave,
-  onDelete,
-  onRetry,
 }: FunctionDetailProps) {
   const updateDraft = (
     update: (current: EditableFunctionDefinition) => EditableFunctionDefinition,
@@ -66,21 +60,7 @@ export default function FunctionDetail({
     }));
   };
 
-  if (!draft) {
-    return (
-      <main className="metadata-editor">
-        <div className="metadata-empty">
-          <Icon name="code" size={32} />
-          <p>{message || "Select a function to view its definition."}</p>
-          {status === "failed" && (
-            <button className="button secondary" type="button" onClick={onRetry}>Retry</button>
-          )}
-        </div>
-      </main>
-    );
-  }
-
-  const usedDatabaseTypes = new Set(draft.sqlTemplateRows.map((template) => template.databaseType));
+  const usedDatabaseTypes = new Set(draft?.sqlTemplateRows.map((template) => template.databaseType) || []);
   const availableDatabaseTypes = functionDatabaseTypes.filter((databaseType) =>
     !usedDatabaseTypes.has(databaseType),
   );
@@ -90,40 +70,22 @@ export default function FunctionDetail({
       <div className="editor-head">
         <div>
           <span className="section-kicker">FUNCTION DEFINITION</span>
-          <h2>{selectedName ? canEdit ? "View or update function" : "View function" : "Create function"}</h2>
+          <h2>{selectedName || (draft ? "New Function…" : "Select a function")}</h2>
         </div>
-        <div className="editor-actions">
-          {selectedName && canEdit && (
-            <button
-              className="icon-button danger"
-              type="button"
-              title="Delete function"
-              onClick={onDelete}
-              disabled={status === "saving"}
-            >
-              <Icon name="delete" size={19} />
-            </button>
-          )}
-          {canEdit
-            ? <button
-                className="button primary"
-                type="button"
-                onClick={onSave}
-                disabled={status === "saving" || !dirty}
-              >
-                <Icon name="check" size={14} />{" "}Save changes
-              </button>
-            : selectedName && <span className="section-kicker">BUILT-IN · READ-ONLY</span>}
-        </div>
+        <DefinitionActions adapter={actionAdapter} />
       </div>
-      {message && <p className="metadata-alert" role="alert">{message}</p>}
-
-      <fieldset className="function-form" disabled={!canEdit}>
+      {!draft
+        ? <div className="metadata-empty">
+            <Icon name="code" size={32} />
+            <p>{message || "Select a function to view its definition."}</p>
+          </div>
+        : <>
+          {message && <p className="metadata-alert" role="alert">{message}</p>}
+          <fieldset className="function-form" disabled={!canEdit}>
         <section className="function-signature" aria-label="Function signature">
           <label className="signature-name">
             Function Name
             <input
-              readOnly={Boolean(selectedName)}
               value={draft.name}
               onChange={(event) => updateDraft((current) => ({ ...current, name: event.target.value }))}
               placeholder="e.g. DATE_TRUNC"
@@ -337,7 +299,8 @@ export default function FunctionDetail({
             </table>
           </div>
         </section>
-      </fieldset>
+          </fieldset>
+        </>}
     </main>
   );
 }

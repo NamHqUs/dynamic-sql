@@ -52,8 +52,6 @@ public sealed class FunctionDefinitionService(
         if (!GetAllDefinitions(repository.GetUserDefined(sectionId)).Any(existing =>
             string.Equals(existing.Name, functionName, StringComparison.OrdinalIgnoreCase)))
             throw new KeyNotFoundException($"Function '{functionName}' was not found.");
-        if (!string.Equals(functionName, dto.Name, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("A function name cannot be changed.", nameof(dto));
 
         var definition = BuildDefinition(dto);
         var userDefinitions = repository.GetUserDefined(sectionId);

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import { apiUrls } from "../../const/api-urls";
 import { useMessageBox } from "../message-box/message-box";
 import Icon from "../icon/icon";
@@ -7,12 +8,19 @@ import PanelSplitter from "../panel-splitter/panel-splitter";
 import { useResizablePanel } from "../../utils/use-resizable-panel";
 import { MetadataEntity, clearQueryResult, invalidateQueryMetadata } from "../query-builder/query-design/query-builder-slice";
 import { resetQueryBuilderCache } from "../query-builder/query-builder";
-import EntityList from "./entity-list/entity-list";
-import EntityBuilder from "./entity-builder/entity-builder";
+import EntityList from "./entity-definition/entity-list/entity-list";
+import EntityBuilder from "./entity-definition/entity-builder/entity-builder";
 import { EditableEntity, emptyEntity, toEditable } from "./types";
+import FunctionDefinitionsWorkspace from "./function-definition/function-definition";
+import OperatorDefinition from "./operator-definition/operator-definition";
+import { resolveDefinitionChanges, useDefinitionUnsavedWarning } from "./definition-actions/definition-actions";
+import type { DefinitionActionAdapter } from "./definition-actions/definition-actions";
 import "./metadata-builder.css";
 
 export * from "./types";
+
+type NavigationGuard = (continueNavigation: () => void, cancelNavigation?: () => void) => void;
+type MetadataSection = "entities" | "functions" | "operators";
 
 async function request(url: string, options?: RequestInit) {
   const response = await fetch(url, options);
@@ -30,26 +38,36 @@ type MetadataBuilderProps = {
 export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBuilderProps) {
   const dispatch = useDispatch();
   const showMessageBox = useMessageBox();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [functionNavigationGuard, setFunctionNavigationGuard] = useState<NavigationGuard | null>(null);
+  const updateFunctionNavigationGuard = useCallback(
+    (guard: NavigationGuard | null) => setFunctionNavigationGuard(() => guard),
+    [],
+  );
   const [entities, setEntities] = useState<MetadataEntity[]>([]);
   const [selectedName, setSelectedName] = useState("");
+  const selectedNameRef = useRef(selectedName);
   const [draft, setDraft] = useState<EditableEntity | null>(null);
   const [filter, setFilter] = useState("");
   const panel = useResizablePanel("metadata-builder");
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [dirty, setDirty] = useState(false);
+  useEffect(() => { selectedNameRef.current = selectedName; }, [selectedName]);
+  const requestedSection = searchParams.get("section");
+  const activeSection: MetadataSection = requestedSection === "functions" || requestedSection === "operators"
+    ? requestedSection
+    : "entities";
+  const selectSection = (section: MetadataSection) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (section === "entities") nextSearchParams.delete("section");
+    else nextSearchParams.set("section", section);
+    setSearchParams(nextSearchParams);
+  };
   const selectedIsBuiltin = entities.find((entity) => entity.name === selectedName)?.canDelete === false;
   const fieldCount = entities.reduce((count, entity) => count + entity.fields.length, 0);
   const relationCount = entities.reduce((count, entity) => count + (entity.relations || []).length, 0);
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!dirty) return;
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [dirty]);
+  useDefinitionUnsavedWarning(dirty);
 
   const loadEntities = async (selectFirst = false, preferredName = selectedName) => {
     setStatus("loading");
@@ -119,39 +137,38 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
     }
   };
 
-  const resolveDirtyChanges = async () => {
-    if (!dirty) return true;
-    const action = await showMessageBox({
-      eyebrow: "UNSAVED METADATA",
-      title: "Apply your metadata changes?",
-      message: "Save your changes before continuing, discard them, or stay here to keep editing.",
-      actions: [
-        { value: "stay", label: "Stay here", variant: "secondary" },
-        { value: "discard", label: "Discard changes", variant: "secondary" },
-        { value: "apply", label: "Apply changes", variant: "primary" },
-      ],
+  const resolveEntityDirtyChanges = async () => {
+    return resolveDefinitionChanges({
+      resourceName: "entity",
+      selectedName,
+      dirty,
+      saving: status === "saving",
+      onSave: save,
+      onDiscard: discardChanges,
+    }, showMessageBox);
+  };
+
+  const resolveAllDirtyChanges = async () => {
+    if (!(await resolveEntityDirtyChanges())) return false;
+    if (!functionNavigationGuard) return true;
+    return new Promise<boolean>((resolve) => {
+      functionNavigationGuard(() => resolve(true), () => resolve(false));
     });
-    if (action === "apply") return save();
-    if (action === "discard") {
-      discardChanges();
-      return true;
-    }
-    return false;
   };
 
   useEffect(() => {
     const guard = (continueNavigation: () => void, cancelNavigation?: () => void) => {
       void (async () => {
-        if (await resolveDirtyChanges()) continueNavigation();
+        if (await resolveAllDirtyChanges()) continueNavigation();
         else cancelNavigation?.();
       })();
     };
     onNavigationGuardChange?.(guard);
     return () => onNavigationGuardChange?.(null);
-  }, [onNavigationGuardChange, dirty, draft, entities, selectedName]);
+  }, [onNavigationGuardChange, dirty, draft, entities, selectedName, functionNavigationGuard]);
 
   const selectEntity = async (entity: MetadataEntity) => {
-    if (!(await resolveDirtyChanges())) return;
+    if (!(await resolveEntityDirtyChanges())) return;
     setSelectedName(entity.name);
     setDraft(toEditable(entity));
     setDirty(false);
@@ -165,20 +182,11 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   };
 
   const remove = async () => {
-    if (!selectedName || selectedIsBuiltin || !(await resolveDirtyChanges())) return;
-    const action = await showMessageBox({
-      eyebrow: "DELETE ENTITY",
-      title: `Delete ${selectedName}?`,
-      message: "This entity definition will be permanently removed.",
-      actions: [
-        { value: "cancel", label: "Cancel", variant: "secondary" },
-        { value: "delete", label: "Delete entity", variant: "danger" },
-      ],
-    });
-    if (action !== "delete") return;
+    const name = selectedNameRef.current;
+    if (!name || selectedIsBuiltin) return;
     setStatus("saving");
     try {
-      await request(apiUrls.metadata.byName(selectedName), { method: "DELETE" });
+      await request(apiUrls.metadata.byName(name), { method: "DELETE" });
       setSelectedName("");
       dispatch(invalidateQueryMetadata());
       await loadEntities(true);
@@ -214,11 +222,25 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   };
 
   const addEntity = async () => {
-    if (!(await resolveDirtyChanges())) return;
     setSelectedName("");
     setDraft(emptyEntity());
     setDirty(true);
     setMessage("");
+  };
+
+  const entityActionAdapter: DefinitionActionAdapter = {
+    resourceName: "entity",
+    selectedName,
+    hasSelection: Boolean(selectedName),
+    getSelectedName: () => selectedNameRef.current,
+    isBuiltIn: selectedIsBuiltin,
+    hasDraft: Boolean(draft),
+    dirty,
+    saving: status === "saving",
+    onSave: save,
+    onDiscard: discardChanges,
+    onDelete: remove,
+    onNew: () => void addEntity(),
   };
 
   return (
@@ -238,34 +260,49 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
             </div>
           </div>
         </div>
-        <div className="heading-actions">
+        {activeSection === "entities" && <div className="heading-actions">
           <button className="button secondary" onClick={reset}><Icon name="reset" size={14} /> Reset</button>
-          <button className="button primary" onClick={addEntity}><Icon name="plus" size={14} /> New entity</button>
-        </div>
+        </div>}
       </section>
-      <section className={`metadata-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>
-        <EntityList
-          entities={entities}
-          selectedName={selectedName}
-          filter={filter}
-          status={status}
-          onFilterChange={setFilter}
-          onSelectEntity={selectEntity}
-        />
-        <PanelSplitter panel={panel} label="entities panel" />
-        <EntityBuilder
-          draft={draft}
-          selectedName={selectedName}
-          canEdit={!selectedName || Boolean(draft?.canDelete)}
-          dirty={dirty}
-          status={status}
-          message={message}
-          allEntities={entities}
-          onDraftChange={updateDraft}
-          onSave={save}
-          onRemove={remove}
-        />
-      </section>
+      <nav className="metadata-section-tabs" role="tablist" aria-label="Metadata definition types">
+        <button type="button" role="tab" aria-selected={activeSection === "entities"} className={activeSection === "entities" ? "active" : ""} onClick={() => selectSection("entities")}>
+          <Icon name="database" size={14} /> Entity definitions
+        </button>
+        <button type="button" role="tab" aria-selected={activeSection === "functions"} className={activeSection === "functions" ? "active" : ""} onClick={() => selectSection("functions")}>
+          <Icon name="code" size={14} /> Function definitions
+        </button>
+        <button type="button" role="tab" aria-selected={activeSection === "operators"} className={activeSection === "operators" ? "active" : ""} onClick={() => selectSection("operators")}>
+          <Icon name="sliders" size={14} /> Operator definitions
+        </button>
+      </nav>
+      <div className="metadata-workspace-panel" hidden={activeSection !== "entities"}>
+        <section className={`metadata-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>
+          <EntityList
+            entities={entities}
+            selectedName={selectedName}
+            filter={filter}
+            status={status}
+            onFilterChange={setFilter}
+            onSelectEntity={selectEntity}
+          />
+          <PanelSplitter panel={panel} label="entities panel" />
+          <EntityBuilder
+            draft={draft}
+            selectedName={selectedName}
+            canEdit={!selectedName || Boolean(draft?.canDelete)}
+            message={message}
+            allEntities={entities}
+            actionAdapter={entityActionAdapter}
+            onDraftChange={updateDraft}
+          />
+        </section>
+      </div>
+      <div className="metadata-workspace-panel" hidden={activeSection !== "functions"}>
+        <FunctionDefinitionsWorkspace onNavigationGuardChange={updateFunctionNavigationGuard} />
+      </div>
+      <div className="metadata-workspace-panel" hidden={activeSection !== "operators"}>
+        <OperatorDefinition />
+      </div>
     </>
   );
 }
