@@ -116,8 +116,8 @@ type ApiSavedQueryRequestDto = {
   name: string;
   entity: string;
   entityAliases: EntityAliasDefinition[];
-  projection: { field: QueryExpression; alias: string | null }[][];
-  filters: ApiQueryFilterGroup[] | null;
+  projection: { field: QueryExpression; alias: string | null }[];
+  filters: ApiQueryFilterGroup | null;
   sorts: { field: QueryExpression; direction: number }[][] | null;
   page: number | null;
   pageSize: number | null;
@@ -305,27 +305,30 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
 }
 
 function fromApiSavedRequest(request: ApiSavedQueryRequestDto): SavedQueryRequestDto {
-  const fields = request.projection.flat();
-  const projectionRows = request.projection.map((group, groupIndex) =>
-    group.map((projection, index) => projection.field.kind === "field"
+  const fields: ApiSavedQueryRequestDto["projection"] = [];
+  const projectionRows: string[][] = [];
+  let row: string[] = [];
+  request.projection.forEach((projection, index) => {
+    if (projection.alias?.toUpperCase() === "NEW_LINE") {
+      if (row.length) projectionRows.push(row);
+      row = [];
+      return;
+    }
+
+    fields.push(projection);
+    row.push(projection.field.kind === "field"
       ? projection.field.field
-      : `__calculated__${projection.alias || request.projection
-        .slice(0, groupIndex)
-        .reduce((count, previous) => count + previous.length, 0) + index}`));
-  const filters = request.filters ?? [];
-  const filter = filters.length === 0
-    ? null
-    : filters.length === 1
-      ? filters[0]
-      : { logicalOperation: 0, filters };
+      : `__calculated__${projection.alias || index}`);
+  });
+  if (row.length) projectionRows.push(row);
 
   return {
     name: request.name,
     query: {
       entity: request.entity,
       entityAliases: request.entityAliases,
-      fields,
-      filter,
+      projection: fields,
+      filter: request.filters,
       sorts: request.sorts?.flat() ?? [],
       page: request.page,
       pageSize: request.pageSize,
@@ -335,27 +338,37 @@ function fromApiSavedRequest(request: ApiSavedQueryRequestDto): SavedQueryReques
   };
 }
 
+function getSavedProjectionRows(definition: QueryDefinition): string[][] {
+  const rows = definition.projectionRows?.length
+    ? definition.projectionRows
+    : definition.columns.length
+      ? [definition.columns.map((column) => column.field)]
+      : [];
+  return rows.filter((row) => row.length).map((row) => [...row]);
+}
+
 function toApiSavedRequest(request: { name: string; definition: QueryDefinition }): Omit<ApiSavedQueryRequestDto, "isBuiltin"> & { isBuiltin: false } {
   const apiQuery = createApiQuery(request.definition);
-  const rows = request.definition.projectionRows?.length
-    ? request.definition.projectionRows
-    : request.definition.columns.length
-      ? [request.definition.columns.map((column) => column.field)]
-      : [];
-  const projection = rows.map((row) => row.map((field) => {
-    const index = request.definition.columns.findIndex((candidate) => candidate.field === field);
-    return apiQuery.projection[index] ?? {
-      field: { kind: "field" as const, field },
-      alias: null,
-    };
-  }));
+  const rows = getSavedProjectionRows(request.definition);
+  const projection = rows.flatMap((row, rowIndex) => [
+    ...(rowIndex > 0
+      ? [{ field: { kind: "field" as const, field: "" }, alias: "NEW_LINE" }]
+      : []),
+    ...row.map((field) => {
+      const index = request.definition.columns.findIndex((candidate) => candidate.field === field);
+      return apiQuery.projection[index] ?? {
+        field: { kind: "field" as const, field },
+        alias: null,
+      };
+    }),
+  ]);
 
   return {
     name: request.name,
     entity: apiQuery.entity,
     entityAliases: apiQuery.entityAliases,
     projection,
-    filters: apiQuery.filter ? [apiQuery.filter] : null,
+    filters: apiQuery.filter,
     sorts: apiQuery.sorts.length ? [apiQuery.sorts] : null,
     page: apiQuery.page,
     pageSize: apiQuery.pageSize,
@@ -611,12 +624,13 @@ export const fetchQueryRequests = createAsyncThunk(
         || !Array.isArray(item.entityAliases)
         || typeof item.isBuiltin !== "boolean"
         || !Array.isArray(item.projection)
-        || item.projection.some((group: unknown) => !Array.isArray(group)
-          || group.some((projection: unknown) => !projection
-            || typeof projection !== "object"
-            || !("field" in projection)
-            || !("alias" in projection)))
-        || (item.filters !== null && !Array.isArray(item.filters))
+        || item.projection.some((projection: unknown) => !projection
+          || typeof projection !== "object"
+          || !("field" in projection)
+          || !("alias" in projection))
+        || (item.filters !== null && (!item.filters
+          || typeof item.filters !== "object"
+          || Array.isArray(item.filters)))
         || (item.sorts !== null && (!Array.isArray(item.sorts)
           || item.sorts.some((group: unknown) => !Array.isArray(group))))
         || (item.page !== null && typeof item.page !== "number")
@@ -819,9 +833,11 @@ const queryBuilderSlice = createSlice({
         state.queryRequestsStatus = "succeeded";
         state.queryRequests = state.queryRequests.filter((item) =>
           item.isBuiltin || item.name.toLowerCase() !== action.payload.toLowerCase());
+        const definition = action.meta.arg.definition;
         state.queryRequests.unshift({
           name: action.payload,
-          query: createApiQuery(action.meta.arg.definition),
+          query: createApiQuery(definition),
+          projectionRows: getSavedProjectionRows(definition),
           isBuiltin: false,
         });
       })

@@ -63,6 +63,7 @@ public static partial class QueryDefinitionParser
                     field.GetRawText(),
                     new JsonSerializerOptions(JsonSerializerDefaults.Web))
                     ?? throw new JsonException("A projection field cannot be null."))
+                .Where(field => !field.IsNewLine)
                 .ToList();
         }
 

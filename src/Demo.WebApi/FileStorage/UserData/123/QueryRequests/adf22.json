@@ -1,0 +1,74 @@
+{
+  "Name": "adf22",
+  "Projection": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": ""
+      },
+      "alias": "NEW_LINE"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Segment"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Region"
+      },
+      "alias": null
+    }
+  ],
+  "Filters": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Invoices.Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Paid"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "Name"
+        },
+        "Direction": 0
+      }
+    ]
+  ],
+  "Page": null,
+  "PageSize": null,
+  "IsBuiltin": false,
+  "Entity": "Customers",
+  "EntityAliases": []
+}

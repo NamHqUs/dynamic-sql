@@ -8,5 +8,10 @@ namespace Namh.Data.DynamicSql;
 [JsonConverter(typeof(ProjectionDefinitionJsonConverter))]
 public sealed record ProjectionDefinition(IFieldDto Field, string? Alias = null)
 {
+    public const string NewLineAlias = "NEW_LINE";
+
+    public bool IsNewLine
+        => string.Equals(Alias, NewLineAlias, StringComparison.OrdinalIgnoreCase);
+
     public string ToText() => Alias is null ? Field.ToText() : $"{Field.ToText()} | {Alias}";
 }

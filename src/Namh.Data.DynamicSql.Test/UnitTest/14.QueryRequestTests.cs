@@ -342,6 +342,26 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
+    public void JsonDefinitionIgnoresNewLineProjectionMarkers()
+    {
+        const string json = """
+            {
+              "entity": "User",
+              "projection": [
+                { "field": { "kind": "field", "field": "Id" }, "alias": null },
+                { "field": { "kind": "field", "field": "" }, "alias": "NEW_LINE" },
+                { "field": { "kind": "field", "field": "Name" }, "alias": null }
+              ]
+            }
+            """;
+
+        var definition = QueryDefinitionParser.Parse(json);
+
+        Assert.That(definition.Projection.Select(projection => projection.Field.ToText()),
+            Is.EqualTo(new[] { "Id", "Name" }));
+    }
+
+    [Test]
     public void DefinitionJsonDeserializesRecursiveFilterValues()
     {
         const string json = """

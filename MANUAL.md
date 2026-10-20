@@ -279,9 +279,12 @@ Supported properties:
   maps a column to itself. Every entry creates a distinct context.
 - `projection`: projection expressions; use `|` to specify an output alias.
 - Legacy YAML and JSON definitions using `Fields` remain readable.
-- Saved-query names and grouped projections live on `QueryRequestDto`;
-  `Projection` preserves query-designer row grouping and does not affect
-  query execution.
+- Saved-query projections on `QueryRequestDto` are stored as a flat list.
+  The reserved alias `NEW_LINE` marks query-designer row boundaries; those
+  markers are retained in saved-query files and ignored when creating a
+  `QueryDefinition`, so they do not affect query execution.
+- Saved-query `Filters` contains one recursive filter group or `null`; older
+  arrays of filter groups are combined with `AND` when read.
 - `filter`: field comparisons, `like`, `&&`, `||`, `AND`, `OR`, and parentheses.
 - `sorts`: comma-separated field expressions with an optional `ASC` or `DESC`
   direction (for example, `Manager.Name DESC`).
