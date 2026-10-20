@@ -54,6 +54,11 @@ export default function QueryDesign({
     [metadata, definition.entity, definition.relations],
   );
   const contextEntity = contextMetadata.find((item) => item.name === definition.entity);
+  const handleDefinitionChange = (nextDefinition: QueryDefinition) => {
+    onDefinitionChange(nextDefinition.filters === definition.filters
+      ? nextDefinition
+      : { ...nextDefinition, filterPlanText: null });
+  };
   const filterPlanText = usePlanTextSectionEditor({
     section: "Filter",
     metadata: contextMetadata,
@@ -63,6 +68,7 @@ export default function QueryDesign({
     readOnly: isBuiltin,
     onLoadPlanText,
     onApplyPlanText,
+    onDraftChange: (value) => handleDefinitionChange({ ...definition, filterPlanText: value }),
     definition,
   });
   const sortPlanText = usePlanTextSectionEditor({
@@ -140,7 +146,7 @@ export default function QueryDesign({
           definition={definition}
           entity={contextEntity ?? entity}
           isReadOnly={isBuiltin}
-          onDefinitionChange={onDefinitionChange}
+          onDefinitionChange={handleDefinitionChange}
           onFieldDragStart={setDraggedProjectionField}
         />
         <FilterBuilder
@@ -149,7 +155,7 @@ export default function QueryDesign({
           entity={contextEntity ?? entity}
           isReadOnly={isBuiltin}
           isPlanTextEditing={filterPlanText.isEditing}
-          onDefinitionChange={onDefinitionChange}
+          onDefinitionChange={handleDefinitionChange}
           planTextControl={filterPlanText.control}
           planTextEditor={filterPlanText.editor}
         />
@@ -157,7 +163,7 @@ export default function QueryDesign({
           metadata={contextMetadata}
           definition={definition}
           entity={contextEntity ?? entity}
-          onDefinitionChange={onDefinitionChange}
+          onDefinitionChange={handleDefinitionChange}
           draggedProjectionField={draggedProjectionField}
           isReadOnly={isBuiltin}
           isPlanTextEditing={sortPlanText.isEditing}

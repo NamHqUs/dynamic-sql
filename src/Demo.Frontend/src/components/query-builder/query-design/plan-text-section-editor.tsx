@@ -14,6 +14,7 @@ type PlanTextSectionEditorProps = {
   readOnly: boolean;
   onLoadPlanText: () => Promise<string>;
   onApplyPlanText: (section: PlanTextSection, value: string, definition?: QueryDefinition) => Promise<QueryDefinition>;
+  onDraftChange?: (value: string) => void;
 };
 
 const sectionKeys: Record<PlanTextSection, string[]> = {
@@ -197,6 +198,7 @@ export function usePlanTextSectionEditor({
   readOnly,
   onLoadPlanText,
   onApplyPlanText,
+  onDraftChange,
   definition,
 }: PlanTextSectionEditorProps & { definition: QueryDefinition }): {
   control: ReactNode;
@@ -215,6 +217,11 @@ export function usePlanTextSectionEditor({
     setIsLoading(true);
     setError("");
     try {
+      if (section === "Filter" && definition.filterPlanText !== null && definition.filterPlanText !== undefined) {
+        setValue(definition.filterPlanText);
+        setIsEditing(true);
+        return;
+      }
       const text = await onLoadPlanText();
       setValue(getPlanTextSectionValue(text, section));
       setIsEditing(true);
@@ -253,6 +260,11 @@ export function usePlanTextSectionEditor({
     await openEditor();
   };
 
+  const updateValue = (nextValue: string) => {
+    setValue(nextValue);
+    onDraftChange?.(nextValue);
+  };
+
   const control = (
     <div className={`projection-text-control plan-text-mode-control${isEditing ? " is-editing" : ""}`}>
       <button
@@ -279,7 +291,7 @@ export function usePlanTextSectionEditor({
         ariaLabel={`${title} plan text`}
         disabled={disabled || readOnly || isApplying}
         placeholder={`Enter ${title.toLowerCase()} plan text`}
-        onChange={setValue}
+        onChange={updateValue}
       />
       {error && <p className="query-message error" role="alert">{error}</p>}
     </div>

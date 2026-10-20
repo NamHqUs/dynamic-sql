@@ -83,13 +83,14 @@ export type QueryDefinition = {
   relations: RelationDefinition[];
   columns: QueryColumn[];
   projectionRows?: string[][];
+  filterPlanText?: string | null;
   filters: QueryFilterGroup;
   sorts: { field: string; direction: string; expression?: QueryExpression }[];
   page: number | null;
   pageSize: number | null;
 };
 
-export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns" | "projectionRows"> & {
+export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns" | "projectionRows" | "filterPlanText"> & {
   filter: ApiQueryFilterGroup | null;
   sorts: { field: string | QueryExpression; direction: number }[];
   projection: { field: QueryExpression; alias: string | null }[];
@@ -109,6 +110,7 @@ export type SavedQueryRequestDto = {
   name: string;
   query: ApiQueryRequest;
   projectionRows: string[][];
+  filterPlanText?: string | null;
   isBuiltin: boolean;
 };
 
@@ -121,6 +123,7 @@ type ApiSavedQueryRequestDto = {
   sorts: { field: QueryExpression; direction: number }[][] | null;
   page: number | null;
   pageSize: number | null;
+  filterPlanText?: string | null;
   isBuiltin: boolean;
 };
 
@@ -187,6 +190,7 @@ async function requestText(url: string, options?: RequestInit) {
 export function createApiQuery(definition: QueryDefinition) {
   const { filters, sorts, columns, ...query } = definition;
   delete query.projectionRows;
+  delete query.filterPlanText;
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   return {
     ...query,
@@ -334,6 +338,7 @@ function fromApiSavedRequest(request: ApiSavedQueryRequestDto): SavedQueryReques
       pageSize: request.pageSize,
     },
     projectionRows,
+    filterPlanText: request.filterPlanText ?? null,
     isBuiltin: request.isBuiltin,
   };
 }
@@ -372,6 +377,7 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition 
     sorts: apiQuery.sorts.length ? [apiQuery.sorts] : null,
     page: apiQuery.page,
     pageSize: apiQuery.pageSize,
+    filterPlanText: request.definition.filterPlanText ?? null,
     isBuiltin: false,
   };
 }

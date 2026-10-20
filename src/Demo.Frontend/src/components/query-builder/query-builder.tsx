@@ -36,6 +36,7 @@ function createDefinition(entity: string, fields: MetadataField[] = []): QueryDe
     columns: fields.map((field) => ({ field: field.name, alias: null })),
     filters: { logicalOperation: 0, filters: [] },
     sorts: [],
+    filterPlanText: null,
     page: 1,
     pageSize: 50,
   };
@@ -113,7 +114,10 @@ function isQueryDefinition(value: unknown): value is QueryDefinition {
     && Array.isArray(definition.filters.filters)
     && Array.isArray(definition.sorts)
     && (definition.page === null || typeof definition.page === "number")
-    && (definition.pageSize === null || typeof definition.pageSize === "number");
+    && (definition.pageSize === null || typeof definition.pageSize === "number")
+    && (definition.filterPlanText === undefined
+      || definition.filterPlanText === null
+      || typeof definition.filterPlanText === "string");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -214,10 +218,17 @@ function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity
       || isAvailableFieldPath(entity, metadata, sort.field)
       || columns.some((column) => column.expression && column.alias === sort.field));
   const filters = pruneFilters(definition.filters, entity, metadata);
+  const filtersChanged = JSON.stringify(filters) !== JSON.stringify(definition.filters);
   const unchanged = columns.length === definition.columns.length
     && sorts.length === definition.sorts.length
-    && JSON.stringify(filters) === JSON.stringify(definition.filters);
-  return unchanged ? definition : { ...definition, columns, sorts, filters };
+    && !filtersChanged;
+  return unchanged ? definition : {
+    ...definition,
+    columns,
+    sorts,
+    filters,
+    ...(filtersChanged ? { filterPlanText: null } : {}),
+  };
 }
 
 export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
@@ -332,6 +343,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
       const nextDefinition = {
         ...fromApiQuery(parseAction.payload),
         projectionRows: currentDefinition.projectionRows,
+        filterPlanText: section === "Filter" ? value : currentDefinition.filterPlanText,
       };
       updateDefinitionFromDesign(nextDefinition);
       return nextDefinition;
@@ -350,7 +362,10 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
 
   const selectSavedRequest = (savedRequest: (typeof queryRequests)[number]) => {
-    updateDefinition(fromApiQuery(savedRequest.query, savedRequest.projectionRows));
+    updateDefinition({
+      ...fromApiQuery(savedRequest.query, savedRequest.projectionRows),
+      filterPlanText: savedRequest.filterPlanText ?? null,
+    });
     setRequestName(savedRequest.name);
     setSelectedRequestName(savedRequest.name);
     setSelectedRequestIsBuiltin(savedRequest.isBuiltin);

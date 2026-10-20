@@ -111,9 +111,22 @@
         "operation": 0,
         "right": {
           "kind": "value",
-          "value": "\talice.johnson@example.com"
+          "value": "alice.johnson@example.com"
         },
-        "parameterized": false
+        "parameterized": true
+      },
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Id"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "1"
+        },
+        "parameterized": true
       }
     ]
   },
@@ -122,5 +135,6 @@
   "PageSize": 50,
   "IsBuiltin": false,
   "Entity": "Customers",
-  "Relations": []
+  "Relations": [],
+  "FilterPlanText": "Name = \u003CAlice Johnson\u003E \n   AND Email = \u003Calice.johnson@example.com\u003E \n   AND Id = \u003C1\u003E"
 }

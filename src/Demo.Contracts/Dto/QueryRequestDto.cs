@@ -13,4 +13,5 @@ public sealed record QueryRequestDto(
 {
     public required string Entity { get; init; }
     public List<RelationDefinition> Relations { get; init; } = [];
+    public string? FilterPlanText { get; init; }
 }

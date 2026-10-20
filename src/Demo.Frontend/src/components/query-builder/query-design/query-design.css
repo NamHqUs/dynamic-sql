@@ -19,7 +19,7 @@
 .builder-section + .builder-section { margin-top: 30px; }
 .builder-section .helper { margin: 4px 0 13px; }
 .field-cards { display: flex; flex-wrap: wrap; gap: 8px; }
-.projection-rows { display: grid; gap: 8px; width: 100%; box-sizing: border-box; padding: 0 0 16px 46px; }
+.projection-rows { display: grid; gap: 8px; width: 100%; box-sizing: border-box; padding: 8px 0 16px 46px; }
 .projection-row { min-width: 0; }
 .projection-row-fields { min-height: 34px; align-items: center; }
 .field-browser { display: grid; gap: 10px; }
@@ -55,7 +55,7 @@
 .field-card .field-builder-editing { height: auto; min-height: 0; }
 .field-card .field-box-menu-selected { height: auto; max-height: none; }
 .field-card, .field-card-details, .field-card-primary, .field-card .field-box, .field-card .field-box-menu { overflow: visible; }
-.section-header { display: flex; align-items: center; justify-content: space-between; }
+.section-header { display: flex; align-items: flex-start; justify-content: space-between; }
 .section-header-actions { display: flex; align-items: center; gap: 12px; }
 .filters-section .section-header { display: flex; }
 .field-action-buttons { display: flex; align-items: center; gap: 12px; }
@@ -66,7 +66,7 @@
 .field-action-icon:focus-visible { outline: 2px solid var(--purple); outline-offset: 1px; }
 .field-action:focus-visible { outline: 0; }
 .field-action:disabled { opacity: .5; cursor: default; }
-.filter-description { display: flex; align-items: flex-end; min-height: 2.8em; max-width: 760px; margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; text-align: left; }
+.filter-description { max-width: 760px; margin: 2px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; text-align: left; }
 .text-button { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; background: transparent; padding: 0; font: 13px "Manrope", sans-serif; cursor: pointer; }
 .text-button:focus-visible { outline: 0; }
 .filter-row { position: relative; display: flex; align-items: center; gap: 6px; width: 100%; max-width: 100%; margin-top: 10px; }
@@ -93,7 +93,7 @@
 .field-card.selected { padding-left: 20px; }
 .field-card-drag-handle { width: 4px; border-left: 3px solid #654f9f; }
 .select-fields-row > .field-box select { height: var(--field-box-height); }
-.projection-title-row { display: flex; align-items: center; gap: 18px; height: 30px; }
+.projection-title-row { display: flex; align-items: center; gap: 18px; }
 .projection-actions { display: flex; justify-content: flex-start; gap: 14px; margin-top: 20px; }
 .select-fields-row > .field-builder-editing .field-box-menu .operator-trigger,
 .select-fields-row > .field-builder-editing .field-box-menu .operator-trigger:hover,
@@ -105,7 +105,7 @@
 .projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger:hover,
 .projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger:focus-visible { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; border-radius: 0; background: transparent; padding: 0; height: var(--field-box-height); box-sizing: border-box; font: 13px "Manrope", sans-serif; }
 .filter-add-condition { display: inline-flex; align-items: center; gap: 5px; height: var(--field-box-height); box-sizing: border-box; color: var(--purple); border: 0; background: transparent; padding: 0; font: 13px "Manrope", sans-serif; }
-.sort-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; box-sizing: border-box; margin-top: 10px; padding-left: 46px; }
+.sort-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; box-sizing: border-box; margin-top: 10px; padding-top: 8px; padding-left: 46px; }
 .sort-list-drop-target { outline: 1px dashed #a78bfa; outline-offset: 5px; }
 .sort-list .field-card-primary { align-items: center; gap: 4px; }
 .sort-list .field-name, .sort-list .field-alias-separator { line-height: 1; }

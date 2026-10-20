@@ -38,6 +38,7 @@ public sealed class _36_QueryRequestFileRepositoryTests
                   "sorts": null,
                   "page": null,
                   "pageSize": null,
+                  "filterPlanText": "Name = <Alice Johnson> AND Id = <1>",
                   "isBuiltin": true,
                   "entity": "User",
                   "EntityAliases": [{ "Alias": "Manager2", "RelationPath": "Manager", "RelatedKeys": [] }]
@@ -60,6 +61,7 @@ public sealed class _36_QueryRequestFileRepositoryTests
             Assert.That(queryRequest.Filters!.Filters, Has.Count.EqualTo(1));
             Assert.That(queryRequest.Filters.Filters[0], Is.TypeOf<FilterItemDto>());
             Assert.That(queryRequest.Relations.Single().Name, Is.EqualTo("Manager2"));
+            Assert.That(queryRequest.FilterPlanText, Is.EqualTo("Name = <Alice Johnson> AND Id = <1>"));
 
             repository.Save("test-user", queryRequest);
             using var savedFile = JsonDocument.Parse(File.ReadAllText(
@@ -71,6 +73,8 @@ public sealed class _36_QueryRequestFileRepositoryTests
             var savedRelations = savedFile.RootElement.GetProperty("Relations");
             Assert.That(savedRelations[0].GetProperty("Name").GetString(), Is.EqualTo("Manager2"));
             Assert.That(savedRelations[0].TryGetProperty("Alias", out _), Is.False);
+            Assert.That(savedFile.RootElement.GetProperty("FilterPlanText").GetString(),
+                Is.EqualTo("Name = <Alice Johnson> AND Id = <1>"));
         }
         finally
         {
