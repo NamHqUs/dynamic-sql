@@ -358,7 +358,7 @@ public sealed class _24_FunctionMetadataTests
     }
 
     private static SqlQuery GenerateSql(
-        IFieldDto expression,
+        IFieldDefinition expression,
         IEnumerable<SqlFunctionDefintion>? functions = null,
         ISqlDialect? dialect = null)
     {

@@ -79,7 +79,7 @@ internal static class DbQueryFromQueryDto
         => filter switch
         {
             FilterDefinition group => CreateLogicalFilter(group, parameter),
-            FilterItemDto binary => CreateCondition(binary, parameter),
+            FilterItemDefinition binary => CreateCondition(binary, parameter),
             _ => throw new ArgumentOutOfRangeException(nameof(filter))
         };
 
@@ -94,7 +94,7 @@ internal static class DbQueryFromQueryDto
         foreach (var filter in group.Filters.Skip(1))
         {
             var next = CreateFilterBody(filter, parameter);
-            var logicalOperation = filter is FilterItemDto { LogicalOperator: not null } binary
+            var logicalOperation = filter is FilterItemDefinition { LogicalOperator: not null } binary
                 ? binary.LogicalOperator.Value
                 : group.LogicalOperation;
             expression = logicalOperation == LogicalOperator.And
@@ -106,7 +106,7 @@ internal static class DbQueryFromQueryDto
     }
 
     private static Expression CreateCondition(
-        FilterItemDto filter,
+        FilterItemDefinition filter,
         ParameterExpression parameter)
     {
         var field = CreateFieldAccess(filter.Left, parameter);
@@ -135,13 +135,13 @@ internal static class DbQueryFromQueryDto
         };
     }
 
-    private static string GetFilterFieldName(IFieldDto field)
+    private static string GetFilterFieldName(IFieldDefinition field)
         => field is FieldDefinition fieldDto
             ? fieldDto.FieldName
             : throw new FormatException(
                 $"Filter fields must be field references. Received [{field.GetType().Name}].");
 
-    private static Expression CreateFieldAccess(IFieldDto field, ParameterExpression parameter)
+    private static Expression CreateFieldAccess(IFieldDefinition field, ParameterExpression parameter)
         => field is FieldDefinition fieldDto
             ? Expression.Call(
                 parameter,
@@ -151,7 +151,7 @@ internal static class DbQueryFromQueryDto
                 $"Filter field expressions must be field references. Received [{field.GetType().Name}].");
 
     private static Expression CreateFilterValue(
-        FilterItemDto filter,
+        FilterItemDefinition filter,
         ParameterExpression parameter)
     {
         return filter.Right switch

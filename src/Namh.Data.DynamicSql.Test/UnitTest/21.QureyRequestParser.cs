@@ -101,7 +101,7 @@ internal class _21_QureyRequestParser : TestBase
         AssertEquivalent(expectedField, field);
     }
 
-    private static void AssertEquivalent(IFieldDto expected, IFieldDto actual)
+    private static void AssertEquivalent(IFieldDefinition expected, IFieldDefinition actual)
     {
         switch (expected, actual)
         {

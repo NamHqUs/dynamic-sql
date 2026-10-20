@@ -59,7 +59,7 @@ public sealed class _36_QueryRequestFileRepositoryTests
             Assert.That(queryRequest.Projection[1].IsNewLine, Is.True);
             Assert.That(queryRequest.Filters, Is.TypeOf<FilterDefinition>());
             Assert.That(queryRequest.Filters!.Filters, Has.Count.EqualTo(1));
-            Assert.That(queryRequest.Filters.Filters[0], Is.TypeOf<FilterItemDto>());
+            Assert.That(queryRequest.Filters.Filters[0], Is.TypeOf<FilterItemDefinition>());
             Assert.That(queryRequest.Relations.Single().Name, Is.EqualTo("Manager2"));
             Assert.That(queryRequest.FilterPlanText, Is.EqualTo("Name = <Alice Johnson> AND Id = <1>"));
 

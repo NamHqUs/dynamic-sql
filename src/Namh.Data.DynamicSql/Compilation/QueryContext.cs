@@ -72,7 +72,7 @@ class QueryContext(
         }
     }
 
-    public SqlExpression ParseQueryExpression(TableExpression tableContext, IFieldDto expression, int depth = 0)
+    public SqlExpression ParseQueryExpression(TableExpression tableContext, IFieldDefinition expression, int depth = 0)
     {
         if (depth > 32)
             throw new FormatException("Query expressions cannot be nested more than 32 levels.");
@@ -104,7 +104,7 @@ class QueryContext(
             var value => new ValueExpression(AddDbParameter(ToDecimal(value), true), typeof(decimal))
         };
 
-    private SqlExpression ParseGroupExpression(TableExpression tableContext, IFieldDto[] fields, int depth)
+    private SqlExpression ParseGroupExpression(TableExpression tableContext, IFieldDefinition[] fields, int depth)
     {
         if (fields.Length == 0)
             throw new FormatException("A grouped query expression cannot be empty.");
@@ -153,7 +153,7 @@ class QueryContext(
     private FunctionSqlArgument ParseFunctionArgument(
         TableExpression tableContext,
         SqlFunctionArgumentDefinition definition,
-        IFieldDto expression,
+        IFieldDefinition expression,
         int depth)
     {
         if (expression is null)

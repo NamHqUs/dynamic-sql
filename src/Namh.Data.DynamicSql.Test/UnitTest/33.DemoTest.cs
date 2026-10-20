@@ -37,7 +37,7 @@ internal class _33_DemoTest : TestBase
                 ],
             Filter = new FilterDefinition(
                 LogicalOperator.And,
-                new FilterItemDto(
+                new FilterItemDefinition(
                     null,
                     new FieldDefinition("Status"),
                     BinaryOperator.Equals,

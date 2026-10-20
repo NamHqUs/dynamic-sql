@@ -253,11 +253,11 @@ internal sealed class _34_SalesReportQueryTests : TestBase
     private static FilterDefinition Filter(string field, BinaryOperator operation, object? value)
         => new(
             LogicalOperator.And,
-            new FilterItemDto(
+            new FilterItemDefinition(
                 null,
                 new FieldDefinition(field),
                 operation,
-                value is IFieldDto fieldValue ? fieldValue : new ConstFieldDefinition(value)));
+                value is IFieldDefinition fieldValue ? fieldValue : new ConstFieldDefinition(value)));
 
     private static SortDefinition Sort(string field, QuerySortDirection direction = QuerySortDirection.Ascending)
         => new(new FieldDefinition(field), direction);

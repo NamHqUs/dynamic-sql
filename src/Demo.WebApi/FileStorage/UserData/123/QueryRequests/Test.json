@@ -86,55 +86,22 @@
       "alias": null
     }
   ],
-  "Filters": {
-    "logicalOperation": 0,
-    "filters": [
+  "Filters": null,
+  "Sorts": [
+    [
       {
-        "logicalOperator": 0,
-        "left": {
+        "Field": {
           "kind": "field",
-          "field": "Name"
+          "field": "Segment"
         },
-        "operation": 0,
-        "right": {
-          "kind": "value",
-          "value": "Alice Johnson"
-        },
-        "parameterized": true
-      },
-      {
-        "logicalOperator": 0,
-        "left": {
-          "kind": "field",
-          "field": "Email"
-        },
-        "operation": 0,
-        "right": {
-          "kind": "value",
-          "value": "alice.johnson@example.com"
-        },
-        "parameterized": true
-      },
-      {
-        "logicalOperator": 0,
-        "left": {
-          "kind": "field",
-          "field": "Id"
-        },
-        "operation": 0,
-        "right": {
-          "kind": "value",
-          "value": "1"
-        },
-        "parameterized": true
+        "Direction": 0
       }
     ]
-  },
-  "Sorts": null,
+  ],
   "Page": 1,
   "PageSize": 50,
   "IsBuiltin": false,
   "Entity": "Customers",
   "Relations": [],
-  "FilterPlanText": "Name = \u003CAlice Johnson\u003E \n   AND Email = \u003Calice.johnson@example.com\u003E \n   AND Id = \u003C1\u003E"
+  "FilterPlanText": null
 }

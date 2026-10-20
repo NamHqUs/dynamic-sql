@@ -100,7 +100,7 @@ public static partial class QueryDefinitionParser
         };
     }
 
-    public static IFieldDto ParseField(string plainText) => FieldDefinitionParser.Parse(plainText);
+    public static IFieldDefinition ParseField(string plainText) => FieldDefinitionParser.Parse(plainText);
     public static List<ProjectionDefinition> ParseProjection(string plainText) => ProjectionDefinitionParser.Parse(plainText);
     public static FilterDefinition? ParseFilter(string plainText) => FilterDefinitionParser.Parse(plainText);
     public static List<SortDefinition> ParseSorts(string plainText) => SortDefinitionParser.Parse(plainText);

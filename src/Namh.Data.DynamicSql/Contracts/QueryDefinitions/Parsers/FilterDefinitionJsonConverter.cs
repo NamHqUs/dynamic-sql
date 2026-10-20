@@ -16,7 +16,7 @@ internal sealed class FilterDefinitionJsonConverter : JsonConverter<IFilterDto>
         return TryGetProperty(root, "filters", out _)
             ? JsonSerializer.Deserialize<FilterDefinition>(root, options)
                 ?? throw new JsonException("The filter group cannot be null.")
-            : JsonSerializer.Deserialize<FilterItemDto>(root, options)
+            : JsonSerializer.Deserialize<FilterItemDefinition>(root, options)
                 ?? throw new JsonException("The filter cannot be null.");
     }
 
@@ -67,9 +67,9 @@ internal sealed class GroupFilterDtoJsonConverter : JsonConverter<FilterDefiniti
             element.TryGetProperty(char.ToUpperInvariant(name[0]) + name[1..], out value);
 }
 
-internal sealed class FilterItemDtoJsonConverter : JsonConverter<FilterItemDto>
+internal sealed class FilterItemDtoJsonConverter : JsonConverter<FilterItemDefinition>
 {
-    public override FilterItemDto Read(
+    public override FilterItemDefinition Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
         JsonSerializerOptions options)
@@ -97,7 +97,7 @@ internal sealed class FilterItemDtoJsonConverter : JsonConverter<FilterItemDto>
                 ? logicalElement.Deserialize<LogicalOperator>(options)
                 : null;
 
-        return new FilterItemDto(logicalOperator, leftField, operation, right)
+        return new FilterItemDefinition(logicalOperator, leftField, operation, right)
         {
             Parameterized = TryGetProperty(root, "parameterized", out var parameterized) &&
                 parameterized.ValueKind == JsonValueKind.True
@@ -106,7 +106,7 @@ internal sealed class FilterItemDtoJsonConverter : JsonConverter<FilterItemDto>
 
     public override void Write(
         Utf8JsonWriter writer,
-        FilterItemDto value,
+        FilterItemDefinition value,
         JsonSerializerOptions options)
     {
         writer.WriteStartObject();
@@ -115,24 +115,24 @@ internal sealed class FilterItemDtoJsonConverter : JsonConverter<FilterItemDto>
         else
             writer.WriteNull("logicalOperator");
         writer.WritePropertyName("left");
-        JsonSerializer.Serialize<IFieldDto>(writer, value.Left, options);
+        JsonSerializer.Serialize<IFieldDefinition>(writer, value.Left, options);
         writer.WriteNumber("operation", (int)value.Operation);
         writer.WritePropertyName("right");
         if (value.Right is null)
             writer.WriteNullValue();
         else
-            JsonSerializer.Serialize<IFieldDto>(writer, value.Right, options);
+            JsonSerializer.Serialize<IFieldDefinition>(writer, value.Right, options);
         writer.WriteBoolean("parameterized", value.Parameterized);
         writer.WriteEndObject();
     }
 
-    private static IFieldDto ReadField(JsonElement element, JsonSerializerOptions options, string name)
+    private static IFieldDefinition ReadField(JsonElement element, JsonSerializerOptions options, string name)
         => element.ValueKind == JsonValueKind.String
             ? new FieldDefinition(element.GetString() ?? throw new JsonException($"A filter {name} cannot be null."))
-            : JsonSerializer.Deserialize<IFieldDto>(element, options)
+            : JsonSerializer.Deserialize<IFieldDefinition>(element, options)
                 ?? throw new JsonException($"A filter {name} expression cannot be null.");
 
-    private static IFieldDto ReadLegacyValue(JsonElement element)
+    private static IFieldDefinition ReadLegacyValue(JsonElement element)
         => new ConstFieldDefinition(element.ValueKind switch
         {
             JsonValueKind.Null => null,

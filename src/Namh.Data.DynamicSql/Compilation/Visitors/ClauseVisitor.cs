@@ -106,7 +106,7 @@ class ClauseVisitor(QueryContext queryContext)
 
     private TableExpression ProcessOrdering(TableExpression tableContext, MethodCallExpression methodCall)
     {
-        if (methodCall.Arguments[1] is ConstantExpression { Value: IFieldDto sortField })
+        if (methodCall.Arguments[1] is ConstantExpression { Value: IFieldDefinition sortField })
         {
             tableContext.Orders.Add(new OrderExpression(
                 QueryContext.ParseQueryExpression(tableContext, sortField),

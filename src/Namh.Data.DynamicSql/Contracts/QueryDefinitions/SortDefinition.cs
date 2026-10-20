@@ -9,5 +9,5 @@ public enum QuerySortDirection
 }
 
 public sealed record SortDefinition(
-    IFieldDto Field,
+    IFieldDefinition Field,
     QuerySortDirection Direction = QuerySortDirection.Ascending);

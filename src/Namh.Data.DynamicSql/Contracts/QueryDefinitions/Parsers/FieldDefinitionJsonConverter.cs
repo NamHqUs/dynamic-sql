@@ -3,9 +3,9 @@ using System.Text.Json.Serialization;
 
 namespace Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
-internal sealed class FieldDefinitionJsonConverter : JsonConverter<IFieldDto>
+internal sealed class FieldDefinitionJsonConverter : JsonConverter<IFieldDefinition>
 {
-    public override IFieldDto Read(
+    public override IFieldDefinition Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
         JsonSerializerOptions options)
@@ -20,7 +20,7 @@ internal sealed class FieldDefinitionJsonConverter : JsonConverter<IFieldDto>
 
     public override void Write(
         Utf8JsonWriter writer,
-        IFieldDto value,
+        IFieldDefinition value,
         JsonSerializerOptions options)
         => ProjectionDefinitionJsonConverter.WriteField(writer, value);
 }

@@ -5,29 +5,29 @@ using System.Text.Json.Serialization;
 namespace Namh.Data.DynamicSql;
 
 [JsonConverter(typeof(FieldDefinitionJsonConverter))]
-public interface IFieldDto
+public interface IFieldDefinition
 {
     string ToText(Dictionary<string, object>? tags = null);
 }
 
-public record FieldDefinition(string FieldName) : IFieldDto
+public record FieldDefinition(string FieldName) : IFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null) => FieldName;
 }
 
-public record ConstFieldDefinition(object? Value) : IFieldDto
+public record ConstFieldDefinition(object? Value) : IFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null) => $"<{Value}>";
 }
-public record BinaryFieldDefinition(string Oper, IFieldDto Field) : IFieldDto
+public record BinaryFieldDefinition(string Oper, IFieldDefinition Field) : IFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null) => $" {Oper} {Field.ToText(tags)}";
 }
-public record FunctionFieldDefinition(string FunctionName, IFieldDto[] Arguments) : IFieldDto
+public record FunctionFieldDefinition(string FunctionName, IFieldDefinition[] Arguments) : IFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null) => $"{FunctionName}({string.Join(", ", Arguments.Select(a => a.ToText(tags)))})";
 }
-public record GroupFieldDefintion(IFieldDto[] Fields) : IFieldDto
+public record GroupFieldDefintion(IFieldDefinition[] Fields) : IFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null)
     {

@@ -26,7 +26,7 @@ public class FilterDefinition(LogicalOperator logicalOperator = LogicalOperator.
             var filter = Filters[index];
             if (index > 0)
             {
-                var logicalOperation = filter is FilterItemDto { LogicalOperator: not null } item
+                var logicalOperation = filter is FilterItemDefinition { LogicalOperator: not null } item
                     ? item.LogicalOperator.Value
                     : LogicalOperation;
                 text.Append(' ')
@@ -45,11 +45,11 @@ public class FilterDefinition(LogicalOperator logicalOperator = LogicalOperator.
 }
 
 [JsonConverter(typeof(FilterItemDtoJsonConverter))]
-public record FilterItemDto(
+public record FilterItemDefinition(
     LogicalOperator? LogicalOperator,
-    IFieldDto Left,
+    IFieldDefinition Left,
     BinaryOperator Operation,
-    IFieldDto? Right = null) : IFilterDto
+    IFieldDefinition? Right = null) : IFilterDto
 {
     public bool Parameterized { get; init; }
 

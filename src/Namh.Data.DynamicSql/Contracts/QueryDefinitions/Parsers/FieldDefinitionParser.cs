@@ -5,7 +5,7 @@ namespace Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 
 internal static class FieldDefinitionParser
 {
-    public static IFieldDto Parse(string text)
+    public static IFieldDefinition Parse(string text)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         text = text.Trim();
@@ -79,10 +79,10 @@ internal static class FieldDefinitionParser
         return bool.TryParse(value, out var boolean) ? boolean : value;
     }
 
-    private static List<IFieldDto> ParseSequence(string text)
+    private static List<IFieldDefinition> ParseSequence(string text)
     {
         var parts = SplitBinaryOperators(text);
-        var fields = new List<IFieldDto> { ParseAtom(parts[0]) };
+        var fields = new List<IFieldDefinition> { ParseAtom(parts[0]) };
         for (var i = 1; i < parts.Count; i += 2)
         {
             fields.Add(new BinaryFieldDefinition(parts[i], ParseAtom(parts[i + 1])));
@@ -90,7 +90,7 @@ internal static class FieldDefinitionParser
         return fields;
     }
 
-    private static IFieldDto ParseAtom(string text)
+    private static IFieldDefinition ParseAtom(string text)
     {
         text = text.Trim();
         if (text.Length == 0)

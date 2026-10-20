@@ -6,7 +6,7 @@ namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
 [JsonConverter(typeof(ProjectionDefinitionJsonConverter))]
-public sealed record ProjectionDefinition(IFieldDto Field, string? Alias = null)
+public sealed record ProjectionDefinition(IFieldDefinition Field, string? Alias = null)
 {
     public const string NewLineAlias = "NEW_LINE";
 

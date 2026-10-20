@@ -41,7 +41,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         writer.WriteEndObject();
     }
 
-    internal static IFieldDto ParseField(JsonElement element)
+    internal static IFieldDefinition ParseField(JsonElement element)
     {
         if (element.ValueKind == JsonValueKind.String)
             return FieldDefinitionParser.Parse(element.GetString()!);
@@ -60,7 +60,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         };
     }
 
-    private static IFieldDto ParseBinary(JsonElement element)
+    private static IFieldDefinition ParseBinary(JsonElement element)
     {
         var operation = ReadString(element, "operator");
         if (operation is not ("+" or "-" or "*" or "/"))
@@ -72,10 +72,10 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         return new GroupFieldDefintion([arguments[0], new BinaryFieldDefinition(operation, arguments[1])]);
     }
 
-    private static IFieldDto ParseFunction(JsonElement element)
+    private static IFieldDefinition ParseFunction(JsonElement element)
         => new FunctionFieldDefinition(ReadString(element, "function"), ReadArguments(element));
 
-    private static IFieldDto[] ReadArguments(JsonElement element)
+    private static IFieldDefinition[] ReadArguments(JsonElement element)
     {
         if (!TryGetProperty(element, "arguments", out var arguments) ||
             arguments.ValueKind != JsonValueKind.Array)
@@ -109,14 +109,14 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         => element.TryGetProperty(name, out value) ||
             element.TryGetProperty(char.ToUpperInvariant(name[0]) + name[1..], out value);
 
-    internal static void WriteField(Utf8JsonWriter writer, IFieldDto field)
+    internal static void WriteField(Utf8JsonWriter writer, IFieldDefinition field)
     {
         writer.WriteStartObject();
         WriteFieldExpression(writer, field);
         writer.WriteEndObject();
     }
 
-    private static void WriteGroupExpression(Utf8JsonWriter writer, IFieldDto[] fields)
+    private static void WriteGroupExpression(Utf8JsonWriter writer, IFieldDefinition[] fields)
     {
         if (fields.Length == 0)
             throw new JsonException("A grouped projection cannot be empty.");
@@ -138,7 +138,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         WriteFieldExpression(writer, expression);
     }
 
-    private static void WriteFieldExpression(Utf8JsonWriter writer, IFieldDto field)
+    private static void WriteFieldExpression(Utf8JsonWriter writer, IFieldDefinition field)
     {
         if (field is GroupFieldDefintion { Fields.Length: 2 } group &&
             group.Fields[1] is BinaryFieldDefinition binary)

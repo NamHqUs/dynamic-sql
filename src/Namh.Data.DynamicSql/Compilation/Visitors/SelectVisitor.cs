@@ -87,7 +87,7 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
                 var sql = e.Value switch
                 {
                     SqlExpression expression => expression,
-                    IFieldDto expression => QueryContext.ParseQueryExpression(tableContext, expression),
+                    IFieldDefinition expression => QueryContext.ParseQueryExpression(tableContext, expression),
                     string fieldPath => QueryContext.ParseFieldPath(tableContext, fieldPath),
                     _ => throw new NotSupportedException($"Unsupported projection value [{e.Value?.GetType().Name ?? "null"}].")
                 };

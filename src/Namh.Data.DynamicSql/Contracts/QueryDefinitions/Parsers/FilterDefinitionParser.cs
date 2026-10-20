@@ -41,7 +41,7 @@ internal sealed class FilterDefinitionParser
         while (Match(separator))
         {
             var next = operand();
-            if (next is FilterItemDto filter)
+            if (next is FilterItemDefinition filter)
                 next = filter with { LogicalOperator = logicalOperator };
 
             expressions.Add(next);
@@ -83,13 +83,13 @@ internal sealed class FilterDefinitionParser
             _ => throw new FormatException($"Unsupported filter operator [{operation}].")
         };
 
-        return new FilterItemDto(LogicalOperator.And, leftField, filterOperator, value)
+        return new FilterItemDefinition(LogicalOperator.And, leftField, filterOperator, value)
         {
             Parameterized = true
         };
     }
 
-    private IFieldDto? ParseFilterValue(string operation)
+    private IFieldDefinition? ParseFilterValue(string operation)
     {
         var token = Next();
         return token.Type switch
