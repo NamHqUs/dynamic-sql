@@ -74,7 +74,7 @@ export default function QueryDesign({
   });
 
   return (
-    <section className="query-builder-card">
+    <section className={`query-builder-card${isBuiltin ? " is-read-only" : ""}`} inert={isBuiltin}>
       <div className="query-name-row">
         <label className="query-name-field"><span className="section-kicker">QUERY NAME</span>
           {isBuiltin || requestNameReadOnly
@@ -120,6 +120,7 @@ export default function QueryDesign({
           functionDefinitionsError={functionDefinitionsError}
           definition={definition}
           entity={contextEntity ?? entity}
+          isReadOnly={isBuiltin}
           onDefinitionChange={onDefinitionChange}
           onFieldDragStart={setDraggedProjectionField}
         />
@@ -127,6 +128,7 @@ export default function QueryDesign({
           metadata={contextMetadata}
           definition={definition}
           entity={contextEntity ?? entity}
+          isReadOnly={isBuiltin}
           onDefinitionChange={onDefinitionChange}
           planTextControl={filterPlanText.control}
           planTextEditor={filterPlanText.editor}
@@ -137,6 +139,7 @@ export default function QueryDesign({
           entity={contextEntity ?? entity}
           onDefinitionChange={onDefinitionChange}
           draggedProjectionField={draggedProjectionField}
+          isReadOnly={isBuiltin}
           planTextControl={sortPlanText.control}
           planTextEditor={sortPlanText.editor}
         />

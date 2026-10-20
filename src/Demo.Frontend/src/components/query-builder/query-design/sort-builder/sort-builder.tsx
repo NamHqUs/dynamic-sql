@@ -12,6 +12,7 @@ type SortBuilderProps = {
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
   draggedProjectionField: string | null;
+  isReadOnly: boolean;
   planTextControl: ReactNode;
   planTextEditor: ReactNode;
 };
@@ -139,7 +140,7 @@ function SortDirectionMenu({
   );
 }
 
-export default function SortBuilder({ metadata, definition, entity, onDefinitionChange, draggedProjectionField, planTextControl, planTextEditor }: SortBuilderProps) {
+export default function SortBuilder({ metadata, definition, entity, onDefinitionChange, draggedProjectionField, isReadOnly, planTextControl, planTextEditor }: SortBuilderProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [isDropTarget, setIsDropTarget] = useState(false);
 
@@ -200,7 +201,7 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
             <span className="section-kicker">SORTS</span>
             {planTextControl}
           </div>
-          <p className="filter-description">Select fields to sort the query results and choose the direction for each field.</p>
+          <p className="filter-description">{isReadOnly ? "Built-in query sort order is read-only." : "Select fields to sort the query results and choose the direction for each field."}</p>
         </div>
         <div className="section-header-actions">
           <button

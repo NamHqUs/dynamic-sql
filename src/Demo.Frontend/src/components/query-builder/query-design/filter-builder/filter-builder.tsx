@@ -20,6 +20,7 @@ type FilterBuilderProps = {
   metadata: MetadataEntity[];
   definition: QueryDefinition;
   entity: MetadataEntity;
+  isReadOnly: boolean;
   onDefinitionChange: (definition: QueryDefinition) => void;
   planTextControl: ReactNode;
   planTextEditor: ReactNode;
@@ -627,7 +628,7 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
   );
 }
 
-export default function FilterBuilder({ metadata, definition, entity, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
+export default function FilterBuilder({ metadata, definition, entity, isReadOnly, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
   const builderRef = useRef<HTMLDivElement>(null);
   const [filterItemWidth, setFilterItemWidth] = useState<number>();
   const [dragPreview, setDragPreview] = useState<DragPreview>();
@@ -852,7 +853,7 @@ export default function FilterBuilder({ metadata, definition, entity, onDefiniti
             <span className="section-kicker">FILTERS</span>
             {planTextControl}
           </div>
-          <p className="filter-description">Drag a selected field here to create a filter.</p>
+          <p className="filter-description">{isReadOnly ? "Built-in query filters are read-only." : "Drag a selected field here to create a filter."}</p>
         </div>
         <div className="section-header-actions">
           <button

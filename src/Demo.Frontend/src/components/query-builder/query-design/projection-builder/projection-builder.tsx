@@ -13,6 +13,7 @@ type ProjectionBuilderProps = {
   functionDefinitionsError: string;
   definition: QueryDefinition;
   entity: MetadataEntity;
+  isReadOnly: boolean;
   onDefinitionChange: (definition: QueryDefinition) => void;
   onFieldDragStart: (field: string | null) => void;
 };
@@ -472,7 +473,7 @@ function FieldCards({
   </div>;
 }
 
-export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
+export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, isReadOnly, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
   const [editingAliasField, setEditingAliasField] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingExpression, setEditingExpression] = useState<{ field: string | null; expression?: QueryExpression; alias?: string } | null>(null);
@@ -664,7 +665,9 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
             </div>
           </div>
           <p className="filter-description">
-            {isEditingProjectionText
+            {isReadOnly
+              ? "Built-in query projection is read-only."
+              : isEditingProjectionText
               ? "Edit fields or expressions; Apply to save or Cancel to discard."
               : "Select fields to include. Drag a field to another field's left or right edge to reorder, or top or bottom edge to create a row."}
           </p>
