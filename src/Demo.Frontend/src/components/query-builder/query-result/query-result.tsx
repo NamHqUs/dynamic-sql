@@ -22,7 +22,7 @@ export default function QueryResult({ result, sqlStatement, resultView, onRunQue
     <section className="results-card query-results">
       <div className="results-head">
         <div className="query-result-title">
-          <div><span className="section-kicker">QUERY RESULT</span><h2>{resultView === "sql" ? "SQL statement" : result?.name || "Run a query to see results"}</h2></div>
+          <div><span className="section-kicker">QUERY RESULT</span><p className="query-result-description">{resultView === "sql" ? "SQL statement" : result?.name || "Run a query to see results"}</p></div>
           {resultView === "data" && result && <span className="result-count">{result.totalRecords < 0 ? "1000+" : result.totalRecords} records</span>}
         </div>
         <div className="query-result-tools">
