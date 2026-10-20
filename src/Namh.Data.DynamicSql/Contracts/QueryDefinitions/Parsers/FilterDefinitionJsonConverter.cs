@@ -82,9 +82,18 @@ internal sealed class FilterItemDefinitionJsonConverter : JsonConverter<FilterIt
                 ? left
                 : throw new JsonException("A filter item requires a left field expression.");
         var leftField = ReadField(leftElement, options, "left");
-        var operation = TryGetProperty(root, "operation", out var operationElement)
-            ? operationElement.Deserialize<BinaryOperator>(options)
+        var operationElement = TryGetProperty(root, "operation", out var parsedOperation)
+            ? parsedOperation
             : throw new JsonException("A filter item requires an operation.");
+        var operatorId = operationElement.ValueKind == JsonValueKind.String
+            ? operationElement.GetString()
+            : null;
+        if (operationElement.ValueKind is not (JsonValueKind.Number or JsonValueKind.String) ||
+            (operationElement.ValueKind == JsonValueKind.String && string.IsNullOrWhiteSpace(operatorId)))
+            throw new JsonException("A filter operation must be a numeric built-in operation or a custom operator ID.");
+        var operation = operationElement.ValueKind == JsonValueKind.Number
+            ? operationElement.Deserialize<BinaryOperator>(options)
+            : BinaryOperator.Equals;
         var right = TryGetProperty(root, "right", out var rightElement)
             ? rightElement.ValueKind == JsonValueKind.Null
                 ? null
@@ -100,7 +109,8 @@ internal sealed class FilterItemDefinitionJsonConverter : JsonConverter<FilterIt
         return new FilterItemDefinition(logicalOperator, leftField, operation, right)
         {
             Parameterized = TryGetProperty(root, "parameterized", out var parameterized) &&
-                parameterized.ValueKind == JsonValueKind.True
+                parameterized.ValueKind == JsonValueKind.True,
+            OperatorId = operatorId
         };
     }
 
@@ -116,7 +126,10 @@ internal sealed class FilterItemDefinitionJsonConverter : JsonConverter<FilterIt
             writer.WriteNull("logicalOperator");
         writer.WritePropertyName("left");
         JsonSerializer.Serialize<IFieldDefinition>(writer, value.Left, options);
-        writer.WriteNumber("operation", (int)value.Operation);
+        if (value.OperatorId is null)
+            writer.WriteNumber("operation", (int)value.Operation);
+        else
+            writer.WriteString("operation", value.OperatorId);
         writer.WritePropertyName("right");
         if (value.Right is null)
             writer.WriteNullValue();

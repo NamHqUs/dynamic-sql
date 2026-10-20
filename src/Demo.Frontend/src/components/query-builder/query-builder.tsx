@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
-import { createApiQuery, deleteQueryRequest, executeQuery, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
+import { createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import SavedQueryList from "./saved-query-list/saved-query-list";
@@ -234,7 +234,7 @@ function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity
 export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const dispatch = useDispatch<AppDispatch>();
   const showMessageBox = useMessageBox();
-  const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames, queryRequests, queryRequestsStatus, queryRequestsError } = useSelector((state: RootState) => state.queryBuilder);
+  const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames, filterOperators, filterOperatorsStatus, filterOperatorsError, queryRequests, queryRequestsStatus, queryRequestsError } = useSelector((state: RootState) => state.queryBuilder);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
   const [requestName, setRequestName] = useState("");
   const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
@@ -268,6 +268,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   useEffect(() => {
     dispatch(fetchQueryMetadata());
     dispatch(fetchFunctionDefinitions());
+    dispatch(fetchFilterOperators());
   }, [dispatch]);
 
   useEffect(() => {
@@ -470,6 +471,9 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               functionDefinitionsStatus={functionDefinitionsStatus}
               functionDefinitionsError={functionDefinitionsError}
               functionNames={functionNames}
+              filterOperators={filterOperators}
+              filterOperatorsStatus={filterOperatorsStatus}
+              filterOperatorsError={filterOperatorsError}
               definition={definition}
               entity={entity}
               requestName={requestName}

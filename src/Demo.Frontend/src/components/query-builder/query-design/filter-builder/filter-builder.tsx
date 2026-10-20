@@ -1,10 +1,11 @@
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Icon from "../../../icon/icon";
-import { MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
+import { FilterOperatorDefinition, MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
+import { resolveEntity } from "../field-builder/field-box/field-box";
 
-const operators = [
+const fallbackOperators = [
   [0, "="],
   [1, "!="],
   [2, "contains"],
@@ -18,6 +19,9 @@ const logicalOperators = [
 
 type FilterBuilderProps = {
   metadata: MetadataEntity[];
+  operators: FilterOperatorDefinition[];
+  operatorsStatus: string;
+  operatorsError: string;
   definition: QueryDefinition;
   entity: MetadataEntity;
   isReadOnly: boolean;
@@ -67,11 +71,11 @@ type DragPreview = {
 
 const QUERY_FIELD_DRAG_TYPE = "application/x-query-field";
 
-type OperatorOption = readonly [number, string];
+type OperatorOption = readonly [number | string, string];
 
 type OperatorSelectProps = {
-  value: number;
-  onChange: (value: number) => void;
+  value: number | string;
+  onChange: (value: number | string) => void;
   options: readonly OperatorOption[];
   ariaLabel: string;
   className: string;
@@ -138,6 +142,31 @@ function OperatorSelect({ value, onChange, options, ariaLabel, className }: Oper
 function getDraggedField(event: DragEvent<HTMLElement>): string | undefined {
   const field = event.dataTransfer.getData(QUERY_FIELD_DRAG_TYPE).trim();
   return field || undefined;
+}
+
+function getFilterFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {
+  const fieldPath = value.replace(/^\[|\]$/g, "");
+  const segments = fieldPath.split(".");
+  const lastSegment = segments[segments.length - 1] ?? "";
+  const aggregateField = fieldPath.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/)?.[2]
+    ?? lastSegment.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/)?.[2];
+  if (fieldPath.startsWith("Count()") || aggregateField) return "Number";
+  const owner = resolveEntity(entity, metadata, segments.slice(0, -1));
+  return owner?.fields.find((field) => field.name === lastSegment)?.dataType;
+}
+
+function getOperatorOptions(
+  operators: FilterOperatorDefinition[],
+  fieldDataType: string | undefined,
+): OperatorOption[] {
+  const compatible = operators.filter((operator) =>
+    !fieldDataType || operator.supportedDataTypes.some((dataType) =>
+      dataType.toLowerCase() === fieldDataType.toLowerCase()),
+  );
+  return compatible.map((operator): OperatorOption => [
+    operator.isBuiltin ? Number(operator.id.split(":")[1]) : operator.id,
+    operator.symbol,
+  ]);
 }
 
 function getDropPosition(event: DragEvent<HTMLElement>): DragPosition {
@@ -248,6 +277,7 @@ function replaceNode(group: QueryFilterGroup, path: FilterPath, node: QueryFilte
 type FilterGroupEditorProps = {
   group: QueryFilterGroup;
   metadata: MetadataEntity[];
+  operators: FilterOperatorDefinition[];
   entity: MetadataEntity;
   onChange: (group: QueryFilterGroup) => void;
   onRemove?: () => void;
@@ -264,7 +294,7 @@ type FilterGroupEditorProps = {
   depth: number;
 };
 
-function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMoveFilter, onDragPreview, onDragPreviewClear, dragPreview, onGroupFilter, onAddFilter, onAddField, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
+function FilterGroupEditor({ group, metadata, operators, entity, onChange, onRemove, onMoveFilter, onDragPreview, onDragPreviewClear, dragPreview, onGroupFilter, onAddFilter, onAddField, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
   const [collapsed, setCollapsed] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
 
@@ -420,6 +450,7 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
           <FilterGroupEditor
             group={filter}
             metadata={metadata}
+            operators={operators}
             entity={entity}
             depth={depth + 1}
             path={[...path, index]}
@@ -451,6 +482,7 @@ function FilterGroupEditor({ group, metadata, entity, onChange, onRemove, onMove
           first={index === 0}
           path={[...path, index]}
           metadata={metadata}
+          operators={operators}
           entity={entity}
           onChange={(next) => updateNode(index, next)}
           onRemove={() => removeNode(index)}
@@ -503,6 +535,7 @@ type FilterRowProps = {
   first: boolean;
   path: FilterPath;
   metadata: MetadataEntity[];
+  operators: FilterOperatorDefinition[];
   entity: MetadataEntity;
   onChange: (filter: QueryFilterItem) => void;
   onRemove: () => void;
@@ -515,8 +548,10 @@ type FilterRowProps = {
   dragPreview?: DragPreview;
 };
 
-function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, onGroup, onAdd, onAddField, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
+function FilterRow({ filter, first, path, metadata, operators, entity, onChange, onRemove, onGroup, onAdd, onAddField, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
   const update = (changes: Partial<QueryFilterItem>) => onChange({ ...filter, ...changes });
+  const fieldDataType = getFilterFieldDataType(entity, metadata, filter.field);
+  const operatorOptions = getOperatorOptions(operators, fieldDataType);
   const isPreview = (position: DragPosition) => dragPreview?.position === position && isSamePath(dragPreview.path, path);
   const previewPosition = useRef<DragPosition>();
   const updatePreview = (event: DragEvent<HTMLDivElement>) => {
@@ -593,14 +628,23 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
           showPath
           showDataType
           ariaLabel="Filter field"
-          onChange={(field) => update({ field })}
+          onChange={(field) => {
+            const dataType = getFilterFieldDataType(entity, metadata, field);
+            const options = getOperatorOptions(operators, dataType);
+            update({
+              field,
+              ...(options.some(([value]) => value === filter.operation)
+                ? {}
+                : { operation: options[0]?.[0] ?? 0 }),
+            });
+          }}
           onRemove={() => update({ field: "" })}
         />
       </div>
       <OperatorSelect
         value={filter.operation}
         onChange={(operation) => update({ operation })}
-        options={operators}
+        options={operatorOptions.length ? operatorOptions : fallbackOperators}
         ariaLabel="Filter operation"
         className="filter-operator-select"
       />
@@ -629,7 +673,7 @@ function FilterRow({ filter, first, path, metadata, entity, onChange, onRemove, 
   );
 }
 
-export default function FilterBuilder({ metadata, definition, entity, isReadOnly, isPlanTextEditing, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
+export default function FilterBuilder({ metadata, operators, operatorsStatus, operatorsError, definition, entity, isReadOnly, isPlanTextEditing, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
   const builderRef = useRef<HTMLDivElement>(null);
   const [filterItemWidth, setFilterItemWidth] = useState<number>();
   const [dragPreview, setDragPreview] = useState<DragPreview>();
@@ -870,11 +914,14 @@ export default function FilterBuilder({ metadata, definition, entity, isReadOnly
         </div>
       </div>
       {planTextEditor}
+      {operatorsStatus === "loading" && <p className="filter-description">Loading filter operators…</p>}
+      {operatorsStatus === "failed" && <p className="filter-description error" role="alert">{operatorsError}</p>}
       {!isPlanTextEditing && (
         <div inert={isReadOnly}>
           <FilterGroupEditor
             group={definition.filters}
             metadata={metadata}
+            operators={operators.length ? operators : []}
             entity={entity}
             depth={0}
             path={[]}

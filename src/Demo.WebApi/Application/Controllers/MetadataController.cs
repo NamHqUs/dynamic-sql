@@ -9,7 +9,8 @@ namespace Demo.WebApi.Application.Controllers;
 [Route("metadata")]
 public sealed class MetadataController(
     IMetadataService metadataService,
-    IFunctionDefinitionService functionDefinitionService) : ControllerBase
+    IFunctionDefinitionService functionDefinitionService,
+    IOperatorDefinitionService operatorDefinitionService) : ControllerBase
 {
     [HttpGet]
     public ActionResult<IReadOnlyList<MetadataEntityDto>> GetMetadata() => Ok(metadataService.GetAll());
@@ -52,6 +53,28 @@ public sealed class MetadataController(
     public IActionResult DeleteFunctionDefinition(string functionName)
     {
         functionDefinitionService.Delete(functionName);
+        return NoContent();
+    }
+
+    [HttpGet("operators")]
+    public ActionResult<IReadOnlyList<OperatorDefinitionDto>> GetOperatorDefinitions()
+        => Ok(operatorDefinitionService.GetAll());
+
+    [HttpPost("operators")]
+    public ActionResult<OperatorDefinitionDto> CreateOperatorDefinition([FromBody] OperatorDefinitionDto definition)
+        => Created($"/metadata/operators/{Uri.EscapeDataString(definition.Id)}",
+            operatorDefinitionService.Create(definition));
+
+    [HttpPut("operators/{operatorId}")]
+    public ActionResult<OperatorDefinitionDto> UpdateOperatorDefinition(
+        string operatorId,
+        [FromBody] OperatorDefinitionDto definition)
+        => Ok(operatorDefinitionService.Update(operatorId, definition));
+
+    [HttpDelete("operators/{operatorId}")]
+    public IActionResult DeleteOperatorDefinition(string operatorId)
+    {
+        operatorDefinitionService.Delete(operatorId);
         return NoContent();
     }
 }

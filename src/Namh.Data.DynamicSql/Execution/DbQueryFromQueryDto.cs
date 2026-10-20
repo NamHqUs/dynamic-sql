@@ -112,6 +112,17 @@ internal static class DbQueryFromQueryDto
         var field = CreateFieldAccess(filter.Left, parameter);
         var value = CreateFilterValue(filter, parameter);
 
+        if (filter.OperatorId is not null)
+        {
+            if (string.IsNullOrWhiteSpace(filter.CustomSqlTemplate))
+                throw new FormatException($"Custom operator '{filter.OperatorId}' has no trusted SQL template.");
+            return Expression.Call(
+                field,
+                typeof(DataValue).GetMethod(nameof(DataValue.CompareTemplate))!,
+                value,
+                Expression.Constant(filter.CustomSqlTemplate));
+        }
+
         if (filter.Operation == BinaryOperator.Like)
         {
             if (field.Type != typeof(DataValue))

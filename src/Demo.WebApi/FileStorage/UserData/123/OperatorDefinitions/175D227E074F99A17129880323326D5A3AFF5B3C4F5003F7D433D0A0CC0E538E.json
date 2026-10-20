@@ -1,0 +1,18 @@
+{
+  "Id": "custom:16b55df5c413400496c316c659423fb3",
+  "Name": "abc",
+  "Symbol": "abc",
+  "Description": "abc",
+  "LeftOperandType": 0,
+  "RightOperandType": 0,
+  "SupportedDataTypes": [
+    0
+  ],
+  "SqlTemplates": {
+    "Sqlite": "{left} = {value}",
+    "SqlServer": "{left} = {value}",
+    "Postgres": "{left} = {value}"
+  },
+  "CanDelete": true,
+  "IsBuiltin": false
+}

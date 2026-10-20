@@ -56,6 +56,16 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
             return new PredicateExpression(left, "LIKE", value);
         }
 
+        if (node.Method.DeclaringType == typeof(DataValue) &&
+            node.Method.Name == nameof(DataValue.CompareTemplate))
+        {
+            var left = (SqlExpression)Visit(node.Object!);
+            var right = (SqlExpression)Visit(node.Arguments[0]);
+            var template = (string?)((ConstantExpression)node.Arguments[1]).Value
+                ?? throw new InvalidOperationException("A custom comparison SQL template cannot be null.");
+            return new TemplateCompareSqlExpression(left, right, template, typeof(bool));
+        }
+
         if (node.Method.DeclaringType == typeof(DataValue) && node.Method.Name == nameof(DataValue.Parameter))
         {
             var value = ((ConstantExpression)node.Arguments[0]).Value;

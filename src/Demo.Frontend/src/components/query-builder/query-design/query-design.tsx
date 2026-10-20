@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MetadataEntity, QueryDefinition } from "./query-builder-slice";
+import { FilterOperatorDefinition, MetadataEntity, QueryDefinition } from "./query-builder-slice";
 import { FunctionDefinition } from "../../metadata-builder/function-definition/types";
 import ProjectionBuilder from "./projection-builder/projection-builder";
 import SortBuilder from "./sort-builder/sort-builder";
@@ -17,6 +17,9 @@ type QueryDesignProps = {
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
   functionNames: string[];
+  filterOperators: FilterOperatorDefinition[];
+  filterOperatorsStatus: string;
+  filterOperatorsError: string;
   definition: QueryDefinition;
   entity?: MetadataEntity;
   requestName: string;
@@ -37,6 +40,9 @@ export default function QueryDesign({
   functionDefinitionsStatus,
   functionDefinitionsError,
   functionNames,
+  filterOperators,
+  filterOperatorsStatus,
+  filterOperatorsError,
   definition,
   entity,
   requestName,
@@ -151,6 +157,9 @@ export default function QueryDesign({
         />
         <FilterBuilder
           metadata={contextMetadata}
+          operators={filterOperators}
+          operatorsStatus={filterOperatorsStatus}
+          operatorsError={filterOperatorsError}
           definition={definition}
           entity={contextEntity ?? entity}
           isReadOnly={isBuiltin}

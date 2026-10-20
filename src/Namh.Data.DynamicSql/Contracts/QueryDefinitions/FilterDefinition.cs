@@ -52,9 +52,11 @@ public record FilterItemDefinition(
     IFieldDefinition? Right = null) : IFilterDefintion
 {
     public bool Parameterized { get; init; }
+    public string? OperatorId { get; init; }
+    public string? CustomSqlTemplate { get; init; }
 
     public string ToText()
-        => $"{Left.ToText()} {FormatOperator(Operation)} {Right?.ToText() ?? "<NULL>"}";
+        => $"{Left.ToText()} {OperatorId ?? FormatOperator(Operation)} {Right?.ToText() ?? "<NULL>"}";
 
     private static string FormatOperator(BinaryOperator operation)
         => operation switch

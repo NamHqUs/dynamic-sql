@@ -7,6 +7,14 @@ export type MetadataField = {
   dataType: string;
 };
 
+export type FilterOperatorDefinition = {
+  id: string;
+  name: string;
+  symbol: string;
+  supportedDataTypes: string[];
+  isBuiltin: boolean;
+};
+
 export type MetadataRelation = {
   name: string;
   relatedEntity: string;
@@ -43,7 +51,7 @@ export type QueryColumn = {
 
 export type QueryFilterItem = {
   field: string;
-  operation: number;
+  operation: number | string;
   value: string;
   rightField?: string;
   parameterized: boolean;
@@ -65,7 +73,7 @@ type ApiQueryFilterItem = {
   logicalOperator?: number | null;
   left?: ApiFilterOperand | string;
   right?: ApiFilterOperand | string | number | boolean | null;
-  operation: number;
+  operation: number | string;
   parameterized?: boolean;
   field?: ApiFilterOperand | string;
   value?: unknown;
@@ -429,6 +437,34 @@ export const fetchFunctionDefinitions = createAsyncThunk(
   },
 );
 
+export const fetchFilterOperators = createAsyncThunk(
+  "queryBuilder/fetchFilterOperators",
+  async (_, { rejectWithValue }) => {
+    try {
+      const payload = await requestJson(apiUrls.metadata.operators);
+      const definitions = Array.isArray(payload)
+        ? payload
+        : payload && typeof payload === "object" && Array.isArray((payload as { value?: unknown }).value)
+          ? (payload as { value: unknown[] }).value
+          : null;
+      if (!definitions || definitions.some((operator) =>
+        !operator
+        || typeof operator.id !== "string"
+        || typeof operator.name !== "string"
+        || typeof operator.symbol !== "string"
+        || !Array.isArray(operator.supportedDataTypes))) {
+        return rejectWithValue("Operator metadata API must return operators with data types.");
+      }
+      return definitions as FilterOperatorDefinition[];
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to load filter operators.");
+    }
+  },
+  {
+    condition: (_, { getState }) => getState().queryBuilder.filterOperatorsStatus !== "loading",
+  },
+);
+
 export const executeQuery = createAsyncThunk(
   "queryBuilder/execute",
   async (definition: QueryDefinition, { rejectWithValue }) => {
@@ -699,6 +735,9 @@ const queryBuilderSlice = createSlice({
     functionDefinitionsStatus: "idle",
     functionDefinitionsError: "",
     functionNames: [] as string[],
+    filterOperators: [] as FilterOperatorDefinition[],
+    filterOperatorsStatus: "idle",
+    filterOperatorsError: "",
   },
   reducers: {
     clearQueryResult(state) {
@@ -739,6 +778,18 @@ const queryBuilderSlice = createSlice({
       .addCase(fetchFunctionDefinitions.rejected, (state, action) => {
         state.functionDefinitionsStatus = "failed";
         state.functionDefinitionsError = String(action.payload || action.error.message || "Unable to load function metadata.");
+      })
+      .addCase(fetchFilterOperators.pending, (state) => {
+        state.filterOperatorsStatus = "loading";
+        state.filterOperatorsError = "";
+      })
+      .addCase(fetchFilterOperators.fulfilled, (state, action) => {
+        state.filterOperators = action.payload;
+        state.filterOperatorsStatus = "succeeded";
+      })
+      .addCase(fetchFilterOperators.rejected, (state, action) => {
+        state.filterOperatorsStatus = "failed";
+        state.filterOperatorsError = String(action.payload || action.error.message || "Unable to load filter operators.");
       })
       .addCase(executeQuery.pending, (state) => {
         state.queryStatus = "loading";

@@ -137,6 +137,8 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             CompareSqlExpression compare => $"({RenderExpression(compare.Left)} {compare.Comparison})",
 
+            TemplateCompareSqlExpression compare => RenderTemplateComparison(compare),
+
             PredicateExpression predicate => predicate.Right is null
                 ? RenderExpression(predicate.Left)
                 : $"({RenderExpression(predicate.Left)} {predicate.Operator} {RenderExpression(predicate.Right)})",
@@ -156,6 +158,11 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             _ => throw new NotSupportedException($"Unsupported SQL expression {expression.GetType().Name}")
         };
+
+    private string RenderTemplateComparison(TemplateCompareSqlExpression compare)
+        => "(" + compare.Template
+            .Replace("{left}", RenderExpression(compare.Left), StringComparison.Ordinal)
+            .Replace("{value}", RenderExpression(compare.Right), StringComparison.Ordinal) + ")";
 
     private string RenderFunction(FunctionSqlExpression function)
     {

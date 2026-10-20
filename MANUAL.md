@@ -6,6 +6,26 @@
 through ADO.NET while allowing entities, fields, relationships, projections,
 filters, and aggregates to be defined at runtime.
 
+### Filter operators
+
+The metadata builder exposes read-only built-in filter operators and supports
+custom operators per user section. Operators declare the virtual data types
+they support (`String`, `Number`, `Datetime`, or `Boolean`), so the query
+builder only presents compatible operators for the selected field or
+calculation.
+
+Custom operators provide one SQL template for each supported provider. Use
+exactly one `{left}` placeholder for the selected field and one `{value}`
+placeholder for the single filter input value, for example:
+
+```text
+LOWER({left}) LIKE LOWER({value})
+```
+
+The filter input remains parameterized; only the operator template is stored
+as SQL metadata. Built-in operators are read-only, while custom operators can
+be created, edited, and deleted through the metadata builder.
+
 The library targets .NET 8, .NET 9, and .NET 10.
 
 ## Installation

@@ -16,6 +16,8 @@ internal static class SqlExpressionExtensions
             BinarySqlExpression binary =>
                 binary.Left.ContainsGroupedAggregate() || binary.Right.ContainsGroupedAggregate(),
             CompareSqlExpression compare => compare.Left.ContainsGroupedAggregate(),
+            TemplateCompareSqlExpression compare =>
+                compare.Left.ContainsGroupedAggregate() || compare.Right.ContainsGroupedAggregate(),
             PredicateExpression predicate =>
                 predicate.Left.ContainsGroupedAggregate() ||
                 (predicate.Right?.ContainsGroupedAggregate() ?? false),
