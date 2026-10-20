@@ -4,8 +4,8 @@
 .reports-hero-copy { position: relative; z-index: 2; max-width: 600px; }
 .reports-hero-copy > .eyebrow { display: flex; align-items: center; gap: 9px; }
 .reports-hero-copy > .eyebrow i { width: 4px; height: 4px; border-radius: 50%; background: #67ddbd; box-shadow: 0 0 9px #67ddbd99; }
-.reports-hero h1 { margin: 17px 0 13px; font-size: clamp(28px, 3.2vw, 40px); line-height: 1.04; letter-spacing: -2.8px; }
-.reports-hero h1 span { position: relative; top: 8px; color: #c1adff; font-size: .7em; text-shadow: 0 0 34px #9b7bff45; }
+.reports-hero h1 { margin: 17px 0 13px; font-size: clamp(28px, 3.2vw, 40px); line-height: 1.04; letter-spacing: -1px; word-spacing: 2px; }
+.reports-hero h1 span { position: relative; top: 8px; color: #c1adff; font-size: .7em; letter-spacing: 0; word-spacing: 2px; text-shadow: 0 0 34px #9b7bff45; }
 .reports-hero p { margin: 37px 0 26px; max-width: 510px; color: #b5b4c4; font-size: 13px; line-height: 1.8; }
 .query-input-modes { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
 .query-input-modes li { padding: 5px 8px; border: 1px solid #39344f; border-radius: 999px; color: #b9b2d2; background: #211e30a6; font: 9px "DM Mono",monospace; letter-spacing: .1px; }
@@ -217,7 +217,7 @@
 @media (max-width: 600px) {
   .reports-hero { gap: 23px; padding: 27px 20px; }
   .reports-hero-copy { max-width: 100%; }
-  .reports-hero h1 { margin-top: 14px; font-size: clamp(26px, 7vw, 34px); letter-spacing: -2px; }
+  .reports-hero h1 { margin-top: 14px; font-size: clamp(26px, 7vw, 34px); letter-spacing: -.5px; }
   .reports-hero p { font-size: 12px; }
   .reports-hero-actions { align-items: center; flex-direction: row; flex-wrap: wrap; gap: 12px; }
   .query-flow-card { padding: 17px 15px; }
