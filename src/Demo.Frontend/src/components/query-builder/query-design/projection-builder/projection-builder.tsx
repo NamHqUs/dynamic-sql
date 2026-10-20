@@ -320,6 +320,10 @@ function FieldCards({
         startFieldEdit(column);
       }
     };
+    const startAliasEdit = () => {
+      setAliasBeforeEdit(columnAlias);
+      setEditingAliasField(field.name);
+    };
     return (
       <div
         className={`field-card${column ? " selected" : ""}${draggedField === field.name ? " dragging" : ""}${dropTarget?.field === field.name ? ` drop-target drop-target-${dropTarget.position}` : ""}`}
@@ -355,24 +359,20 @@ function FieldCards({
         <button type="button" className="field-card-remove" onClick={() => removeColumn(field.name)} aria-label={`Remove ${fieldLabel}`} title={`Remove ${fieldLabel}`}>
           <Icon name="close" size={12} />
         </button>
-        <button
-          type="button"
-          className="field-card-edit"
-          onClick={() => {
-            setAliasBeforeEdit(columnAlias);
-            setEditingAliasField(field.name);
-          }}
-          aria-label={`Edit alias for ${fieldLabel}`}
-          title={`Edit alias for ${fieldLabel}`}
-        >
-          <Icon name="edit" size={12} />
-        </button>
         <div className="field-card-details">
-          <div className="field-card-primary">
+          <div
+            className="field-card-primary"
+            onClick={(event) => {
+              if (column && !columnAlias && editingAliasField !== field.name && editingField !== field.name
+                && !(event.target instanceof Element && event.target.closest(".field-name"))) {
+                startAliasEdit();
+              }
+            }}
+          >
             {column && editingAliasField === field.name
               ? <>
                 <span className="field-name">{columnExpression ? formatExpression(columnExpression) : field.name}</span>
-                <span className="field-alias-separator" aria-hidden="true">|</span>
+                {columnAlias && <span className="field-alias-separator" aria-hidden="true">|</span>}
                 <input
                   autoFocus
                   className="field-alias-input"
@@ -428,7 +428,20 @@ function FieldCards({
                       if (event.key === "Enter" || event.key === " ")
                         openColumnEditor();
                     }}
-                  >{columnExpression ? formatExpression(columnExpression) : field.name}</span><span className="field-alias-separator" aria-hidden="true">|</span><span className="field-alias-value">{columnAlias}</span></>
+                  >{columnExpression ? formatExpression(columnExpression) : field.name}</span><span className="field-alias-separator" aria-hidden="true">|</span><span
+                    className="field-alias-value editable field-alias-placeholder"
+                    onClick={startAliasEdit}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Edit alias for ${fieldLabel}`}
+                    title={`Edit alias for ${fieldLabel}`}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        startAliasEdit();
+                      }
+                    }}
+                  >{columnAlias}</span></>
                   : <span
                     className="field-name editable"
                     onClick={openColumnEditor}
@@ -439,6 +452,14 @@ function FieldCards({
                         openColumnEditor();
                     }}
                   >{columnExpression ? formatExpression(columnExpression) : field.name}</span>}
+            {column && !columnAlias && editingAliasField !== field.name && editingField !== field.name && <>
+              <button
+                type="button"
+                className="field-alias-value editable field-alias-placeholder"
+                aria-label={`Add alias for ${fieldLabel}`}
+                title={`Add alias for ${fieldLabel}`}
+              />
+            </>}
           </div>
         </div>
       </div>
