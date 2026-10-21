@@ -69,17 +69,31 @@ internal sealed class FilterDefinitionParser
         if (operationToken.Type != TokenType.Operator)
             throw new FormatException($"Expected a filter operator, received [{operationToken.Text}].");
         var operation = operationToken.Text.ToLowerInvariant();
-        var value = ParseFilterValue(operation);
+        if (operation is "not" or "is")
+        {
+            var modifier = Next();
+            operation = $"{operation} {modifier.Text.ToLowerInvariant()}";
+        }
+        var value = operation is "is null" or "is not null"
+            ? null
+            : ParseFilterValue(operation);
 
         var filterOperator = operation switch
         {
             "=" or "==" => BinaryOperator.Equals,
             "<>" or "!=" => BinaryOperator.NotEquals,
             "like" => BinaryOperator.Like,
+            "not like" => BinaryOperator.NotLike,
             ">" => BinaryOperator.GreaterThan,
             "<" => BinaryOperator.LessThan,
             ">=" => BinaryOperator.GreaterThanOrEqual,
             "<=" => BinaryOperator.LessThanOrEqual,
+            "between" => BinaryOperator.Between,
+            "not between" => BinaryOperator.NotBetween,
+            "in" => BinaryOperator.In,
+            "not in" => BinaryOperator.NotIn,
+            "is null" => BinaryOperator.IsNull,
+            "is not null" => BinaryOperator.IsNotNull,
             _ => throw new FormatException($"Unsupported filter operator [{operation}].")
         };
 
@@ -92,6 +106,9 @@ internal sealed class FilterDefinitionParser
     private IFieldDefinition? ParseFilterValue(string operation)
     {
         var token = Next();
+        if (operation is "between" or "not between" or "in" or "not in")
+            return ParseMultipleFilterValue(token);
+
         return token.Type switch
         {
             TokenType.Value => new ConstFieldDefinition(token.Value),
@@ -104,6 +121,24 @@ internal sealed class FilterDefinitionParser
                 : FieldDefinitionParser.Parse(token.Text),
             _ => throw new FormatException($"Expected a filter value, received [{token.Text}].")
         };
+    }
+
+    private static IFieldDefinition ParseMultipleFilterValue(Token token)
+    {
+        if (token.Type != TokenType.FieldExpression ||
+            token.Text.Length < 2 ||
+            token.Text[0] != '<' ||
+            token.Text[^1] != '>')
+            throw new FormatException("Multiple filter values must use the <value1,value2> format.");
+
+        var values = token.Text[1..^1]
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(value => (IFieldDefinition)new ConstFieldDefinition(ParseValue(value)))
+            .ToArray();
+        if (values.Length == 0)
+            throw new FormatException("Multiple filter values cannot be empty.");
+
+        return new GroupFieldDefintion(values);
     }
 
     private Token Next()
@@ -249,9 +284,7 @@ internal sealed class FilterDefinitionParser
 
             var identifier = text[startIdentifier..index];
             tokens.Add(new Token(
-                identifier.Equals("like", StringComparison.OrdinalIgnoreCase) ||
-                identifier.Equals("and", StringComparison.OrdinalIgnoreCase) ||
-                identifier.Equals("or", StringComparison.OrdinalIgnoreCase)
+                IsFilterKeyword(identifier)
                     ? TokenType.Operator
                     : int.TryParse(identifier, NumberStyles.Integer, CultureInfo.InvariantCulture, out _) ||
                       decimal.TryParse(identifier, NumberStyles.Number, CultureInfo.InvariantCulture, out _) ||
@@ -261,9 +294,7 @@ internal sealed class FilterDefinitionParser
                         ? TokenType.Value
                     : TokenType.Identifier,
                 identifier,
-                identifier.Equals("like", StringComparison.OrdinalIgnoreCase) ||
-                identifier.Equals("and", StringComparison.OrdinalIgnoreCase) ||
-                identifier.Equals("or", StringComparison.OrdinalIgnoreCase)
+                IsFilterKeyword(identifier)
                     ? null
                     : ParseValue(identifier)));
         }
@@ -334,7 +365,11 @@ internal sealed class FilterDefinitionParser
     private static bool IsFilterKeyword(string identifier)
         => identifier.Equals("and", StringComparison.OrdinalIgnoreCase) ||
             identifier.Equals("or", StringComparison.OrdinalIgnoreCase) ||
-            identifier.Equals("like", StringComparison.OrdinalIgnoreCase);
+            identifier.Equals("like", StringComparison.OrdinalIgnoreCase) ||
+            identifier.Equals("not", StringComparison.OrdinalIgnoreCase) ||
+            identifier.Equals("between", StringComparison.OrdinalIgnoreCase) ||
+            identifier.Equals("in", StringComparison.OrdinalIgnoreCase) ||
+            identifier.Equals("is", StringComparison.OrdinalIgnoreCase);
 
     private static void AddValueToken(
         string text,
@@ -389,7 +424,11 @@ internal sealed class FilterDefinitionParser
 
     private static bool IsComparisonOperator(string operation)
         => operation is "=" or "==" or "!=" or "<>" or ">" or "<" or ">=" or "<=" ||
-            operation.Equals("LIKE", StringComparison.OrdinalIgnoreCase);
+            operation.Equals("LIKE", StringComparison.OrdinalIgnoreCase) ||
+            operation.Equals("BETWEEN", StringComparison.OrdinalIgnoreCase) ||
+            operation.Equals("NOT BETWEEN", StringComparison.OrdinalIgnoreCase) ||
+            operation.Equals("IN", StringComparison.OrdinalIgnoreCase) ||
+            operation.Equals("NOT IN", StringComparison.OrdinalIgnoreCase);
 
     private enum TokenType
     {

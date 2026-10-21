@@ -55,6 +55,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
             "field" => new FieldDefinition(ReadString(element, "field")),
             "value" => new ConstFieldDefinition(ReadValue(element, "value")),
             "binary" => ParseBinary(element),
+            "group" => new GroupFieldDefintion(ReadArguments(element)),
             "function" => ParseFunction(element),
             _ => throw new JsonException($"Invalid projection expression kind [{kindElement.GetString()}].")
         };
@@ -155,7 +156,12 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
 
         if (field is GroupFieldDefintion nested)
         {
-            WriteGroupExpression(writer, nested.Fields);
+            writer.WriteString("kind", "group");
+            writer.WritePropertyName("arguments");
+            writer.WriteStartArray();
+            foreach (var item in nested.Fields)
+                WriteField(writer, item);
+            writer.WriteEndArray();
             return;
         }
 

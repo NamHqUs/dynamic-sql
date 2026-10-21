@@ -131,6 +131,14 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
 
     protected override Expression VisitUnary(UnaryExpression node)
     {
+        if ((node.NodeType is ExpressionType.Convert or ExpressionType.ConvertChecked) &&
+            node.Operand is MethodCallExpression
+            {
+                Method.DeclaringType: not null,
+                Method.Name: nameof(DataValue.Parameter)
+            } parameter)
+            return Visit(parameter);
+
         object? val = node.Operand is ConstantExpression constant
             ? constant.Value
             : Expression.Lambda(node.Operand).Compile().DynamicInvoke(null);

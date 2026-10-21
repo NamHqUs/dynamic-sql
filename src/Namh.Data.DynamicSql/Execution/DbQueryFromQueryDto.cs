@@ -200,6 +200,12 @@ internal static class DbQueryFromQueryDto
         var fields = filter.Right switch
         {
             GroupFieldDefintion group => group.Fields,
+            ConstFieldDefinition { Value: string value } when
+                filter.Operation is BinaryOperator.Between or BinaryOperator.NotBetween or BinaryOperator.In or BinaryOperator.NotIn
+                => value
+                    .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                    .Select(item => (IFieldDefinition)new ConstFieldDefinition(item))
+                    .ToArray(),
             null => Array.Empty<IFieldDefinition>(),
             _ => new[] { filter.Right }
         };

@@ -145,30 +145,44 @@ public sealed class OperatorDefinitionService(
 
     private static OperatorDefinitionDto[] CreateBuiltins()
     {
+        var allDataTypes = new[] { DataType.String, DataType.Number, DataType.Datetime, DataType.Boolean };
+        var comparableDataTypes = new[] { DataType.Number, DataType.Datetime };
         var definitions = new[]
         {
-            Builtin(0, "Equals", "=", "Equal to", [DataType.String, DataType.Number, DataType.Datetime, DataType.Boolean]),
-            Builtin(1, "Not equals", "<>", "Not equal to", [DataType.String, DataType.Number, DataType.Datetime, DataType.Boolean]),
-            Builtin(2, "Like", "LIKE", "Matches a SQL LIKE pattern", [DataType.String]),
-            Builtin(3, "Greater than", ">", "Greater than", [DataType.Number, DataType.Datetime]),
-            Builtin(4, "Less than", "<", "Less than", [DataType.Number, DataType.Datetime]),
-            Builtin(5, "Greater than or equal", ">=", "Greater than or equal to", [DataType.Number, DataType.Datetime]),
-            Builtin(6, "Less than or equal", "<=", "Less than or equal to", [DataType.Number, DataType.Datetime])
+            Builtin(BinaryOperator.Equals, "Equals", "=", "Equal to", allDataTypes),
+            Builtin(BinaryOperator.NotEquals, "Not equals", "<>", "Not equal to", allDataTypes),
+            Builtin(BinaryOperator.Like, "Like", "LIKE", "Matches a SQL LIKE pattern", [DataType.String]),
+            Builtin(BinaryOperator.NotLike, "Not like", "NOT LIKE", "Does not match a SQL LIKE pattern", [DataType.String]),
+            Builtin(BinaryOperator.GreaterThan, "Greater than", ">", "Greater than", comparableDataTypes),
+            Builtin(BinaryOperator.LessThan, "Less than", "<", "Less than", comparableDataTypes),
+            Builtin(BinaryOperator.GreaterThanOrEqual, "Greater than or equal", ">=", "Greater than or equal to", comparableDataTypes),
+            Builtin(BinaryOperator.LessThanOrEqual, "Less than or equal", "<=", "Less than or equal to", comparableDataTypes),
+            Builtin(BinaryOperator.Between, "Between", "BETWEEN", "Within an inclusive range", comparableDataTypes),
+            Builtin(BinaryOperator.NotBetween, "Not between", "NOT BETWEEN", "Outside an inclusive range", comparableDataTypes),
+            Builtin(BinaryOperator.In, "In", "IN", "Matches one of a set of values", allDataTypes),
+            Builtin(BinaryOperator.NotIn, "Not in", "NOT IN", "Does not match any of a set of values", allDataTypes),
+            Builtin(BinaryOperator.IsNull, "Is null", "IS NULL", "Is null", allDataTypes),
+            Builtin(BinaryOperator.IsNotNull, "Is not null", "IS NOT NULL", "Is not null", allDataTypes)
         };
         return definitions;
     }
 
     private static OperatorDefinitionDto Builtin(
-        int operation,
+        BinaryOperator operation,
         string name,
         string symbol,
         string description,
         DataType[] dataTypes)
     {
-        var sqlOperator = operation == (int)BinaryOperator.NotEquals ? "<>" : symbol;
+        var sqlTemplate = operation switch
+        {
+            BinaryOperator.IsNull or BinaryOperator.IsNotNull => "{left} " + symbol,
+            BinaryOperator.In or BinaryOperator.NotIn => $"{{left}} {symbol} ({{value}})",
+            _ => $"{{left}} {symbol} {{value}}"
+        };
         return new OperatorDefinitionDto
         {
-            Id = $"builtin:{operation}",
+            Id = $"builtin:{(int)operation}",
             Name = name,
             Symbol = symbol,
             Description = description,
@@ -177,9 +191,9 @@ public sealed class OperatorDefinitionService(
             SupportedDataTypes = dataTypes.ToList(),
             SqlTemplates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                ["Sqlite"] = operation == (int)BinaryOperator.Like ? "{left} LIKE {value}" : $"{{left}} {sqlOperator} {{value}}",
-                ["SqlServer"] = operation == (int)BinaryOperator.Like ? "{left} LIKE {value}" : $"{{left}} {sqlOperator} {{value}}",
-                ["Postgres"] = operation == (int)BinaryOperator.Like ? "{left} LIKE {value}" : $"{{left}} {sqlOperator} {{value}}"
+                ["Sqlite"] = sqlTemplate,
+                ["SqlServer"] = sqlTemplate,
+                ["Postgres"] = sqlTemplate
             },
             CanDelete = false,
             IsBuiltin = true

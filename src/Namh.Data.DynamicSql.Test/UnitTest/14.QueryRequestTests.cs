@@ -163,6 +163,65 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
+    public void RangeFilterAcceptsCommaSeparatedUiValue()
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Filter = new FilterDefinition(
+                LogicalOperator.And,
+                new FilterItemDefinition(
+                    LogicalOperator.And,
+                    new FieldDefinition("Id"),
+                    BinaryOperator.Between,
+                    new ConstFieldDefinition("100,200"))
+                {
+                    Parameterized = true
+                })
+        };
+
+        var sql = _db.Query(definition).ToSql();
+
+        Assert.That(sql.CommandText, Does.Contain("BETWEEN"));
+        Assert.That(sql.Parameters.Select(parameter => parameter.Value), Is.EqualTo(new object?[] { "100", "200" }));
+    }
+
+    [Test]
+    public void PlanTextRangeFilterAcceptsCommaSeparatedValues()
+    {
+        var definition = QueryDefinitionParser.ParseFilter("Id between <100,200>");
+
+        var sql = _db.Query(new QueryDefinition
+        {
+            Entity = "User",
+            Filter = definition
+        }).ToSql();
+
+        Assert.That(sql.CommandText, Does.Contain("BETWEEN"));
+        Assert.That(sql.Parameters.Select(parameter => parameter.Value), Is.EqualTo(new object?[] { 100, 200 }));
+    }
+
+    [Test]
+    public void MultiValueFilterRoundTripsThroughJson()
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Filter = QueryDefinitionParser.ParseFilter("Id between <100,200>")
+        };
+        var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+
+        var serialized = System.Text.Json.JsonSerializer.Serialize(definition, options);
+        var roundTrip = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(serialized, options)!;
+        var filter = (FilterItemDefinition)roundTrip.Filter!.Filters.Single();
+        var values = ((GroupFieldDefintion)filter.Right!).Fields
+            .Cast<ConstFieldDefinition>()
+            .Select(value => value.Value);
+
+        Assert.That(values, Is.EqualTo(new object?[] { 100, 200 }));
+    }
+
+    [Test]
     public void DefinitionSupportsAggregateOnRootEntity()
     {
         var definition = new QueryDefinition

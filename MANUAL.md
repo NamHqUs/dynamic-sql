@@ -305,7 +305,12 @@ Supported properties:
   `QueryDefinition`, so they do not affect query execution.
 - Saved-query `Filters` contains one recursive filter group or `null`; older
   arrays of filter groups are combined with `AND` when read.
-- `filter`: field comparisons, `like`, `&&`, `||`, `AND`, `OR`, and parentheses.
+- `filter`: field comparisons, `like`, `not like`, `between`, `not between`,
+  `in`, `not in`, `is null`, `is not null`, `&&`, `||`, `AND`, `OR`, and
+  parentheses. Multiple values use angle brackets with comma-separated values,
+  for example `Id between <100,200>` or `Status in <Paid,Shipped>`. The query
+  designer accepts the same values without the angle brackets, such as
+  `100,200`.
 - `sorts`: comma-separated field expressions with an optional `ASC` or `DESC`
   direction (for example, `Manager.Name DESC`).
 - `page`: one-based page number.
