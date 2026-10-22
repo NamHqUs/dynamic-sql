@@ -657,8 +657,6 @@ function FilterRow({ filter, first, path, metadata, functionDefinitions, functio
             functionDefinitionsStatus,
             functionDefinitionsError,
             initialExpression,
-            showAlias: false,
-            sectionLabel: "FILTER FIELD",
           }}
           onExpressionApply={(expression) => {
             update({ field: formatExpression(expression), fieldExpression: expression });

@@ -78,6 +78,15 @@ function getProjectionAlias(column: QueryColumn): string | null {
   return column.alias ?? column.field.match(/\s*\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*$/)?.[1] ?? null;
 }
 
+function getNextCalculationAlias(columns: QueryColumn[], excludedField?: string): string {
+  const existingAliases = new Set(columns
+    .filter((column) => column.field !== excludedField)
+    .map((column) => (getProjectionAlias(column) ?? column.field).trim().toLowerCase()));
+  let suffix = 1;
+  while (existingAliases.has(`calculation${suffix}`)) suffix += 1;
+  return `Calculation${suffix}`;
+}
+
 function parseProjectionExpression(text: string, entity: MetadataEntity): QueryExpression | undefined {
   const expressionText = text.replace(/\s*\|\s*[A-Za-z_][A-Za-z0-9_]*\s*$/, "").trim();
   const functionMatch = expressionText.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\(([\s\S]*)\)$/);
@@ -219,7 +228,7 @@ function FieldCards({
   moveField: (field: string, targetField: string, position: ProjectionDropPosition, targetRowFields: string[]) => void;
   onFieldDragStart: (field: string | null) => void;
   editValue: (field: string, value: string | number) => void;
-  applyExpression: (field: string | undefined, expression: QueryExpression, alias: string) => void;
+  applyExpression: (field: string | undefined, expression: QueryExpression) => void;
   addField: (field: string) => void;
   addValue: (value: string | number) => void;
 }) {
@@ -416,15 +425,9 @@ function FieldCards({
                       functionDefinitionsStatus,
                       functionDefinitionsError,
                       initialExpression: columnExpression,
-                      initialAlias: column
-                        ? columnAlias ?? (columnExpression?.kind === "value" ? "CalculatedValue" : field.name)
-                        : "CalculatedValue",
-                      existingAliases: definition.columns
-                        .filter((item) => item.field !== column?.field)
-                        .map((item) => getProjectionAlias(item) ?? item.field),
                     }}
-                    onExpressionApply={(expression, alias) => {
-                      applyExpression(column?.field, expression, alias);
+                    onExpressionApply={(expression) => {
+                      applyExpression(column?.field, expression);
                       setEditingField(null);
                     }}
                     initialConstantValue={columnExpression?.kind === "value" ? columnExpression.value : undefined}
@@ -513,11 +516,9 @@ function FieldCards({
             functionDefinitions,
             functionDefinitionsStatus,
             functionDefinitionsError,
-            initialAlias: "CalculatedValue",
-            existingAliases: definition.columns.map((column) => getProjectionAlias(column) ?? column.field),
           }}
           onValueSelect={addValue}
-          onExpressionApply={(expression, alias) => applyExpression(undefined, expression, alias)}
+          onExpressionApply={(expression) => applyExpression(undefined, expression)}
           onChange={addField}
         />
       </div>
@@ -591,11 +592,13 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     changeProjection({ ...definition, columns });
   };
 
-  const applyExpression = (field: string | undefined, expression: QueryExpression, alias: string) => {
+  const applyExpression = (field: string | undefined, expression: QueryExpression) => {
     const outputField = field ?? `__calculated__${crypto.randomUUID()}`;
     const columns = field
-      ? definition.columns.map((column) => column.field === outputField ? { ...column, alias, expression } : column)
-      : [...definition.columns, { field: outputField, alias, expression }];
+      ? definition.columns.map((column) => column.field === outputField
+        ? { ...column, alias: getProjectionAlias(column) ?? getNextCalculationAlias(definition.columns, outputField), expression }
+        : column)
+      : [...definition.columns, { field: outputField, alias: getNextCalculationAlias(definition.columns), expression }];
     changeProjection({ ...definition, columns });
   };
 

@@ -1,10 +1,7 @@
 .expression-builder { display: grid; gap: 14px; width: 100%; box-sizing: border-box; margin-top: 10px; padding: 16px; color: #dce1eb; background: #11141c; border: 1px solid #3a334e; border-radius: 7px; }
-.expression-builder-header { display: flex; align-items: center; justify-content: space-between; }
-.expression-builder-header h2 { margin: 5px 0 0; color: #f0ecff; font-size: 19px; }
-.expression-alias, .expression-node-toolbar label, .expression-step-operator { display: grid; gap: 5px; color: #aab3c2; font: 12px "DM Mono", monospace; }
-.expression-alias input, .expression-dropdown-trigger, .expression-number { min-height: 34px; box-sizing: border-box; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 7px 9px; font: 13px "Manrope", sans-serif; }
-.expression-alias input:focus, .expression-dropdown-trigger:focus-visible, .expression-number:focus { border-color: #8a6ed1; outline: 0; }
-.expression-error { color: #ffb0b0; font-size: 12px; }
+.expression-node-toolbar label, .expression-step-operator { display: grid; gap: 5px; color: #aab3c2; font: 12px "DM Mono", monospace; }
+.expression-dropdown-trigger, .expression-number { min-height: 34px; box-sizing: border-box; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 7px 9px; font: 13px "Manrope", sans-serif; }
+.expression-dropdown-trigger:focus-visible, .expression-number:focus { border-color: #8a6ed1; outline: 0; }
 .expression-node { display: grid; gap: 10px; padding: 12px; background: transparent; border: 0; border-radius: 7px; }
 .expression-node.nested { padding: 0; background: transparent; border: 0; }
 .expression-node.root { padding: 0; }

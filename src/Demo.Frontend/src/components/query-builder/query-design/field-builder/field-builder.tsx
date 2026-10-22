@@ -14,10 +14,6 @@ export type FieldBuilderExpressionOptions = {
   functionDefinitionsError: string;
   initialKind?: "binary" | "function";
   initialExpression?: QueryExpression;
-  initialAlias?: string;
-  existingAliases?: string[];
-  showAlias?: boolean;
-  sectionLabel?: string;
 };
 
 type FieldBuilderProps = {
@@ -41,7 +37,7 @@ type FieldBuilderProps = {
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
   expressionBuilder?: FieldBuilderExpressionOptions;
-  onExpressionApply?: (expression: QueryExpression, alias: string) => void;
+  onExpressionApply?: (expression: QueryExpression) => void;
 };
 
 function getFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {
@@ -89,9 +85,9 @@ export default function FieldBuilder({
       {...expressionBuilder}
       entity={entity}
       metadata={metadata}
-      onApply={(expression, alias) => {
+      onApply={(expression) => {
         setIsEditing(false);
-        onExpressionApply(expression, alias);
+        onExpressionApply(expression);
         closeMenu();
       }}
       onCancel={() => {
