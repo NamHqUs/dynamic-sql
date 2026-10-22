@@ -17,6 +17,10 @@
 .field-box-menu-popup .field-box-menu-label:first-child { margin-top: 0; border-top: 0; }
 .field-box-menu-popup .operator-option { padding: 5px 12px 5px 24px; }
 .field-box-menu-popup-advanced { width: min(360px, calc(100vw - 8px)); min-width: min(360px, calc(100vw - 8px)); }
+.operator-menu.field-box-menu-popup-fields { width: max-content; min-width: min(320px, calc(100vw - 8px)); max-width: min(560px, calc(100vw - 8px)); }
+.field-box-field-grid { display: grid; gap: 4px 8px; padding: 0 6px 6px; }
+.field-box-field-column { display: flex; flex-direction: column; min-width: 0; }
+.field-box-field-column .operator-option { box-sizing: border-box; width: 100%; max-width: min(250px, calc(100vw - 40px)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px "DM Mono", monospace; }
 .field-box-chooser-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin: 7px 7px 4px; padding: 3px; background: #11141c; border: 1px solid #3a334e; border-radius: 6px; }
 .field-box-chooser-tab { padding: 7px 5px; color: #aab3c2; background: transparent; border: 0; border-radius: 4px; font: 11px "DM Mono", monospace; cursor: pointer; }
 .field-box-chooser-tab:hover, .field-box-chooser-tab:focus-visible { color: #ded5ff; outline: 0; }

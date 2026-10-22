@@ -645,7 +645,9 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     const columns = definition.columns.map((column) => column.field === field
       ? { field: replacement, alias: null }
       : column);
-    changeProjection({ ...definition, columns });
+    const rows = getProjectionRows(definition).map((row) =>
+      row.map((item) => item === field ? replacement : item));
+    changeProjection({ ...definition, columns }, rows);
   };
 
   const restoreColumn = (field: string, original: QueryColumn) => {

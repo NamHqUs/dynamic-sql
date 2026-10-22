@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../../icon/icon";
@@ -230,6 +230,27 @@ export default function FieldBox({
     (!activeAggregate || activeAggregate === COUNT_AGGREGATE || NUMERIC_DATA_TYPES.has(field.dataType.toLowerCase())) &&
     !excludedPaths.includes([...path, field.name].join(".")));
   const filteredFields = fields.filter((field) => field.name.toLowerCase().includes(fieldSearch.trim().toLowerCase()));
+  const fieldColumns = useMemo(() => {
+    if (filteredFields.length === 0) return [];
+    if (filteredFields.length <= 5) return [filteredFields];
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (context) context.font = '12px "DM Mono", monospace';
+    const measuredFields = filteredFields
+      .map((field, index) => ({
+        field,
+        index,
+        width: context?.measureText(field.name).width ?? field.name.length,
+      }))
+      .sort((left, right) => left.width - right.width || left.index - right.index);
+    const splitIndex = Math.ceil(measuredFields.length / 2);
+
+    return [measuredFields.slice(0, splitIndex), measuredFields.slice(splitIndex)]
+      .map((column) => column
+        .sort((left, right) => left.index - right.index)
+        .map(({ field }) => field));
+  }, [filteredFields]);
   const isComplete = completeOnSelect && Boolean(value);
   const selectedDataType = aggregateMatch || selectedAggregate
     ? "Number"
@@ -285,7 +306,7 @@ export default function FieldBox({
       </button>
       {menuOpen && createPortal(<div
         ref={menuPopupRef}
-        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}`}
+        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}`}
         style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: menuPosition.maxHeight, transform: "none", margin: 0 }}
         onMouseDown={(event) => event.preventDefault()}
         role="group"
@@ -363,11 +384,18 @@ export default function FieldBox({
                   ))}
                 </>}
                 <span className="field-box-menu-label">{current.name} fields</span>
-                {filteredFields.map((field) => (
-                  <button type="button" className={`operator-option${selectValue === `${FIELD_PREFIX}${field.name}` ? " operator-option-selected" : ""}`} role="option" aria-selected={selectValue === `${FIELD_PREFIX}${field.name}`} key={field.name} onClick={() => handleSelect(`${FIELD_PREFIX}${field.name}`)}>
-                    {field.name}
-                  </button>
-                ))}
+                {fieldColumns.length > 0 && <div
+                  className="field-box-field-grid"
+                  style={{ gridTemplateColumns: `repeat(${fieldColumns.length}, max-content)` }}
+                >
+                  {fieldColumns.map((column, columnIndex) => <div className="field-box-field-column" key={columnIndex}>
+                    {column.map((field) => (
+                      <button type="button" className={`operator-option${selectValue === `${FIELD_PREFIX}${field.name}` ? " operator-option-selected" : ""}`} role="option" aria-selected={selectValue === `${FIELD_PREFIX}${field.name}`} key={field.name} onClick={() => handleSelect(`${FIELD_PREFIX}${field.name}`)}>
+                        {field.name}
+                      </button>
+                    ))}
+                  </div>)}
+                </div>}
                 {filteredFields.length === 0 && <span className="field-box-no-results">No matching fields</span>}
                 {!activeAggregate && allowAggregates && <>
                   <span className="field-box-menu-label">Aggregate</span>
