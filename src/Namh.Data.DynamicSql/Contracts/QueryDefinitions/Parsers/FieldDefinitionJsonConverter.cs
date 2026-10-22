@@ -22,5 +22,5 @@ internal sealed class FieldDefinitionJsonConverter : JsonConverter<IFieldDefinit
         Utf8JsonWriter writer,
         IFieldDefinition value,
         JsonSerializerOptions options)
-        => ProjectionDefinitionJsonConverter.WriteField(writer, value);
+        => ProjectionDefinitionJsonConverter.WriteField(writer, value, options, isRoot: true);
 }

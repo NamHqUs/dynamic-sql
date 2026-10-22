@@ -353,9 +353,9 @@ Values may be strings, integers, decimals, booleans, or `null`. JSON filter
 values are parameterized by the query pipeline.
 
 Calculated projections use a structured expression tree rather than SQL text.
-Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
-`*`, `/`, `%`), `binary-term` (an operator-prefixed group term), `group`, and
-`function` (`COUNT`, `SUM`, `AVG`, `ROUND`, `NULLIF`,
+Supported nodes are `field`, numeric `value`, `math` (an operator-prefixed
+group term using `+`, `-`, `*`, `/`, `%`), `group`, and `function`
+(`COUNT`, `SUM`, `AVG`, `ROUND`, `NULLIF`,
 `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`,
 `DateFormat`, `GETDATE`):
 
@@ -368,25 +368,41 @@ Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
       "field": {
         "kind": "function",
         "function": "SUM",
-        "arguments": [{
-          "kind": "binary",
-          "operator": "-",
-          "arguments": [
-            { "kind": "field", "field": "InvoiceItems.LineTotal" },
-            {
-              "kind": "binary",
-              "operator": "*",
-              "arguments": [
-                { "kind": "field", "field": "InvoiceItems.Quantity" },
-                { "kind": "field", "field": "CostPrice" }
-              ]
-            }
-          ]
-        }]
+        "arguments": [
+          {
+            "kind": "group",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "InvoiceItems.LineTotal"
+              },
+              {
+                "kind": "group",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "InvoiceItems.Quantity"
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "math",
+                    "field": {
+                      "kind": "field",
+                      "field": "CostPrice"
+                    }
+                  }
+                ],
+                "operator": "-"
+              }
+            ]
+          }
+        ]
       }
     }
   ],
-  "sorts": ["-GrossProfit"]
+  "sorts": [
+    "-GrossProfit"
+  ]
 }
 ```
 

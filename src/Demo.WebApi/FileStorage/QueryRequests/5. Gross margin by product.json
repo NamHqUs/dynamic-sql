@@ -28,26 +28,29 @@
           "function": "Sum",
           "arguments": [
             {
-              "kind": "binary",
-              "operator": "-",
+              "kind": "group",
               "arguments": [
                 {
                   "kind": "field",
                   "field": "InvoiceItems.LineTotal"
                 },
                 {
-                  "kind": "binary",
-                  "operator": "*",
+                  "kind": "group",
                   "arguments": [
                     {
                       "kind": "field",
                       "field": "InvoiceItems.Quantity"
                     },
                     {
-                      "kind": "field",
-                      "field": "CostPrice"
+                      "oper": "*",
+                      "kind": "math",
+                      "field": {
+                        "kind": "field",
+                        "field": "CostPrice"
+                      }
                     }
-                  ]
+                  ],
+                  "operator": "-"
                 }
               ]
             }
@@ -61,68 +64,77 @@
           "function": "Round",
           "arguments": [
             {
-              "kind": "binary",
-              "operator": "/",
+              "kind": "group",
               "arguments": [
                 {
-                  "kind": "binary",
-                  "operator": "*",
+                  "kind": "group",
                   "arguments": [
                     {
                       "kind": "function",
                       "function": "Sum",
                       "arguments": [
                         {
-                          "kind": "binary",
-                          "operator": "-",
+                          "kind": "group",
                           "arguments": [
                             {
                               "kind": "field",
                               "field": "InvoiceItems.LineTotal"
                             },
                             {
-                              "kind": "binary",
-                              "operator": "*",
+                              "kind": "group",
                               "arguments": [
                                 {
                                   "kind": "field",
                                   "field": "InvoiceItems.Quantity"
                                 },
                                 {
-                                  "kind": "field",
-                                  "field": "CostPrice"
+                                  "oper": "*",
+                                  "kind": "math",
+                                  "field": {
+                                    "kind": "field",
+                                    "field": "CostPrice"
+                                  }
                                 }
-                              ]
+                              ],
+                              "operator": "-"
                             }
                           ]
                         }
                       ]
                     },
                     {
-                      "kind": "value",
-                      "value": 100
+                      "oper": "*",
+                      "kind": "math",
+                      "field": {
+                        "kind": "value",
+                        "value": 100
+                      }
                     }
                   ]
                 },
                 {
-                  "kind": "function",
-                  "function": "NullIf",
-                  "arguments": [
-                    {
-                      "kind": "function",
-                      "function": "Sum",
-                      "arguments": [
-                        {
-                          "kind": "field",
-                          "field": "InvoiceItems.LineTotal"
-                        }
-                      ]
-                    },
-                    {
-                      "kind": "value",
-                      "value": 0
-                    }
-                  ]
+                  "oper": "/",
+                  "kind": "math",
+                  "field": {
+                    "kind": "function",
+                    "function": "NullIf",
+                    "arguments": [
+                      {
+                        "kind": "function",
+                        "function": "Sum",
+                        "arguments": [
+                          {
+                            "kind": "field",
+                            "field": "InvoiceItems.LineTotal"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "value",
+                        "value": 0
+                      }
+                    ]
+                  }
                 }
               ]
             },

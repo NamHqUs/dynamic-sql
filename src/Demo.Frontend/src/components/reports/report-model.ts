@@ -1,5 +1,5 @@
 import type { ReportDto } from "../query-builder/query-design/query-builder-slice";
-import type { QueryExpression, QueryResult } from "../query-builder/query-design/query-builder-slice";
+import type { IFieldDefinition, QueryResult } from "../query-builder/query-design/query-builder-slice";
 import type { IconName } from "../icon/icon";
 
 export type ChartType = "line" | "bar" | "donut" | "funnel" | "scatter";
@@ -55,18 +55,21 @@ export const chartOptions: { value: ChartType; label: string; icon: IconName }[]
   { value: "scatter", label: "Scatter plot", icon: "chart-scatter" },
 ];
 
-function isAggregateExpression(expression: QueryExpression): boolean {
+function isAggregateExpression(expression: IFieldDefinition): boolean {
   if (expression.kind === "function") {
     return ["count", "sum", "max", "min", "average", "avg"].includes(expression.function.toLowerCase())
       || expression.arguments.some(isAggregateExpression);
   }
-  if (expression.kind === "binary") {
+  if (expression.kind === "math") {
+    return isAggregateExpression(expression.field);
+  }
+  if (expression.kind === "group") {
     return expression.arguments.some(isAggregateExpression);
   }
   return false;
 }
 
-function metricRollup(expression: QueryExpression): MetricRollup {
+function metricRollup(expression: IFieldDefinition): MetricRollup {
   if (expression.kind !== "function" || expression.arguments.some(isAggregateExpression)) return "unsupported";
   switch (expression.function.toLowerCase()) {
     case "count":
@@ -81,16 +84,22 @@ function metricRollup(expression: QueryExpression): MetricRollup {
   }
 }
 
-function expressionName(expression: QueryExpression): string {
+function expressionName(expression: IFieldDefinition): string {
   switch (expression.kind) {
     case "field":
       return expression.field;
-    case "function":
-      return `${expression.function}(${expression.arguments.map(expressionName).join(", ")})`;
-    case "binary":
-      return `${expressionName(expression.arguments[0])} ${expression.operator} ${expressionName(expression.arguments[1])}`;
     case "value":
       return String(expression.value);
+    case "function":
+      return `${expression.function}(${expression.arguments.map(expressionName).join(", ")})`;
+    case "math":
+      return `${expression.oper} ${expressionName(expression.field)}`;
+    case "group":
+      return expression.arguments.map((argument, index) => index === 0
+        ? expressionName(argument)
+        : argument.kind === "math"
+          ? `${argument.oper} ${expressionName(argument.field)}`
+          : `${expression.operator ?? "+"} ${expressionName(argument)}`).join(" ");
   }
 }
 

@@ -68,7 +68,7 @@ public sealed class _36_QueryRequestFileRepositoryTests
                 Path.Combine(storagePath, "UserData", "test-user", "QueryRequests", "legacy.json")));
             var savedProjection = savedFile.RootElement.GetProperty("Projection");
             Assert.That(savedProjection.GetArrayLength(), Is.EqualTo(3));
-            Assert.That(savedProjection[1].GetProperty("alias").GetString(), Is.EqualTo("NEW_LINE"));
+            Assert.That(savedProjection[1].GetProperty("Alias").GetString(), Is.EqualTo("NEW_LINE"));
             Assert.That(savedFile.RootElement.GetProperty("Filters").ValueKind, Is.EqualTo(JsonValueKind.Object));
             var savedRelations = savedFile.RootElement.GetProperty("Relations");
             Assert.That(savedRelations[0].GetProperty("Name").GetString(), Is.EqualTo("Manager2"));

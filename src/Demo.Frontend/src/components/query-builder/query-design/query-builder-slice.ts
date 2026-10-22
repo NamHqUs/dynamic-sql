@@ -37,21 +37,27 @@ export type MetadataEntity = {
   rawSql?: string;
 };
 
-export type QueryExpression =
+export type IFieldDefinition =
+  | IMathFieldDefinition
+  | { kind: "group"; operator?: MatchOperation; arguments: IFieldDefinition[] };
+
+export type IMathFieldDefinition =
   | { kind: "field"; field: string }
-  | { kind: "value"; value: string | number }
-  | { kind: "binary"; operator: "+" | "-" | "*" | "/"; arguments: [QueryExpression, QueryExpression] }
-  | { kind: "function"; function: string; arguments: QueryExpression[] };
+  | { kind: "value"; value: unknown }
+  | { kind: "math"; oper: MatchOperation; field: IMathFieldDefinition }
+  | { kind: "function"; function: string; arguments: IFieldDefinition[] };
+
+export type MatchOperation = "+" | "-" | "*" | "/" | "%" | "&" | "|";
 
 export type QueryColumn = {
   field: string;
   alias: string | null;
-  expression?: QueryExpression;
+  expression?: IFieldDefinition;
 };
 
 export type QueryFilterItem = {
   field: string;
-  fieldExpression?: QueryExpression;
+  fieldExpression?: IFieldDefinition;
   operation: number | string;
   value: string;
   rightField?: string;
@@ -68,7 +74,7 @@ export type QueryFilterGroup = {
   note?: string;
 };
 
-type ApiFilterOperand = QueryExpression | { kind: "value"; value: unknown };
+type ApiFilterOperand = IFieldDefinition;
 
 type ApiQueryFilterItem = {
   logicalOperator?: number | null;
@@ -94,15 +100,15 @@ export type QueryDefinition = {
   projectionRows?: string[][];
   filterPlanText?: string | null;
   filters: QueryFilterGroup;
-  sorts: { field: string; direction: string; expression?: QueryExpression }[];
+  sorts: { field: string; direction: string; expression?: IFieldDefinition }[];
   page: number | null;
   pageSize: number | null;
 };
 
 export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns" | "projectionRows" | "filterPlanText"> & {
   filter: ApiQueryFilterGroup | null;
-  sorts: { field: string | QueryExpression; direction: number }[];
-  projection: { field: QueryExpression; alias: string | null }[];
+  sorts: { field: string | IFieldDefinition; direction: number }[];
+  projection: { field: IFieldDefinition; alias: string | null }[];
 };
 
 export type ReportDto = {
@@ -127,9 +133,9 @@ type ApiSavedQueryRequestDto = {
   name: string;
   entity: string;
   relations: RelationDefinition[];
-  projection: { field: QueryExpression; alias: string | null }[];
+  projection: { field: IFieldDefinition; alias: string | null }[];
   filters: ApiQueryFilterGroup | null;
-  sorts: { field: QueryExpression; direction: number }[][] | null;
+  sorts: { field: IFieldDefinition; direction: number }[][] | null;
   page: number | null;
   pageSize: number | null;
   filterPlanText?: string | null;
@@ -217,19 +223,82 @@ export function createApiQuery(definition: QueryDefinition) {
   };
 }
 
-function expressionToText(expression: QueryExpression): string {
+function isFieldDefinition(value: unknown): value is IFieldDefinition {
+  if (!value || typeof value !== "object" || !("kind" in value)) return false;
+
+  switch (value.kind) {
+    case "field":
+      return "field" in value && typeof value.field === "string";
+    case "value":
+      return "value" in value;
+    case "math":
+      return "oper" in value
+        && isMatchOperation(value.oper)
+        && "field" in value
+        && isMathFieldDefinition(value.field);
+    case "group":
+      return (!("operator" in value) || isMatchOperation(value.operator))
+        && "arguments" in value
+        && Array.isArray(value.arguments)
+        && value.arguments.every(isFieldDefinition);
+    case "function":
+      return "function" in value
+        && typeof value.function === "string"
+        && "arguments" in value
+        && Array.isArray(value.arguments)
+        && value.arguments.every(isFieldDefinition);
+    default:
+      return false;
+  }
+}
+
+function isMathFieldDefinition(value: unknown): value is IMathFieldDefinition {
+  if (!value || typeof value !== "object" || !("kind" in value)) return false;
+  switch (value.kind) {
+    case "field":
+      return "field" in value && typeof value.field === "string";
+    case "value":
+      return "value" in value;
+    case "math":
+      return "oper" in value
+        && isMatchOperation(value.oper)
+        && "field" in value
+        && isMathFieldDefinition(value.field);
+    case "function":
+      return "function" in value
+        && typeof value.function === "string"
+        && "arguments" in value
+        && Array.isArray(value.arguments)
+        && value.arguments.every(isFieldDefinition);
+    default:
+      return false;
+  }
+}
+
+function isMatchOperation(value: unknown): value is MatchOperation {
+  return value === "+" || value === "-" || value === "*" || value === "/" || value === "%"
+    || value === "&" || value === "|";
+}
+
+function expressionToText(expression: IFieldDefinition): string {
+  const formatOperand = (operand: IFieldDefinition) => operand.kind === "group"
+    ? `(${expressionToText(operand)})`
+    : expressionToText(operand);
+
   switch (expression.kind) {
     case "field":
       return expression.field;
     case "value":
-      return `<${expression.value}>`;
-    case "binary": {
-      const [left, right] = expression.arguments;
-      const formatOperand = (operand: QueryExpression) => operand.kind === "binary"
-        ? `(${expressionToText(operand)})`
-        : expressionToText(operand);
-      return `${formatOperand(left)} ${expression.operator} ${formatOperand(right)}`;
-    }
+      return `<${String(expression.value ?? "")}>`;
+    case "math":
+      return `${expression.oper} ${formatOperand(expression.field)}`;
+    case "group":
+      return expression.arguments.map((argument, index) => {
+        if (index === 0) return formatOperand(argument);
+        if (argument.kind === "math")
+          return `${argument.oper} ${formatOperand(argument.field)}`;
+        return `${expression.operator ?? "+"} ${formatOperand(argument)}`;
+      }).join(" ");
     case "function":
       return `${expression.function}[${expression.arguments.map(expressionToText).join(", ")}]`;
   }
@@ -238,47 +307,9 @@ function expressionToText(expression: QueryExpression): string {
 function filterOperandToText(operand: ApiFilterOperand | string): string {
   if (typeof operand === "string") return operand;
 
-  switch (operand.kind) {
-    case "field":
-      return operand.field;
-    case "value":
-      return `<${String(operand.value ?? "")}>`;
-    case "binary": {
-      const [left, right] = operand.arguments;
-      const formatOperand = (argument: QueryExpression) => argument.kind === "binary"
-        ? `(${filterOperandToText(argument)})`
-        : filterOperandToText(argument);
-      return `${formatOperand(left)} ${operand.operator} ${formatOperand(right)}`;
-    }
-    case "function":
-      return `${operand.function}(${operand.arguments.map(filterOperandToText).join(", ")})`;
-  }
-}
-
-function isQueryExpression(value: unknown): value is QueryExpression {
-  if (!value || typeof value !== "object" || !("kind" in value)) return false;
-
-  switch (value.kind) {
-    case "field":
-      return "field" in value && typeof value.field === "string";
-    case "value":
-      return "value" in value && (typeof value.value === "string" || typeof value.value === "number");
-    case "binary":
-      return "operator" in value
-        && (value.operator === "+" || value.operator === "-" || value.operator === "*" || value.operator === "/")
-        && "arguments" in value
-        && Array.isArray(value.arguments)
-        && value.arguments.length === 2
-        && value.arguments.every(isQueryExpression);
-    case "function":
-      return "function" in value
-        && typeof value.function === "string"
-        && "arguments" in value
-        && Array.isArray(value.arguments)
-        && value.arguments.every(isQueryExpression);
-    default:
-      return false;
-  }
+  if (operand.kind === "function")
+    return `${operand.function}(${operand.arguments.map(filterOperandToText).join(", ")})`;
+  return expressionToText(operand);
 }
 
 function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): QueryDefinition {
@@ -288,14 +319,14 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
       if ("filters" in node) return restoreGroup(node);
       const left = node.left ?? node.field;
       const field = left === undefined ? "" : filterOperandToText(left);
-      const fieldExpression = isQueryExpression(left) ? left : undefined;
+      const fieldExpression = isFieldDefinition(left) ? left : undefined;
       const right = node.right;
-      const rightField = right && typeof right === "object" && "kind" in right && right.kind !== "value"
+      const rightField = isFieldDefinition(right) && right.kind !== "value"
         ? filterOperandToText(right)
         : undefined;
       const value = rightField
         ? ""
-        : right && typeof right === "object" && "kind" in right && right.kind === "value"
+        : isFieldDefinition(right) && right.kind === "value"
         ? String(right.value ?? "")
         : "right" in node
           ? String(right ?? "")

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "../../../icon/icon";
-import { MetadataEntity, QueryColumn, QueryDefinition, QueryExpression } from "../query-builder-slice";
+import { IFieldDefinition, MetadataEntity, QueryColumn, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder, { FieldBuilderExpressionOptions } from "../field-builder/field-builder";
 import { formatExpression } from "../field-builder/expression-builder";
 import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
@@ -87,12 +87,12 @@ function getNextCalculationAlias(columns: QueryColumn[], excludedField?: string)
   return `Calculation${suffix}`;
 }
 
-function parseProjectionExpression(text: string, entity: MetadataEntity): QueryExpression | undefined {
+function parseProjectionExpression(text: string, entity: MetadataEntity): IFieldDefinition | undefined {
   const expressionText = text.replace(/\s*\|\s*[A-Za-z_][A-Za-z0-9_]*\s*$/, "").trim();
   const functionMatch = expressionText.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\(([\s\S]*)\)$/);
   if (!functionMatch) return undefined;
 
-  const arguments_ = splitProjectionText(functionMatch[2]).flat().map((argument): QueryExpression => {
+  const arguments_ = splitProjectionText(functionMatch[2]).flat().map((argument): IFieldDefinition => {
     const value = argument.trim();
     const nestedExpression = parseProjectionExpression(value, entity);
     if (nestedExpression) return nestedExpression;
@@ -228,7 +228,7 @@ function FieldCards({
   moveField: (field: string, targetField: string, position: ProjectionDropPosition, targetRowFields: string[]) => void;
   onFieldDragStart: (field: string | null) => void;
   editValue: (field: string, value: string | number) => void;
-  applyExpression: (field: string | undefined, expression: QueryExpression) => void;
+  applyExpression: (field: string | undefined, expression: IFieldDefinition) => void;
   addField: (field: string) => void;
   addValue: (value: string | number) => void;
 }) {
@@ -578,7 +578,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
 
   const addValue = (value: string | number) => {
     const field = `__value__${crypto.randomUUID()}`;
-    const expression: QueryExpression = { kind: "value", value };
+    const expression: IFieldDefinition = { kind: "value", value };
     changeProjection({
       ...definition,
       columns: [...definition.columns, { field, alias: null, expression }],
@@ -592,7 +592,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     changeProjection({ ...definition, columns });
   };
 
-  const applyExpression = (field: string | undefined, expression: QueryExpression) => {
+  const applyExpression = (field: string | undefined, expression: IFieldDefinition) => {
     const outputField = field ?? `__calculated__${crypto.randomUUID()}`;
     const columns = field
       ? definition.columns.map((column) => column.field === outputField

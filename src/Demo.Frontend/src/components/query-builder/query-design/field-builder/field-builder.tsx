@@ -1,6 +1,6 @@
 import { useState } from "react";
 import FieldBox, { resolveEntity } from "./field-box/field-box";
-import { MetadataEntity, QueryExpression } from "../query-builder-slice";
+import { IFieldDefinition, MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../icon/icon";
 import ExpressionBuilder from "./expression-builder";
 import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
@@ -12,8 +12,8 @@ export type FieldBuilderExpressionOptions = {
   functionDefinitions: FunctionDefinition[];
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
-  initialKind?: "binary" | "function";
-  initialExpression?: QueryExpression;
+  initialKind?: "group" | "function";
+  initialExpression?: IFieldDefinition;
 };
 
 type FieldBuilderProps = {
@@ -37,7 +37,7 @@ type FieldBuilderProps = {
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
   expressionBuilder?: FieldBuilderExpressionOptions;
-  onExpressionApply?: (expression: QueryExpression) => void;
+  onExpressionApply?: (expression: IFieldDefinition) => void;
 };
 
 function getFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {

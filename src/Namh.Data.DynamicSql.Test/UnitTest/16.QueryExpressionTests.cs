@@ -59,13 +59,23 @@ public sealed class _16_QueryExpressionTests
             {
               "entity": "Products",
               "projection": [
-                { "field": { "kind": "field", "field": "Name" } },
+                {
+                  "field": {
+                    "kind": "field",
+                    "field": "Name"
+                  }
+                },
                 {
                   "alias": "UnitsSold",
                   "field": {
                     "kind": "function",
                     "function": "SUM",
-                    "arguments": [{ "kind": "field", "field": "InvoiceItems.Quantity" }]
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "InvoiceItems.Quantity"
+                      }
+                    ]
                   }
                 },
                 {
@@ -73,21 +83,35 @@ public sealed class _16_QueryExpressionTests
                   "field": {
                     "kind": "function",
                     "function": "SUM",
-                    "arguments": [{
-                      "kind": "binary",
-                      "operator": "-",
-                      "arguments": [
-                        { "kind": "field", "field": "InvoiceItems.LineTotal" },
-                        {
-                          "kind": "binary",
-                          "operator": "*",
-                          "arguments": [
-                            { "kind": "field", "field": "InvoiceItems.Quantity" },
-                            { "kind": "field", "field": "CostPrice" }
-                          ]
-                        }
-                      ]
-                    }]
+                    "arguments": [
+                      {
+                        "kind": "group",
+                        "arguments": [
+                          {
+                            "kind": "field",
+                            "field": "InvoiceItems.LineTotal"
+                          },
+                          {
+                            "kind": "group",
+                            "arguments": [
+                              {
+                                "kind": "field",
+                                "field": "InvoiceItems.Quantity"
+                              },
+                              {
+                                "oper": "*",
+                                "kind": "math",
+                                "field": {
+                                  "kind": "field",
+                                  "field": "CostPrice"
+                                }
+                              }
+                            ],
+                            "operator": "-"
+                          }
+                        ]
+                      }
+                    ]
                   }
                 },
                 {
@@ -97,65 +121,106 @@ public sealed class _16_QueryExpressionTests
                     "function": "ROUND",
                     "arguments": [
                       {
-                        "kind": "binary",
-                        "operator": "/",
+                        "kind": "group",
                         "arguments": [
                           {
-                            "kind": "binary",
-                            "operator": "*",
+                            "kind": "group",
                             "arguments": [
                               {
                                 "kind": "function",
                                 "function": "SUM",
-                                "arguments": [{
-                                  "kind": "binary",
-                                  "operator": "-",
-                                  "arguments": [
-                                    { "kind": "field", "field": "InvoiceItems.LineTotal" },
-                                    {
-                                      "kind": "binary",
-                                      "operator": "*",
-                                      "arguments": [
-                                        { "kind": "field", "field": "InvoiceItems.Quantity" },
-                                        { "kind": "field", "field": "CostPrice" }
-                                      ]
-                                    }
-                                  ]
-                                }]
+                                "arguments": [
+                                  {
+                                    "kind": "group",
+                                    "arguments": [
+                                      {
+                                        "kind": "field",
+                                        "field": "InvoiceItems.LineTotal"
+                                      },
+                                      {
+                                        "kind": "group",
+                                        "arguments": [
+                                          {
+                                            "kind": "field",
+                                            "field": "InvoiceItems.Quantity"
+                                          },
+                                          {
+                                            "oper": "*",
+                                            "kind": "math",
+                                            "field": {
+                                              "kind": "field",
+                                              "field": "CostPrice"
+                                            }
+                                          }
+                                        ],
+                                        "operator": "-"
+                                      }
+                                    ]
+                                  }
+                                ]
                               },
-                              { "kind": "value", "value": 100 }
+                              {
+                                "oper": "*",
+                                "kind": "math",
+                                "field": {
+                                  "kind": "value",
+                                  "value": 100
+                                }
+                              }
                             ]
                           },
                           {
-                            "kind": "function",
-                            "function": "NULLIF",
-                            "arguments": [
-                              {
-                                "kind": "function",
-                                "function": "SUM",
-                                "arguments": [{ "kind": "field", "field": "InvoiceItems.LineTotal" }]
-                              },
-                              { "kind": "value", "value": 0 }
-                            ]
+                            "oper": "/",
+                            "kind": "math",
+                            "field": {
+                              "kind": "function",
+                              "function": "NULLIF",
+                              "arguments": [
+                                {
+                                  "kind": "function",
+                                  "function": "SUM",
+                                  "arguments": [
+                                    {
+                                      "kind": "field",
+                                      "field": "InvoiceItems.LineTotal"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "kind": "value",
+                                  "value": 0
+                                }
+                              ]
+                            }
                           }
                         ]
                       },
-                      { "kind": "value", "value": 2 }
+                      {
+                        "kind": "value",
+                        "value": 2
+                      }
                     ]
                   }
                 }
               ],
               "filter": {
                 "logicalOperation": 0,
-                "filters": [{
-                  "logicalOperator": 0,
-                  "field": "InvoiceItems.Invoice.Status",
-                  "operation": 0,
-                  "value": "Paid",
-                  "parameterized": false
-                }]
+                "filters": [
+                  {
+                    "logicalOperator": 0,
+                    "field": "InvoiceItems.Invoice.Status",
+                    "operation": 0,
+                    "value": "Paid",
+                    "parameterized": false
+                  }
+                ]
               },
-              "sorts": [{ "field": "GrossProfit", "direction": 1 }]
+              "sorts": [
+                {
+                  "field": "GrossProfit",
+                  "direction": 1
+                }
+              ]
             }
             """;
 
@@ -275,6 +340,38 @@ public sealed class _16_QueryExpressionTests
 
         Assert.That(sql.CommandText, Does.Match(
             @"t0\.""Id"" \+ \(t0\.""CostPrice"" \* t0\.""Id""\)\s*\)\s*-\s*t0\.""CostPrice"""));
+    }
+
+    [Test]
+    public void ProjectionSerializationPreservesOriginalStructureAndNamingPolicy()
+    {
+        var projection = new ProjectionDefinition(new FieldDefinition("Name"), "ProductName");
+
+        var defaultJson = JsonSerializer.Serialize(projection);
+        var webJson = JsonSerializer.Serialize(
+            projection,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.That(defaultJson, Is.EqualTo(
+            """{"Field":{"kind":"field","field":"Name"},"Alias":"ProductName"}"""));
+        Assert.That(webJson, Is.EqualTo(
+            """{"field":{"kind":"field","field":"Name"},"alias":"ProductName"}"""));
+    }
+
+    [Test]
+    public void MathFieldSerializationUsesItsRawStructure()
+    {
+        var projection = new ProjectionDefinition(
+            new MathFieldDefinition(MatchOperation.Multiply, new FieldDefinition("CostPrice")),
+            "Calculated");
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
+        var serialized = JsonSerializer.Serialize(projection, options);
+
+        Assert.That(serialized, Is.EqualTo(
+            """{"field":{"oper":2,"field":{"kind":"field","field":"CostPrice"}},"alias":"Calculated"}"""));
+        var roundTripped = JsonSerializer.Deserialize<ProjectionDefinition>(serialized, options);
+        Assert.That(roundTripped, Is.EqualTo(projection));
     }
 
     [Test]

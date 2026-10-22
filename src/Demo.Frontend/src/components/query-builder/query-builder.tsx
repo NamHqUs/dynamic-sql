@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
-import { createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
+import { createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, IFieldDefinition, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import SavedQueryList from "./saved-query-list/saved-query-list";
@@ -191,13 +191,16 @@ function isProjectionColumnAvailable(column: string, entity: MetadataEntity, met
     && isAvailableAggregateField(pathAggregate[2], pathAggregate[3], aggregateOwner, metadata));
 }
 
-function isExpressionAvailable(expression: QueryExpression, entity: MetadataEntity, metadata: MetadataEntity[]): boolean {
+function isExpressionAvailable(expression: IFieldDefinition, entity: MetadataEntity, metadata: MetadataEntity[]): boolean {
   switch (expression.kind) {
     case "field":
       return isAvailableFieldPath(entity, metadata, expression.field);
     case "value":
-      return typeof expression.value === "string" || Number.isFinite(expression.value);
-    case "binary":
+      return expression.value === null || typeof expression.value === "string" || typeof expression.value === "boolean"
+        || (typeof expression.value === "number" && Number.isFinite(expression.value));
+    case "math":
+      return isExpressionAvailable(expression.field, entity, metadata);
+    case "group":
       return expression.arguments.every((argument) => isExpressionAvailable(argument, entity, metadata));
     case "function":
       return expression.arguments.every((argument) =>

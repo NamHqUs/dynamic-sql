@@ -1,7 +1,7 @@
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Icon from "../../../icon/icon";
-import { FilterOperatorDefinition, MetadataEntity, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
+import { FilterOperatorDefinition, IFieldDefinition, MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
 import { resolveEntity } from "../field-builder/field-box/field-box";
 import { formatExpression } from "../field-builder/expression-builder";
@@ -567,11 +567,11 @@ type FilterRowProps = {
 
 function FilterRow({ filter, first, path, metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, entity, onChange, onRemove, onGroup, onAdd, onAddField, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
   const update = (changes: Partial<QueryFilterItem>) => onChange({ ...filter, ...changes });
-  const fieldDataType = filter.fieldExpression?.kind === "binary"
+  const fieldDataType = filter.fieldExpression?.kind === "group" || filter.fieldExpression?.kind === "math"
     ? "Number"
     : getFilterFieldDataType(entity, metadata, filter.field);
   const operatorOptions = getOperatorOptions(operators, fieldDataType);
-  const initialExpression: QueryExpression | undefined = filter.fieldExpression
+  const initialExpression: IFieldDefinition | undefined = filter.fieldExpression
     ?? (filter.field ? { kind: "field", field: filter.field } : undefined);
   const isPreview = (position: DragPosition) => dragPreview?.position === position && isSamePath(dragPreview.path, path);
   const previewPosition = useRef<DragPosition>();
@@ -661,7 +661,10 @@ function FilterRow({ filter, first, path, metadata, functionDefinitions, functio
           onExpressionApply={(expression) => {
             update({ field: formatExpression(expression), fieldExpression: expression });
           }}
-          initialConstantValue={filter.fieldExpression?.kind === "value" ? filter.fieldExpression.value : undefined}
+          initialConstantValue={filter.fieldExpression?.kind === "value"
+            && (typeof filter.fieldExpression.value === "string" || typeof filter.fieldExpression.value === "number")
+            ? filter.fieldExpression.value
+            : undefined}
           onValueSelect={(value) => update({ field: `<${value}>`, fieldExpression: { kind: "value", value } })}
           onChange={(field) => {
             const dataType = getFilterFieldDataType(entity, metadata, field);

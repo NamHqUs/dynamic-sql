@@ -51,12 +51,10 @@
           "function": "Round",
           "arguments": [
             {
-              "kind": "binary",
-              "operator": "/",
+              "kind": "group",
               "arguments": [
                 {
-                  "kind": "binary",
-                  "operator": "*",
+                  "kind": "group",
                   "arguments": [
                     {
                       "kind": "function",
@@ -69,30 +67,38 @@
                       ]
                     },
                     {
-                      "kind": "value",
-                      "value": 100
+                      "oper": "*",
+                      "kind": "math",
+                      "field": {
+                        "kind": "value",
+                        "value": 100
+                      }
                     }
                   ]
                 },
                 {
-                  "kind": "function",
-                  "function": "NullIf",
-                  "arguments": [
-                    {
-                      "kind": "function",
-                      "function": "Sum",
-                      "arguments": [
-                        {
-                          "kind": "field",
-                          "field": "TotalAmount"
-                        }
-                      ]
-                    },
-                    {
-                      "kind": "value",
-                      "value": 0
-                    }
-                  ]
+                  "oper": "/",
+                  "kind": "math",
+                  "field": {
+                    "kind": "function",
+                    "function": "NullIf",
+                    "arguments": [
+                      {
+                        "kind": "function",
+                        "function": "Sum",
+                        "arguments": [
+                          {
+                            "kind": "field",
+                            "field": "TotalAmount"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "value",
+                        "value": 0
+                      }
+                    ]
+                  }
                 }
               ]
             },

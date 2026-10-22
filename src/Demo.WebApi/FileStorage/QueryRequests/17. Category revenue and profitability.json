@@ -28,26 +28,29 @@
           "function": "Sum",
           "arguments": [
             {
-              "kind": "binary",
-              "operator": "-",
+              "kind": "group",
               "arguments": [
                 {
                   "kind": "field",
                   "field": "InvoiceItems.LineTotal"
                 },
                 {
-                  "kind": "binary",
-                  "operator": "*",
+                  "kind": "group",
                   "arguments": [
                     {
                       "kind": "field",
                       "field": "InvoiceItems.Quantity"
                     },
                     {
-                      "kind": "field",
-                      "field": "CostPrice"
+                      "oper": "*",
+                      "kind": "math",
+                      "field": {
+                        "kind": "field",
+                        "field": "CostPrice"
+                      }
                     }
-                  ]
+                  ],
+                  "operator": "-"
                 }
               ]
             }

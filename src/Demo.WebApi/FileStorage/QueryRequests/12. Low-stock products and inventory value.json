@@ -32,16 +32,19 @@
       },
       {
         "field": {
-          "kind": "binary",
-          "operator": "*",
+          "kind": "group",
           "arguments": [
             {
               "kind": "field",
               "field": "StockQuantity"
             },
             {
-              "kind": "field",
-              "field": "CostPrice"
+              "oper": "*",
+              "kind": "math",
+              "field": {
+                "kind": "field",
+                "field": "CostPrice"
+              }
             }
           ]
         },

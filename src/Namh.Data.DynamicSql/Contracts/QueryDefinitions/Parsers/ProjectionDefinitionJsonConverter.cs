@@ -30,23 +30,20 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
     }
 
     public override void Write(Utf8JsonWriter writer, ProjectionDefinition value, JsonSerializerOptions options)
-    {
-        writer.WriteStartObject();
-        writer.WritePropertyName("field");
-        WriteField(writer, value.Field);
-        if (value.Alias is null)
-            writer.WriteNull("alias");
-        else
-            writer.WriteString("alias", value.Alias);
-        writer.WriteEndObject();
-    }
+        => JsonSerializer.Serialize(writer, new { value.Field, value.Alias }, options);
 
     internal static IFieldDefinition ParseField(JsonElement element)
     {
         if (element.ValueKind == JsonValueKind.String)
             return FieldDefinitionParser.Parse(element.GetString()!);
-        if (element.ValueKind != JsonValueKind.Object ||
-            !TryGetProperty(element, "kind", out var kindElement) ||
+        if (element.ValueKind != JsonValueKind.Object)
+            throw new JsonException("A projection expression requires a kind.");
+
+        if (TryGetProperty(element, "oper", out _) &&
+            TryGetProperty(element, "field", out _))
+            return ParseMathField(element);
+
+        if (!TryGetProperty(element, "kind", out var kindElement) ||
             kindElement.ValueKind != JsonValueKind.String)
             throw new JsonException("A projection expression requires a kind.");
 
@@ -54,68 +51,50 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         {
             "field" => new FieldDefinition(ReadString(element, "field")),
             "value" => new ConstFieldDefinition(ReadValue(element, "value")),
-            "binary" => ParseBinary(element),
-            "binary-term" => ParseBinaryTerm(element),
+            "math" => ParseMathField(element),
             "group" => ParseGroup(element),
             "function" => ParseFunction(element),
             _ => throw new JsonException($"Invalid projection expression kind [{kindElement.GetString()}].")
         };
     }
 
-    private static IFieldDefinition ParseBinary(JsonElement element)
+    private static MathFieldDefinition ParseMathField(JsonElement element)
     {
-        MatchOperation operation;
-        try
-        {
-            operation = MatchOperationExtensions.ParseArithmetic(ReadString(element, "operator"));
-        }
-        catch (FormatException exception)
-        {
-            throw new JsonException("A binary projection requires a supported arithmetic operator.", exception);
-        }
-        var arguments = ReadArguments(element);
-        if (arguments.Length != 2)
-            throw new JsonException("A binary projection requires exactly two arguments.");
+        if (!TryGetProperty(element, "oper", out var operationElement) ||
+            !TryGetProperty(element, "field", out var fieldElement))
+            throw new JsonException("A math field requires an operator and field.");
 
-        return CreateBinaryGroup(arguments[0], operation, arguments[1]);
-    }
-
-    private static IFieldDefinition ParseBinaryTerm(JsonElement element)
-    {
-        MatchOperation operation;
-        try
+        var operation = operationElement.ValueKind switch
         {
-            operation = MatchOperationExtensions.ParseArithmetic(ReadString(element, "operator"));
-        }
-        catch (FormatException exception)
-        {
-            throw new JsonException("A binary term requires a supported arithmetic operator.", exception);
-        }
+            JsonValueKind.Number when operationElement.TryGetInt32(out var number) &&
+                Enum.IsDefined(typeof(MatchOperation), number) => (MatchOperation)number,
+            JsonValueKind.String => ParseMathOperation(operationElement.GetString()!),
+            _ => throw new JsonException("A math field operator is invalid.")
+        };
+        if (!operation.IsArithmetic())
+            throw new JsonException("A math field requires a supported arithmetic operator.");
 
-        if (!TryGetProperty(element, "field", out var fieldElement))
-            throw new JsonException("A binary term requires a field expression.");
         var field = ParseField(fieldElement);
-        return field is GroupFieldDefintion group
-            ? group with { Oper = operation }
-            : field is IMathFieldDefinition mathField
-                ? new MathFieldDefinition(operation, mathField)
-                : throw new JsonException("A binary term requires a math-compatible field expression.");
+        return field is IMathFieldDefinition mathField
+            ? new MathFieldDefinition(operation, mathField)
+            : throw new JsonException("A math field requires a math-compatible field expression.");
     }
 
-    private static GroupFieldDefintion CreateBinaryGroup(
-        IFieldDefinition left,
-        MatchOperation operation,
-        IFieldDefinition right)
-        => new(
-            MatchOperation.Add,
-            [
-                left,
-                right is GroupFieldDefintion group
-                    ? group with { Oper = operation }
-                    : right is IMathFieldDefinition mathField
-                        ? new MathFieldDefinition(operation, mathField)
-                        : throw new JsonException("A binary projection requires a math-compatible field expression.")
-            ]);
+    private static MatchOperation ParseMathOperation(string value)
+    {
+        try
+        {
+            return MatchOperationExtensions.ParseArithmetic(value);
+        }
+        catch (FormatException)
+        {
+            if (Enum.TryParse<MatchOperation>(value, ignoreCase: true, out var operation) &&
+                operation.IsArithmetic())
+                return operation;
+
+            throw new JsonException("A math field requires a supported arithmetic operator.");
+        }
+    }
 
     private static GroupFieldDefintion ParseGroup(JsonElement element)
     {
@@ -133,8 +112,49 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
                 throw new JsonException("A grouped projection requires a supported operator.", exception);
             }
         }
+        else if (TryGetProperty(element, "oper", out var operationElement))
+        {
+            operation = ParseGroupOperation(operationElement);
+        }
 
-        return new GroupFieldDefintion(operation, ReadArguments(element));
+        var fields = TryGetProperty(element, "arguments", out var arguments)
+            ? arguments
+            : TryGetProperty(element, "fields", out var legacyFields)
+                ? legacyFields
+                : throw new JsonException("A projection group requires an argument array.");
+        if (fields.ValueKind != JsonValueKind.Array)
+            throw new JsonException("A projection group requires an argument array.");
+
+        return new GroupFieldDefintion(
+            operation,
+            fields.EnumerateArray().Select(ParseField).ToArray());
+    }
+
+    private static MatchOperation ParseGroupOperation(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.Number &&
+            element.TryGetInt32(out var number) &&
+            Enum.IsDefined(typeof(MatchOperation), number))
+            return (MatchOperation)number;
+
+        if (element.ValueKind == JsonValueKind.String)
+        {
+            var value = element.GetString()!;
+            if (Enum.TryParse<MatchOperation>(value, ignoreCase: true, out var operation) &&
+                Enum.IsDefined(typeof(MatchOperation), operation))
+                return operation;
+
+            try
+            {
+                return MatchOperationExtensions.Parse(value);
+            }
+            catch (FormatException exception)
+            {
+                throw new JsonException("A projection group requires a supported operator.", exception);
+            }
+        }
+
+        throw new JsonException("A grouped projection operator is invalid.");
     }
 
     private static IFieldDefinition ParseFunction(JsonElement element)
@@ -144,7 +164,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
     {
         if (!TryGetProperty(element, "arguments", out var arguments) ||
             arguments.ValueKind != JsonValueKind.Array)
-            throw new JsonException("A projection function or binary expression requires an argument array.");
+            throw new JsonException("A projection function requires an argument array.");
         return arguments.EnumerateArray().Select(ParseField).ToArray();
     }
 
@@ -174,37 +194,69 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         => element.TryGetProperty(name, out value) ||
             element.TryGetProperty(char.ToUpperInvariant(name[0]) + name[1..], out value);
 
-    internal static void WriteField(Utf8JsonWriter writer, IFieldDefinition field)
+    internal static void WriteField(
+        Utf8JsonWriter writer,
+        IFieldDefinition field,
+        JsonSerializerOptions options,
+        bool isRoot = false)
     {
+        if (field is MathFieldDefinition mathField)
+        {
+            if (isRoot)
+            {
+                JsonSerializer.Serialize(
+                    writer,
+                    new { mathField.Oper, Field = (IFieldDefinition)mathField.Field },
+                    options);
+                return;
+            }
+
+            writer.WriteStartObject();
+            writer.WritePropertyName("oper");
+            JsonSerializer.Serialize(writer, mathField.Oper, options);
+            writer.WriteString("kind", "math");
+            writer.WritePropertyName("field");
+            WriteField(writer, (IFieldDefinition)mathField.Field, options);
+            writer.WriteEndObject();
+            return;
+        }
+
+        if (field is GroupFieldDefintion group)
+        {
+            writer.WriteStartObject();
+            if (isRoot)
+            {
+                writer.WritePropertyName("oper");
+                JsonSerializer.Serialize(writer, group.Oper, options);
+                writer.WriteString("kind", "group");
+                writer.WritePropertyName("fields");
+            }
+            else
+            {
+                writer.WriteString("kind", "group");
+                if (group.Oper != MatchOperation.Add)
+                    writer.WriteString("operator", group.Oper.ToSymbol());
+                writer.WritePropertyName("arguments");
+            }
+
+            writer.WriteStartArray();
+            foreach (var item in group.Fields)
+                WriteField(writer, item, options);
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+            return;
+        }
+
         writer.WriteStartObject();
-        WriteFieldExpression(writer, field);
+        WriteFieldExpression(writer, field, options);
         writer.WriteEndObject();
     }
 
-    private static void WriteFieldExpression(Utf8JsonWriter writer, IFieldDefinition field)
+    private static void WriteFieldExpression(
+        Utf8JsonWriter writer,
+        IFieldDefinition field,
+        JsonSerializerOptions options)
     {
-        if (field is GroupFieldDefintion group)
-        {
-            writer.WriteString("kind", "group");
-            if (group.Oper != MatchOperation.Add)
-                writer.WriteString("operator", group.Oper.ToSymbol());
-            writer.WritePropertyName("arguments");
-            writer.WriteStartArray();
-            foreach (var item in group.Fields)
-                WriteField(writer, item);
-            writer.WriteEndArray();
-            return;
-        }
-
-        if (field is MathFieldDefinition mathField)
-        {
-            writer.WriteString("kind", "binary-term");
-            writer.WriteString("operator", mathField.Oper.ToSymbol());
-            writer.WritePropertyName("field");
-            WriteField(writer, mathField.Field);
-            return;
-        }
-
         switch (field)
         {
             case FieldDefinition fieldDto:
@@ -222,7 +274,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
                 writer.WritePropertyName("arguments");
                 writer.WriteStartArray();
                 foreach (var argument in function.Arguments)
-                    WriteField(writer, argument);
+                    WriteField(writer, argument, options);
                 writer.WriteEndArray();
                 return;
             default:
