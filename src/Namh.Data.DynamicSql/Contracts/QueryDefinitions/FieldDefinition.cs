@@ -10,20 +10,22 @@ public interface IFieldDefinition
     string ToText(Dictionary<string, object>? tags = null);
 }
 
-public record FieldDefinition(string FieldName) : IFieldDefinition
+public interface IMathFieldDefinition : IFieldDefinition { }
+
+public record FieldDefinition(string FieldName) : IMathFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null) => FieldName;
 }
 
-public record ConstFieldDefinition(object? Value) : IFieldDefinition
+public record ConstFieldDefinition(object? Value) : IMathFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null) => $"<{Value}>";
 }
-public record BinaryFieldDefinition(MatchOperation Oper, IFieldDefinition Field) : IFieldDefinition
+public record MathFieldDefinition(MatchOperation Oper, IMathFieldDefinition Field) : IMathFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null) => $" {Oper.ToSymbol()} {Field.ToText(tags)}";
 }
-public record FunctionFieldDefinition(string FunctionName, IFieldDefinition[] Arguments) : IFieldDefinition
+public record FunctionFieldDefinition(string FunctionName, IFieldDefinition[] Arguments) : IMathFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null) => $"{FunctionName}({string.Join(", ", Arguments.Select(a => a.ToText(tags)))})";
 }
@@ -46,7 +48,7 @@ public record GroupFieldDefintion(MatchOperation Oper, IFieldDefinition[] Fields
 
         var text = string.Join("", Fields.Select((field, index) => field switch
         {
-            BinaryFieldDefinition => field.ToText(tags),
+            MathFieldDefinition => field.ToText(tags),
             GroupFieldDefintion nested when index > 0
                 => $" {nested.Oper.ToSymbol()} {nested.ToText(tags)}",
             _ when index > 0 => $" {Oper.ToSymbol()} {field.ToText(tags)}",

@@ -97,7 +97,9 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         var field = ParseField(fieldElement);
         return field is GroupFieldDefintion group
             ? group with { Oper = operation }
-            : new BinaryFieldDefinition(operation, field);
+            : field is IMathFieldDefinition mathField
+                ? new MathFieldDefinition(operation, mathField)
+                : throw new JsonException("A binary term requires a math-compatible field expression.");
     }
 
     private static GroupFieldDefintion CreateBinaryGroup(
@@ -110,7 +112,9 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
                 left,
                 right is GroupFieldDefintion group
                     ? group with { Oper = operation }
-                    : new BinaryFieldDefinition(operation, right)
+                    : right is IMathFieldDefinition mathField
+                        ? new MathFieldDefinition(operation, mathField)
+                        : throw new JsonException("A binary projection requires a math-compatible field expression.")
             ]);
 
     private static GroupFieldDefintion ParseGroup(JsonElement element)
@@ -192,18 +196,12 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
             return;
         }
 
-        if (field is BinaryFieldDefinition binary)
+        if (field is MathFieldDefinition mathField)
         {
-            if (binary.Field is GroupFieldDefintion operatedGroup)
-            {
-                WriteFieldExpression(writer, operatedGroup with { Oper = binary.Oper });
-                return;
-            }
-
             writer.WriteString("kind", "binary-term");
-            writer.WriteString("operator", binary.Oper.ToSymbol());
+            writer.WriteString("operator", mathField.Oper.ToSymbol());
             writer.WritePropertyName("field");
-            WriteField(writer, binary.Field);
+            WriteField(writer, mathField.Field);
             return;
         }
 

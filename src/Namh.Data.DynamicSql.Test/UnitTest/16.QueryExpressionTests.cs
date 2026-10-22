@@ -266,8 +266,8 @@ public sealed class _16_QueryExpressionTests
             ?? throw new InvalidOperationException("The serialized query request did not produce a definition.");
         var group = (GroupFieldDefintion)roundTripped.Projection[0].Field;
         Assert.That(group.Fields[1], Is.InstanceOf<GroupFieldDefintion>());
-        Assert.That(group.Fields[1], Is.Not.InstanceOf<BinaryFieldDefinition>());
-        Assert.That(group.Fields[2], Is.EqualTo(new BinaryFieldDefinition(
+        Assert.That(group.Fields[1], Is.Not.InstanceOf<MathFieldDefinition>());
+        Assert.That(group.Fields[2], Is.EqualTo(new MathFieldDefinition(
             MatchOperation.Subtract,
             new FieldDefinition("CostPrice"))));
 

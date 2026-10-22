@@ -118,12 +118,10 @@ class QueryContext(
         {
             var (operation, operand) = fields[index] switch
             {
-                BinaryFieldDefinition binary => (binary.Oper, binary.Field),
+                MathFieldDefinition mathField => (mathField.Oper, mathField.Field),
                 GroupFieldDefintion nestedGroup => (nestedGroup.Oper, nestedGroup),
                 _ => (group.Oper, fields[index])
             };
-            if (operand is GroupFieldDefintion && fields[index] is BinaryFieldDefinition)
-                throw new FormatException("A binary field cannot wrap a grouped projection; set the group's operator instead.");
             if (!operation.IsArithmetic())
                 throw new FormatException($"Unsupported grouped projection operator [{operation}].");
 

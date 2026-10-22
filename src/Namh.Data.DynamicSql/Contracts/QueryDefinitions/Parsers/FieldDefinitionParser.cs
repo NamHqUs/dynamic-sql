@@ -107,7 +107,9 @@ internal static class FieldDefinitionParser
             var operand = ParseMultiplicativeSequence(parts, operatorIndex + 1, termEnd);
             fields.Add(operand is GroupFieldDefintion group
                 ? group with { Oper = operation }
-                : new BinaryFieldDefinition(operation, operand));
+                : operand is IMathFieldDefinition mathOperand
+                    ? new MathFieldDefinition(operation, mathOperand)
+                    : throw new FormatException("A mathematical operator requires a math-compatible operand."));
         }
 
         return new GroupFieldDefintion(MatchOperation.Add, fields.ToArray());
@@ -125,7 +127,9 @@ internal static class FieldDefinitionParser
             var operand = ParseAtom(parts[index + 1]);
             fields.Add(operand is GroupFieldDefintion group
                 ? group with { Oper = operation }
-                : new BinaryFieldDefinition(operation, operand));
+                : operand is IMathFieldDefinition mathOperand
+                    ? new MathFieldDefinition(operation, mathOperand)
+                    : throw new FormatException("A mathematical operator requires a math-compatible operand."));
         }
 
         return fields.Count == 1

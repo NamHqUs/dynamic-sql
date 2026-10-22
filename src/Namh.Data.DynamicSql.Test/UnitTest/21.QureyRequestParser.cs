@@ -30,7 +30,7 @@ internal class _21_QureyRequestParser : TestBase
         var expectedField = new FunctionFieldDefinition("Round", [
             new GroupFieldDefintion( [
                     new FieldDefinition("Id"),
-                    new BinaryFieldDefinition(MatchOperation.Add, new ConstFieldDefinition(2))
+                    new MathFieldDefinition(MatchOperation.Add, new ConstFieldDefinition(2))
             ])
         ]);
 
@@ -48,7 +48,7 @@ internal class _21_QureyRequestParser : TestBase
             new FunctionFieldDefinition("Sum", [
                 new GroupFieldDefintion( [
                     new FieldDefinition("Id"),
-                    new BinaryFieldDefinition(MatchOperation.Add, new FieldDefinition("Age"))
+                    new MathFieldDefinition(MatchOperation.Add, new FieldDefinition("Age"))
                 ])
             ]),
             new ConstFieldDefinition(2)
@@ -74,7 +74,7 @@ internal class _21_QureyRequestParser : TestBase
 
         var expectedField = new GroupFieldDefintion([
                 new FieldDefinition("Id"),
-                new BinaryFieldDefinition(MatchOperation.Add, new FieldDefinition("Age"))
+                new MathFieldDefinition(MatchOperation.Add, new FieldDefinition("Age"))
             ]);
 
         Assert.That(field.ToText(), Is.EqualTo(text));
@@ -91,7 +91,7 @@ internal class _21_QureyRequestParser : TestBase
                 new FieldDefinition("Id"),
                 new GroupFieldDefintion(MatchOperation.Add, [
                     new FieldDefinition("Age"),
-                    new BinaryFieldDefinition(MatchOperation.Multiply, new FunctionFieldDefinition("Sum", [
+                    new MathFieldDefinition(MatchOperation.Multiply, new FunctionFieldDefinition("Sum", [
                         new FieldDefinition("Salary")
                     ]))
                 ])
@@ -111,9 +111,9 @@ internal class _21_QureyRequestParser : TestBase
             case (ConstFieldDefinition expectedConstraint, ConstFieldDefinition actualConstraint):
                 Assert.That(actualConstraint.Value, Is.EqualTo(expectedConstraint.Value));
                 break;
-            case (BinaryFieldDefinition expectedBinary, BinaryFieldDefinition actualBinary):
-                Assert.That(actualBinary.Oper, Is.EqualTo(expectedBinary.Oper));
-                AssertEquivalent(expectedBinary.Field, actualBinary.Field);
+            case (MathFieldDefinition expectedMathField, MathFieldDefinition actualMathField):
+                Assert.That(actualMathField.Oper, Is.EqualTo(expectedMathField.Oper));
+                AssertEquivalent(expectedMathField.Field, actualMathField.Field);
                 break;
             case (FunctionFieldDefinition expectedFunction, FunctionFieldDefinition actualFunction):
                 Assert.That(actualFunction.FunctionName, Is.EqualTo(expectedFunction.FunctionName));
