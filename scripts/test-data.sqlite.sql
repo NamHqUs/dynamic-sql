@@ -1,4 +1,4 @@
-CREATE TABLE dbo.[User] (
+CREATE TABLE [User] (
     [Id] INTEGER PRIMARY KEY,
     [ManagerId] INTEGER,
     [SchoolId] INTEGER,
@@ -8,13 +8,13 @@ CREATE TABLE dbo.[User] (
     [IsMale] INTEGER
 );
 
-CREATE TABLE dbo.[School] (
+CREATE TABLE [School] (
     [Id] INTEGER PRIMARY KEY,
     [Name] TEXT,
     [Address] TEXT
 );
 
-INSERT INTO dbo.[User] ([Id], [ManagerId], [SchoolId], [Name], [Age], [Birthday], [IsMale]) VALUES
+INSERT INTO [User] ([Id], [ManagerId], [SchoolId], [Name], [Age], [Birthday], [IsMale]) VALUES
     (1, NULL, 1, 'Alice', 45, '1993-01-01', 0),
     (2, 1, 1, 'Bob', 31, '1998-02-02', 1),
     (3, 1, 2, 'Charlie', 28, '1995-03-03', 1),
@@ -22,7 +22,7 @@ INSERT INTO dbo.[User] ([Id], [ManagerId], [SchoolId], [Name], [Age], [Birthday]
     (5, 4, 3, 'Eve', 22, '2001-05-05', 0),
     (6, 4, 3, 'Frank', 27, '1996-06-06', 1);
 
-INSERT INTO dbo.[School] ([Id], [Name], [Address]) VALUES
+INSERT INTO [School] ([Id], [Name], [Address]) VALUES
     (1, 'School A', 'Address A'),
     (2, 'School B', 'Address B'),
     (3, 'School C', 'Address C'),

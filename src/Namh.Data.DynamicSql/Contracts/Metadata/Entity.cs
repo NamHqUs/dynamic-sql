@@ -33,5 +33,5 @@ public record Entity
             ?? throw new RelationNotFoundException(Name, relationName);
 
     public override string ToString()
-        => string.Equals(RawSql, Name, StringComparison.Ordinal) ? $"dbo.[{Name}]" : RawSql;
+        => $"{Name}:{RawSql}";
 }

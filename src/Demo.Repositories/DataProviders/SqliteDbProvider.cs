@@ -27,6 +27,9 @@ public class SqliteDbProvider : DbProviderBase
     protected override string? SqlScriptCheckIfDbExists
         => "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'Customers')";
 
+    protected override string SqlGetTableNames
+        => "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name;";
+
     protected override IDbConnection CreateDbConnection()
     {
         if (_isInMemory)

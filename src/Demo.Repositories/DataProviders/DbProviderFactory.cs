@@ -14,10 +14,9 @@ public enum DbServerType
 
 public sealed class DbConnectionFactory : IDbConnectionFactory
 {
-    const string FOLDER_NAME = "DbScripts";
     private readonly DbProviderBase _dbProvider;
 
-    public DbConnectionFactory(IConfiguration configuration, FilePathResolver filePathResolver)
+    public DbConnectionFactory(IConfiguration configuration)
     {
         if (!Enum.TryParse<DbServerType>(configuration["DbServerType"], ignoreCase: true, out var dbServerType))
             throw new InvalidOperationException("DbServerType must be Sqlite, SqlServer, or Postgres.");
@@ -25,16 +24,22 @@ public sealed class DbConnectionFactory : IDbConnectionFactory
         var connectionString = configuration.GetConnectionString(dbServerType.ToString())
             ?? throw new InvalidOperationException($"Connection string '{dbServerType}' is required.");
 
-        var path = filePathResolver.GetBuiltinStoreFolder(FOLDER_NAME);
+        var path = configuration["DbScriptsPath"] ?? throw new InvalidOperationException("DbScriptsPath is required in the configuration.");
+        path = new DirectoryInfo(path).FullName;
+
+        string[] getPaths(params string[] paths) =>
+           paths.Select(p => Path.Combine(path, p)).ToArray();
 
         _dbProvider = dbServerType switch
         {
-            DbServerType.Sqlite => new SqliteDbProvider(connectionString, [Path.Combine(path, "db-scripts.sqlite.sql")]),
-            DbServerType.SqlServer => new SqlServerDbProvider(connectionString, [Path.Combine(path, "db-scripts.sqlserver.sql")]),
-            DbServerType.Postgres => new PostgresDbProvider(connectionString, [Path.Combine(path, "db-scripts.postgres.sql")]),
+            DbServerType.Sqlite => new SqliteDbProvider(connectionString, getPaths("sale-demo.sqlite.sql", "test-data.sqlite.sql")),
+            DbServerType.SqlServer => new SqlServerDbProvider(connectionString, getPaths("sale-demo.sqlserver.sql", "test-data.sqlserver.sql")),
+            DbServerType.Postgres => new PostgresDbProvider(connectionString, getPaths("sale-demo.postgres.sql", "test-data.postgres.sql")),
             _ => throw new ArgumentOutOfRangeException(nameof(dbServerType), dbServerType, null)
         };
     }
 
     public IDbConnection CreateConnection() => _dbProvider.GetDbConnection();
+    public string[] GetTableNames() => _dbProvider.GetTableNames();
+    public string QuoteIdentifier(string identifier) => _dbProvider.QuoteIdentifier(identifier);
 }

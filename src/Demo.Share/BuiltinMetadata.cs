@@ -4,7 +4,13 @@ namespace Demo.Share;
 
 public class BuiltinMetadata
 {
-    public static IReadOnlyList<Entity> DefaultMetadata =
+    public static IReadOnlyList<Entity> DefaultMetadata { get; } 
+
+    static BuiltinMetadata()
+    {
+        DefaultMetadata = UnitTestData().Concat(SaleDemoData()).ToList();
+    }
+    private static IReadOnlyList<Entity> SaleDemoData() =>
     [
         new(
             Name: "Customers",
@@ -61,5 +67,71 @@ public class BuiltinMetadata
                 new("Invoice", "Invoices", RelationType.Lookup, [new("InvoiceId", "Id")]),
                 new("Product", "Products", RelationType.Lookup, [new("ProductId", "Id")])
             ])
+    ];
+
+    private static List<Entity> UnitTestData() =>
+    [
+        new(
+            Name: "School",
+            Fields:
+            [
+                new("Name"),
+            ],
+            Relations: [
+                new(
+                    Name : "Students",
+                    RelatedEntity : "Student",
+                    Type : RelationType.Collection,
+                    RelatedKeys : [
+                        new("Id", "SchoolId")
+                    ]
+                ),
+                new(
+                    Name : "Teachers",
+                    RelatedEntity : "Teacher",
+                    Type : RelationType.Collection,
+                    RelatedKeys : [
+                        new("Id", "SchoolId")
+                    ]
+                )
+            ]),
+
+        new(
+            Name : "User",
+            Fields : [
+                new("Id"),
+                new("Name"),
+                //new("ManagerId"),
+                //new("SchoolId"),
+                new("Age"),
+                new("Birthday"),
+                new("IsMale"),
+                new("TotalMembers", FieldType: FieldType.Aggregate) { RawSql ="Count(*)" },
+                new("TotalAges", FieldType: FieldType.Aggregate) { RawSql ="Sum(@Age)" },
+            ],
+
+            Relations : [
+                new Relation(
+                    Name : "Manager",
+                    RelatedEntity : "User",
+                    Type : RelationType.Lookup,
+                    RelatedKeys : [
+                        new("ManagerId", "Id")
+                    ]),
+                new(
+                    Name : "Members",
+                    RelatedEntity : "User",
+                    Type : RelationType.Collection,
+                    RelatedKeys : [
+                        new("Id", "ManagerId")
+                    ]),
+                new(
+                    Name : "MySchool",
+                    RelatedEntity : "School",
+                    Type : RelationType.Lookup,
+                    RelatedKeys : [
+                        new("SchoolId", "Id")
+                    ])
+            ]),
     ];
 }

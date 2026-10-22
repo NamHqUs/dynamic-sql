@@ -8,7 +8,7 @@ namespace Demo.Repositories.FileStorage;
 public sealed class MetadataFileRepository(FilePathResolver filePathResolver)
     : FileRepositoryBase<Entity>(filePathResolver, FOLDER_NAME), IMetadataRepository
 {
-    private const string FOLDER_NAME = "Metadata";
+    private const string FOLDER_NAME = "UnitTestData";
 
     public void Reset(string userSectionId)
     {

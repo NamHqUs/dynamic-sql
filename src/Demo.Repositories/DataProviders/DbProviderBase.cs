@@ -8,6 +8,9 @@ public abstract class DbProviderBase(string[] scriptFiles)
     private static bool _initialized = false;
 
     protected abstract string? SqlScriptCheckIfDbExists { get; }
+    protected abstract string SqlGetTableNames { get; }
+    protected virtual string IdentifierQuotePrefix => "\"";
+    protected virtual string IdentifierQuoteSuffix => "\"";
 
     public virtual IDbConnection GetDbConnection()
     {
@@ -22,6 +25,28 @@ public abstract class DbProviderBase(string[] scriptFiles)
             _initialized = true;
         }
         return cn;
+    }
+
+    public string[] GetTableNames()
+    {
+        using var connection = GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+            connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = SqlGetTableNames;
+        using var reader = command.ExecuteReader();
+        var tableNames = new List<string>();
+        while (reader.Read())
+            tableNames.Add(reader.GetString(0));
+
+        return tableNames.ToArray();
+    }
+
+    public string QuoteIdentifier(string identifier)
+    {
+        var escapedIdentifier = identifier.Replace(IdentifierQuoteSuffix, IdentifierQuoteSuffix + IdentifierQuoteSuffix);
+        return $"{IdentifierQuotePrefix}{escapedIdentifier}{IdentifierQuoteSuffix}";
     }
 
     protected abstract IDbConnection CreateDbConnection();
