@@ -157,6 +157,9 @@ export default function QueryDesign({
         />
         <FilterBuilder
           metadata={contextMetadata}
+          functionDefinitions={functionDefinitions}
+          functionDefinitionsStatus={functionDefinitionsStatus}
+          functionDefinitionsError={functionDefinitionsError}
           operators={filterOperators}
           operatorsStatus={filterOperatorsStatus}
           operatorsError={filterOperatorsError}

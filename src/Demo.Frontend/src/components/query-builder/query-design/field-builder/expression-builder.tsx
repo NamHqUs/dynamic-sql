@@ -15,6 +15,8 @@ type ExpressionBuilderProps = {
   initialExpression?: QueryExpression;
   initialAlias?: string;
   existingAliases?: string[];
+  showAlias?: boolean;
+  sectionLabel?: string;
   onApply: (expression: QueryExpression, alias: string) => void;
   onCancel: () => void;
 };
@@ -665,6 +667,8 @@ export default function ExpressionBuilder({
   initialExpression,
   initialAlias,
   existingAliases = [],
+  showAlias = true,
+  sectionLabel = "PROJECTION FIELD",
   onApply,
   onCancel,
 }: ExpressionBuilderProps) {
@@ -673,24 +677,25 @@ export default function ExpressionBuilder({
       ? createFunctionExpression(functionDefinitions[0])
       : createExpression("binary")));
   const [alias, setAlias] = useState(initialAlias ?? "CalculatedValue");
-  const duplicateAlias = existingAliases.some((existing) => existing.toLowerCase() === alias.trim().toLowerCase());
-  const complete = isComplete(expression) && alias.trim().length > 0 && !duplicateAlias;
+  const duplicateAlias = showAlias && existingAliases.some((existing) => existing.toLowerCase() === alias.trim().toLowerCase());
+  const complete = isComplete(expression) && (!showAlias || (alias.trim().length > 0 && !duplicateAlias));
   const preview = useMemo(() => formatExpression(expression), [expression]);
 
   return (
       <section className="expression-builder" aria-labelledby="expression-builder-title">
         <header className="expression-builder-header">
           <div>
-            <span className="section-kicker">PROJECTION FIELD</span>
+            <span className="section-kicker">{sectionLabel}</span>
             <h2 id="expression-builder-title">Choose a field, SQL function, or calculation</h2>
           </div>
-          <button type="button" className="expression-close" aria-label="Close expression editor" onClick={onCancel}>×</button>
         </header>
-        <label className="expression-alias">
-          <span>Output name</span>
-          <input value={alias} onChange={(event) => setAlias(event.target.value)} aria-label="Calculated column name" />
-        </label>
-        {duplicateAlias && <span className="expression-error" role="alert">That output name is already in use.</span>}
+        {showAlias && <>
+          <label className="expression-alias">
+            <span>Output name</span>
+            <input value={alias} onChange={(event) => setAlias(event.target.value)} aria-label="Calculated column name" />
+          </label>
+          {duplicateAlias && <span className="expression-error" role="alert">That output name is already in use.</span>}
+        </>}
         <ExpressionNodeEditor
           expression={expression}
           entity={entity}
@@ -713,7 +718,7 @@ export default function ExpressionBuilder({
             disabled={!complete}
             onClick={() => onApply(expression, alias.trim())}
           >
-            Add calculated field
+            Apply
           </button>
         </footer>
       </section>

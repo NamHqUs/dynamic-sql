@@ -13,6 +13,7 @@
 .field-box-menu-selected .operator-trigger, .field-box-menu-selected .operator-trigger:hover, .field-box-menu-selected .operator-trigger:focus-visible { color: #ded5ff; border: 0; background: transparent; padding: 0; height: auto; max-height: none; outline: 0; }
 .field-box-menu .operator-menu { z-index: 20; transform: none; width: 200px; min-width: 200px; max-height: 420px; overflow-y: auto; }
 .operator-menu.field-box-menu-popup { z-index: 1300; transform: none; width: min(320px, calc(100vw - 8px)); min-width: min(320px, calc(100vw - 8px)); max-height: 420px; overflow-y: auto; }
+.operator-menu.field-box-menu-popup-calculation { width: min(560px, calc(100vw - 8px)); min-width: min(560px, calc(100vw - 8px)); max-height: none; overflow: visible; }
 .field-box-menu-popup .field-box-menu-label { margin-top: 4px; padding: 8px 12px 6px; color: #c5b5ff; border-top: 1px solid #4a4163; background: #211b32; font-weight: 700; letter-spacing: 1px; }
 .field-box-menu-popup .field-box-menu-label:first-child { margin-top: 0; border-top: 0; }
 .field-box-menu-popup .operator-option { padding: 5px 12px 5px 24px; }
@@ -22,10 +23,14 @@
 .field-box-field-column { display: flex; flex-direction: column; min-width: 0; }
 .field-box-field-column .operator-option { box-sizing: border-box; width: 100%; max-width: min(250px, calc(100vw - 40px)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px "DM Mono", monospace; }
 .field-box-chooser-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin: 7px 7px 4px; padding: 3px; background: #11141c; border: 1px solid #3a334e; border-radius: 6px; }
+.field-box-menu-popup-calculation .field-box-chooser-tabs { width: min(346px, calc(100vw - 22px)); box-sizing: border-box; }
 .field-box-chooser-tab { padding: 7px 5px; color: #aab3c2; background: transparent; border: 0; border-radius: 4px; font: 11px "DM Mono", monospace; cursor: pointer; }
 .field-box-chooser-tab:hover, .field-box-chooser-tab:focus-visible { color: #ded5ff; outline: 0; }
 .field-box-chooser-tab.active { color: #f0ecff; background: #29223e; box-shadow: inset 0 0 0 1px #654f9f; }
 .field-box-value-panel { display: grid; gap: 7px; padding: 10px; }
+.field-box-calculation-panel { padding: 0; }
+.field-box-calculation-panel-expanded { width: 100%; box-sizing: border-box; }
+.field-box-calculation-panel .expression-builder { width: 100%; max-width: 100%; margin: 0; padding: 12px; gap: 10px; border: 0; }
 .field-box-value-label { color: #aab3c2; font: 11px "DM Mono", monospace; }
 .field-box-value-input { width: 100%; margin: 0; }
 .field-box-value-submit { justify-self: end; padding: 6px 10px; color: #fff; background: #654f9f; border: 1px solid #8168bf; border-radius: 4px; font: 12px "Manrope", sans-serif; cursor: pointer; }

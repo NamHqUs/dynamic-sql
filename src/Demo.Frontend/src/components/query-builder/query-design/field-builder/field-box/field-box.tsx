@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../../icon/icon";
@@ -25,7 +25,7 @@ type FieldBoxProps = {
   initialSection?: "fields" | "value" | "calculation";
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
-  onCalculationSelect?: () => void;
+  renderCalculation?: (onComplete: () => void) => ReactNode;
 };
 
 const RELATION_PREFIX = "relation:";
@@ -69,7 +69,7 @@ export default function FieldBox({
   initialSection = "fields",
   initialConstantValue,
   onValueSelect,
-  onCalculationSelect,
+  renderCalculation,
 }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
@@ -306,8 +306,8 @@ export default function FieldBox({
       </button>
       {menuOpen && createPortal(<div
         ref={menuPopupRef}
-        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}`}
-        style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: menuPosition.maxHeight, transform: "none", margin: 0 }}
+        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "calculation" && renderCalculation ? " field-box-menu-popup-calculation" : ""}`}
+        style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: activeSection === "calculation" ? "none" : menuPosition.maxHeight, transform: "none", margin: 0 }}
         onMouseDown={(event) => event.preventDefault()}
         role="group"
         aria-label={`${ariaLabel} options`}
@@ -332,11 +332,7 @@ export default function FieldBox({
             role="tab"
             aria-selected={activeSection === "calculation"}
             className={`field-box-chooser-tab${activeSection === "calculation" ? " active" : ""}`}
-            onClick={() => {
-              setActiveSection("calculation");
-              setMenuOpen(false);
-              onCalculationSelect?.();
-            }}
+            onClick={() => setActiveSection("calculation")}
           >Calculation</button>}
         </div>}
         {activeSection === "value" && allowValueSelection
@@ -361,8 +357,10 @@ export default function FieldBox({
             <button type="button" className="field-box-value-submit" onClick={selectConstantValue}>Apply</button>
           </div>
           : activeSection === "calculation" && allowCalculationSelection
-            ? <div className="field-box-value-panel" role="tabpanel" aria-label="Calculation">
-              <span className="field-box-calculation-hint">Build an expression from fields, SQL functions, and values.</span>
+            ? <div className={`field-box-value-panel field-box-calculation-panel${renderCalculation ? " field-box-calculation-panel-expanded" : ""}`} role="tabpanel" aria-label="Calculation">
+              {renderCalculation
+                ? renderCalculation(() => setMenuOpen(false))
+                : <span className="field-box-calculation-hint">Build an expression from fields, SQL functions, and values.</span>}
             </div>
             : <div role={hasAdditionalSections ? "tabpanel" : undefined} aria-label={hasAdditionalSections ? "Fields" : undefined}>
               <input

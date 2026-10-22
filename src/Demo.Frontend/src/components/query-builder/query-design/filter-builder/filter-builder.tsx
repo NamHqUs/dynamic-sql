@@ -1,9 +1,11 @@
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Icon from "../../../icon/icon";
-import { FilterOperatorDefinition, MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
+import { FilterOperatorDefinition, MetadataEntity, QueryDefinition, QueryExpression, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
 import { resolveEntity } from "../field-builder/field-box/field-box";
+import { formatExpression } from "../field-builder/expression-builder";
+import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
 
 const fallbackOperators = [
   [0, "="],
@@ -19,6 +21,9 @@ const logicalOperators = [
 
 type FilterBuilderProps = {
   metadata: MetadataEntity[];
+  functionDefinitions: FunctionDefinition[];
+  functionDefinitionsStatus: string;
+  functionDefinitionsError: string;
   operators: FilterOperatorDefinition[];
   operatorsStatus: string;
   operatorsError: string;
@@ -277,6 +282,9 @@ function replaceNode(group: QueryFilterGroup, path: FilterPath, node: QueryFilte
 type FilterGroupEditorProps = {
   group: QueryFilterGroup;
   metadata: MetadataEntity[];
+  functionDefinitions: FunctionDefinition[];
+  functionDefinitionsStatus: string;
+  functionDefinitionsError: string;
   operators: FilterOperatorDefinition[];
   entity: MetadataEntity;
   onChange: (group: QueryFilterGroup) => void;
@@ -294,7 +302,7 @@ type FilterGroupEditorProps = {
   depth: number;
 };
 
-function FilterGroupEditor({ group, metadata, operators, entity, onChange, onRemove, onMoveFilter, onDragPreview, onDragPreviewClear, dragPreview, onGroupFilter, onAddFilter, onAddField, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
+function FilterGroupEditor({ group, metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, entity, onChange, onRemove, onMoveFilter, onDragPreview, onDragPreviewClear, dragPreview, onGroupFilter, onAddFilter, onAddField, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
   const [collapsed, setCollapsed] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
 
@@ -450,6 +458,9 @@ function FilterGroupEditor({ group, metadata, operators, entity, onChange, onRem
           <FilterGroupEditor
             group={filter}
             metadata={metadata}
+            functionDefinitions={functionDefinitions}
+            functionDefinitionsStatus={functionDefinitionsStatus}
+            functionDefinitionsError={functionDefinitionsError}
             operators={operators}
             entity={entity}
             depth={depth + 1}
@@ -482,6 +493,9 @@ function FilterGroupEditor({ group, metadata, operators, entity, onChange, onRem
           first={index === 0}
           path={[...path, index]}
           metadata={metadata}
+          functionDefinitions={functionDefinitions}
+          functionDefinitionsStatus={functionDefinitionsStatus}
+          functionDefinitionsError={functionDefinitionsError}
           operators={operators}
           entity={entity}
           onChange={(next) => updateNode(index, next)}
@@ -535,6 +549,9 @@ type FilterRowProps = {
   first: boolean;
   path: FilterPath;
   metadata: MetadataEntity[];
+  functionDefinitions: FunctionDefinition[];
+  functionDefinitionsStatus: string;
+  functionDefinitionsError: string;
   operators: FilterOperatorDefinition[];
   entity: MetadataEntity;
   onChange: (filter: QueryFilterItem) => void;
@@ -548,10 +565,14 @@ type FilterRowProps = {
   dragPreview?: DragPreview;
 };
 
-function FilterRow({ filter, first, path, metadata, operators, entity, onChange, onRemove, onGroup, onAdd, onAddField, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
+function FilterRow({ filter, first, path, metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, entity, onChange, onRemove, onGroup, onAdd, onAddField, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
   const update = (changes: Partial<QueryFilterItem>) => onChange({ ...filter, ...changes });
-  const fieldDataType = getFilterFieldDataType(entity, metadata, filter.field);
+  const fieldDataType = filter.fieldExpression?.kind === "binary"
+    ? "Number"
+    : getFilterFieldDataType(entity, metadata, filter.field);
   const operatorOptions = getOperatorOptions(operators, fieldDataType);
+  const initialExpression: QueryExpression | undefined = filter.fieldExpression
+    ?? (filter.field ? { kind: "field", field: filter.field } : undefined);
   const isPreview = (position: DragPosition) => dragPreview?.position === position && isSamePath(dragPreview.path, path);
   const previewPosition = useRef<DragPosition>();
   const updatePreview = (event: DragEvent<HTMLDivElement>) => {
@@ -630,6 +651,18 @@ function FilterRow({ filter, first, path, metadata, operators, entity, onChange,
           ariaLabel="Filter field"
           allowValueSelection
           allowCalculationSelection
+          initialSection={filter.fieldExpression && filter.fieldExpression.kind !== "value" ? "calculation" : undefined}
+          expressionBuilder={{
+            functionDefinitions,
+            functionDefinitionsStatus,
+            functionDefinitionsError,
+            initialExpression,
+            showAlias: false,
+            sectionLabel: "FILTER FIELD",
+          }}
+          onExpressionApply={(expression) => {
+            update({ field: formatExpression(expression), fieldExpression: expression });
+          }}
           initialConstantValue={filter.fieldExpression?.kind === "value" ? filter.fieldExpression.value : undefined}
           onValueSelect={(value) => update({ field: `<${value}>`, fieldExpression: { kind: "value", value } })}
           onChange={(field) => {
@@ -678,7 +711,7 @@ function FilterRow({ filter, first, path, metadata, operators, entity, onChange,
   );
 }
 
-export default function FilterBuilder({ metadata, operators, operatorsStatus, operatorsError, definition, entity, isReadOnly, isPlanTextEditing, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
+export default function FilterBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, operatorsStatus, operatorsError, definition, entity, isReadOnly, isPlanTextEditing, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
   const builderRef = useRef<HTMLDivElement>(null);
   const [filterItemWidth, setFilterItemWidth] = useState<number>();
   const [dragPreview, setDragPreview] = useState<DragPreview>();
@@ -926,6 +959,9 @@ export default function FilterBuilder({ metadata, operators, operatorsStatus, op
           <FilterGroupEditor
             group={definition.filters}
             metadata={metadata}
+            functionDefinitions={functionDefinitions}
+            functionDefinitionsStatus={functionDefinitionsStatus}
+            functionDefinitionsError={functionDefinitionsError}
             operators={operators.length ? operators : []}
             entity={entity}
             depth={0}

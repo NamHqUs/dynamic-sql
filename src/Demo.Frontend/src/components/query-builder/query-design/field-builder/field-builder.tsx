@@ -1,10 +1,24 @@
 import { useState } from "react";
 import FieldBox, { resolveEntity } from "./field-box/field-box";
-import { MetadataEntity } from "../query-builder-slice";
+import { MetadataEntity, QueryExpression } from "../query-builder-slice";
 import Icon from "../../../icon/icon";
+import ExpressionBuilder from "./expression-builder";
+import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
 import "./field-builder.css";
 
 const FIELD_BOX_HEIGHT = 34;
+
+export type FieldBuilderExpressionOptions = {
+  functionDefinitions: FunctionDefinition[];
+  functionDefinitionsStatus: string;
+  functionDefinitionsError: string;
+  initialKind?: "binary" | "function";
+  initialExpression?: QueryExpression;
+  initialAlias?: string;
+  existingAliases?: string[];
+  showAlias?: boolean;
+  sectionLabel?: string;
+};
 
 type FieldBuilderProps = {
   entity: MetadataEntity;
@@ -26,7 +40,8 @@ type FieldBuilderProps = {
   initialSection?: "fields" | "value" | "calculation";
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
-  onCalculationSelect?: () => void;
+  expressionBuilder?: FieldBuilderExpressionOptions;
+  onExpressionApply?: (expression: QueryExpression, alias: string) => void;
 };
 
 function getFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {
@@ -60,7 +75,8 @@ export default function FieldBuilder({
   initialConstantValue,
   initialSection = initialConstantValue !== undefined ? "value" : "fields",
   onValueSelect,
-  onCalculationSelect,
+  expressionBuilder,
+  onExpressionApply,
 }: FieldBuilderProps) {
   const [isEditing, setIsEditing] = useState(editMode);
   const [hasIncompleteSelection, setHasIncompleteSelection] = useState(false);
@@ -68,6 +84,22 @@ export default function FieldBuilder({
     setIsEditing(false);
     onCancel?.();
   };
+  const renderCalculation = onExpressionApply && expressionBuilder
+    ? (closeMenu: () => void) => <ExpressionBuilder
+      {...expressionBuilder}
+      entity={entity}
+      metadata={metadata}
+      onApply={(expression, alias) => {
+        setIsEditing(false);
+        onExpressionApply(expression, alias);
+        closeMenu();
+      }}
+      onCancel={() => {
+        closeMenu();
+        cancelEdit();
+      }}
+    />
+    : undefined;
   const dataType = showDataType ? getFieldDataType(entity, metadata, value) : undefined;
   const removeButton = onRemove && (
     <button
@@ -123,10 +155,7 @@ export default function FieldBuilder({
             setIsEditing(false);
             onValueSelect?.(constantValue);
           }}
-          onCalculationSelect={() => {
-            setIsEditing(false);
-            onCalculationSelect?.();
-          }}
+          renderCalculation={renderCalculation}
           onChange={(path) => {
             setIsEditing(false);
             onChange(path);
