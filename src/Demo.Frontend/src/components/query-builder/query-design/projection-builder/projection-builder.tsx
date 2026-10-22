@@ -191,7 +191,10 @@ function FieldCards({
   moveField,
   onFieldDragStart,
   editExpression,
+  editValue,
+  editCalculation,
   addField,
+  addValue,
   addCalculation,
 }: {
   fields: { name: string }[];
@@ -212,15 +215,18 @@ function FieldCards({
   moveField: (field: string, targetField: string, position: ProjectionDropPosition, targetRowFields: string[]) => void;
   onFieldDragStart: (field: string | null) => void;
   editExpression: (column: { field: string; alias: string | null; expression?: QueryExpression }) => void;
+  editValue: (field: string, value: string | number) => void;
+  editCalculation: (column: QueryColumn) => void;
   addField: (field: string) => void;
+  addValue: (value: string | number) => void;
   addCalculation: () => void;
 }) {
   const [draggedField, setDraggedField] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ field: string; position: ProjectionDropPosition } | null>(null);
   const [aliasBeforeEdit, setAliasBeforeEdit] = useState<string | null>(null);
-  const [columnBeforeEdit, setColumnBeforeEdit] = useState<{ field: string; alias: string | null } | null>(null);
-  const columnBeforeEditRef = useRef<{ field: string; alias: string | null } | null>(null);
-  const startFieldEdit = (column: { field: string; alias: string | null } | undefined) => {
+  const [columnBeforeEdit, setColumnBeforeEdit] = useState<QueryColumn | null>(null);
+  const columnBeforeEditRef = useRef<QueryColumn | null>(null);
+  const startFieldEdit = (column: QueryColumn | undefined) => {
     const snapshot = column ?? null;
     columnBeforeEditRef.current = snapshot;
     setColumnBeforeEdit(snapshot);
@@ -314,7 +320,9 @@ function FieldCards({
     const fieldLabel = columnExpression ? columnAlias || "calculated field" : field.name;
     const openColumnEditor = () => {
       if (!column) return;
-      if (columnExpression) {
+      if (columnExpression?.kind === "value") {
+        startFieldEdit(column);
+      } else if (columnExpression) {
         editExpression({ ...column, alias: columnAlias, expression: columnExpression });
       } else {
         startFieldEdit(column);
@@ -401,9 +409,20 @@ function FieldCards({
                   <FieldBuilder
                     entity={entity}
                     metadata={metadata}
-                    value={field.name}
+                    value={columnExpression?.kind === "value" ? "" : field.name}
                     editMode
                     excludedPaths={definition.columns.filter((item) => item.field !== field.name).map((item) => item.field)}
+                    allowValueSelection
+                    allowCalculationSelection
+                    initialConstantValue={columnExpression?.kind === "value" ? columnExpression.value : undefined}
+                    onValueSelect={(value) => {
+                      editValue(field.name, value);
+                      setEditingField(null);
+                    }}
+                    onCalculationSelect={() => {
+                      if (column) editCalculation(column);
+                      setEditingField(null);
+                    }}
                     onChange={(replacement) => {
                       replaceColumn(field.name, replacement);
                       setEditingField(null);
@@ -479,16 +498,12 @@ function FieldCards({
           placeholder="Field"
           placeholderIcon
           ariaLabel="Field"
+          allowValueSelection
+          allowCalculationSelection
+          onValueSelect={addValue}
+          onCalculationSelect={addCalculation}
           onChange={addField}
         />
-        <button
-          type="button"
-          className="text-button"
-          onClick={addCalculation}
-        >
-          <Icon name="plus" size={12} />
-          <span className="action-link-text">Calculation</span>
-        </button>
       </div>
     </div>
   </div>;
@@ -497,7 +512,12 @@ function FieldCards({
 export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, isReadOnly, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
   const [editingAliasField, setEditingAliasField] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
-  const [editingExpression, setEditingExpression] = useState<{ field: string | null; expression?: QueryExpression; alias?: string } | null>(null);
+  const [editingExpression, setEditingExpression] = useState<{
+    field: string | null;
+    initialKind?: "binary" | "function";
+    expression?: QueryExpression;
+    alias?: string;
+  } | null>(null);
   const [isEditingProjectionText, setIsEditingProjectionText] = useState(false);
   const [projectionText, setProjectionText] = useState(() =>
     formatProjectionText(definition.columns, getProjectionRows(definition)));
@@ -543,6 +563,30 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
       { ...definition, columns: [...definition.columns, { field, alias: null }] },
       [...getProjectionRows(definition), [field]],
     );
+  };
+
+  const addValue = (value: string | number) => {
+    const field = `__value__${crypto.randomUUID()}`;
+    const expression: QueryExpression = { kind: "value", value };
+    changeProjection({
+      ...definition,
+      columns: [...definition.columns, { field, alias: null, expression }],
+    });
+  };
+
+  const editValue = (field: string, value: string | number) => {
+    const columns = definition.columns.map((column) => column.field === field
+      ? { ...column, expression: { kind: "value" as const, value } }
+      : column);
+    changeProjection({ ...definition, columns });
+  };
+
+  const editCalculation = (column: QueryColumn) => {
+    setEditingExpression({
+      field: column.field,
+      initialKind: "binary",
+      alias: column.alias ?? (column.expression?.kind === "value" ? "CalculatedValue" : column.field),
+    });
   };
 
   const applyExpression = (expression: QueryExpression, alias: string) => {
@@ -604,7 +648,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     changeProjection({ ...definition, columns });
   };
 
-  const restoreColumn = (field: string, original: { field: string; alias: string | null }) => {
+  const restoreColumn = (field: string, original: QueryColumn) => {
     const columns = definition.columns.map((column) => column.field === field
       ? original
       : column);
@@ -743,7 +787,10 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
           moveField={moveField}
           onFieldDragStart={onFieldDragStart}
           addField={addColumn}
-          addCalculation={() => setEditingExpression({ field: null })}
+          addValue={addValue}
+          addCalculation={() => setEditingExpression({ field: null, initialKind: "binary" })}
+          editValue={editValue}
+          editCalculation={editCalculation}
           editExpression={(column) => setEditingExpression({
             field: column.field,
             expression: column.expression,
@@ -754,12 +801,13 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
       {editingExpression && (
         <div inert={isReadOnly}>
         <ExpressionBuilder
-          key={editingExpression.field ?? "new-expression"}
+          key={`${editingExpression.field ?? "new-expression"}-${editingExpression.initialKind ?? "edit"}`}
           entity={entity}
           metadata={metadata}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
+          initialKind={editingExpression.initialKind}
           initialExpression={editingExpression.expression}
           initialAlias={editingExpression.alias}
           existingAliases={definition.columns

@@ -21,6 +21,12 @@ type FieldBuilderProps = {
   editMode?: boolean;
   onCancel?: () => void;
   allowAggregates?: boolean;
+  allowValueSelection?: boolean;
+  allowCalculationSelection?: boolean;
+  initialSection?: "fields" | "value" | "calculation";
+  initialConstantValue?: string | number;
+  onValueSelect?: (value: string | number) => void;
+  onCalculationSelect?: () => void;
 };
 
 function getFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {
@@ -49,6 +55,12 @@ export default function FieldBuilder({
   editMode = false,
   onCancel,
   allowAggregates = true,
+  allowValueSelection = false,
+  allowCalculationSelection = false,
+  initialConstantValue,
+  initialSection = initialConstantValue !== undefined ? "value" : "fields",
+  onValueSelect,
+  onCalculationSelect,
 }: FieldBuilderProps) {
   const [isEditing, setIsEditing] = useState(editMode);
   const [hasIncompleteSelection, setHasIncompleteSelection] = useState(false);
@@ -96,13 +108,25 @@ export default function FieldBuilder({
           value={value}
           onIncompleteChange={setHasIncompleteSelection}
           clearOnSelect
-          autoFocus={Boolean(value)}
+          autoFocus={Boolean(value) || initialConstantValue !== undefined}
           showPath={showPath}
-          placeholder={placeholder}
+          placeholder={initialConstantValue === undefined ? placeholder : String(initialConstantValue)}
           placeholderIcon={placeholderIcon}
           ariaLabel={ariaLabel}
           excludedPaths={excludedPaths}
           allowAggregates={allowAggregates}
+          allowValueSelection={allowValueSelection}
+          allowCalculationSelection={allowCalculationSelection}
+          initialSection={initialSection}
+          initialConstantValue={initialConstantValue}
+          onValueSelect={(constantValue) => {
+            setIsEditing(false);
+            onValueSelect?.(constantValue);
+          }}
+          onCalculationSelect={() => {
+            setIsEditing(false);
+            onCalculationSelect?.();
+          }}
           onChange={(path) => {
             setIsEditing(false);
             onChange(path);

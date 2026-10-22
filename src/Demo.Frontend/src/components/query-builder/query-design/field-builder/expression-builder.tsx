@@ -11,6 +11,7 @@ type ExpressionBuilderProps = {
   functionDefinitions: FunctionDefinition[];
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
+  initialKind?: "binary" | "function";
   initialExpression?: QueryExpression;
   initialAlias?: string;
   existingAliases?: string[];
@@ -292,7 +293,7 @@ function ExpressionNodeEditor({
     { kind: "field", label: "Field" },
     { kind: "value", label: "Value" },
     { kind: "binary", label: "Calculation" },
-    { kind: "function", label: "Function" },
+    { kind: "function", label: "SQL function" },
   ];
   useEffect(() => {
     if (!isTypeMenuOpen && !isRemoveMenuOpen) return;
@@ -660,29 +661,30 @@ export default function ExpressionBuilder({
   functionDefinitions,
   functionDefinitionsStatus,
   functionDefinitionsError,
+  initialKind = "binary",
   initialExpression,
   initialAlias,
   existingAliases = [],
   onApply,
   onCancel,
 }: ExpressionBuilderProps) {
-  const [expression, setExpression] = useState<QueryExpression>(initialExpression ?? createExpression("binary"));
+  const [expression, setExpression] = useState<QueryExpression>(initialExpression
+    ?? (initialKind === "function"
+      ? createFunctionExpression(functionDefinitions[0])
+      : createExpression("binary")));
   const [alias, setAlias] = useState(initialAlias ?? "CalculatedValue");
   const duplicateAlias = existingAliases.some((existing) => existing.toLowerCase() === alias.trim().toLowerCase());
   const complete = isComplete(expression) && alias.trim().length > 0 && !duplicateAlias;
   const preview = useMemo(() => formatExpression(expression), [expression]);
 
   return (
-    <div className="expression-builder-overlay" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onCancel();
-    }}>
-      <section className="expression-builder" role="dialog" aria-modal="true" aria-labelledby="expression-builder-title">
+      <section className="expression-builder" aria-labelledby="expression-builder-title">
         <header className="expression-builder-header">
           <div>
-            <span className="section-kicker">CALCULATED PROJECTION</span>
-            <h2 id="expression-builder-title">Build an expression</h2>
+            <span className="section-kicker">PROJECTION FIELD</span>
+            <h2 id="expression-builder-title">Choose a field, SQL function, or calculation</h2>
           </div>
-          <button type="button" className="expression-close" aria-label="Close expression builder" onClick={onCancel}>×</button>
+          <button type="button" className="expression-close" aria-label="Close expression editor" onClick={onCancel}>×</button>
         </header>
         <label className="expression-alias">
           <span>Output name</span>
@@ -715,6 +717,5 @@ export default function ExpressionBuilder({
           </button>
         </footer>
       </section>
-    </div>
   );
 }

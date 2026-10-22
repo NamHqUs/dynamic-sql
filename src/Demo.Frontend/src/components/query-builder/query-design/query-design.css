@@ -35,7 +35,7 @@
 .field-card.drop-target-right { box-shadow: inset -3px 0 #a78bfa; }
 .field-card.drop-target-above { box-shadow: inset 0 3px #a78bfa; }
 .field-card.drop-target-below { box-shadow: inset 0 -3px #a78bfa; }
-.field-card.selected { color: #ded5ff; border: 0; background: #1d192e; }
+.field-card.selected { height: var(--field-box-height); padding-top: 0; padding-bottom: 0; color: #ded5ff; border: 0; background: #1d192e; }
 .field-card-remove { position: absolute; top: 0; right: 0; color: #8993a5; border: 1px solid transparent; background: transparent; border-radius: 4px; width: 16px; height: 16px; padding: 0; display: grid; place-items: center; cursor: pointer; z-index: 1; transition: color .15s ease, background-color .15s ease, border-color .15s ease; }
 .field-card-remove:hover { color: #ff9b9b; background: #43252c; border-color: #71333d; }
 .field-card-remove:focus-visible { color: #ffb0b0; background: #43252c; border-color: #d26a78; outline: 2px solid rgba(210, 106, 120, .35); outline-offset: 1px; }
@@ -105,6 +105,9 @@
 .projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger,
 .projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger:hover,
 .projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger:focus-visible { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; border-radius: 0; background: transparent; padding: 0; height: var(--field-box-height); box-sizing: border-box; font: 13px "Manrope", sans-serif; }
+.field-card .field-builder-editing .field-box-menu .operator-trigger,
+.field-card .field-builder-editing .field-box-menu .operator-trigger:hover,
+.field-card .field-builder-editing .field-box-menu .operator-trigger:focus-visible { color: #ded5ff; border: 0; border-radius: 0; background: transparent; padding: 0; height: var(--field-box-height); box-sizing: border-box; font: 12px "DM Mono", monospace; }
 .projection-row-fields > .field-card .field-box-menu-selected .operator-trigger { max-width: min(360px, 45vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px "DM Mono", monospace; }
 .filter-add-condition { display: inline-flex; align-items: center; gap: 5px; height: var(--field-box-height); box-sizing: border-box; color: var(--purple); border: 0; background: transparent; padding: 0; font: 13px "Manrope", sans-serif; }
 .sort-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; box-sizing: border-box; margin-top: 10px; padding-top: 8px; padding-left: 46px; }

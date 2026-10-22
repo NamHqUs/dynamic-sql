@@ -1,5 +1,4 @@
-.expression-builder-overlay { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 20px; background: rgba(5, 7, 11, .72); }
-.expression-builder { display: grid; gap: 14px; width: min(900px, 100%); max-height: min(88vh, 900px); overflow: auto; padding: 20px; color: #dce1eb; background: #11141c; border: 1px solid #3a334e; border-radius: 10px; box-shadow: 0 18px 70px rgba(0, 0, 0, .55); }
+.expression-builder { display: grid; gap: 14px; width: 100%; box-sizing: border-box; margin-top: 10px; padding: 16px; color: #dce1eb; background: #11141c; border: 1px solid #3a334e; border-radius: 7px; }
 .expression-builder-header { display: flex; align-items: center; justify-content: space-between; }
 .expression-builder-header h2 { margin: 5px 0 0; color: #f0ecff; font-size: 19px; }
 .expression-close { width: 30px; height: 30px; color: #aab3c2; background: #191e28; border: 1px solid #323947; border-radius: 5px; font-size: 21px; cursor: pointer; }
@@ -71,7 +70,6 @@
 .expression-apply { color: #fff; background: #654f9f; border: 1px solid #8168bf; }
 .expression-apply:disabled { opacity: .45; cursor: default; }
 @media (max-width: 560px) {
-  .expression-builder-overlay { padding: 8px; }
   .expression-builder { padding: 14px; }
   .expression-term { align-items: stretch; flex-wrap: wrap; }
   .expression-term-operator { flex: 0 0 100%; }

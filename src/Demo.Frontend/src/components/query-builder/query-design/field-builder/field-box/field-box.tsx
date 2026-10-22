@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../../icon/icon";
@@ -20,6 +20,12 @@ type FieldBoxProps = {
   excludedPaths?: string[];
   autoFocus?: boolean;
   allowAggregates?: boolean;
+  allowValueSelection?: boolean;
+  allowCalculationSelection?: boolean;
+  initialSection?: "fields" | "value" | "calculation";
+  initialConstantValue?: string | number;
+  onValueSelect?: (value: string | number) => void;
+  onCalculationSelect?: () => void;
 };
 
 const RELATION_PREFIX = "relation:";
@@ -42,7 +48,29 @@ export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], 
   return current;
 }
 
-export default function FieldBox({ entity, metadata, value, onChange, onIncompleteChange, clearOnSelect = false, completeOnSelect = false, showPath = false, showDataType = false, placeholder = "Select field…", placeholderIcon = false, ariaLabel = "Field", excludedPaths = [], autoFocus = false, allowAggregates = true }: FieldBoxProps) {
+export default function FieldBox({
+  entity,
+  metadata,
+  value,
+  onChange,
+  onIncompleteChange,
+  clearOnSelect = false,
+  completeOnSelect = false,
+  showPath = false,
+  showDataType = false,
+  placeholder = "Select field…",
+  placeholderIcon = false,
+  ariaLabel = "Field",
+  excludedPaths = [],
+  autoFocus = false,
+  allowAggregates = true,
+  allowValueSelection = false,
+  allowCalculationSelection = false,
+  initialSection = "fields",
+  initialConstantValue,
+  onValueSelect,
+  onCalculationSelect,
+}: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
   const [pendingAggregate, setPendingAggregate] = useState<string | null>(null);
@@ -50,6 +78,9 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
   const [pendingAggregateField, setPendingAggregateField] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [fieldSearch, setFieldSearch] = useState("");
+  const [constantValue, setConstantValue] = useState(String(initialConstantValue ?? ""));
+  const [activeSection, setActiveSection] = useState<"fields" | "value" | "calculation">(initialSection);
+  const constantValueInputId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
   const menuPopupRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -66,7 +97,9 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
       const anchor = triggerRef.current.closest(".field-builder-editing") ?? triggerRef.current;
       const bounds = anchor.getBoundingClientRect();
       const menu = menuPopupRef.current;
-      const menuHeight = menu?.getBoundingClientRect().height ?? 420;
+      const menuHeight = menu
+        ? Math.max(menu.getBoundingClientRect().height, menu.scrollHeight)
+        : 420;
       const menuWidth = menu?.getBoundingClientRect().width ?? 200;
       const inFieldCard = Boolean(triggerRef.current.closest(".field-card"));
       const inProjectionFieldPicker = Boolean(triggerRef.current.closest(".projection-row-builder"));
@@ -103,7 +136,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
       window.removeEventListener("resize", updateMenuPosition);
       window.removeEventListener("scroll", updateMenuPosition, true);
     };
-  }, [menuOpen]);
+  }, [activeSection, fieldSearch, menuOpen]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -208,6 +241,18 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
       onChange(aggregateWrapsPath ? `${activeAggregate}(${[...path, field].join(".")})` : [...path, aggregate].join("."));
     }
   };
+  const selectConstantValue = () => {
+    const numberValue = Number(constantValue);
+    const selectedValue = initialConstantValue !== undefined
+      && String(initialConstantValue) === constantValue
+      ? initialConstantValue
+      : constantValue.trim() && Number.isFinite(numberValue)
+        ? numberValue
+        : constantValue;
+    onValueSelect?.(selectedValue);
+    setMenuOpen(false);
+  };
+  const hasAdditionalSections = allowValueSelection || allowCalculationSelection;
 
   return <div className="field-box">
     {!isComplete && aggregateWrapsPath && activeAggregate && activeAggregate !== COUNT_AGGREGATE &&
@@ -226,7 +271,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
         className="operator-trigger"
         aria-label={ariaLabel}
         aria-expanded={menuOpen}
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
         onClick={() => setMenuOpen((open) => !open)}
       >
         {(() => {
@@ -238,39 +283,102 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
             : label;
         })()}
       </button>
-      {menuOpen && createPortal(<div ref={menuPopupRef} className="operator-menu field-box-menu-popup" style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: menuPosition.maxHeight, transform: "none", margin: 0 }} onMouseDown={(event) => event.preventDefault()} role="listbox" aria-label={`${ariaLabel} options`}>
-        <input
-          type="search"
-          className="field-box-search"
-          aria-label="Search fields"
-          placeholder="Search fields…"
-          autoFocus
-          value={fieldSearch}
-          onChange={(event) => setFieldSearch(event.target.value)}
-        />
-        {relations.length > 0 && <>
-          <span className="field-box-menu-label">Relations</span>
-          {relations.map((relation) => (
-            <button type="button" className="operator-option" role="option" key={relation.name} onClick={() => handleSelect(`${RELATION_PREFIX}${relation.name}`)}>
-              {relation.name}
-            </button>
-          ))}
-        </>}
-        <span className="field-box-menu-label">{current.name} fields</span>
-        {filteredFields.map((field) => (
-            <button type="button" className={`operator-option${selectValue === `${FIELD_PREFIX}${field.name}` ? " operator-option-selected" : ""}`} role="option" aria-selected={selectValue === `${FIELD_PREFIX}${field.name}`} key={field.name} onClick={() => handleSelect(`${FIELD_PREFIX}${field.name}`)}>
-              {field.name}
-            </button>
-          ))}
-        {filteredFields.length === 0 && <span className="field-box-no-results">No matching fields</span>}
-        {!activeAggregate && allowAggregates && <>
-          <span className="field-box-menu-label">Aggregate</span>
-          {AGGREGATES.map((aggregate) => (
-            <button type="button" className="operator-option" role="option" key={aggregate} onClick={() => handleSelect(`${AGGREGATE_PREFIX}${aggregate}`)}>
-              {aggregate === COUNT_AGGREGATE ? aggregate : `${aggregate}(…)`}
-            </button>
-          ))}
-        </>}
+      {menuOpen && createPortal(<div
+        ref={menuPopupRef}
+        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}`}
+        style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: menuPosition.maxHeight, transform: "none", margin: 0 }}
+        onMouseDown={(event) => event.preventDefault()}
+        role="group"
+        aria-label={`${ariaLabel} options`}
+      >
+        {hasAdditionalSections && <div className="field-box-chooser-tabs" role="tablist" aria-label="Projection field type">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === "fields"}
+            className={`field-box-chooser-tab${activeSection === "fields" ? " active" : ""}`}
+            onClick={() => setActiveSection("fields")}
+          >Fields</button>
+          {allowValueSelection && <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === "value"}
+            className={`field-box-chooser-tab${activeSection === "value" ? " active" : ""}`}
+            onClick={() => setActiveSection("value")}
+          >Value</button>}
+          {allowCalculationSelection && <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === "calculation"}
+            className={`field-box-chooser-tab${activeSection === "calculation" ? " active" : ""}`}
+            onClick={() => {
+              setActiveSection("calculation");
+              setMenuOpen(false);
+              onCalculationSelect?.();
+            }}
+          >Calculation</button>}
+        </div>}
+        {activeSection === "value" && allowValueSelection
+          ? <div className="field-box-value-panel" role="tabpanel" aria-label="Constant value">
+            <label className="field-box-value-label" htmlFor={constantValueInputId}>Constant value</label>
+            <input
+                id={constantValueInputId}
+              type="text"
+              className="field-box-search field-box-value-input"
+              aria-label="Constant value"
+              placeholder="Enter text or a number"
+              autoFocus
+              value={constantValue}
+              onChange={(event) => setConstantValue(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  selectConstantValue();
+                }
+              }}
+            />
+            <button type="button" className="field-box-value-submit" onClick={selectConstantValue}>Apply</button>
+          </div>
+          : activeSection === "calculation" && allowCalculationSelection
+            ? <div className="field-box-value-panel" role="tabpanel" aria-label="Calculation">
+              <span className="field-box-calculation-hint">Build an expression from fields, SQL functions, and values.</span>
+            </div>
+            : <div role={hasAdditionalSections ? "tabpanel" : undefined} aria-label={hasAdditionalSections ? "Fields" : undefined}>
+              <input
+                type="search"
+                className="field-box-search"
+                aria-label="Search fields"
+                placeholder="Search fields…"
+                autoFocus
+                value={fieldSearch}
+                onChange={(event) => setFieldSearch(event.target.value)}
+              />
+              <div role="listbox" aria-label="Available fields">
+                {relations.length > 0 && <>
+                  <span className="field-box-menu-label">Relations</span>
+                  {relations.map((relation) => (
+                    <button type="button" className="operator-option" role="option" key={relation.name} onClick={() => handleSelect(`${RELATION_PREFIX}${relation.name}`)}>
+                      {relation.name}
+                    </button>
+                  ))}
+                </>}
+                <span className="field-box-menu-label">{current.name} fields</span>
+                {filteredFields.map((field) => (
+                  <button type="button" className={`operator-option${selectValue === `${FIELD_PREFIX}${field.name}` ? " operator-option-selected" : ""}`} role="option" aria-selected={selectValue === `${FIELD_PREFIX}${field.name}`} key={field.name} onClick={() => handleSelect(`${FIELD_PREFIX}${field.name}`)}>
+                    {field.name}
+                  </button>
+                ))}
+                {filteredFields.length === 0 && <span className="field-box-no-results">No matching fields</span>}
+                {!activeAggregate && allowAggregates && <>
+                  <span className="field-box-menu-label">Aggregate</span>
+                  {AGGREGATES.map((aggregate) => (
+                    <button type="button" className="operator-option" role="option" key={aggregate} onClick={() => handleSelect(`${AGGREGATE_PREFIX}${aggregate}`)}>
+                      {aggregate === COUNT_AGGREGATE ? aggregate : `${aggregate}(…)`}
+                    </button>
+                  ))}
+                </>}
+              </div>
+            </div>}
       </div>, document.body)}
     </div>}
     {completeOnSelect && value && <span className="field-box-completed" aria-label={`Selected ${ariaLabel.toLowerCase()}: ${value}`}>

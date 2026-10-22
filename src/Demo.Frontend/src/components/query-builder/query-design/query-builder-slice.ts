@@ -51,6 +51,7 @@ export type QueryColumn = {
 
 export type QueryFilterItem = {
   field: string;
+  fieldExpression?: QueryExpression;
   operation: number | string;
   value: string;
   rightField?: string;
@@ -141,9 +142,9 @@ function createApiFilter(group: QueryFilterGroup): ApiQueryFilterGroup | null {
       const nested = createApiFilter(filter);
       return nested ? [nested] : [];
     }
-    return filter.enabled && filter.field ? [{
+    return filter.enabled && (filter.fieldExpression || filter.field) ? [{
       logicalOperator: filter.logicalOperator,
-      left: { kind: "field", field: filter.field },
+      left: filter.fieldExpression ?? { kind: "field", field: filter.field },
       operation: filter.operation,
       right: filter.rightField
         ? { kind: "field", field: filter.rightField }
@@ -254,6 +255,32 @@ function filterOperandToText(operand: ApiFilterOperand | string): string {
   }
 }
 
+function isQueryExpression(value: unknown): value is QueryExpression {
+  if (!value || typeof value !== "object" || !("kind" in value)) return false;
+
+  switch (value.kind) {
+    case "field":
+      return "field" in value && typeof value.field === "string";
+    case "value":
+      return "value" in value && (typeof value.value === "string" || typeof value.value === "number");
+    case "binary":
+      return "operator" in value
+        && (value.operator === "+" || value.operator === "-" || value.operator === "*" || value.operator === "/")
+        && "arguments" in value
+        && Array.isArray(value.arguments)
+        && value.arguments.length === 2
+        && value.arguments.every(isQueryExpression);
+    case "function":
+      return "function" in value
+        && typeof value.function === "string"
+        && "arguments" in value
+        && Array.isArray(value.arguments)
+        && value.arguments.every(isQueryExpression);
+    default:
+      return false;
+  }
+}
+
 function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): QueryDefinition {
   const restoreGroup = (group: ApiQueryFilterGroup): QueryFilterGroup => ({
     ...group,
@@ -261,6 +288,7 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
       if ("filters" in node) return restoreGroup(node);
       const left = node.left ?? node.field;
       const field = left === undefined ? "" : filterOperandToText(left);
+      const fieldExpression = isQueryExpression(left) ? left : undefined;
       const right = node.right;
       const rightField = right && typeof right === "object" && "kind" in right && right.kind !== "value"
         ? filterOperandToText(right)
@@ -274,6 +302,7 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
           : String(node.value ?? "");
       return {
         field,
+        ...(fieldExpression ? { fieldExpression } : {}),
         operation: node.operation,
         value,
         ...(rightField ? { rightField } : {}),

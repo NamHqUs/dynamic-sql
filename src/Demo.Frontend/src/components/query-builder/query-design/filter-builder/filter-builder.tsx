@@ -628,11 +628,16 @@ function FilterRow({ filter, first, path, metadata, operators, entity, onChange,
           showPath
           showDataType
           ariaLabel="Filter field"
+          allowValueSelection
+          allowCalculationSelection
+          initialConstantValue={filter.fieldExpression?.kind === "value" ? filter.fieldExpression.value : undefined}
+          onValueSelect={(value) => update({ field: `<${value}>`, fieldExpression: { kind: "value", value } })}
           onChange={(field) => {
             const dataType = getFilterFieldDataType(entity, metadata, field);
             const options = getOperatorOptions(operators, dataType);
             update({
               field,
+              fieldExpression: undefined,
               ...(options.some(([value]) => value === filter.operation)
                 ? {}
                 : { operation: options[0]?.[0] ?? 0 }),
