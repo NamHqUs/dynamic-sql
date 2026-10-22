@@ -250,9 +250,9 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
           <button type="button" role="tab" aria-selected={activeSection === "functions"} className={activeSection === "functions" ? "active" : ""} onClick={() => selectSection("functions")}>
             <Icon name="code" size={14} /> Function definitions
           </button>
-          <button type="button" role="tab" aria-selected={activeSection === "operators"} className={activeSection === "operators" ? "active" : ""} onClick={() => selectSection("operators")}>
+          {/* <button type="button" role="tab" aria-selected={activeSection === "operators"} className={activeSection === "operators" ? "active" : ""} onClick={() => selectSection("operators")}>
             <Icon name="sliders" size={14} /> Operator definitions
-          </button>
+          </button> */}
         </nav>
       </section>
       <div className="metadata-workspace-panel" hidden={activeSection !== "entities"}>
