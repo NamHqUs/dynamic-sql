@@ -236,5 +236,4 @@ public class _01_ProjectionTest : TestBase
         Assert.That(actualValues, Is.EquivalentTo(expectedValues));
     }
 
-
 }

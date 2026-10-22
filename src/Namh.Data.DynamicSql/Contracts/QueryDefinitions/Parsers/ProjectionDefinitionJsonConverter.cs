@@ -55,7 +55,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
             "field" => new FieldDefinition(ReadString(element, "field")),
             "value" => new ConstFieldDefinition(ReadValue(element, "value")),
             "binary" => ParseBinary(element),
-            "group" => new GroupFieldDefintion(ReadArguments(element)),
+            "group" => ParseGroup(element),
             "function" => ParseFunction(element),
             _ => throw new JsonException($"Invalid projection expression kind [{kindElement.GetString()}].")
         };
@@ -63,14 +63,42 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
 
     private static IFieldDefinition ParseBinary(JsonElement element)
     {
-        var operation = ReadString(element, "operator");
-        if (operation is not ("+" or "-" or "*" or "/"))
-            throw new JsonException("A binary projection requires a supported arithmetic operator.");
+        MatchOperation operation;
+        try
+        {
+            operation = MatchOperationExtensions.ParseArithmetic(ReadString(element, "operator"));
+        }
+        catch (FormatException exception)
+        {
+            throw new JsonException("A binary projection requires a supported arithmetic operator.", exception);
+        }
         var arguments = ReadArguments(element);
         if (arguments.Length != 2)
             throw new JsonException("A binary projection requires exactly two arguments.");
 
-        return new GroupFieldDefintion([arguments[0], new BinaryFieldDefinition(operation, arguments[1])]);
+        return new GroupFieldDefintion(
+            MatchOperation.Add,
+            [arguments[0], new BinaryFieldDefinition(operation, arguments[1])]);
+    }
+
+    private static GroupFieldDefintion ParseGroup(JsonElement element)
+    {
+        var operation = MatchOperation.Add;
+        if (TryGetProperty(element, "operator", out var operatorElement))
+        {
+            if (operatorElement.ValueKind != JsonValueKind.String)
+                throw new JsonException("A grouped projection operator must be a string.");
+            try
+            {
+                operation = MatchOperationExtensions.Parse(operatorElement.GetString()!);
+            }
+            catch (FormatException exception)
+            {
+                throw new JsonException("A grouped projection requires a supported operator.", exception);
+            }
+        }
+
+        return new GroupFieldDefintion(operation, ReadArguments(element));
     }
 
     private static IFieldDefinition ParseFunction(JsonElement element)
@@ -117,35 +145,43 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         writer.WriteEndObject();
     }
 
-    private static void WriteGroupExpression(Utf8JsonWriter writer, IFieldDefinition[] fields)
+    private static void WriteGroupExpression(Utf8JsonWriter writer, GroupFieldDefintion group)
     {
-        if (fields.Length == 0)
-            throw new JsonException("A grouped projection cannot be empty.");
-
-        if (fields.Length == 1)
-        {
-            WriteFieldExpression(writer, fields[0]);
-            return;
-        }
-
-        var expression = fields[0];
-        for (var index = 1; index < fields.Length; index++)
-        {
-            if (fields[index] is not BinaryFieldDefinition binary)
-                throw new JsonException("Grouped projections must alternate fields and binary operators.");
-            expression = new GroupFieldDefintion([expression, binary]);
-        }
-
-        WriteFieldExpression(writer, expression);
+        WriteFieldExpression(writer, FlattenGroup(group));
     }
 
     private static void WriteFieldExpression(Utf8JsonWriter writer, IFieldDefinition field)
     {
+        if (field is GroupFieldDefintion rawGroup &&
+            rawGroup.Fields.Skip(1).All(item => item is not BinaryFieldDefinition))
+        {
+            writer.WriteString("kind", "group");
+            if (rawGroup.Oper != MatchOperation.Add)
+                writer.WriteString("operator", rawGroup.Oper.ToSymbol());
+            writer.WritePropertyName("arguments");
+            writer.WriteStartArray();
+            foreach (var item in rawGroup.Fields)
+                WriteField(writer, item);
+            writer.WriteEndArray();
+            return;
+        }
+
+        if (field is GroupFieldDefintion { Oper: not MatchOperation.Add } operatedGroup)
+        {
+            writer.WriteString("kind", "group");
+            writer.WriteString("operator", operatedGroup.Oper.ToSymbol());
+            writer.WritePropertyName("arguments");
+            writer.WriteStartArray();
+            WriteField(writer, FlattenGroup(operatedGroup));
+            writer.WriteEndArray();
+            return;
+        }
+
         if (field is GroupFieldDefintion { Fields.Length: 2 } group &&
             group.Fields[1] is BinaryFieldDefinition binary)
         {
             writer.WriteString("kind", "binary");
-            writer.WriteString("operator", binary.Oper);
+            writer.WriteString("operator", binary.Oper.ToSymbol());
             writer.WritePropertyName("arguments");
             writer.WriteStartArray();
             WriteField(writer, group.Fields[0]);
@@ -156,6 +192,12 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
 
         if (field is GroupFieldDefintion nested)
         {
+            if (nested.Fields.Length > 2)
+            {
+                WriteGroupExpression(writer, nested);
+                return;
+            }
+
             writer.WriteString("kind", "group");
             writer.WritePropertyName("arguments");
             writer.WriteStartArray();
@@ -190,4 +232,22 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         }
     }
 
+    private static IFieldDefinition FlattenGroup(GroupFieldDefintion group)
+    {
+        if (group.Fields.Length == 0)
+            throw new JsonException("A grouped projection cannot be empty.");
+
+        var expression = group.Fields[0];
+        for (var index = 1; index < group.Fields.Length; index++)
+        {
+            var (operation, operand) = group.Fields[index] is BinaryFieldDefinition binary
+                ? (binary.Oper, binary.Field)
+                : (group.Oper, group.Fields[index]);
+            expression = new GroupFieldDefintion(
+                MatchOperation.Add,
+                [expression, new BinaryFieldDefinition(operation, operand)]);
+        }
+
+        return expression;
+    }
 }

@@ -83,7 +83,7 @@ class QueryContext(
         {
             FieldDefinition field => ParseFieldExpression(tableContext, field),
             ConstFieldDefinition value => ParseValueExpression(value),
-            GroupFieldDefintion group => ParseGroupExpression(tableContext, group.Fields, depth),
+            GroupFieldDefintion group => ParseGroupExpression(tableContext, group, depth),
             FunctionFieldDefinition function => ParseFunctionExpression(tableContext, function, depth),
             _ => throw new FormatException($"Unsupported query expression [{expression.GetType().Name}].")
         };
@@ -104,8 +104,10 @@ class QueryContext(
             var value => new ValueExpression(AddDbParameter(ToDecimal(value), true), typeof(decimal))
         };
 
-    private SqlExpression ParseGroupExpression(TableExpression tableContext, IFieldDefinition[] fields, int depth)
+    private SqlExpression ParseGroupExpression(TableExpression tableContext, GroupFieldDefintion group, int depth)
     {
+        var fields = group.Fields
+            ?? throw new FormatException("A grouped query expression cannot have null fields.");
         if (fields.Length == 0)
             throw new FormatException("A grouped query expression cannot be empty.");
         if (fields.Length == 1)
@@ -114,14 +116,16 @@ class QueryContext(
         var result = ParseQueryExpression(tableContext, fields[0], depth + 1);
         for (var index = 1; index < fields.Length; index++)
         {
-            if (fields[index] is not BinaryFieldDefinition binary ||
-                binary.Oper is not ("+" or "-" or "*" or "/"))
-                throw new FormatException("Grouped projections must alternate expressions and supported binary operators.");
+            var (operation, operand) = fields[index] is BinaryFieldDefinition binary
+                ? (binary.Oper, binary.Field)
+                : (group.Oper, fields[index]);
+            if (!operation.IsArithmetic())
+                throw new FormatException($"Unsupported grouped projection operator [{operation}].");
 
             result = new BinarySqlExpression(
                 result,
-                binary.Oper,
-                ParseQueryExpression(tableContext, binary.Field, depth + 1),
+                operation.ToSymbol(),
+                ParseQueryExpression(tableContext, operand, depth + 1),
                 typeof(decimal));
         }
 

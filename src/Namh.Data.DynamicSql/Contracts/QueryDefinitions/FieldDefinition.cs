@@ -19,16 +19,21 @@ public record ConstFieldDefinition(object? Value) : IFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null) => $"<{Value}>";
 }
-public record BinaryFieldDefinition(string Oper, IFieldDefinition Field) : IFieldDefinition
+public record BinaryFieldDefinition(MatchOperation Oper, IFieldDefinition Field) : IFieldDefinition
 {
-    public string ToText(Dictionary<string, object>? tags = null) => $" {Oper} {Field.ToText(tags)}";
+    public string ToText(Dictionary<string, object>? tags = null) => $" {Oper.ToSymbol()} {Field.ToText(tags)}";
 }
 public record FunctionFieldDefinition(string FunctionName, IFieldDefinition[] Arguments) : IFieldDefinition
 {
     public string ToText(Dictionary<string, object>? tags = null) => $"{FunctionName}({string.Join(", ", Arguments.Select(a => a.ToText(tags)))})";
 }
-public record GroupFieldDefintion(IFieldDefinition[] Fields) : IFieldDefinition
+public record GroupFieldDefintion(MatchOperation Oper, IFieldDefinition[] Fields) : IFieldDefinition
 {
+    public GroupFieldDefintion(IFieldDefinition[] fields)
+        : this(MatchOperation.Add, fields)
+    {
+    }
+
     public string ToText(Dictionary<string, object>? tags = null)
     {
         tags ??= [];
@@ -39,10 +44,67 @@ public record GroupFieldDefintion(IFieldDefinition[] Fields) : IFieldDefinition
         var level = (int)tags["group-level"];
         tags["group-level"] = level + 1;
 
-        var text = string.Join("", Fields.Select(f => f.ToText(tags)));
+        var text = string.Join("", Fields.Select((field, index) => field switch
+        {
+            BinaryFieldDefinition => field.ToText(tags),
+            _ when index > 0 => $" {Oper.ToSymbol()} {field.ToText(tags)}",
+            _ => field.ToText(tags)
+        }));
 
         tags["group-level"] = level;
 
         return level == 0 ? text : $"({text})";
     }
+}
+
+public enum MatchOperation
+{
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Modulus,
+    BitwiseAnd,
+    BitwiseOr,
+}
+
+internal static class MatchOperationExtensions
+{
+    public static string ToSymbol(this MatchOperation operation)
+        => operation switch
+        {
+            MatchOperation.Add => "+",
+            MatchOperation.Subtract => "-",
+            MatchOperation.Multiply => "*",
+            MatchOperation.Divide => "/",
+            MatchOperation.Modulus => "%",
+            MatchOperation.BitwiseAnd => "&",
+            MatchOperation.BitwiseOr => "|",
+            _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, "Unsupported match operation.")
+        };
+
+    public static MatchOperation Parse(string operation)
+        => operation switch
+        {
+            "+" => MatchOperation.Add,
+            "-" => MatchOperation.Subtract,
+            "*" => MatchOperation.Multiply,
+            "/" => MatchOperation.Divide,
+            "%" => MatchOperation.Modulus,
+            "&" => MatchOperation.BitwiseAnd,
+            "|" => MatchOperation.BitwiseOr,
+            _ => throw new FormatException($"Unsupported match operator [{operation}].")
+        };
+
+    public static MatchOperation ParseArithmetic(string operation)
+    {
+        var parsed = Parse(operation);
+        return parsed.IsArithmetic()
+            ? parsed
+            : throw new FormatException($"Unsupported arithmetic operator [{operation}].");
+    }
+
+    public static bool IsArithmetic(this MatchOperation operation)
+        => operation is MatchOperation.Add or MatchOperation.Subtract or MatchOperation.Multiply
+            or MatchOperation.Divide or MatchOperation.Modulus;
 }

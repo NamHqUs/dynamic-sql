@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using System.Text.Json;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
@@ -220,6 +221,83 @@ public sealed class _16_QueryExpressionTests
         Assert.That(Convert.ToDecimal(records[0]["UnitsSold"]), Is.EqualTo(3m));
         Assert.That(Convert.ToDecimal(records[0]["GrossProfit"]), Is.EqualTo(23m));
         Assert.That(Convert.ToDecimal(records[0]["MarginPercent"]), Is.EqualTo(71.88m).Within(0.01m));
+    }
+
+    [Test]
+    public void FlatAdditiveGroupBuildsArithmeticSql()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        using var db = new DynamicSqlContext(connection, Metadata);
+        var definition = new QueryDefinition
+        {
+            Entity = "Products",
+            Projection =
+            [
+                new ProjectionDefinition(
+                    QueryDefinitionParser.ParseField("Id + CostPrice + Id - CostPrice"),
+                    "Calculated")
+            ]
+        };
+
+        var sql = db.Query(definition).ToSql();
+
+        Assert.That(sql.CommandText, Does.Match(
+            @"\(\s*\(\s*\(\s*\(t0\.""Id"" \+ t0\.""CostPrice""\)\s*\+\s*t0\.""Id""\)\s*-\s*t0\.""CostPrice""\)"));
+    }
+
+    [Test]
+    public void MultiplicationRetainsPrecedenceInsideAdditiveGroup()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        using var db = new DynamicSqlContext(connection, Metadata);
+        var definition = new QueryDefinition
+        {
+            Entity = "Products",
+            Projection =
+            [
+                new ProjectionDefinition(
+                    QueryDefinitionParser.ParseField("Id + CostPrice * Id"),
+                    "Calculated")
+            ]
+        };
+
+        var sql = db.Query(definition).ToSql();
+
+        Assert.That(sql.CommandText, Does.Match(
+            @"t0\.""Id"" \+ \(t0\.""CostPrice"" \* t0\.""Id""\)"));
+    }
+
+    [Test]
+    public void GroupOperatorSurvivesJsonRoundTripAndBuildsSql()
+    {
+        const string json = """
+            {
+              "entity": "Products",
+              "projection": [{
+                "alias": "Calculated",
+                "field": {
+                  "kind": "group",
+                  "operator": "*",
+                  "arguments": [
+                    { "kind": "field", "field": "Id" },
+                    { "kind": "field", "field": "CostPrice" }
+                  ]
+                }
+              }]
+            }
+            """;
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var definition = JsonSerializer.Deserialize<QueryDefinition>(json, options)
+            ?? throw new InvalidOperationException("The query request JSON did not produce a definition.");
+        var serialized = JsonSerializer.Serialize(definition, options);
+        var roundTripped = JsonSerializer.Deserialize<QueryDefinition>(serialized, options)
+            ?? throw new InvalidOperationException("The serialized query request did not produce a definition.");
+
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        using var db = new DynamicSqlContext(connection, Metadata);
+        var sql = db.Query(roundTripped).ToSql();
+
+        Assert.That(sql.CommandText, Does.Contain("(t0.\"Id\" * t0.\"CostPrice\")"));
     }
 
     [Test]

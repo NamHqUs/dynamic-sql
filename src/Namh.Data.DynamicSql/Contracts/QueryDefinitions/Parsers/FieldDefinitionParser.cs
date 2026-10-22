@@ -22,7 +22,7 @@ internal static class FieldDefinitionParser
 
         if (IsWrappedBy(text, '(', ')'))
         {
-            return new GroupFieldDefintion(ParseSequence(text[1..^1]).ToArray());
+            return ParseSequence(text[1..^1]);
         }
 
         if (text[0] == '<' && text[^1] == '>')
@@ -31,10 +31,7 @@ internal static class FieldDefinitionParser
             return new ConstFieldDefinition(ParseConstant(value));
         }
 
-        var sequence = ParseSequence(text);
-        return sequence.Count == 1
-            ? sequence[0]
-            : new GroupFieldDefintion(sequence.ToArray());
+        return ParseSequence(text);
     }
 
     private static bool TryGetFunctionCall(string text, out int opening)
@@ -79,15 +76,56 @@ internal static class FieldDefinitionParser
         return bool.TryParse(value, out var boolean) ? boolean : value;
     }
 
-    private static List<IFieldDefinition> ParseSequence(string text)
+    private static IFieldDefinition ParseSequence(string text)
     {
         var parts = SplitBinaryOperators(text);
-        var fields = new List<IFieldDefinition> { ParseAtom(parts[0]) };
-        for (var i = 1; i < parts.Count; i += 2)
+        if (parts.Count == 1)
+            return ParseAtom(parts[0]);
+
+        var additiveOperators = new List<int>();
+        for (var index = 1; index < parts.Count; index += 2)
         {
-            fields.Add(new BinaryFieldDefinition(parts[i], ParseAtom(parts[i + 1])));
+            var operation = MatchOperationExtensions.ParseArithmetic(parts[index]);
+            if (operation is MatchOperation.Add or MatchOperation.Subtract)
+                additiveOperators.Add(index);
         }
-        return fields;
+
+        if (additiveOperators.Count == 0)
+            return ParseMultiplicativeSequence(parts, 0, parts.Count);
+
+        var fields = new List<IFieldDefinition>
+        {
+            ParseMultiplicativeSequence(parts, 0, additiveOperators[0])
+        };
+        for (var index = 0; index < additiveOperators.Count; index++)
+        {
+            var operatorIndex = additiveOperators[index];
+            var termEnd = index + 1 < additiveOperators.Count
+                ? additiveOperators[index + 1]
+                : parts.Count;
+            fields.Add(new BinaryFieldDefinition(
+                MatchOperationExtensions.ParseArithmetic(parts[operatorIndex]),
+                ParseMultiplicativeSequence(parts, operatorIndex + 1, termEnd)));
+        }
+
+        return new GroupFieldDefintion(MatchOperation.Add, fields.ToArray());
+    }
+
+    private static IFieldDefinition ParseMultiplicativeSequence(
+        IReadOnlyList<string> parts,
+        int start,
+        int end)
+    {
+        var fields = new List<IFieldDefinition> { ParseAtom(parts[start]) };
+        for (var index = start + 1; index < end; index += 2)
+        {
+            var operation = MatchOperationExtensions.ParseArithmetic(parts[index]);
+            fields.Add(new BinaryFieldDefinition(operation, ParseAtom(parts[index + 1])));
+        }
+
+        return fields.Count == 1
+            ? fields[0]
+            : new GroupFieldDefintion(MatchOperation.Multiply, fields.ToArray());
     }
 
     private static IFieldDefinition ParseAtom(string text)

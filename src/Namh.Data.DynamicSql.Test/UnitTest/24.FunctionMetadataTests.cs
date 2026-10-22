@@ -69,7 +69,7 @@ public sealed class _24_FunctionMetadataTests
             new GroupFieldDefintion(
             [
                 new FieldDefinition("Amount"),
-                new BinaryFieldDefinition("+", new ConstFieldDefinition(3))
+                new BinaryFieldDefinition(MatchOperation.Add, new ConstFieldDefinition(3))
             ])
         ]);
 

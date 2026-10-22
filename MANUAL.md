@@ -354,7 +354,7 @@ values are parameterized by the query pipeline.
 
 Calculated projections use a structured expression tree rather than SQL text.
 Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
-`*`, `/`), and `function` (`COUNT`, `SUM`, `AVG`, `ROUND`, `NULLIF`,
+`*`, `/`, `%`), `group`, and `function` (`COUNT`, `SUM`, `AVG`, `ROUND`, `NULLIF`,
 `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`,
 `DateFormat`, `GETDATE`):
 
@@ -391,6 +391,10 @@ Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
 
 Related field references use metadata relation paths, so the query compiler
 creates the necessary joins. Numeric expression values are parameterized.
+Groups may specify an `operator` for unmarked arguments; it defaults to `+`.
+Text expressions with operators of the same precedence, such as
+`A + B + C - D`, are represented as one flat group whose later terms retain
+their own typed operators.
 Function calls are validated against definitions in the metadata provider.
 The default provider includes the built-in functions shown above. Applications can add or override definitions with `FunctionDefinition`.
 Each definition specifies its UI-facing arguments, result type, and SQL

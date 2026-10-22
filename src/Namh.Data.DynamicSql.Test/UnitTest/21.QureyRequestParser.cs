@@ -30,7 +30,7 @@ internal class _21_QureyRequestParser : TestBase
         var expectedField = new FunctionFieldDefinition("Round", [
             new GroupFieldDefintion( [
                     new FieldDefinition("Id"),
-                    new BinaryFieldDefinition("+", new ConstFieldDefinition(2))
+                    new BinaryFieldDefinition(MatchOperation.Add, new ConstFieldDefinition(2))
             ])
         ]);
 
@@ -48,7 +48,7 @@ internal class _21_QureyRequestParser : TestBase
             new FunctionFieldDefinition("Sum", [
                 new GroupFieldDefintion( [
                     new FieldDefinition("Id"),
-                    new BinaryFieldDefinition("+", new FieldDefinition("Age"))
+                    new BinaryFieldDefinition(MatchOperation.Add, new FieldDefinition("Age"))
                 ])
             ]),
             new ConstFieldDefinition(2)
@@ -74,7 +74,7 @@ internal class _21_QureyRequestParser : TestBase
 
         var expectedField = new GroupFieldDefintion([
                 new FieldDefinition("Id"),
-                new BinaryFieldDefinition("+", new FieldDefinition("Age"))
+                new BinaryFieldDefinition(MatchOperation.Add, new FieldDefinition("Age"))
             ]);
 
         Assert.That(field.ToText(), Is.EqualTo(text));
@@ -89,9 +89,9 @@ internal class _21_QureyRequestParser : TestBase
 
         var expectedField = new GroupFieldDefintion([
                 new FieldDefinition("Id"),
-                new BinaryFieldDefinition("+", new GroupFieldDefintion([
+                new BinaryFieldDefinition(MatchOperation.Add, new GroupFieldDefintion(MatchOperation.Multiply, [
                     new FieldDefinition("Age"),
-                    new BinaryFieldDefinition("*", new FunctionFieldDefinition("Sum", [
+                    new BinaryFieldDefinition(MatchOperation.Multiply, new FunctionFieldDefinition("Sum", [
                         new FieldDefinition("Salary")
                     ]))
                 ]))
@@ -124,6 +124,7 @@ internal class _21_QureyRequestParser : TestBase
                 }
                 break;
             case (GroupFieldDefintion expectedGroup, GroupFieldDefintion actualGroup):
+                Assert.That(actualGroup.Oper, Is.EqualTo(expectedGroup.Oper));
                 Assert.That(actualGroup.Fields, Has.Length.EqualTo(expectedGroup.Fields.Length));
                 for (var i = 0; i < expectedGroup.Fields.Length; i++)
                 {
