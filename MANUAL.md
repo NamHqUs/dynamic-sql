@@ -412,6 +412,8 @@ Groups may specify an `operator` for unmarked arguments; it defaults to `+`.
 Text expressions with operators of the same precedence, such as
 `A + B + C - D`, are represented as one flat group whose later terms retain
 their own typed operators.
+For the canonical serialized JSON shape, including how root and nested groups
+are written, see the [Expression Model JSON Reference](./EXPRESSION-MODEL-REFERENCE.md).
 Function calls are validated against definitions in the metadata provider.
 The default provider includes the built-in functions shown above. Applications can add or override definitions with `FunctionDefinition`.
 Each definition specifies its UI-facing arguments, result type, and SQL
