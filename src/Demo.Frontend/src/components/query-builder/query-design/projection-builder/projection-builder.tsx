@@ -452,7 +452,7 @@ function FieldCards({
                         openColumnEditor();
                     }}
                   >{columnExpression ? formatExpression(columnExpression) : field.name}</span>}
-            {column && !columnAlias && editingAliasField !== field.name && editingField !== field.name && <>
+            {column && !columnAlias && editingAliasField !== field.name && <>
               <button
                 type="button"
                 className="field-alias-value editable field-alias-placeholder"

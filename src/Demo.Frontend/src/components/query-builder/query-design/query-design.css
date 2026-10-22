@@ -73,6 +73,7 @@
 .filter-field-drag-target { position: relative; display: flex; align-items: center; flex: 0 0 auto; }
 .filter-field-drag-handle { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; border-left: 3px solid #654f9f; cursor: grab; z-index: 1; }
 .filter-field-drag-handle:active { cursor: grabbing; }
+.filter-field-drag-target > .field-builder-editing { box-sizing: border-box; gap: 7px; padding: 0 9px; color: #ded5ff; background: #1d192e; border: 0; border-radius: 5px; }
 .filter-row .field-box { flex: 0 0 auto; }
 .filter-row .field-box select { border-left: 3px solid #654f9f; }
 .filter-row > select { width: 120px; }
@@ -104,6 +105,7 @@
 .projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger,
 .projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger:hover,
 .projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger:focus-visible { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; border-radius: 0; background: transparent; padding: 0; height: var(--field-box-height); box-sizing: border-box; font: 13px "Manrope", sans-serif; }
+.projection-row-fields > .field-card .field-box-menu-selected .operator-trigger { max-width: min(360px, 45vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px "DM Mono", monospace; }
 .filter-add-condition { display: inline-flex; align-items: center; gap: 5px; height: var(--field-box-height); box-sizing: border-box; color: var(--purple); border: 0; background: transparent; padding: 0; font: 13px "Manrope", sans-serif; }
 .sort-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; box-sizing: border-box; margin-top: 10px; padding-top: 8px; padding-left: 46px; }
 .sort-list-drop-target { outline: 1px dashed #a78bfa; outline-offset: 5px; }

@@ -53,7 +53,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
   const menuRef = useRef<HTMLDivElement>(null);
   const menuPopupRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, maxHeight: 420 });
 
   useEffect(() => {
     if (autoFocus) setMenuOpen(true);
@@ -68,12 +68,32 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
       const menu = menuPopupRef.current;
       const menuHeight = menu?.getBoundingClientRect().height ?? 420;
       const menuWidth = menu?.getBoundingClientRect().width ?? 200;
-      const spaceBelow = window.innerHeight - bounds.bottom;
-      const top = spaceBelow < menuHeight + 4 && bounds.top >= menuHeight + 4
-        ? bounds.top - menuHeight - 4
-        : bounds.bottom + 4;
-      const left = Math.min(bounds.left, Math.max(4, window.innerWidth - menuWidth - 4));
-      setMenuPosition({ top, left });
+      const inFieldCard = Boolean(triggerRef.current.closest(".field-card"));
+      const inProjectionFieldPicker = Boolean(triggerRef.current.closest(".projection-row-builder"));
+      const inSelectedFieldCard = Boolean(triggerRef.current.closest(".field-card.selected"));
+      const projectionBounds = inProjectionFieldPicker
+        ? triggerRef.current.closest(".projection-section")?.getBoundingClientRect()
+        : inSelectedFieldCard
+          ? triggerRef.current.closest(".field-card.selected")?.getBoundingClientRect()
+          : undefined;
+      const positionBounds = projectionBounds ?? bounds;
+      const openBelow = inProjectionFieldPicker || inSelectedFieldCard;
+      const spaceBelow = window.innerHeight - positionBounds.bottom;
+      const openAbove = !openBelow && (inFieldCard
+        ? spaceBelow < Math.min(menuHeight, 180) + 4 && bounds.top > spaceBelow
+        : spaceBelow < menuHeight + 4 && bounds.top >= menuHeight + 4);
+      const availableHeight = openAbove ? positionBounds.top - 8 : spaceBelow - 8;
+      const top = openAbove
+        ? positionBounds.top - Math.min(menuHeight, availableHeight) - 4
+        : positionBounds.bottom + (openBelow ? 0 : 4);
+      const left = Math.min(positionBounds.left, Math.max(4, window.innerWidth - menuWidth - 4));
+      setMenuPosition({
+        top,
+        left,
+        maxHeight: inFieldCard || inProjectionFieldPicker
+          ? Math.max(0, Math.min(menuHeight, availableHeight))
+          : 420,
+      });
     };
 
     updateMenuPosition();
@@ -218,7 +238,7 @@ export default function FieldBox({ entity, metadata, value, onChange, onIncomple
             : label;
         })()}
       </button>
-      {menuOpen && createPortal(<div ref={menuPopupRef} className="operator-menu field-box-menu-popup" style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, transform: "none", margin: 0 }} onMouseDown={(event) => event.preventDefault()} role="listbox" aria-label={`${ariaLabel} options`}>
+      {menuOpen && createPortal(<div ref={menuPopupRef} className="operator-menu field-box-menu-popup" style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: menuPosition.maxHeight, transform: "none", margin: 0 }} onMouseDown={(event) => event.preventDefault()} role="listbox" aria-label={`${ariaLabel} options`}>
         <input
           type="search"
           className="field-box-search"

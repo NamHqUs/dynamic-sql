@@ -56,6 +56,18 @@ export default function FieldBuilder({
     setIsEditing(false);
     onCancel?.();
   };
+  const dataType = showDataType ? getFieldDataType(entity, metadata, value) : undefined;
+  const removeButton = onRemove && (
+    <button
+      type="button"
+      className="field-builder-remove"
+      aria-label={`Remove ${ariaLabel.toLowerCase()}`}
+      title={`Remove ${ariaLabel.toLowerCase()}`}
+      onClick={onRemove}
+    >
+      <Icon name="close" size={12} />
+    </button>
+  );
 
   if (!value || editMode || isEditing) {
     return (
@@ -96,11 +108,12 @@ export default function FieldBuilder({
             onChange(path);
           }}
         />
+        {dataType && <span className="field-builder-type">{dataType}</span>}
+        {removeButton}
       </div>
     );
   }
 
-  const dataType = showDataType ? getFieldDataType(entity, metadata, value) : undefined;
   const displayValue = showPath ? value : value.split(".").pop() ?? value;
 
   return (
@@ -118,17 +131,7 @@ export default function FieldBuilder({
         {displayValue}
       </span>
       {dataType && <span className="field-builder-type">{dataType}</span>}
-      {onRemove && (
-        <button
-          type="button"
-          className="field-builder-remove"
-          aria-label={`Remove ${ariaLabel.toLowerCase()}`}
-          title={`Remove ${ariaLabel.toLowerCase()}`}
-          onClick={onRemove}
-        >
-          <Icon name="close" size={12} />
-        </button>
-      )}
+      {removeButton}
     </div>
   );
 }
