@@ -89,12 +89,12 @@ internal class _21_QureyRequestParser : TestBase
 
         var expectedField = new GroupFieldDefintion([
                 new FieldDefinition("Id"),
-                new BinaryFieldDefinition(MatchOperation.Add, new GroupFieldDefintion(MatchOperation.Multiply, [
+                new GroupFieldDefintion(MatchOperation.Add, [
                     new FieldDefinition("Age"),
                     new BinaryFieldDefinition(MatchOperation.Multiply, new FunctionFieldDefinition("Sum", [
                         new FieldDefinition("Salary")
                     ]))
-                ]))
+                ])
             ]);
 
         Assert.That(field.ToText(), Is.EqualTo(text));

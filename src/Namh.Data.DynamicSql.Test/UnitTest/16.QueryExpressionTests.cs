@@ -250,21 +250,31 @@ public sealed class _16_QueryExpressionTests
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         using var db = new DynamicSqlContext(connection, Metadata);
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         var definition = new QueryDefinition
         {
             Entity = "Products",
             Projection =
             [
                 new ProjectionDefinition(
-                    QueryDefinitionParser.ParseField("Id + CostPrice * Id"),
+                    QueryDefinitionParser.ParseField("Id + CostPrice * Id - CostPrice"),
                     "Calculated")
             ]
         };
+        var serialized = JsonSerializer.Serialize(definition, options);
+        var roundTripped = JsonSerializer.Deserialize<QueryDefinition>(serialized, options)
+            ?? throw new InvalidOperationException("The serialized query request did not produce a definition.");
+        var group = (GroupFieldDefintion)roundTripped.Projection[0].Field;
+        Assert.That(group.Fields[1], Is.InstanceOf<GroupFieldDefintion>());
+        Assert.That(group.Fields[1], Is.Not.InstanceOf<BinaryFieldDefinition>());
+        Assert.That(group.Fields[2], Is.EqualTo(new BinaryFieldDefinition(
+            MatchOperation.Subtract,
+            new FieldDefinition("CostPrice"))));
 
-        var sql = db.Query(definition).ToSql();
+        var sql = db.Query(roundTripped).ToSql();
 
         Assert.That(sql.CommandText, Does.Match(
-            @"t0\.""Id"" \+ \(t0\.""CostPrice"" \* t0\.""Id""\)"));
+            @"t0\.""Id"" \+ \(t0\.""CostPrice"" \* t0\.""Id""\)\s*\)\s*-\s*t0\.""CostPrice"""));
     }
 
     [Test]

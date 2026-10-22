@@ -47,6 +47,8 @@ public record GroupFieldDefintion(MatchOperation Oper, IFieldDefinition[] Fields
         var text = string.Join("", Fields.Select((field, index) => field switch
         {
             BinaryFieldDefinition => field.ToText(tags),
+            GroupFieldDefintion nested when index > 0
+                => $" {nested.Oper.ToSymbol()} {nested.ToText(tags)}",
             _ when index > 0 => $" {Oper.ToSymbol()} {field.ToText(tags)}",
             _ => field.ToText(tags)
         }));

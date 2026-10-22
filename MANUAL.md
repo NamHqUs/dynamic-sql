@@ -354,7 +354,8 @@ values are parameterized by the query pipeline.
 
 Calculated projections use a structured expression tree rather than SQL text.
 Supported nodes are `field`, numeric `value`, arithmetic `binary` (`+`, `-`,
-`*`, `/`, `%`), `group`, and `function` (`COUNT`, `SUM`, `AVG`, `ROUND`, `NULLIF`,
+`*`, `/`, `%`), `binary-term` (an operator-prefixed group term), `group`, and
+`function` (`COUNT`, `SUM`, `AVG`, `ROUND`, `NULLIF`,
 `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`,
 `DateFormat`, `GETDATE`):
 

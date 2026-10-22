@@ -103,9 +103,11 @@ internal static class FieldDefinitionParser
             var termEnd = index + 1 < additiveOperators.Count
                 ? additiveOperators[index + 1]
                 : parts.Count;
-            fields.Add(new BinaryFieldDefinition(
-                MatchOperationExtensions.ParseArithmetic(parts[operatorIndex]),
-                ParseMultiplicativeSequence(parts, operatorIndex + 1, termEnd)));
+            var operation = MatchOperationExtensions.ParseArithmetic(parts[operatorIndex]);
+            var operand = ParseMultiplicativeSequence(parts, operatorIndex + 1, termEnd);
+            fields.Add(operand is GroupFieldDefintion group
+                ? group with { Oper = operation }
+                : new BinaryFieldDefinition(operation, operand));
         }
 
         return new GroupFieldDefintion(MatchOperation.Add, fields.ToArray());
@@ -120,12 +122,15 @@ internal static class FieldDefinitionParser
         for (var index = start + 1; index < end; index += 2)
         {
             var operation = MatchOperationExtensions.ParseArithmetic(parts[index]);
-            fields.Add(new BinaryFieldDefinition(operation, ParseAtom(parts[index + 1])));
+            var operand = ParseAtom(parts[index + 1]);
+            fields.Add(operand is GroupFieldDefintion group
+                ? group with { Oper = operation }
+                : new BinaryFieldDefinition(operation, operand));
         }
 
         return fields.Count == 1
             ? fields[0]
-            : new GroupFieldDefintion(MatchOperation.Multiply, fields.ToArray());
+            : new GroupFieldDefintion(MatchOperation.Add, fields.ToArray());
     }
 
     private static IFieldDefinition ParseAtom(string text)

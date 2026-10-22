@@ -33,13 +33,15 @@ internal class _40_QueryDefintionTest : TestBase
         var group = (GroupFieldDefintion)QueryDefinitionParser.ParseField("A + B * C - D");
 
         Assert.That(group.Fields, Has.Length.EqualTo(3));
-        var additiveTerm = (BinaryFieldDefinition)group.Fields[1];
-        Assert.That(additiveTerm.Oper, Is.EqualTo(MatchOperation.Add));
-        var multiplicativeGroup = (GroupFieldDefintion)additiveTerm.Field;
-        Assert.That(multiplicativeGroup.Oper, Is.EqualTo(MatchOperation.Multiply));
+        var multiplicativeGroup = (GroupFieldDefintion)group.Fields[1];
+        Assert.That(multiplicativeGroup.Oper, Is.EqualTo(MatchOperation.Add));
         Assert.That(multiplicativeGroup.Fields[0], Is.EqualTo(new FieldDefinition("B")));
         Assert.That(multiplicativeGroup.Fields[1], Is.EqualTo(new BinaryFieldDefinition(
             MatchOperation.Multiply,
             new FieldDefinition("C"))));
+        Assert.That(group.Fields[1], Is.Not.InstanceOf<BinaryFieldDefinition>());
+        Assert.That(group.Fields[2], Is.EqualTo(new BinaryFieldDefinition(
+            MatchOperation.Subtract,
+            new FieldDefinition("D"))));
     }
 }

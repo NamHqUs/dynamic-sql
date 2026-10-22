@@ -116,9 +116,14 @@ class QueryContext(
         var result = ParseQueryExpression(tableContext, fields[0], depth + 1);
         for (var index = 1; index < fields.Length; index++)
         {
-            var (operation, operand) = fields[index] is BinaryFieldDefinition binary
-                ? (binary.Oper, binary.Field)
-                : (group.Oper, fields[index]);
+            var (operation, operand) = fields[index] switch
+            {
+                BinaryFieldDefinition binary => (binary.Oper, binary.Field),
+                GroupFieldDefintion nestedGroup => (nestedGroup.Oper, nestedGroup),
+                _ => (group.Oper, fields[index])
+            };
+            if (operand is GroupFieldDefintion && fields[index] is BinaryFieldDefinition)
+                throw new FormatException("A binary field cannot wrap a grouped projection; set the group's operator instead.");
             if (!operation.IsArithmetic())
                 throw new FormatException($"Unsupported grouped projection operator [{operation}].");
 
