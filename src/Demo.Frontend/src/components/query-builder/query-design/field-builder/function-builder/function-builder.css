@@ -1,0 +1,197 @@
+.expression-node {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #343849;
+  border-radius: 7px;
+  background: #171b24;
+}
+
+.expression-node-root {
+  border-color: #4b4265;
+  background: linear-gradient(145deg, #1d1b2a, #171b24 72%);
+}
+
+.expression-node-function {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  vertical-align: middle;
+}
+
+.expression-node-heading {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.expression-node-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #aab3c2;
+  font: 9px "DM Mono", monospace;
+  letter-spacing: .7px;
+}
+
+.expression-node-kind-function { color: #c1adff; }
+
+.expression-remove {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #8993a5;
+  background: transparent;
+  cursor: pointer;
+}
+
+.expression-node-function > .expression-node-heading {
+  display: contents;
+}
+
+.expression-node-function > .expression-node-heading .expression-remove {
+  order: 1;
+  margin-left: 0;
+}
+
+.expression-remove:hover,
+.expression-remove:focus-visible {
+  border-color: #71333d;
+  color: #ffb0b0;
+  background: #43252c;
+  outline: 0;
+}
+
+.expression-function-editor {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.expression-function-select {
+  position: relative;
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  flex: 0 0 auto;
+}
+
+.expression-function-select .operator-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  max-width: 100%;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border: 1px solid #353c4b;
+  border-radius: 5px;
+  color: #dce1eb;
+  background: #191e28;
+  font: 11px "DM Mono", monospace;
+  text-align: center;
+}
+
+.expression-function-select .operator-trigger:hover,
+.expression-function-select .operator-trigger:focus-visible {
+  border-color: #8069cb;
+  outline: 0;
+}
+
+.expression-function-menu.operator-menu {
+  top: calc(100% + 4px);
+  left: 0;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(320px, calc(100vw - 24px));
+  max-height: 280px;
+  overflow: hidden;
+  transform: none;
+}
+
+.expression-function-search {
+  width: 100%;
+  min-width: 180px;
+  box-sizing: border-box;
+  margin-bottom: 4px;
+  padding: 6px 8px;
+  border: 1px solid #4a4163;
+  border-radius: 4px;
+  outline: 0;
+  color: #dce1eb;
+  background: #191e28;
+  font: 11px "DM Mono", monospace;
+}
+
+.expression-function-search:focus {
+  border-color: #8069cb;
+}
+
+.expression-function-options {
+  display: flex;
+  max-height: 220px;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.expression-function-menu .operator-option {
+  width: 100%;
+  padding-right: 20px;
+  white-space: nowrap;
+}
+
+.expression-function-no-results {
+  padding: 8px 12px;
+  color: #8993a5;
+  font: 11px "DM Mono", monospace;
+}
+
+.expression-function-arguments {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+}
+
+.expression-function-argument {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 3px;
+}
+
+.expression-function-punctuation {
+  flex: 0 0 auto;
+  color: #aab3c2;
+  font: 10px "DM Mono", monospace;
+}
+
+.expression-node-function .expression-function-editor {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.expression-function-empty {
+  margin: 0;
+  color: #8993a5;
+  font-size: 11px;
+}

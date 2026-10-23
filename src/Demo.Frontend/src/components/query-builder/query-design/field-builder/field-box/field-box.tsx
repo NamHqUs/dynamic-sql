@@ -28,6 +28,8 @@ type FieldBoxProps = {
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
   onCalculationSelect?: () => void;
+  onCalculationTabSelect?: () => void;
+  onFunctionTabSelect?: () => void;
   onEscape?: () => void;
   renderCalculation?: (onComplete: () => void) => ReactNode;
   renderFunction?: (onComplete: () => void) => ReactNode;
@@ -76,6 +78,8 @@ export default function FieldBox({
   initialConstantValue,
   onValueSelect,
   onCalculationSelect,
+  onCalculationTabSelect,
+  onFunctionTabSelect,
   onEscape,
   renderCalculation,
   renderFunction,
@@ -383,14 +387,28 @@ export default function FieldBox({
             role="tab"
             aria-selected={activeSection === "calculation"}
             className={`field-box-chooser-tab${activeSection === "calculation" ? " active" : ""}`}
-            onClick={() => setActiveSection("calculation")}
+            onClick={() => {
+              if (onCalculationTabSelect) {
+                closeMenu();
+                onCalculationTabSelect();
+              } else {
+                setActiveSection("calculation");
+              }
+            }}
           ><Icon name="sliders" size={12} />Calculation</button>}
           {allowFunctionSelection && <button
             type="button"
             role="tab"
             aria-selected={activeSection === "function"}
             className={`field-box-chooser-tab${activeSection === "function" ? " active" : ""}`}
-            onClick={() => setActiveSection("function")}
+            onClick={() => {
+              if (onFunctionTabSelect) {
+                closeMenu();
+                onFunctionTabSelect();
+              } else {
+                setActiveSection("function");
+              }
+            }}
           ><Icon name="code" size={12} />Function</button>}
         </div>}
         {activeSection === "value" && allowValueSelection

@@ -42,6 +42,8 @@ type FieldBuilderProps = {
   debugModel?: IFieldDefinition;
   debugOperator?: MatchOperation | null;
   onCalculationSelect?: () => void;
+  onCalculationTabSelect?: () => void;
+  onFunctionTabSelect?: () => void;
   onExpressionApply?: (expression: IFieldDefinition) => void;
 };
 
@@ -81,6 +83,8 @@ export default function FieldBuilder({
   debugModel,
   debugOperator,
   onCalculationSelect,
+  onCalculationTabSelect,
+  onFunctionTabSelect,
   onExpressionApply,
 }: FieldBuilderProps) {
   const [isEditing, setIsEditing] = useState(editMode);
@@ -153,6 +157,14 @@ export default function FieldBuilder({
       onCalculationSelect={onCalculationSelect ? () => {
         setIsEditing(false);
         onCalculationSelect();
+      } : undefined}
+      onCalculationTabSelect={onCalculationTabSelect ? () => {
+        setIsEditing(false);
+        onCalculationTabSelect();
+      } : undefined}
+      onFunctionTabSelect={onFunctionTabSelect ? () => {
+        setIsEditing(false);
+        onFunctionTabSelect();
       } : undefined}
       onEscape={cancelEdit}
       onValueSelect={(constantValue) => {
