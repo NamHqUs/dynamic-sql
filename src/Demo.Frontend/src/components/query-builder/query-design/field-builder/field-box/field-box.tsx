@@ -1,7 +1,8 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../../icon/icon";
+import { FieldBoxPopupContext } from "./field-box-popup-context";
 import "./field-box.css";
 
 type FieldBoxProps = {
@@ -81,6 +82,9 @@ export default function FieldBox({
   const [pendingAggregateWrapsPath, setPendingAggregateWrapsPath] = useState<boolean | null>(null);
   const [pendingAggregateField, setPendingAggregateField] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const popupManager = useContext(FieldBoxPopupContext);
+  const popupId = useRef(Symbol());
+  const isMenuOpen = menuOpen && (!popupManager || popupManager.activeMenuId === popupId.current);
   const [fieldSearch, setFieldSearch] = useState("");
   const [constantValue, setConstantValue] = useState(String(initialConstantValue ?? ""));
   const [activeSection, setActiveSection] = useState<"fields" | "value" | "calculation">(initialSection);
@@ -90,12 +94,24 @@ export default function FieldBox({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, maxHeight: 420 });
 
+  const openMenu = () => {
+    popupManager?.setActiveMenuId(popupId.current);
+    setMenuOpen(true);
+  };
+  const closeMenu = () => {
+    setMenuOpen(false);
+    if (popupManager?.activeMenuId === popupId.current) popupManager.setActiveMenuId(null);
+  };
+
   useEffect(() => {
-    if (autoFocus) setMenuOpen(true);
-  }, [autoFocus]);
+    if (autoFocus) {
+      popupManager?.setActiveMenuId(popupId.current);
+      setMenuOpen(true);
+    }
+  }, [autoFocus, popupManager?.setActiveMenuId]);
 
   useLayoutEffect(() => {
-    if (!menuOpen || !triggerRef.current) return;
+    if (!isMenuOpen || !triggerRef.current) return;
     const updateMenuPosition = () => {
       if (!triggerRef.current) return;
       const anchor = triggerRef.current.closest(".field-builder-editing") ?? triggerRef.current;
@@ -140,18 +156,18 @@ export default function FieldBox({
       window.removeEventListener("resize", updateMenuPosition);
       window.removeEventListener("scroll", updateMenuPosition, true);
     };
-  }, [menuOpen]);
+  }, [isMenuOpen]);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!isMenuOpen) return;
 
     const closeOnOutsideClick = (event: MouseEvent) => {
       if (event.target instanceof Node
         && !menuRef.current?.contains(event.target)
-        && !menuPopupRef.current?.contains(event.target)) setMenuOpen(false);
+        && !menuPopupRef.current?.contains(event.target)) closeMenu();
     };
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") closeMenu();
     };
 
     document.addEventListener("mousedown", closeOnOutsideClick);
@@ -160,10 +176,13 @@ export default function FieldBox({
       document.removeEventListener("mousedown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [menuOpen]);
+  }, [isMenuOpen, popupManager]);
   useEffect(() => {
-    if (!menuOpen) setFieldSearch("");
-  }, [menuOpen]);
+    if (!isMenuOpen) setFieldSearch("");
+  }, [isMenuOpen]);
+  useEffect(() => {
+    if (menuOpen && popupManager && popupManager.activeMenuId !== popupId.current) setMenuOpen(false);
+  }, [menuOpen, popupManager]);
   const rootAggregateMatch = value.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^()]*)\)$/);
   const legacyAggregateMatch = valueSegments[valueSegments.length - 1]?.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/);
   const aggregateMatch = rootAggregateMatch ?? legacyAggregateMatch;
@@ -206,7 +225,7 @@ export default function FieldBox({
       setPendingAggregateWrapsPath(null);
       setPendingAggregateField("");
       setPendingPath(clearOnSelect ? [] : path);
-      setMenuOpen(false);
+      closeMenu();
       return;
     }
     if (selected.startsWith(AGGREGATE_PREFIX)) {
@@ -220,12 +239,12 @@ export default function FieldBox({
     const activeAggregate = pendingAggregate ?? selectedAggregate;
     if (activeAggregate && activeAggregate !== COUNT_AGGREGATE) {
       selectAggregateField(field);
-      setMenuOpen(false);
+      closeMenu();
       return;
     }
     onChange([...path, field].join("."));
     setPendingPath(clearOnSelect ? [] : path);
-    setMenuOpen(false);
+    closeMenu();
   };
 
   const relations = (current.relations || []).filter((relation) => metadata.some((item) => item.name === relation.relatedEntity));
@@ -275,7 +294,7 @@ export default function FieldBox({
         ? numberValue
         : constantValue;
     onValueSelect?.(selectedValue);
-    setMenuOpen(false);
+    closeMenu();
   };
   const hasAdditionalSections = allowValueSelection || allowCalculationSelection;
 
@@ -288,16 +307,16 @@ export default function FieldBox({
     </span>)}
     {!isComplete && !aggregateWrapsPath && activeAggregate && activeAggregate !== COUNT_AGGREGATE &&
       <span className="field-box-aggregate-label">{activeAggregate}(</span>}
-    {!isComplete && <div className={`field-box-menu${value ? " field-box-menu-selected" : ""}`} ref={menuOpen ? menuRef : undefined}>
+    {!isComplete && <div className={`field-box-menu${value ? " field-box-menu-selected" : ""}`} ref={isMenuOpen ? menuRef : undefined}>
       <button
         type="button"
         autoFocus={autoFocus}
         ref={triggerRef}
         className="operator-trigger"
         aria-label={ariaLabel}
-        aria-expanded={menuOpen}
+        aria-expanded={isMenuOpen}
         aria-haspopup="menu"
-        onClick={() => setMenuOpen((open) => !open)}
+        onClick={() => isMenuOpen ? closeMenu() : openMenu()}
       >
         {(() => {
           const label = showPath && (pendingPath?.length ? pendingPath.join(".") : value)
@@ -308,7 +327,7 @@ export default function FieldBox({
             : label;
         })()}
       </button>
-      {menuOpen && createPortal(<div
+      {isMenuOpen && createPortal(<div
         ref={menuPopupRef}
         className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "value" ? " field-box-menu-popup-value" : ""}${activeSection === "calculation" && renderCalculation ? " field-box-menu-popup-calculation" : ""}`}
         style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: hasAdditionalSections ? "none" : menuPosition.maxHeight, transform: "none", margin: 0 }}
@@ -323,7 +342,7 @@ export default function FieldBox({
           if (event.key !== "Escape") return;
           event.preventDefault();
           event.stopPropagation();
-          setMenuOpen(false);
+          closeMenu();
           onEscape?.();
         }}
         role="group"
@@ -351,7 +370,7 @@ export default function FieldBox({
             className={`field-box-chooser-tab${activeSection === "calculation" ? " active" : ""}`}
             onClick={() => {
               if (onCalculationSelect) {
-                setMenuOpen(false);
+                closeMenu();
                 onCalculationSelect();
               } else {
                 setActiveSection("calculation");
@@ -383,7 +402,7 @@ export default function FieldBox({
           : activeSection === "calculation" && allowCalculationSelection
             ? <div className={`field-box-value-panel field-box-calculation-panel${renderCalculation ? " field-box-calculation-panel-expanded" : ""}`} role="tabpanel" aria-label="Calculation">
               {renderCalculation
-                ? renderCalculation(() => setMenuOpen(false))
+                ? renderCalculation(closeMenu)
                 : <span className="field-box-calculation-hint">Build an expression from fields, SQL functions, and values.</span>}
             </div>
             : <div role={hasAdditionalSections ? "tabpanel" : undefined} aria-label={hasAdditionalSections ? "Fields" : undefined}>

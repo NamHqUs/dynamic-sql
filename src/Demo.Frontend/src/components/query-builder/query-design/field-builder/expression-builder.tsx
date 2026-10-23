@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type {
   IFieldDefinition,
@@ -7,6 +7,7 @@ import type {
 } from "../query-builder-slice";
 import FieldBuilder from "./field-builder";
 import ExpressionDebugTooltip from "./expression-debug-tooltip/expression-debug-tooltip";
+import { FieldBoxPopupContext } from "./field-box/field-box-popup-context";
 import Icon from "../../../icon/icon";
 import type { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
 import "./expression-builder.css";
@@ -284,10 +285,9 @@ type NodeEditorProps = {
   dragPreview?: ExpressionPath;
   dragPosition?: "before" | "after";
   root?: boolean;
-  allowGroup?: boolean;
 };
 
-type ExpressionMathElementProps = Omit<NodeEditorProps, "expression" | "root" | "allowGroup" | "debugOperator"> & {
+type ExpressionMathElementProps = Omit<NodeEditorProps, "expression" | "root" | "debugOperator"> & {
   expression: IFieldDefinition;
   operator?: MatchOperation | null;
 };
@@ -352,7 +352,6 @@ function ExpressionMathElement({
           dragPreview={dragPreview}
           dragPosition={dragPosition}
           debugOperator={actualOperator}
-          allowGroup={false}
         />
       </div>
       {isMath && <ExpressionDebugTooltip label="Math box" model={expression} />}
@@ -376,9 +375,7 @@ function NodeEditor({
   dragPosition,
   debugOperator,
   root = false,
-  allowGroup = true,
 }: NodeEditorProps) {
-  const replaceWith = (kind: ExpressionNodeKind) => onChange(createExpression(kind, functionDefinitions));
   const isDropPreview = path !== undefined && dragPreview !== undefined && isSameExpressionPath(path, dragPreview);
   if (expression.kind === "field") {
     return (
@@ -481,9 +478,53 @@ function NodeEditor({
       />
     );
   }
-  const title = expression.kind === "function"
-      ? "FUNCTION"
-      : "CONSTANT";
+  if (expression.kind === "value") {
+    const constantValue = typeof expression.value === "string" || typeof expression.value === "number"
+      ? expression.value
+      : String(expression.value ?? "");
+    return (
+      <div
+        className="expression-debug-target expression-value-node"
+        data-expression-kind={expression.kind}
+        data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
+      >
+        <FieldBuilder
+          entity={entity}
+          metadata={metadata}
+          value={`<${constantValue}>`}
+          onChange={(field) => onChange({ kind: "field", field })}
+          showPath
+          ariaLabel="Expression constant"
+          initialConstantValue={constantValue}
+          initialSection="value"
+          allowValueSelection
+          allowCalculationSelection
+          expressionBuilder={{
+            functionDefinitions,
+            functionDefinitionsStatus,
+            functionDefinitionsError,
+          }}
+          debugModel={expression}
+          onCalculationSelect={onCalculationSelect}
+          onValueSelect={(value) => onChange({ ...expression, value })}
+          onExpressionApply={onChange}
+        />
+        {onRemove && (
+          <button
+            type="button"
+            className="expression-remove"
+            aria-label="Remove expression item"
+            title="Remove expression item"
+            onClick={onRemove}
+          >
+            <Icon name="close" size={13} />
+          </button>
+        )}
+        <ExpressionDebugTooltip label="Field box" model={expression} />
+      </div>
+    );
+  }
+  const title = "FUNCTION";
 
   return (
     <div
@@ -496,20 +537,6 @@ function NodeEditor({
           {expression.kind === "function" && <Icon name="code" size={12} />}
           {title}
         </span>
-        {!root && (
-          <select
-            className="expression-node-replace"
-            aria-label="Change expression item type"
-            value=""
-            onChange={(event) => replaceWith(event.target.value as ExpressionNodeKind)}
-          >
-            <option value="" disabled>Change type…</option>
-            <option value="field">Field</option>
-            <option value="value">Constant</option>
-            <option value="function">Function</option>
-            {allowGroup && <option value="group">Group</option>}
-          </select>
-        )}
         {onRemove && (
           <button
             type="button"
@@ -522,37 +549,6 @@ function NodeEditor({
           </button>
         )}
       </div>
-
-      {expression.kind === "value" && (
-        <div className="expression-node-content expression-value-editor">
-          <select
-            aria-label="Constant type"
-            value={typeof expression.value === "number" ? "number" : "text"}
-            onChange={(event) => onChange({
-              ...expression,
-              value: event.target.value === "number"
-                ? Number(expression.value) || 0
-                : String(expression.value ?? ""),
-            })}
-          >
-            <option value="number">Number</option>
-            <option value="text">Text</option>
-          </select>
-          <input
-            aria-label="Constant value"
-            type={typeof expression.value === "number" ? "number" : "text"}
-            step="any"
-            placeholder="Enter a value"
-            value={String(expression.value ?? "")}
-            onChange={(event) => onChange({
-              ...expression,
-              value: typeof expression.value === "number"
-                ? (event.target.value === "" ? "" : Number(event.target.value))
-                : event.target.value,
-            })}
-          />
-        </div>
-      )}
 
       {expression.kind === "function" && (
         <div className="expression-function-editor">
@@ -621,6 +617,13 @@ export default function ExpressionBuilder({
   initialExpression,
   onApply,
 }: ExpressionBuilderProps) {
+  const parentPopupManager = useContext(FieldBoxPopupContext);
+  const [activeFieldBoxPopupId, setActiveFieldBoxPopupId] = useState<symbol | null>(null);
+  const localPopupManager = useMemo(
+    () => ({ activeMenuId: activeFieldBoxPopupId, setActiveMenuId: setActiveFieldBoxPopupId }),
+    [activeFieldBoxPopupId],
+  );
+  const popupManager = parentPopupManager ?? localPopupManager;
   const [expression, setExpression] = useState<IFieldDefinition>(
     initialExpression ?? createExpression(initialKind === "function" ? "function" : "group", functionDefinitions),
   );
@@ -759,12 +762,13 @@ export default function ExpressionBuilder({
   const draggedNode = pointerDrag ? getExpressionNode(expression, pointerDrag.sourcePath) : undefined;
 
   return (
-    <div
-      className="expression-builder"
-      onPointerMove={updatePointerDrag}
-      onPointerUp={finishPointerDrag}
-      onPointerCancel={cancelPointerDrag}
-    >
+    <FieldBoxPopupContext.Provider value={popupManager}>
+      <div
+        className="expression-builder"
+        onPointerMove={updatePointerDrag}
+        onPointerUp={finishPointerDrag}
+        onPointerCancel={cancelPointerDrag}
+      >
       <NodeEditor
         expression={expression}
         entity={entity}
@@ -826,6 +830,7 @@ export default function ExpressionBuilder({
           </button>
         </div>
       </footer>
-    </div>
+      </div>
+    </FieldBoxPopupContext.Provider>
   );
 }

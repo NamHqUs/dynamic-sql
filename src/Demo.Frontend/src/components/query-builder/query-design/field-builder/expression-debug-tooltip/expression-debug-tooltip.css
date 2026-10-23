@@ -9,6 +9,11 @@
   outline-offset: 2px;
 }
 
+.expression-debug-target.expression-group-root:hover,
+.expression-debug-target.expression-group-root:focus-within {
+  outline: 0;
+}
+
 .expression-debug-target:has(.expression-debug-target:hover),
 .expression-debug-target:has(.expression-debug-target:focus-within) {
   z-index: auto;

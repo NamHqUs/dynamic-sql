@@ -125,7 +125,14 @@
   width: 100%;
 }
 
-.expression-group-root::before { border-left-color: #75dfc0; }
+.expression-group-root {
+  background: transparent;
+}
+
+.expression-group-root::before {
+  border: 0;
+  background: none;
+}
 
 .expression-math-element {
   display: grid;
@@ -143,6 +150,8 @@
 }
 
 .expression-debug-field-builder { max-width: 100%; }
+
+.expression-debug-field-builder .field-builder-editing { padding-left: 8px; }
 
 .expression-debug-field-builder .field-box-completed,
 .expression-debug-field-builder .field-box select,
@@ -199,6 +208,13 @@
 .expression-math-field:active::before { cursor: grabbing; }
 
 .expression-field-drop-target { position: relative; border-radius: 5px; }
+
+.expression-value-node {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
 
 .expression-field-drop-target.expression-drop-position-before::before,
 .expression-field-drop-target.expression-drop-position-after::after {
@@ -266,15 +282,11 @@
 }
 
 .expression-node-kind-field { color: #8dc8ff; }
-.expression-node-kind-value { color: #f0bd68; }
 .expression-node-kind-function { color: #c1adff; }
 .expression-node-kind-group { color: #75dfc0; }
 .expression-node-kind-math { color: #f38ca5; }
 
-.expression-node-replace,
-.expression-function-select select,
-.expression-value-editor select,
-.expression-value-editor input {
+.expression-function-select select {
   min-width: 0;
   height: 30px;
   box-sizing: border-box;
@@ -287,17 +299,7 @@
   font: 11px "DM Mono", monospace;
 }
 
-.expression-node-replace {
-  width: 110px;
-  margin-left: auto;
-  color: #a6aabb;
-  background: #1a1b25;
-}
-
-.expression-node-replace:focus,
-.expression-function-select select:focus,
-.expression-value-editor select:focus,
-.expression-value-editor input:focus {
+.expression-function-select select:focus {
   border-color: #8069cb;
 }
 
@@ -323,19 +325,6 @@
   background: #43252c;
   outline: 0;
 }
-
-.expression-node-content { min-width: 0; }
-.expression-node-content .field-box { min-height: 30px; }
-.expression-node-content .field-box-menu { max-width: 100%; }
-.expression-node-content .field-box-menu .operator-trigger { max-width: 100%; }
-
-.expression-value-editor {
-  display: grid;
-  grid-template-columns: min(90px, 40%) minmax(0, 1fr);
-  gap: 7px;
-}
-
-.expression-value-editor input { width: 100%; }
 
 .expression-function-editor {
   display: grid;
