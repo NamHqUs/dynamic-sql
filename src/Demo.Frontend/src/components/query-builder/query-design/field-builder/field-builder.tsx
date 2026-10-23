@@ -31,6 +31,7 @@ type FieldBuilderProps = {
   ariaLabel?: string;
   excludedPaths?: string[];
   autoFocus?: boolean;
+  editOnDoubleClick?: boolean;
   editMode?: boolean;
   onCancel?: () => void;
   allowAggregates?: boolean;
@@ -70,6 +71,7 @@ export default function FieldBuilder({
   ariaLabel = "Field",
   excludedPaths = [],
   autoFocus,
+  editOnDoubleClick = false,
   editMode = false,
   onCancel,
   allowAggregates = true,
@@ -91,11 +93,12 @@ export default function FieldBuilder({
     onCancel?.();
   };
   const renderCalculation = onExpressionApply && expressionBuilder
-    ? (closeMenu: () => void) => <ExpressionBuilder
+    ? (closeMenu: () => void, registerCloseGuard: (guard?: () => Promise<boolean>) => void) => <ExpressionBuilder
       key="calculation-expression-editor"
       {...expressionBuilder}
       entity={entity}
       metadata={metadata}
+      registerCloseGuard={registerCloseGuard}
       onApply={(expression) => {
         setIsEditing(false);
         onExpressionApply(expression);
@@ -135,6 +138,7 @@ export default function FieldBuilder({
       onIncompleteChange={setHasIncompleteSelection}
       clearOnSelect
       autoFocus={autoFocus ?? (Boolean(value) || initialConstantValue !== undefined)}
+      editOnDoubleClick={editOnDoubleClick}
       showPath={showPath}
       placeholder={initialConstantValue === undefined ? placeholder : String(initialConstantValue)}
       placeholderIcon={placeholderIcon}
@@ -203,7 +207,14 @@ export default function FieldBuilder({
       <span
         className="field-builder-value"
         aria-label={`Selected ${ariaLabel.toLowerCase()}: ${value}`}
-        onClick={() => setIsEditing(true)}
+        onClick={() => {
+          if (!editOnDoubleClick) setIsEditing(true);
+        }}
+        onDoubleClick={(event) => {
+          if (!editOnDoubleClick) return;
+          event.preventDefault();
+          setIsEditing(true);
+        }}
         role="button"
         tabIndex={0}
         onKeyDown={(event) => {

@@ -37,10 +37,12 @@ export function FunctionSelect({
   value,
   choices,
   onChange,
+  openOnDoubleClick = false,
 }: {
   value: string;
   choices: FunctionChoice[];
   onChange: (value: string) => void;
+  openOnDoubleClick?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,7 +79,17 @@ export function FunctionSelect({
         aria-expanded={open}
         aria-haspopup="listbox"
         title={selectedChoice?.syntax}
-        onClick={() => setOpen((isOpen) => !isOpen)}
+        onClick={() => {
+          if (!openOnDoubleClick) setOpen((isOpen) => !isOpen);
+        }}
+        onDoubleClick={() => {
+          if (openOnDoubleClick) setOpen(true);
+        }}
+        onKeyDown={(event) => {
+          if (!openOnDoubleClick || (event.key !== "Enter" && event.key !== " ")) return;
+          event.preventDefault();
+          setOpen(true);
+        }}
       >
         {selectedChoice?.label ?? "Select a function…"}
       </button>
@@ -230,6 +242,10 @@ export default function FunctionBuilder({
         event.stopPropagation();
         onSelect?.(selectionPath);
       }}
+      onFocus={(event) => {
+        if (event.target === event.currentTarget && selectionPath !== undefined)
+          onSelect?.(selectionPath);
+      }}
       onPointerDown={startSelectedDrag}
       data-expression-kind={expression.kind}
       data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
@@ -252,11 +268,12 @@ export default function FunctionBuilder({
         <FunctionSelect
           value={expression.function}
           choices={choices}
+          openOnDoubleClick
           onChange={(name) => onChange(updateFunction(expression, name, functionDefinitions))}
         />
         {expression.function && (
           <>
-            <span className="expression-function-punctuation" aria-hidden="true">(</span>
+            <span className="expression-function-punctuation expression-function-parenthesis" aria-hidden="true">(</span>
             <div className="expression-function-arguments">
               {expression.arguments.map((argument, index) => {
                 const argumentDefinition = definition?.arguments[index];
@@ -280,7 +297,7 @@ export default function FunctionBuilder({
                 );
               })}
             </div>
-            <span className="expression-function-punctuation" aria-hidden="true">)</span>
+            <span className="expression-function-punctuation expression-function-parenthesis" aria-hidden="true">)</span>
           </>
         )}
       </div>

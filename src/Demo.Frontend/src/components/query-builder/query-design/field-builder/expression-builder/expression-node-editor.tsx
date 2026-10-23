@@ -1,4 +1,4 @@
-import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type {
   IFieldDefinition,
   MatchOperation,
@@ -33,7 +33,7 @@ type NodeEditorProps = {
   path?: ExpressionPath;
   onPointerDragStart?: (event: ReactPointerEvent<HTMLDivElement>, path: ExpressionPath) => void;
   dragPreview?: ExpressionPath;
-  dragPosition?: "before" | "after";
+  dragPosition?: "before" | "inside" | "after";
   root?: boolean;
   selectionPath?: ExpressionPath;
   selectedPath?: ExpressionPath;
@@ -44,6 +44,76 @@ type ExpressionMathElementProps = Omit<NodeEditorProps, "expression" | "root" | 
   expression: IFieldDefinition;
   operator?: MatchOperation | null;
 };
+
+function MathOperatorSelect({
+  value,
+  onChange,
+}: {
+  value: MatchOperation;
+  onChange: (operator: MatchOperation) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const closeOnOutsidePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !containerRef.current?.contains(event.target))
+        setIsOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointerDown);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointerDown);
+  }, [isOpen]);
+
+  return (
+    <div
+      className="expression-math-operator-select"
+      ref={containerRef}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        className="expression-math-operator-trigger"
+        aria-label="Expression operator"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        {mathOperatorLabels[value]}
+      </button>
+      {isOpen && (
+        <div className="expression-math-operator-menu operator-menu" role="listbox" aria-label="Expression operators">
+          {mathOperators.map((operator) => (
+            <button
+              key={operator}
+              type="button"
+              className={`operator-option${operator === value ? " operator-option-selected" : ""}`}
+              role="option"
+              aria-selected={operator === value}
+              onClick={() => {
+                onChange(operator);
+                setIsOpen(false);
+                triggerRef.current?.focus();
+              }}
+            >
+              <span>{mathOperatorLabels[operator]}</span>
+              <span className="expression-math-operator-symbol">{operator}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ExpressionMathElement({
   expression,
@@ -83,19 +153,10 @@ function ExpressionMathElement({
     <div className={`expression-math-element${isMath ? " expression-debug-target expression-debug-math-box" : ""}`}>
       <div className="expression-math-operation">
         {actualOperator && (
-          <select
-            className="expression-math-operation-select"
-            aria-label="Expression operator"
+          <MathOperatorSelect
             value={actualOperator}
-            onChange={(event) => {
-              const nextOperator = mathOperators.find((item) => item === event.target.value);
-              if (nextOperator) updateOperator(nextOperator);
-            }}
-          >
-            {mathOperators.map((mathOperator) => (
-              <option key={mathOperator} value={mathOperator}>{mathOperatorLabels[mathOperator]}</option>
-            ))}
-          </select>
+            onChange={updateOperator}
+          />
         )}
       </div>
       <div
@@ -176,9 +237,15 @@ export default function NodeEditor({
       <div
         className={`expression-field-drop-target${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}${isDropPreview ? " expression-drop-preview" : ""}${isDropPreview && dragPosition ? ` expression-drop-position-${dragPosition}` : ""}`}
         tabIndex={selectionPath === undefined ? undefined : 0}
-        onClick={selectionPath === undefined ? undefined : (event) => {
-          if (event.target instanceof Element && event.target.closest(".field-builder-value")) return;
-          selectExpression(event);
+        onClick={selectionPath === undefined ? undefined : selectExpression}
+        onFocus={(event) => {
+          if (
+            selectionPath !== undefined
+            && (event.target === event.currentTarget
+              || (event.target instanceof Element
+                && event.target.closest(".field-builder-value, .field-box-menu .operator-trigger")))
+          )
+            onSelect?.(selectionPath);
         }}
         onPointerDown={startSelectedDrag}
         data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
@@ -194,6 +261,7 @@ export default function NodeEditor({
             placeholder="Select field..."
             allowValueSelection
             allowFunctionSelection
+            editOnDoubleClick
             initialSection="fields"
             expressionBuilder={{
               functionDefinitions,
@@ -237,6 +305,10 @@ export default function NodeEditor({
         className={`expression-group-list expression-debug-target expression-debug-group-box${root ? " expression-group-root" : " expression-group-nested"}${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}${isDropPreview ? " expression-drop-preview" : ""}`}
         tabIndex={selectionPath === undefined || root ? undefined : 0}
         onClick={selectionPath === undefined ? undefined : selectExpression}
+        onFocus={(event) => {
+          if (event.target === event.currentTarget && selectionPath !== undefined)
+            onSelect?.(selectionPath);
+        }}
         onPointerDown={startSelectedDrag}
         data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
       >
@@ -311,9 +383,13 @@ export default function NodeEditor({
       : String(expression.value ?? "");
     return (
       <div
-        className={`expression-debug-target expression-value-node${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}`}
+        className={`expression-debug-target expression-field-drop-target expression-value-node${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}${isDropPreview ? " expression-drop-preview" : ""}${isDropPreview && dragPosition ? ` expression-drop-position-${dragPosition}` : ""}`}
         tabIndex={selectionPath === undefined ? undefined : 0}
         onClick={selectionPath === undefined ? undefined : selectExpression}
+        onFocus={(event) => {
+          if (event.target === event.currentTarget && selectionPath !== undefined)
+            onSelect?.(selectionPath);
+        }}
         onPointerDown={startSelectedDrag}
         data-expression-kind={expression.kind}
         data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
@@ -329,6 +405,7 @@ export default function NodeEditor({
           initialSection="value"
           allowValueSelection
           allowFunctionSelection
+          editOnDoubleClick
           expressionBuilder={{
             functionDefinitions,
             functionDefinitionsStatus,

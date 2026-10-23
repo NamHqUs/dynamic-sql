@@ -454,12 +454,14 @@ function FieldCards({
                 : columnAlias
                   ? <><span
                     className="field-name editable"
-                    onClick={openColumnEditor}
+                    onDoubleClick={openColumnEditor}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ")
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
                         openColumnEditor();
+                      }
                     }}
                   >{columnExpression ? formatExpression(columnExpression) : field.name}</span><span className="field-alias-separator" aria-hidden="true">|</span><span
                     className="field-alias-value editable field-alias-placeholder"
@@ -477,12 +479,14 @@ function FieldCards({
                   >{columnAlias}</span></>
                   : <span
                     className="field-name editable"
-                    onClick={openColumnEditor}
+                    onDoubleClick={openColumnEditor}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ")
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
                         openColumnEditor();
+                      }
                     }}
                   >{columnExpression ? formatExpression(columnExpression) : field.name}</span>}
             {column && !columnAlias && editingAliasField !== field.name && <>
@@ -514,6 +518,7 @@ function FieldCards({
           ariaLabel="Field"
           allowValueSelection
           allowCalculationSelection
+          editOnDoubleClick
           expressionBuilder={{
             functionDefinitions,
             functionDefinitionsStatus,

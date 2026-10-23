@@ -651,6 +651,7 @@ function FilterRow({ filter, first, path, metadata, functionDefinitions, functio
           ariaLabel="Filter field"
           allowValueSelection
           allowCalculationSelection
+          editOnDoubleClick
           initialSection={filter.fieldExpression && filter.fieldExpression.kind !== "value" ? "calculation" : undefined}
           expressionBuilder={{
             functionDefinitions,

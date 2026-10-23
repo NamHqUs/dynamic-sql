@@ -6,6 +6,7 @@ import type {
 } from "../../query-builder-slice";
 import { FieldBoxPopupContext } from "../field-box/field-box-popup-context";
 import Icon from "../../../../icon/icon";
+import { useMessageBox } from "../../../../message-box/message-box";
 import type { FunctionDefinition } from "../../../../metadata-builder/function-definition/types";
 import NodeEditor from "./expression-node-editor";
 import {
@@ -41,6 +42,7 @@ type ExpressionBuilderProps = {
   initialKind?: "group" | "function";
   initialExpression?: IFieldDefinition;
   onApply: (expression: IFieldDefinition) => void;
+  registerCloseGuard?: (guard?: () => Promise<boolean>) => void;
 };
 
 export default function ExpressionBuilder({
@@ -52,7 +54,9 @@ export default function ExpressionBuilder({
   initialKind,
   initialExpression,
   onApply,
+  registerCloseGuard,
 }: ExpressionBuilderProps) {
+  const showMessageBox = useMessageBox();
   const [activeFieldBoxPopupId, setActiveFieldBoxPopupId] = useState<symbol | null>(null);
   const popupManager = useMemo(
     () => ({ activeMenuId: activeFieldBoxPopupId, setActiveMenuId: setActiveFieldBoxPopupId }),
@@ -61,11 +65,12 @@ export default function ExpressionBuilder({
   const [expression, setExpression] = useState<IFieldDefinition>(
     initialExpression ?? createExpression(initialKind === "function" ? "function" : "group", functionDefinitions),
   );
+  const initialExpressionRef = useRef(expression);
   const [selectedPath, setSelectedPath] = useState<ExpressionPath>();
   const expressionBuilderRef = useRef<HTMLDivElement>(null);
   const [pointerDrag, setPointerDrag] = useState<ExpressionPointerDrag>();
   const [dragPreview, setDragPreview] = useState<ExpressionPath>();
-  const [dragPosition, setDragPosition] = useState<"before" | "after">();
+  const [dragPosition, setDragPosition] = useState<"before" | "inside" | "after">();
   const [copyFeedback, setCopyFeedback] = useState<{
     json: string;
     status: "copied" | "error";
@@ -73,6 +78,41 @@ export default function ExpressionBuilder({
   const modelJson = JSON.stringify(expression, null, 2);
   const copyStatus = copyFeedback?.json === modelJson ? copyFeedback.status : undefined;
   const validationError = getExpressionError(expression);
+  const hasUnsavedChanges = JSON.stringify(expression) !== JSON.stringify(initialExpressionRef.current);
+
+  useEffect(() => {
+    if (!registerCloseGuard) return;
+    if (!hasUnsavedChanges) {
+      registerCloseGuard(undefined);
+      return () => registerCloseGuard(undefined);
+    }
+    registerCloseGuard(async () => {
+      if (!hasUnsavedChanges) return true;
+      const action = await showMessageBox({
+        eyebrow: "Unapplied calculation",
+        title: "Apply changes before closing?",
+        message: "This calculation has changes that have not been applied.",
+        actions: [
+          { value: "apply", label: "Apply changes", variant: "primary" },
+          { value: "discard", label: "Discard changes", variant: "danger" },
+          { value: "continue", label: "Keep editing" },
+        ],
+      });
+      if (action === "discard") return true;
+      if (action !== "apply") return false;
+      if (validationError) {
+        await showMessageBox({
+          title: "Calculation cannot be applied",
+          message: validationError,
+          actions: [{ value: "continue", label: "Keep editing", variant: "primary" }],
+        });
+        return false;
+      }
+      onApply(expression);
+      return false;
+    });
+    return () => registerCloseGuard(undefined);
+  }, [expression, hasUnsavedChanges, onApply, registerCloseGuard, showMessageBox, validationError]);
 
   const copyModelJson = async () => {
     try {
@@ -100,9 +140,6 @@ export default function ExpressionBuilder({
     if (!sourceNode || !isExpressionContainer(sourceParent)
       || sourceIndex === undefined || !targetNode || !isExpressionContainer(targetParent)
       || targetIndex === undefined) return;
-    const targetField = targetNode.kind === "math" ? targetNode.field : targetNode;
-    if (targetField.kind !== "field") return;
-
     const sourceOperation = sourceParent.kind === "group"
       ? getGroupArgumentOperator(sourceParent, sourceNode, sourceIndex)
       : null;
@@ -116,23 +153,23 @@ export default function ExpressionBuilder({
       : adjustExpressionPathAfterRemoval(sourcePath, targetPath);
     const adjustedTarget = getExpressionNode(removed, adjustedTargetPath);
     if (!adjustedTarget) return;
-    const adjustedTargetField = adjustedTarget.kind === "math" ? adjustedTarget.field : adjustedTarget;
-    if (adjustedTargetField.kind !== "field") return;
-    const sourceField = sourceNode.kind === "math" ? sourceNode.field : sourceNode;
-    const firstField = sourceComesFirst ? sourceField : adjustedTargetField;
-    const secondField = sourceComesFirst ? adjustedTargetField : sourceField;
+    const adjustedTargetOperand = adjustedTarget.kind === "math" ? adjustedTarget.field : adjustedTarget;
+    const sourceOperand = sourceNode.kind === "math" ? sourceNode.field : sourceNode;
+    const firstOperand = sourceComesFirst ? sourceOperand : adjustedTargetOperand;
+    const secondOperand = sourceComesFirst ? adjustedTargetOperand : sourceOperand;
     const firstOperation = sourceComesFirst ? sourceOperation : targetOperation;
     const secondOperation = sourceComesFirst ? targetOperation : sourceOperation;
     const grouped: IFieldDefinition = {
       kind: "group",
       ...(firstOperation ? { operator: firstOperation } : {}),
       arguments: [
-        firstField,
-        setExpressionOperation(secondField, secondOperation),
+        firstOperand,
+        setExpressionOperation(secondOperand, secondOperation),
       ],
     };
     const updated = replaceExpressionNode(removed, adjustedTargetPath, grouped);
     setExpression(normalizeExpressionTree(updated) ?? { kind: "field", field: "" });
+    setSelectedPath([...adjustedTargetPath, sourceComesFirst ? 0 : 1]);
   };
 
   const moveNode = (sourcePath: ExpressionPath, targetPath: ExpressionPath) => {
@@ -161,6 +198,48 @@ export default function ExpressionBuilder({
         : targetNode,
     );
     setExpression(normalizeExpressionTree(updated) ?? { kind: "field", field: "" });
+    setSelectedPath([...adjustedTargetPath, lastIndex + 1]);
+  };
+
+  const reorderNodeAroundField = (
+    sourcePath: ExpressionPath,
+    targetPath: ExpressionPath,
+    position: "before" | "after",
+  ) => {
+    if (!sourcePath.length || !targetPath.length || isSameExpressionPath(sourcePath, targetPath)
+      || (sourcePath.length < targetPath.length
+        && sourcePath.every((index, pathIndex) => index === targetPath[pathIndex]))) return;
+    const sourceNode = getExpressionNode(expression, sourcePath);
+    const sourceParent = getExpressionNode(expression, sourcePath.slice(0, -1));
+    const sourceIndex = sourcePath[sourcePath.length - 1];
+    const targetParent = getExpressionNode(expression, targetPath.slice(0, -1));
+    if (!sourceNode || sourceParent?.kind !== "group" || sourceIndex === undefined
+      || targetParent?.kind !== "group") return;
+
+    const operation = getGroupArgumentOperator(sourceParent, sourceNode, sourceIndex);
+    const removed = removeExpressionNodeForMove(expression, sourcePath);
+    const adjustedTargetPath = adjustExpressionPathAfterRemoval(sourcePath, targetPath);
+    const adjustedTargetIndex = adjustedTargetPath[adjustedTargetPath.length - 1];
+    const adjustedParentPath = adjustedTargetPath.slice(0, -1);
+    if (adjustedTargetIndex === undefined) return;
+    const insertionIndex = adjustedTargetIndex + (position === "after" ? 1 : 0);
+    const updated = updateExpressionNode(removed, adjustedParentPath, (parent) => {
+      if (parent.kind !== "group") return parent;
+      const moved = setExpressionOperation(
+        sourceNode,
+        insertionIndex === 0 ? null : operation ?? parent.operator ?? "+",
+      );
+      return {
+        ...parent,
+        arguments: [
+          ...parent.arguments.slice(0, insertionIndex),
+          moved,
+          ...parent.arguments.slice(insertionIndex),
+        ],
+      };
+    });
+    setExpression(normalizeExpressionTree(updated) ?? { kind: "field", field: "" });
+    setSelectedPath([...adjustedParentPath, insertionIndex]);
   };
 
   const startPointerDrag = (event: ReactPointerEvent<HTMLDivElement>, sourcePath: ExpressionPath) => {
@@ -188,7 +267,10 @@ export default function ExpressionBuilder({
     const root = expressionBuilderRef.current;
     const target = root ? getExpressionDropTarget(event.clientX, event.clientY, root) : undefined;
     if (target?.kind === "field") {
-      groupNodeOnField(pointerDrag.sourcePath, target.path, target.position);
+      if (target.position === "inside")
+        groupNodeOnField(pointerDrag.sourcePath, target.path, "after");
+      else
+        reorderNodeAroundField(pointerDrag.sourcePath, target.path, target.position);
     } else if (target?.kind === "group") {
       moveNode(pointerDrag.sourcePath, target.path);
     }
@@ -279,24 +361,26 @@ export default function ExpressionBuilder({
         <div className="expression-preview" aria-live="polite">
           <span className="expression-preview-label">PREVIEW</span>
           <code>{formatExpression(expression)}</code>
-          <div className="expression-preview-json-heading">
-            <span className="expression-preview-label">MODEL JSON</span>
-            <button
-              type="button"
-              className="expression-preview-copy"
-              aria-label="Copy JSON model"
-              title="Copy JSON model"
-              onClick={copyModelJson}
-            >
-              <Icon name={copyStatus === "copied" ? "check" : "copy"} size={13} />
-            </button>
-            {copyStatus && (
-              <span className={`expression-preview-copy-status${copyStatus === "error" ? " expression-preview-copy-error" : ""}`} role="status">
-                {copyStatus === "copied" ? "Copied" : "Copy failed. Check clipboard permissions."}
-              </span>
-            )}
+          <div className="expression-debug-panel">
+            <div className="expression-preview-json-heading">
+              <span className="expression-preview-label">MODEL JSON</span>
+              <button
+                type="button"
+                className="expression-preview-copy"
+                aria-label="Copy JSON model"
+                title="Copy JSON model"
+                onClick={copyModelJson}
+              >
+                <Icon name={copyStatus === "copied" ? "check" : "copy"} size={13} />
+              </button>
+              {copyStatus && (
+                <span className={`expression-preview-copy-status${copyStatus === "error" ? " expression-preview-copy-error" : ""}`} role="status">
+                  {copyStatus === "copied" ? "Copied" : "Copy failed. Check clipboard permissions."}
+                </span>
+              )}
+            </div>
+            <pre className="expression-preview-json"><code>{modelJson}</code></pre>
           </div>
-          <pre className="expression-preview-json"><code>{modelJson}</code></pre>
         </div>
 
         <footer className="expression-builder-footer">

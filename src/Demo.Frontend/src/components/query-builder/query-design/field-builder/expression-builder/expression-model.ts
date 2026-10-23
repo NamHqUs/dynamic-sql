@@ -13,19 +13,19 @@ export type ExpressionPointerDrag = {
 };
 
 export type ExpressionDropTarget =
-  | { kind: "field"; path: ExpressionPath; position: "before" | "after" }
+  | { kind: "field"; path: ExpressionPath; position: "before" | "inside" | "after" }
   | { kind: "group"; path: ExpressionPath };
 
 type ExpressionNodeKind = "field" | "value" | "function" | "group";
 
 export const mathOperatorLabels: Record<MatchOperation, string> = {
-  "+": "ADD",
-  "-": "SUB",
-  "*": "MUL",
-  "/": "DIV",
-  "%": "MOD",
-  "&": "AND",
-  "|": "OR",
+  "+": "Add",
+  "-": "Sub",
+  "*": "Mul",
+  "/": "Div",
+  "%": "Mod",
+  "&": "And",
+  "|": "Or",
 };
 
 export const mathOperators: MatchOperation[] = ["+", "-", "*", "/", "%", "&", "|"];
@@ -314,21 +314,20 @@ export function getExpressionDropTarget(
 ): ExpressionDropTarget | undefined {
   const element = document.elementFromPoint(x, y);
   if (!(element instanceof Element) || !root.contains(element)) return undefined;
-  const field = element.closest<HTMLElement>(".expression-field-drop-target[data-expression-path]");
-  if (field) {
-    const path = JSON.parse(field.dataset.expressionPath ?? "null") as unknown;
+  const node = element.closest<HTMLElement>(".expression-selectable[data-expression-path]");
+  if (node) {
+    const path = JSON.parse(node.dataset.expressionPath ?? "null") as unknown;
     if (!isExpressionPath(path)) return undefined;
-    const bounds = field.getBoundingClientRect();
+    if (node.classList.contains("expression-group-list")) return { kind: "group", path };
+    const bounds = node.getBoundingClientRect();
+    const relativeY = (y - bounds.top) / bounds.height;
     return {
       kind: "field",
       path,
-      position: y < bounds.top + bounds.height / 2 ? "before" : "after",
+      position: relativeY < 0.3 ? "before" : relativeY > 0.7 ? "after" : "inside",
     };
   }
-  const group = element.closest<HTMLElement>(".expression-group-list[data-expression-path]");
-  if (!group) return undefined;
-  const path = JSON.parse(group.dataset.expressionPath ?? "null") as unknown;
-  return isExpressionPath(path) ? { kind: "group", path } : undefined;
+  return undefined;
 }
 
 export function updateFunction(

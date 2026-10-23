@@ -265,7 +265,7 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
                   />
                   : <span
                     className="field-name editable"
-                    onClick={() => {
+                    onDoubleClick={() => {
                       if (!calculatedProjection) setEditingField(sort.field);
                     }}
                     role="button"
@@ -294,6 +294,7 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
             placeholder="Field"
             placeholderIcon
             ariaLabel="Field"
+            editOnDoubleClick
             excludedPaths={definition.sorts.map((sort) => sort.field)}
             onChange={addSort}
           />

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../../icon/icon";
@@ -20,6 +20,7 @@ type FieldBoxProps = {
   ariaLabel?: string;
   excludedPaths?: string[];
   autoFocus?: boolean;
+  editOnDoubleClick?: boolean;
   allowAggregates?: boolean;
   allowValueSelection?: boolean;
   allowCalculationSelection?: boolean;
@@ -28,7 +29,10 @@ type FieldBoxProps = {
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
   onEscape?: () => void;
-  renderCalculation?: (onComplete: () => void) => ReactNode;
+  renderCalculation?: (
+    onComplete: () => void,
+    registerCloseGuard: (guard?: () => Promise<boolean>) => void,
+  ) => ReactNode;
   renderFunction?: (onComplete: () => void) => ReactNode;
 };
 
@@ -67,6 +71,7 @@ export default function FieldBox({
   ariaLabel = "Field",
   excludedPaths = [],
   autoFocus = false,
+  editOnDoubleClick = false,
   allowAggregates = true,
   allowValueSelection = false,
   allowCalculationSelection = false,
@@ -94,7 +99,11 @@ export default function FieldBox({
   const menuRef = useRef<HTMLDivElement>(null);
   const menuPopupRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeGuardRef = useRef<(() => Promise<boolean>) | undefined>(undefined);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, maxHeight: 420 });
+  const registerCloseGuard = useCallback((guard?: () => Promise<boolean>) => {
+    closeGuardRef.current = guard;
+  }, []);
 
   const openMenu = () => {
     popupManager?.setActiveMenuId(popupId.current);
@@ -103,6 +112,18 @@ export default function FieldBox({
   const closeMenu = () => {
     setMenuOpen(false);
     if (popupManager?.activeMenuId === popupId.current) popupManager.setActiveMenuId(null);
+  };
+  const requestCloseMenu = async () => {
+    const closeAllowed = await closeGuardRef.current?.();
+    if (closeAllowed === false) return false;
+    closeMenu();
+    return true;
+  };
+  const changeSection = async (section: typeof activeSection) => {
+    if (section === activeSection) return;
+    const changeAllowed = await closeGuardRef.current?.();
+    if (changeAllowed === false) return;
+    setActiveSection(section);
   };
 
   useEffect(() => {
@@ -166,11 +187,16 @@ export default function FieldBox({
     const closeOnOutsideClick = (event: MouseEvent) => {
       if (!(event.target instanceof Node)) return;
       if (menuRef.current?.contains(event.target) || menuPopupRef.current?.contains(event.target)) return;
-      if (event.target instanceof Element && event.target.closest(".field-box-menu-popup")) return;
-      closeMenu();
+      if (event.target instanceof Element
+        && event.target.closest(".field-box-menu-popup, .message-box-backdrop")) return;
+      if (closeGuardRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      void requestCloseMenu();
     };
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeMenu();
+      if (event.key === "Escape") void requestCloseMenu();
     };
 
     document.addEventListener("mousedown", closeOnOutsideClick, true);
@@ -325,7 +351,19 @@ export default function FieldBox({
         aria-label={ariaLabel}
         aria-expanded={isMenuOpen}
         aria-haspopup="menu"
-        onClick={() => isMenuOpen ? closeMenu() : openMenu()}
+        onClick={() => {
+          if (editOnDoubleClick) return;
+          if (isMenuOpen) void requestCloseMenu();
+          else openMenu();
+        }}
+        onDoubleClick={() => {
+          if (editOnDoubleClick && !isMenuOpen) openMenu();
+        }}
+        onKeyDown={(event) => {
+          if (!editOnDoubleClick || (event.key !== "Enter" && event.key !== " ")) return;
+          event.preventDefault();
+          openMenu();
+        }}
       >
         {(() => {
           const label = showPath && (pendingPath?.length ? pendingPath.join(".") : value)
@@ -351,8 +389,9 @@ export default function FieldBox({
           if (event.key !== "Escape") return;
           event.preventDefault();
           event.stopPropagation();
-          closeMenu();
-          onEscape?.();
+          void requestCloseMenu().then((closed) => {
+            if (closed) onEscape?.();
+          });
         }}
         role="group"
         aria-label={`${ariaLabel} options`}
@@ -368,28 +407,28 @@ export default function FieldBox({
             role="tab"
             aria-selected={activeSection === "fields"}
             className={`field-box-chooser-tab${activeSection === "fields" ? " active" : ""}`}
-            onClick={() => setActiveSection("fields")}
+            onClick={() => void changeSection("fields")}
           ><Icon name="database" size={12} />Fields</button>
           {allowValueSelection && <button
             type="button"
             role="tab"
             aria-selected={activeSection === "value"}
             className={`field-box-chooser-tab${activeSection === "value" ? " active" : ""}`}
-            onClick={() => setActiveSection("value")}
+            onClick={() => void changeSection("value")}
           ><Icon name="edit" size={12} />Value</button>}
           {allowCalculationSelection && <button
             type="button"
             role="tab"
             aria-selected={activeSection === "calculation"}
             className={`field-box-chooser-tab${activeSection === "calculation" ? " active" : ""}`}
-            onClick={() => setActiveSection("calculation")}
+            onClick={() => void changeSection("calculation")}
           ><Icon name="sliders" size={12} />Calculation</button>}
           {allowFunctionSelection && <button
             type="button"
             role="tab"
             aria-selected={activeSection === "function"}
             className={`field-box-chooser-tab${activeSection === "function" ? " active" : ""}`}
-            onClick={() => setActiveSection("function")}
+            onClick={() => void changeSection("function")}
           ><Icon name="code" size={12} />Function</button>}
         </div>}
         {activeSection === "value" && allowValueSelection
@@ -416,7 +455,7 @@ export default function FieldBox({
           : activeSection === "calculation" && allowCalculationSelection
             ? <div className={`field-box-value-panel field-box-calculation-panel${renderCalculation ? " field-box-calculation-panel-expanded" : ""}`} role="tabpanel" aria-label="Calculation">
               {renderCalculation
-                ? renderCalculation(closeMenu)
+                ? renderCalculation(closeMenu, registerCloseGuard)
                 : <span className="field-box-calculation-hint">Build an expression from fields, SQL functions, and values.</span>}
             </div>
             : activeSection === "function" && allowFunctionSelection
