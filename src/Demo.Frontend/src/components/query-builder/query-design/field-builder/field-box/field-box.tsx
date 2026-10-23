@@ -23,12 +23,14 @@ type FieldBoxProps = {
   allowAggregates?: boolean;
   allowValueSelection?: boolean;
   allowCalculationSelection?: boolean;
+  allowFunctionSelection?: boolean;
   initialSection?: "fields" | "value" | "calculation";
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
   onCalculationSelect?: () => void;
   onEscape?: () => void;
   renderCalculation?: (onComplete: () => void) => ReactNode;
+  renderFunction?: (onComplete: () => void) => ReactNode;
 };
 
 const RELATION_PREFIX = "relation:";
@@ -69,12 +71,14 @@ export default function FieldBox({
   allowAggregates = true,
   allowValueSelection = false,
   allowCalculationSelection = false,
+  allowFunctionSelection = false,
   initialSection = "fields",
   initialConstantValue,
   onValueSelect,
   onCalculationSelect,
   onEscape,
   renderCalculation,
+  renderFunction,
 }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
@@ -87,7 +91,7 @@ export default function FieldBox({
   const isMenuOpen = menuOpen && (!popupManager || popupManager.activeMenuId === popupId.current);
   const [fieldSearch, setFieldSearch] = useState("");
   const [constantValue, setConstantValue] = useState(String(initialConstantValue ?? ""));
-  const [activeSection, setActiveSection] = useState<"fields" | "value" | "calculation">(initialSection);
+  const [activeSection, setActiveSection] = useState<"fields" | "value" | "calculation" | "function">(initialSection);
   const constantValueInputId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
   const menuPopupRef = useRef<HTMLDivElement>(null);
@@ -296,7 +300,13 @@ export default function FieldBox({
     onValueSelect?.(selectedValue);
     closeMenu();
   };
-  const hasAdditionalSections = allowValueSelection || allowCalculationSelection;
+  const hasAdditionalSections = allowValueSelection || allowCalculationSelection || allowFunctionSelection;
+  const tabGridTemplateColumns = [
+    "minmax(0, 1fr)",
+    ...(allowValueSelection ? ["minmax(0, 1fr)"] : []),
+    ...(allowCalculationSelection ? ["minmax(0, 1.4fr)"] : []),
+    ...(allowFunctionSelection ? ["minmax(0, 1fr)"] : []),
+  ].join(" ");
 
   return <div className="field-box">
     {!isComplete && aggregateWrapsPath && activeAggregate && activeAggregate !== COUNT_AGGREGATE &&
@@ -329,7 +339,7 @@ export default function FieldBox({
       </button>
       {isMenuOpen && createPortal(<div
         ref={menuPopupRef}
-        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "value" ? " field-box-menu-popup-value" : ""}${activeSection === "calculation" && renderCalculation ? " field-box-menu-popup-calculation" : ""}`}
+        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "value" ? " field-box-menu-popup-value" : ""}${(activeSection === "calculation" && renderCalculation) || (activeSection === "function" && renderFunction) ? " field-box-menu-popup-calculation" : ""}`}
         style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: hasAdditionalSections ? "none" : menuPosition.maxHeight, transform: "none", margin: 0 }}
         onMouseDown={(event) => {
           event.stopPropagation();
@@ -348,35 +358,40 @@ export default function FieldBox({
         role="group"
         aria-label={`${ariaLabel} options`}
       >
-        {hasAdditionalSections && <div className="field-box-chooser-tabs" role="tablist" aria-label="Projection field type">
+        {hasAdditionalSections && <div
+          className="field-box-chooser-tabs"
+          role="tablist"
+          aria-label="Field selection type"
+          style={{ gridTemplateColumns: tabGridTemplateColumns }}
+        >
           <button
             type="button"
             role="tab"
             aria-selected={activeSection === "fields"}
             className={`field-box-chooser-tab${activeSection === "fields" ? " active" : ""}`}
             onClick={() => setActiveSection("fields")}
-          >Fields</button>
+          ><Icon name="database" size={12} />Fields</button>
           {allowValueSelection && <button
             type="button"
             role="tab"
             aria-selected={activeSection === "value"}
             className={`field-box-chooser-tab${activeSection === "value" ? " active" : ""}`}
             onClick={() => setActiveSection("value")}
-          >Value</button>}
+          ><Icon name="edit" size={12} />Value</button>}
           {allowCalculationSelection && <button
             type="button"
             role="tab"
             aria-selected={activeSection === "calculation"}
             className={`field-box-chooser-tab${activeSection === "calculation" ? " active" : ""}`}
-            onClick={() => {
-              if (onCalculationSelect) {
-                closeMenu();
-                onCalculationSelect();
-              } else {
-                setActiveSection("calculation");
-              }
-            }}
-          >Calculation</button>}
+            onClick={() => setActiveSection("calculation")}
+          ><Icon name="sliders" size={12} />Calculation</button>}
+          {allowFunctionSelection && <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === "function"}
+            className={`field-box-chooser-tab${activeSection === "function" ? " active" : ""}`}
+            onClick={() => setActiveSection("function")}
+          ><Icon name="code" size={12} />Function</button>}
         </div>}
         {activeSection === "value" && allowValueSelection
           ? <div className="field-box-value-panel" role="tabpanel" aria-label="Constant value">
@@ -401,10 +416,26 @@ export default function FieldBox({
           </div>
           : activeSection === "calculation" && allowCalculationSelection
             ? <div className={`field-box-value-panel field-box-calculation-panel${renderCalculation ? " field-box-calculation-panel-expanded" : ""}`} role="tabpanel" aria-label="Calculation">
+              {onCalculationSelect && (
+                <button
+                  type="button"
+                  className="field-box-add-math"
+                  onClick={() => {
+                    closeMenu();
+                    onCalculationSelect();
+                  }}
+                >Add math item</button>
+              )}
               {renderCalculation
                 ? renderCalculation(closeMenu)
                 : <span className="field-box-calculation-hint">Build an expression from fields, SQL functions, and values.</span>}
             </div>
+            : activeSection === "function" && allowFunctionSelection
+              ? <div className={`field-box-value-panel field-box-calculation-panel${renderFunction ? " field-box-calculation-panel-expanded" : ""}`} role="tabpanel" aria-label="Function">
+                {renderFunction
+                  ? renderFunction(closeMenu)
+                  : <span className="field-box-calculation-hint">Choose a SQL function.</span>}
+              </div>
             : <div role={hasAdditionalSections ? "tabpanel" : undefined} aria-label={hasAdditionalSections ? "Fields" : undefined}>
               <input
                 type="search"

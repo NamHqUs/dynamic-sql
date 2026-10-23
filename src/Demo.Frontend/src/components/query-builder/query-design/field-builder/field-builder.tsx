@@ -91,7 +91,25 @@ export default function FieldBuilder({
   };
   const renderCalculation = onExpressionApply && expressionBuilder
     ? (closeMenu: () => void) => <ExpressionBuilder
+      key="calculation-expression-editor"
       {...expressionBuilder}
+      entity={entity}
+      metadata={metadata}
+      onApply={(expression) => {
+        setIsEditing(false);
+        onExpressionApply(expression);
+        closeMenu();
+      }}
+    />
+    : undefined;
+  const renderFunction = onExpressionApply && expressionBuilder
+    ? (closeMenu: () => void) => <ExpressionBuilder
+      key="function-expression-editor"
+      {...expressionBuilder}
+      initialKind="function"
+      initialExpression={expressionBuilder.initialExpression?.kind === "function"
+        ? expressionBuilder.initialExpression
+        : undefined}
       entity={entity}
       metadata={metadata}
       onApply={(expression) => {
@@ -129,6 +147,7 @@ export default function FieldBuilder({
       allowAggregates={allowAggregates}
       allowValueSelection={allowValueSelection}
       allowCalculationSelection={allowCalculationSelection}
+      allowFunctionSelection={Boolean(renderFunction)}
       initialSection={initialSection}
       initialConstantValue={initialConstantValue}
       onCalculationSelect={onCalculationSelect ? () => {
@@ -141,6 +160,7 @@ export default function FieldBuilder({
         onValueSelect?.(constantValue);
       }}
       renderCalculation={renderCalculation}
+      renderFunction={renderFunction}
       onChange={(path) => {
         setIsEditing(false);
         onChange(path);

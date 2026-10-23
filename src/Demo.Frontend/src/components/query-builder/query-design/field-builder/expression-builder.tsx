@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type {
   IFieldDefinition,
@@ -34,6 +34,7 @@ const mathOperatorLabels: Record<MatchOperation, string> = {
   "&": "AND",
   "|": "OR",
 };
+const mathOperators: MatchOperation[] = ["+", "-", "*", "/", "%", "&", "|"];
 
 function createFunctionExpression(
   definition: FunctionDefinition | undefined,
@@ -310,6 +311,11 @@ function ExpressionMathElement({
   const isMath = expression.kind === "math";
   const operand = isMath ? expression.field : expression;
   const actualOperator = isMath ? expression.oper : operator;
+  const updateOperator = (nextOperator: MatchOperation) => {
+    onChange(isMath
+      ? { ...expression, oper: nextOperator }
+      : withOperation(expression, nextOperator));
+  };
   const updateOperand = (next: IFieldDefinition) => {
     if (isMath) {
       if (next.kind !== "group") onChange({ ...expression, field: next });
@@ -323,9 +329,21 @@ function ExpressionMathElement({
       <div
         className="expression-math-operation"
       >
-        {actualOperator
-          ? <span className="expression-math-operation-label">{mathOperatorLabels[actualOperator]}</span>
-          : null}
+        {actualOperator && (
+          <select
+            className="expression-math-operation-select"
+            aria-label="Expression operator"
+            value={actualOperator}
+            onChange={(event) => {
+              const nextOperator = mathOperators.find((item) => item === event.target.value);
+              if (nextOperator) updateOperator(nextOperator);
+            }}
+          >
+            {mathOperators.map((mathOperator) => (
+              <option key={mathOperator} value={mathOperator}>{mathOperatorLabels[mathOperator]}</option>
+            ))}
+          </select>
+        )}
       </div>
       <div
         className={`expression-math-field${operand.kind === "group" ? " expression-math-field-group" : " expression-math-field-draggable"}`}
@@ -617,13 +635,12 @@ export default function ExpressionBuilder({
   initialExpression,
   onApply,
 }: ExpressionBuilderProps) {
-  const parentPopupManager = useContext(FieldBoxPopupContext);
   const [activeFieldBoxPopupId, setActiveFieldBoxPopupId] = useState<symbol | null>(null);
   const localPopupManager = useMemo(
     () => ({ activeMenuId: activeFieldBoxPopupId, setActiveMenuId: setActiveFieldBoxPopupId }),
     [activeFieldBoxPopupId],
   );
-  const popupManager = parentPopupManager ?? localPopupManager;
+  const popupManager = localPopupManager;
   const [expression, setExpression] = useState<IFieldDefinition>(
     initialExpression ?? createExpression(initialKind === "function" ? "function" : "group", functionDefinitions),
   );

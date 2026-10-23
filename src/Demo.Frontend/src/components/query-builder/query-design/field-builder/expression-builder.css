@@ -177,9 +177,20 @@
   z-index: 1;
 }
 
-.expression-group-nested > .expression-math-element > .expression-math-operation > .expression-math-operation-label {
-  padding-inline: 3px;
+.expression-math-operation-select {
+  max-width: 100%;
+  padding: 2px 3px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: inherit;
   background: var(--expression-operation-mask-background);
+  font: 10px "DM Mono", monospace;
+  cursor: pointer;
+}
+
+.expression-math-operation-select:focus-visible {
+  border-color: #8069cb;
+  outline: 0;
 }
 
 .expression-math-field {
