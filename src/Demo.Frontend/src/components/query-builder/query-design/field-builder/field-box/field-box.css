@@ -39,7 +39,7 @@
 .field-box-calculation-panel .expression-builder { width: 100%; max-width: 100%; max-height: none; margin: 0; padding: 12px; gap: 10px; overflow: visible; border: 0; }
 .field-box-value-label { color: #aab3c2; font: 11px "DM Mono", monospace; }
 .field-box-value-input { width: 100%; margin: 0; }
-.field-box-value-submit { display: inline-flex; align-items: center; justify-self: end; gap: 6px; padding: 6px 10px; color: #fff; background: #654f9f; border: 1px solid #8168bf; border-radius: 4px; font: 12px "Manrope", sans-serif; cursor: pointer; }
+.field-box-value-submit { display: inline-flex; align-items: center; justify-self: end; gap: 6px; padding: 6px 10px; color: #dce1ea; background: #654f9f; border: 1px solid #8168bf; border-radius: 4px; font: 12px "Manrope", sans-serif; cursor: pointer; }
 .field-box-value-submit:hover, .field-box-value-submit:focus-visible { background: #735caf; outline: 0; }
 .field-box-calculation-hint { color: #aab3c2; font: 12px "Manrope", sans-serif; line-height: 1.5; }
 .field-box-search { width: calc(100% - 16px); margin: 8px; padding: 6px 8px; color: #dce1eb; background: #191e28; border: 1px solid #4a4163; border-radius: 4px; box-sizing: border-box; font: 12px "DM Mono", monospace; outline: 0; }
@@ -138,36 +138,18 @@
 .field-box-value-submit {
   min-height: 32px;
   padding: 6px 12px;
-  border-color: #43866d;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #28785f, #21644f);
-  box-shadow: 0 3px 10px #102f2940;
+  border-color: #8168bf;
+  border-radius: 4px;
+  background: #654f9f;
+  box-shadow: none;
   font-weight: 700;
-  transition: border-color .16s, background .16s, box-shadow .16s, transform .16s;
+  transition: border-color .16s, background .16s;
 }
 
 .field-box-value-submit:hover,
 .field-box-value-submit:focus-visible {
-  border-color: #6cc9a5;
-  background: linear-gradient(135deg, #32906f, #28775c);
-  box-shadow: 0 5px 14px #102f2959;
-  transform: translateY(-1px);
-  outline: 0;
-}
-
-.field-box-calculation-panel .expression-apply-button:not(:disabled) {
-  border-color: #43866d;
-  color: #fff;
-  background: linear-gradient(135deg, #28785f, #21644f);
-  box-shadow: 0 3px 10px #102f2940;
-}
-
-.field-box-calculation-panel .expression-apply-button:hover:not(:disabled),
-.field-box-calculation-panel .expression-apply-button:focus-visible:not(:disabled) {
-  border-color: #6cc9a5;
-  background: linear-gradient(135deg, #32906f, #28775c);
-  box-shadow: 0 5px 14px #102f2959;
-  transform: translateY(-1px);
+  border-color: #8168bf;
+  background: #735caf;
   outline: 0;
 }
 
