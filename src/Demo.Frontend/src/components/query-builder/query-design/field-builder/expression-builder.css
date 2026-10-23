@@ -168,7 +168,7 @@
 
 .expression-value-editor {
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr);
+  grid-template-columns: min(90px, 40%) minmax(0, 1fr);
   gap: 7px;
 }
 

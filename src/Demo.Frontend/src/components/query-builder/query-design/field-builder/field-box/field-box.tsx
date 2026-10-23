@@ -136,7 +136,7 @@ export default function FieldBox({
       window.removeEventListener("resize", updateMenuPosition);
       window.removeEventListener("scroll", updateMenuPosition, true);
     };
-  }, [activeSection, fieldSearch, menuOpen]);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -306,7 +306,7 @@ export default function FieldBox({
       </button>
       {menuOpen && createPortal(<div
         ref={menuPopupRef}
-        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "calculation" && renderCalculation ? " field-box-menu-popup-calculation" : ""}`}
+        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "value" ? " field-box-menu-popup-value" : ""}${activeSection === "calculation" && renderCalculation ? " field-box-menu-popup-calculation" : ""}`}
         style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: activeSection === "calculation" ? "none" : menuPosition.maxHeight, transform: "none", margin: 0 }}
         onMouseDown={(event) => {
           event.preventDefault();
