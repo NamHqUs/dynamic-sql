@@ -1,12 +1,12 @@
 .expression-builder {
   --expression-accent: #c2adff;
-  --expression-operation-width: 56px;
+  --expression-operation-width: 40px;
   --expression-column-gap: 4px;
   --expression-operation-mask-background: #141a23;
   --expression-debug-outline: 2px solid #b9a5ff;
   --expression-debug-outline: 0;
-  --expression-debug-tooltip-display: none;
-  --expression-debug-panel-display: none;
+  --expression-debug-tooltip-display: grid;
+  --expression-debug-panel-display: grid;
   position: relative;
   display: grid;
   width: 100%;
@@ -130,7 +130,7 @@
   top: 0;
   bottom: 0;
   left: 5px;
-  width: 4px;
+  width: 2px;
   box-sizing: border-box;
   border-radius: 4px;
   background: linear-gradient(180deg, #b69aff 0%, #72d9c0 52%, #8e9cff 100%);
@@ -151,10 +151,11 @@
 
 .expression-group-nested::before {
   left: 5px;
-  width: 4px;
+  width: 2px;
 }
 
 .expression-group-root {
+  padding-left: 13px;
   background: transparent;
 }
 
@@ -169,6 +170,15 @@
   grid-template-columns: var(--expression-operation-width) minmax(0, 1fr);
   align-items: start;
   gap: var(--expression-column-gap);
+}
+
+.expression-group-list > .expression-math-element:first-child {
+  grid-template-columns: var(--expression-column-gap) minmax(0, 1fr);
+  gap: 0;
+}
+
+.expression-math-element-group-operand > .expression-math-operation {
+  margin-top: 9px;
 }
 
 .expression-debug-field-builder,
@@ -225,7 +235,7 @@
   display: flex;
   min-height: 34px;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   box-sizing: border-box;
   padding-left: var(--expression-column-gap);
   color: #f5b5c4;
@@ -242,15 +252,16 @@
 }
 
 .expression-math-operator-trigger {
-  display: block;
-  min-width: 36px;
+  display: grid;
+  min-width: 32px;
+  min-height: 30px;
   max-width: 100%;
-  overflow: hidden;
-  padding: 4px 6px;
-  border: 1px solid #60444f;
-  border-radius: 6px;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: 4px;
   color: #f5c1cc;
-  background: linear-gradient(145deg, #30232d, #251e29);
+  background: transparent;
   font: 12px "Manrope", sans-serif;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -260,10 +271,13 @@
 
 .expression-math-operator-trigger:hover,
 .expression-math-operator-trigger:focus-visible {
-  border-color: #a86d83;
   color: #ffe8ed;
-  background: #3b2937;
-  outline: 0;
+  background: transparent;
+}
+
+.expression-math-operator-trigger:focus-visible {
+  outline: 2px solid #a86d83;
+  outline-offset: 1px;
 }
 
 .expression-math-operator-menu.operator-menu {
@@ -276,8 +290,8 @@
 .expression-math-operator-menu .operator-option {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: center;
+  min-height: 30px;
   padding: 5px 8px;
   font: 12px "Manrope", sans-serif;
 }

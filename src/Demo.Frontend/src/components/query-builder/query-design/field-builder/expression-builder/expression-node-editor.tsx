@@ -18,6 +18,17 @@ import {
   withOperation,
   type ExpressionPath,
 } from "./expression-model";
+import type { IconName } from "../../../../icon/icon";
+
+const mathOperatorIcons: Record<MatchOperation, IconName> = {
+  "+": "plus",
+  "-": "minus",
+  "*": "multiply",
+  "/": "divide",
+  "%": "modulo",
+  "&": "logical-and",
+  "|": "logical-or",
+};
 
 type NodeEditorProps = {
   expression: IFieldDefinition;
@@ -83,12 +94,13 @@ function MathOperatorSelect({
         ref={triggerRef}
         type="button"
         className="expression-math-operator-trigger"
-        aria-label="Expression operator"
+        aria-label={`Expression operator: ${mathOperatorLabels[value]}`}
+        title={mathOperatorLabels[value]}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         onClick={() => setIsOpen((open) => !open)}
       >
-        {mathOperatorLabels[value]}
+        <Icon name={mathOperatorIcons[value]} size={16} />
       </button>
       {isOpen && (
         <div className="expression-math-operator-menu operator-menu" role="listbox" aria-label="Expression operators">
@@ -98,6 +110,8 @@ function MathOperatorSelect({
               type="button"
               className={`operator-option${operator === value ? " operator-option-selected" : ""}`}
               role="option"
+              aria-label={mathOperatorLabels[operator]}
+              title={mathOperatorLabels[operator]}
               aria-selected={operator === value}
               onClick={() => {
                 onChange(operator);
@@ -105,8 +119,7 @@ function MathOperatorSelect({
                 triggerRef.current?.focus();
               }}
             >
-              <span>{mathOperatorLabels[operator]}</span>
-              <span className="expression-math-operator-symbol">{operator}</span>
+              <Icon name={mathOperatorIcons[operator]} size={16} />
             </button>
           ))}
         </div>
@@ -150,7 +163,7 @@ function ExpressionMathElement({
   };
 
   return (
-    <div className={`expression-math-element${isMath ? " expression-debug-target expression-debug-math-box" : ""}`}>
+    <div className={`expression-math-element${isMath ? " expression-debug-target expression-debug-math-box" : ""}${operand.kind === "group" && actualOperator ? " expression-math-element-group-operand" : ""}`}>
       <div className="expression-math-operation">
         {actualOperator && (
           <MathOperatorSelect
