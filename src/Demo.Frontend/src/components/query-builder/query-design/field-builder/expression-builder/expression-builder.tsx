@@ -68,6 +68,7 @@ export default function ExpressionBuilder({
   const initialExpressionRef = useRef(expression);
   const [selectedPath, setSelectedPath] = useState<ExpressionPath>();
   const expressionBuilderRef = useRef<HTMLDivElement>(null);
+  const pendingPointerDragRef = useRef<ExpressionPointerDrag>();
   const [pointerDrag, setPointerDrag] = useState<ExpressionPointerDrag>();
   const [dragPreview, setDragPreview] = useState<ExpressionPath>();
   const [dragPosition, setDragPosition] = useState<"before" | "inside" | "after">();
@@ -244,25 +245,34 @@ export default function ExpressionBuilder({
 
   const startPointerDrag = (event: ReactPointerEvent<HTMLDivElement>, sourcePath: ExpressionPath) => {
     if (event.button !== 0) return;
-    event.preventDefault();
     event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setPointerDrag({ sourcePath, x: event.clientX, y: event.clientY });
+    pendingPointerDragRef.current = { sourcePath, x: event.clientX, y: event.clientY };
     setDragPreview(undefined);
     setDragPosition(undefined);
   };
 
   const updatePointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!pointerDrag) return;
+    let activeDrag = pointerDrag;
+    if (!activeDrag) {
+      const pendingDrag = pendingPointerDragRef.current;
+      if (!pendingDrag) return;
+      const deltaX = event.clientX - pendingDrag.x;
+      const deltaY = event.clientY - pendingDrag.y;
+      if (deltaX * deltaX + deltaY * deltaY < 25) return;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      activeDrag = pendingDrag;
+      setPointerDrag(activeDrag);
+    }
     event.preventDefault();
     const root = expressionBuilderRef.current;
     const target = root ? getExpressionDropTarget(event.clientX, event.clientY, root) : undefined;
-    setPointerDrag({ ...pointerDrag, x: event.clientX, y: event.clientY });
+    setPointerDrag({ ...activeDrag, x: event.clientX, y: event.clientY });
     setDragPreview(target?.path);
     setDragPosition(target?.kind === "field" ? target.position : undefined);
   };
 
   const finishPointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    pendingPointerDragRef.current = undefined;
     if (!pointerDrag) return;
     const root = expressionBuilderRef.current;
     const target = root ? getExpressionDropTarget(event.clientX, event.clientY, root) : undefined;
@@ -280,6 +290,7 @@ export default function ExpressionBuilder({
   };
 
   const cancelPointerDrag = () => {
+    pendingPointerDragRef.current = undefined;
     setPointerDrag(undefined);
     setDragPreview(undefined);
     setDragPosition(undefined);

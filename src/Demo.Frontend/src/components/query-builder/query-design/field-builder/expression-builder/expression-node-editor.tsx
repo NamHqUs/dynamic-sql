@@ -236,11 +236,11 @@ export default function NodeEditor({
     event.stopPropagation();
     onSelect?.(selectionPath);
   };
-  const startSelectedDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!isSelected || !path?.length || !onPointerDragStart) return;
+  const startSelectedDrag = (event: ReactPointerEvent<HTMLDivElement>, allowUnselected = false) => {
+    if ((!isSelected && !allowUnselected) || !path?.length || !onPointerDragStart) return;
     const target = event.target;
     if (target instanceof Element) {
-      if (target.closest("button, input, select, textarea, a, [role='button'], [role='option'], [role='tab'], [contenteditable='true'], .field-builder-value")) return;
+      if (target.closest("button, input, select, textarea, a, [role='option'], [role='tab'], [contenteditable='true']")) return;
       if (target.closest(".expression-selectable") !== event.currentTarget) return;
     }
     onPointerDragStart(event, path);
@@ -248,7 +248,7 @@ export default function NodeEditor({
   if (expression.kind === "field") {
     return (
       <div
-        className={`expression-field-drop-target${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}${isDropPreview ? " expression-drop-preview" : ""}${isDropPreview && dragPosition ? ` expression-drop-position-${dragPosition}` : ""}`}
+        className={`expression-field-drop-target${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}`}
         tabIndex={selectionPath === undefined ? undefined : 0}
         onClick={selectionPath === undefined ? undefined : selectExpression}
         onFocus={(event) => {
@@ -260,32 +260,34 @@ export default function NodeEditor({
           )
             onSelect?.(selectionPath);
         }}
-        onPointerDown={startSelectedDrag}
+        onPointerDown={(event) => startSelectedDrag(event, true)}
         data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
       >
         <div className="expression-debug-target expression-debug-field-builder">
-          <FieldBuilder
-            entity={entity}
-            metadata={metadata}
-            value={expression.field}
-            onChange={(field) => onChange({ kind: "field", field })}
-            showPath
-            ariaLabel="Expression field"
-            placeholder="Select field..."
-            allowValueSelection
-            allowFunctionSelection
-            editOnDoubleClick
-            initialSection="fields"
-            expressionBuilder={{
-              functionDefinitions,
-              functionDefinitionsStatus,
-              functionDefinitionsError,
-            }}
-            debugModel={expression}
-            debugOperator={debugOperator}
-            onValueSelect={(value) => onChange({ kind: "value", value })}
-            onExpressionApply={onChange}
-          />
+          <div className={`expression-field-box-drop-target${isDropPreview ? " expression-drop-preview" : ""}${isDropPreview && dragPosition ? ` expression-drop-position-${dragPosition}` : ""}`}>
+            <FieldBuilder
+              entity={entity}
+              metadata={metadata}
+              value={expression.field}
+              onChange={(field) => onChange({ kind: "field", field })}
+              showPath
+              ariaLabel="Expression field"
+              placeholder="Select field..."
+              allowValueSelection
+              allowFunctionSelection
+              editOnDoubleClick
+              initialSection="fields"
+              expressionBuilder={{
+                functionDefinitions,
+                functionDefinitionsStatus,
+                functionDefinitionsError,
+              }}
+              debugModel={expression}
+              debugOperator={debugOperator}
+              onValueSelect={(value) => onChange({ kind: "value", value })}
+              onExpressionApply={onChange}
+            />
+          </div>
           {isSelected && (
             <ExpressionAddNextItem
               onAddNextItem={onCalculationSelect ?? (() => onChange({
@@ -404,38 +406,40 @@ export default function NodeEditor({
       : String(expression.value ?? "");
     return (
       <div
-        className={`expression-debug-target expression-field-drop-target expression-value-node${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}${isDropPreview ? " expression-drop-preview" : ""}${isDropPreview && dragPosition ? ` expression-drop-position-${dragPosition}` : ""}`}
+        className={`expression-debug-target expression-field-drop-target expression-value-node${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}`}
         tabIndex={selectionPath === undefined ? undefined : 0}
         onClick={selectionPath === undefined ? undefined : selectExpression}
         onFocus={(event) => {
           if (event.target === event.currentTarget && selectionPath !== undefined)
             onSelect?.(selectionPath);
         }}
-        onPointerDown={startSelectedDrag}
+        onPointerDown={(event) => startSelectedDrag(event, true)}
         data-expression-kind={expression.kind}
         data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
       >
-        <FieldBuilder
-          entity={entity}
-          metadata={metadata}
-          value={`<${constantValue}>`}
-          onChange={(field) => onChange({ kind: "field", field })}
-          showPath
-          ariaLabel="Expression constant"
-          initialConstantValue={constantValue}
-          initialSection="value"
-          allowValueSelection
-          allowFunctionSelection
-          editOnDoubleClick
-          expressionBuilder={{
-            functionDefinitions,
-            functionDefinitionsStatus,
-            functionDefinitionsError,
-          }}
-          debugModel={expression}
-          onValueSelect={(value) => onChange({ ...expression, value })}
-          onExpressionApply={onChange}
-        />
+        <div className={`expression-field-box-drop-target${isDropPreview ? " expression-drop-preview" : ""}${isDropPreview && dragPosition ? ` expression-drop-position-${dragPosition}` : ""}`}>
+          <FieldBuilder
+            entity={entity}
+            metadata={metadata}
+            value={`<${constantValue}>`}
+            onChange={(field) => onChange({ kind: "field", field })}
+            showPath
+            ariaLabel="Expression constant"
+            initialConstantValue={constantValue}
+            initialSection="value"
+            allowValueSelection
+            allowFunctionSelection
+            editOnDoubleClick
+            expressionBuilder={{
+              functionDefinitions,
+              functionDefinitionsStatus,
+              functionDefinitionsError,
+            }}
+            debugModel={expression}
+            onValueSelect={(value) => onChange({ ...expression, value })}
+            onExpressionApply={onChange}
+          />
+        </div>
         {isSelected && (
           <ExpressionAddNextItem
             onAddNextItem={onCalculationSelect ?? (() => onChange({
