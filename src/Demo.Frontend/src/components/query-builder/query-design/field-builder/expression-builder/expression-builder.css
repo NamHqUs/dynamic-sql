@@ -1,12 +1,13 @@
 .expression-builder {
-  --expression-accent: #b9a5ff;
+  --expression-accent: #c2adff;
   --expression-operation-width: 56px;
   --expression-column-gap: 4px;
-  --expression-operation-mask-background: #171b24;
+  --expression-operation-mask-background: #141a23;
   --expression-debug-outline: 2px solid #b9a5ff;
   --expression-debug-outline: 0;
   --expression-debug-tooltip-display: none;
   --expression-debug-panel-display: none;
+  position: relative;
   display: grid;
   width: 100%;
   max-height: none;
@@ -14,9 +15,14 @@
   overflow: visible;
   box-sizing: border-box;
   padding: 14px;
-  color: #e7e5ef;
-  border-radius: 10px;
-  font: 12px "Manrope", sans-serif;
+  color: #e9eaf2;
+  border: 1px solid #333c4e;
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at 92% 0%, #57498226, transparent 42%),
+    linear-gradient(145deg, #171d29, #111720 72%);
+  box-shadow: inset 0 1px 0 #ffffff0a, 0 14px 38px #080a0f35;
+  font: 12px/1.5 "Manrope", sans-serif;
 }
 
 .expression-builder-actions,
@@ -26,9 +32,9 @@
 }
 
 .expression-preview-label {
-  color: #8f8ba3;
-  font: 9px "DM Mono", monospace;
-  letter-spacing: .7px;
+  color: #b1adc1;
+  font: 600 11px "Manrope", sans-serif;
+  letter-spacing: .2px;
 }
 
 .expression-preview-json-heading {
@@ -59,7 +65,7 @@
 
 .expression-preview-copy-status {
   color: #9ce4cb;
-  font: 10px "DM Mono", monospace;
+  font: 11px "Manrope", sans-serif;
 }
 
 .expression-preview-copy-error {
@@ -71,10 +77,13 @@
   min-height: 48px;
   gap: 6px;
   align-content: center;
-  padding: 9px 11px;
-  border: 1px solid #33413f;
-  border-radius: 7px;
-  background: linear-gradient(110deg, #16211f, #171a22);
+  padding: 10px 12px;
+  border: 1px solid #304d49;
+  border-radius: 9px;
+  background:
+    radial-gradient(ellipse at 0% 50%, #53d5a10c, transparent 55%),
+    linear-gradient(110deg, #151f22, #171a24);
+  box-shadow: inset 0 1px 0 #ffffff08;
 }
 
 .expression-debug-panel {
@@ -85,8 +94,8 @@
 
 .expression-preview code {
   overflow-wrap: anywhere;
-  color: #9ce4cb;
-  font: 12px/1.65 "DM Mono", monospace;
+  color: #a5ebd2;
+  font: 12px/1.7 "DM Mono", monospace;
 }
 
 .expression-preview-json {
@@ -117,19 +126,29 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 0;
-  width: 100%;
+  left: 5px;
+  width: auto;
   box-sizing: border-box;
-  border: 0;
-  border-left: 3px solid #75dfc0;
-  border-radius: 0;
+  border-left: 2px solid #62d6b5;
+  border-radius: 2px;
+  opacity: .8;
   content: "";
   pointer-events: none;
 }
 
+.expression-group-nested {
+  gap: 7px;
+  padding: 9px 10px 9px 13px;
+  border: 1px solid #34404e;
+  border-radius: 9px;
+  background:
+    linear-gradient(135deg, #1b242c, #171e27 72%);
+  box-shadow: inset 0 1px 0 #ffffff08, 0 4px 12px #080a0f20;
+}
+
 .expression-group-nested::before {
-  left: 0;
-  width: 100%;
+  left: 5px;
+  width: auto;
 }
 
 .expression-group-root {
@@ -205,7 +224,7 @@
   justify-content: center;
   box-sizing: border-box;
   padding-left: var(--expression-column-gap);
-  color: #ffb2c0;
+  color: #f5b5c4;
   font: 13px "DM Mono", monospace;
 }
 
@@ -220,22 +239,26 @@
 
 .expression-math-operator-trigger {
   display: block;
+  min-width: 36px;
   max-width: 100%;
   overflow: hidden;
-  padding: 2px 3px;
-  border: 0;
-  border-radius: 4px;
-  color: inherit;
-  background: transparent;
-  font: 10px "DM Mono", monospace;
+  padding: 4px 6px;
+  border: 1px solid #60444f;
+  border-radius: 6px;
+  color: #f5c1cc;
+  background: linear-gradient(145deg, #30232d, #251e29);
+  font: 12px "Manrope", sans-serif;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+  transition: border-color .16s, color .16s, background .16s;
 }
 
 .expression-math-operator-trigger:hover,
 .expression-math-operator-trigger:focus-visible {
-  color: #f0ecff;
+  border-color: #a86d83;
+  color: #ffe8ed;
+  background: #3b2937;
   outline: 0;
 }
 
@@ -252,7 +275,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 5px 8px;
-  font: 11px "DM Mono", monospace;
+  font: 12px "Manrope", sans-serif;
 }
 
 .expression-math-operator-symbol {
@@ -319,6 +342,22 @@
   gap: 6px;
 }
 
+.expression-value-node .field-builder-selected {
+  color: #c9f4df;
+  border-color: #3c6b5d;
+  background: linear-gradient(135deg, #18352f, #172a29);
+}
+
+.expression-value-node .field-builder-selected:hover {
+  border-color: #5a9c83;
+  background: linear-gradient(135deg, #1d4038, #1a3230);
+}
+
+.expression-value-node .field-builder-value,
+.expression-value-node .field-builder-type {
+  color: #b7ead2;
+}
+
 .expression-field-drop-target.expression-drop-position-before::before,
 .expression-field-drop-target.expression-drop-position-after::after {
   position: absolute;
@@ -349,7 +388,7 @@
   color: #eee9ff;
   background: #29243a;
   box-shadow: 0 8px 24px #0009;
-  font: 11px "DM Mono", monospace;
+  font: 12px "Manrope", sans-serif;
   opacity: .92;
   pointer-events: none;
   text-overflow: ellipsis;
@@ -363,7 +402,7 @@
 .expression-builder-footer {
   display: flex;
   justify-content: flex-end;
-  padding-top: 10px;
+  padding-top: 2px;
 }
 
 .expression-builder-actions { gap: 7px; }
@@ -376,21 +415,26 @@
   gap: 6px;
   padding: 6px 10px;
   border: 1px solid transparent;
-  border-radius: 5px;
-  font: 11px "Manrope", sans-serif;
+  border-radius: 7px;
+  font: 13px "Manrope", sans-serif;
+  font-weight: 700;
   cursor: pointer;
+  transition: border-color .16s, background .16s, box-shadow .16s, transform .16s;
 }
 
 .expression-apply-button {
-  border-color: #8168bf;
+  border-color: #9278d4;
   color: #fff;
-  background: #654f9f;
+  background: linear-gradient(135deg, #8065c5, #654f9f);
+  box-shadow: 0 3px 10px #5d478540;
 }
 
 .expression-apply-button:hover:not(:disabled),
 .expression-apply-button:focus-visible {
-  border-color: #a18be0;
-  background: #735caf;
+  border-color: #b9a5ff;
+  background: linear-gradient(135deg, #9076d4, #735caf);
+  box-shadow: 0 5px 16px #7258b85c;
+  transform: translateY(-1px);
   outline: 0;
 }
 
@@ -412,7 +456,7 @@
 }
 
 @media (max-width: 440px) {
-  .expression-builder { padding: 10px; }
+  .expression-builder { padding: 10px; border-radius: 10px; }
   .expression-builder {
     --expression-operation-width: 52px;
     --expression-column-gap: 3px;
