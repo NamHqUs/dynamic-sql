@@ -28,6 +28,7 @@ type FieldBuilderProps = {
   placeholderIcon?: boolean;
   ariaLabel?: string;
   excludedPaths?: string[];
+  autoFocus?: boolean;
   editMode?: boolean;
   onCancel?: () => void;
   allowAggregates?: boolean;
@@ -63,6 +64,7 @@ export default function FieldBuilder({
   placeholderIcon = false,
   ariaLabel = "Field",
   excludedPaths = [],
+  autoFocus,
   editMode = false,
   onCancel,
   allowAggregates = true,
@@ -132,7 +134,7 @@ export default function FieldBuilder({
           value={value}
           onIncompleteChange={setHasIncompleteSelection}
           clearOnSelect
-          autoFocus={Boolean(value) || initialConstantValue !== undefined}
+          autoFocus={autoFocus ?? (Boolean(value) || initialConstantValue !== undefined)}
           showPath={showPath}
           placeholder={initialConstantValue === undefined ? placeholder : String(initialConstantValue)}
           placeholderIcon={placeholderIcon}
