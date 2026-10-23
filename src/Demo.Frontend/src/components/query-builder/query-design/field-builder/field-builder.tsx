@@ -90,10 +90,6 @@ export default function FieldBuilder({
         onExpressionApply(expression);
         closeMenu();
       }}
-      onCancel={() => {
-        closeMenu();
-        cancelEdit();
-      }}
     />
     : undefined;
   const dataType = showDataType ? getFieldDataType(entity, metadata, value) : undefined;

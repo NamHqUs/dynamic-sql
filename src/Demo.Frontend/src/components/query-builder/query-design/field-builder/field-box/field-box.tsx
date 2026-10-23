@@ -308,7 +308,10 @@ export default function FieldBox({
         ref={menuPopupRef}
         className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "calculation" && renderCalculation ? " field-box-menu-popup-calculation" : ""}`}
         style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: activeSection === "calculation" ? "none" : menuPosition.maxHeight, transform: "none", margin: 0 }}
-        onMouseDown={(event) => event.preventDefault()}
+        onMouseDown={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
         role="group"
         aria-label={`${ariaLabel} options`}
       >
