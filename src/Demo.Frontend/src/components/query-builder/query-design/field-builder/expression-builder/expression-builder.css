@@ -127,11 +127,11 @@
   top: 0;
   bottom: 0;
   left: 5px;
-  width: auto;
+  width: 4px;
   box-sizing: border-box;
-  border-left: 2px solid #62d6b5;
-  border-radius: 2px;
-  opacity: .8;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #b69aff 0%, #72d9c0 52%, #8e9cff 100%);
+  box-shadow: 0 0 10px #9c82e63d;
   content: "";
   pointer-events: none;
 }
@@ -139,7 +139,7 @@
 .expression-group-nested {
   gap: 7px;
   padding: 9px 10px 9px 13px;
-  border: 1px solid #34404e;
+  border: 0;
   border-radius: 9px;
   background:
     linear-gradient(135deg, #1b242c, #171e27 72%);
@@ -148,7 +148,7 @@
 
 .expression-group-nested::before {
   left: 5px;
-  width: auto;
+  width: 4px;
 }
 
 .expression-group-root {
