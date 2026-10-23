@@ -18,3 +18,21 @@ Run it with:
 npm install
 npm run dev
 ```
+
+## Expression builder debug visuals
+
+The expression builder's debug outline and model tooltip are enabled by default, but appear only while an element is hovered or focused. The persistent left borders on groups and field boxes are structural styling and remain visible.
+
+To turn debug visuals off, set these variables in `.expression-builder` in `src/components/query-builder/query-design/field-builder/expression-builder.css`:
+
+```css
+--expression-debug-outline: none;
+--expression-debug-tooltip-display: none;
+```
+
+To turn them back on, use:
+
+```css
+--expression-debug-outline: 2px solid #b9a5ff;
+--expression-debug-tooltip-display: grid;
+```

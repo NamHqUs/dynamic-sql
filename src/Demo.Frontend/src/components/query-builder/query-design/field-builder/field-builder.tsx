@@ -1,9 +1,10 @@
 import { useState } from "react";
 import FieldBox, { resolveEntity } from "./field-box/field-box";
-import { IFieldDefinition, MetadataEntity } from "../query-builder-slice";
+import { IFieldDefinition, MatchOperation, MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../icon/icon";
 import ExpressionBuilder from "./expression-builder";
 import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
+import ExpressionDebugTooltip from "./expression-debug-tooltip/expression-debug-tooltip";
 import "./field-builder.css";
 
 const FIELD_BOX_HEIGHT = 34;
@@ -38,6 +39,8 @@ type FieldBuilderProps = {
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
   expressionBuilder?: FieldBuilderExpressionOptions;
+  debugModel?: IFieldDefinition;
+  debugOperator?: MatchOperation | null;
   onCalculationSelect?: () => void;
   onExpressionApply?: (expression: IFieldDefinition) => void;
 };
@@ -75,6 +78,8 @@ export default function FieldBuilder({
   initialSection = initialConstantValue !== undefined ? "value" : "fields",
   onValueSelect,
   expressionBuilder,
+  debugModel,
+  debugOperator,
   onCalculationSelect,
   onExpressionApply,
 }: FieldBuilderProps) {
@@ -108,6 +113,43 @@ export default function FieldBuilder({
       <Icon name="close" size={12} />
     </button>
   );
+  const fieldBox = (
+    <FieldBox
+      entity={entity}
+      metadata={metadata}
+      value={value}
+      onIncompleteChange={setHasIncompleteSelection}
+      clearOnSelect
+      autoFocus={autoFocus ?? (Boolean(value) || initialConstantValue !== undefined)}
+      showPath={showPath}
+      placeholder={initialConstantValue === undefined ? placeholder : String(initialConstantValue)}
+      placeholderIcon={placeholderIcon}
+      ariaLabel={ariaLabel}
+      excludedPaths={excludedPaths}
+      allowAggregates={allowAggregates}
+      allowValueSelection={allowValueSelection}
+      allowCalculationSelection={allowCalculationSelection}
+      initialSection={initialSection}
+      initialConstantValue={initialConstantValue}
+      onCalculationSelect={onCalculationSelect ? () => {
+        setIsEditing(false);
+        onCalculationSelect();
+      } : undefined}
+      onEscape={cancelEdit}
+      onValueSelect={(constantValue) => {
+        setIsEditing(false);
+        onValueSelect?.(constantValue);
+      }}
+      renderCalculation={renderCalculation}
+      onChange={(path) => {
+        setIsEditing(false);
+        onChange(path);
+      }}
+    />
+  );
+  const fieldBoxDebugModel: IFieldDefinition = debugOperator
+    ? { kind: "math", oper: debugOperator, field: { kind: "field", field: value } }
+    : debugModel ?? { kind: "field", field: value };
 
   if (!value || editMode || isEditing) {
     return (
@@ -130,38 +172,12 @@ export default function FieldBuilder({
         }
       }
       >
-        <FieldBox
-          entity={entity}
-          metadata={metadata}
-          value={value}
-          onIncompleteChange={setHasIncompleteSelection}
-          clearOnSelect
-          autoFocus={autoFocus ?? (Boolean(value) || initialConstantValue !== undefined)}
-          showPath={showPath}
-          placeholder={initialConstantValue === undefined ? placeholder : String(initialConstantValue)}
-          placeholderIcon={placeholderIcon}
-          ariaLabel={ariaLabel}
-          excludedPaths={excludedPaths}
-          allowAggregates={allowAggregates}
-          allowValueSelection={allowValueSelection}
-          allowCalculationSelection={allowCalculationSelection}
-          initialSection={initialSection}
-          initialConstantValue={initialConstantValue}
-          onCalculationSelect={onCalculationSelect ? () => {
-            setIsEditing(false);
-            onCalculationSelect();
-          } : undefined}
-          onEscape={cancelEdit}
-          onValueSelect={(constantValue) => {
-            setIsEditing(false);
-            onValueSelect?.(constantValue);
-          }}
-          renderCalculation={renderCalculation}
-          onChange={(path) => {
-            setIsEditing(false);
-            onChange(path);
-          }}
-        />
+        {debugModel
+          ? <div className="expression-debug-target expression-debug-field-box">
+            {fieldBox}
+            <ExpressionDebugTooltip label="Field box" model={fieldBoxDebugModel} />
+          </div>
+          : fieldBox}
         {dataType && <span className="field-builder-type">{dataType}</span>}
         {removeButton}
       </div>

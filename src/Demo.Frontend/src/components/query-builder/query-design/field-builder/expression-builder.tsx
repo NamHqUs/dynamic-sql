@@ -1,10 +1,12 @@
 import { useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import type {
   IFieldDefinition,
   MatchOperation,
   MetadataEntity,
 } from "../query-builder-slice";
 import FieldBuilder from "./field-builder";
+import ExpressionDebugTooltip from "./expression-debug-tooltip/expression-debug-tooltip";
 import Icon from "../../../icon/icon";
 import type { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
 import "./expression-builder.css";
@@ -22,15 +24,15 @@ type ExpressionBuilderProps = {
 
 type ExpressionNodeKind = "field" | "value" | "function" | "group";
 
-const operations: { value: MatchOperation; label: string }[] = [
-  { value: "+", label: "+ Add" },
-  { value: "-", label: "− Subtract" },
-  { value: "*", label: "× Multiply" },
-  { value: "/", label: "÷ Divide" },
-  { value: "%", label: "% Modulus" },
-  { value: "&", label: "& Bitwise AND" },
-  { value: "|", label: "| Bitwise OR" },
-];
+const mathOperatorLabels: Record<MatchOperation, string> = {
+  "+": "ADD",
+  "-": "SUB",
+  "*": "MUL",
+  "/": "DIV",
+  "%": "MOD",
+  "&": "AND",
+  "|": "OR",
+};
 
 function createFunctionExpression(
   definition: FunctionDefinition | undefined,
@@ -68,6 +70,123 @@ function withOperation(expression: IFieldDefinition, oper: MatchOperation): IFie
   return { kind: "math", oper, field: expression };
 }
 
+type ExpressionPath = number[];
+
+type ExpressionPointerDrag = {
+  sourcePath: ExpressionPath;
+  x: number;
+  y: number;
+};
+
+type ExpressionDropTarget =
+  | { kind: "field"; path: ExpressionPath; position: "before" | "after" }
+  | { kind: "group"; path: ExpressionPath };
+
+function isExpressionGroup(expression: IFieldDefinition): expression is Extract<IFieldDefinition, { kind: "group" }> {
+  return expression.kind === "group";
+}
+
+function getExpressionNode(expression: IFieldDefinition, path: ExpressionPath): IFieldDefinition | undefined {
+  let node = expression;
+  for (const index of path) {
+    if (!isExpressionGroup(node) || !node.arguments[index]) return undefined;
+    node = node.arguments[index];
+  }
+  return node;
+}
+
+function updateExpressionGroup(
+  expression: IFieldDefinition,
+  path: ExpressionPath,
+  update: (group: Extract<IFieldDefinition, { kind: "group" }>) => IFieldDefinition,
+): IFieldDefinition {
+  if (!isExpressionGroup(expression)) return expression;
+  if (!path.length) return update(expression);
+  const [index, ...rest] = path;
+  const child = expression.arguments[index];
+  if (!child || !isExpressionGroup(child)) return expression;
+  const updatedChild = updateExpressionGroup(child, rest, update);
+  return {
+    ...expression,
+    arguments: expression.arguments.map((argument, argumentIndex) =>
+      argumentIndex === index ? updatedChild : argument,
+    ),
+  };
+}
+
+function replaceExpressionNode(
+  expression: IFieldDefinition,
+  path: ExpressionPath,
+  replacement: IFieldDefinition,
+): IFieldDefinition {
+  if (!path.length) return expression;
+  const parentPath = path.slice(0, -1);
+  const index = path[path.length - 1];
+  if (index === undefined) return expression;
+  return updateExpressionGroup(expression, parentPath, (parent) => ({
+    ...parent,
+    arguments: parent.arguments.map((argument, argumentIndex) =>
+      argumentIndex === index ? replacement : argument,
+    ),
+  }));
+}
+
+function setExpressionOperation(expression: IFieldDefinition, operation: MatchOperation | null): IFieldDefinition {
+  if (isExpressionGroup(expression)) return { ...expression, operator: operation ?? undefined };
+  if (expression.kind === "math") {
+    return operation ? { ...expression, oper: operation } : expression.field;
+  }
+  if (!operation) return expression;
+  return { kind: "math", oper: operation, field: expression };
+}
+
+function isSameExpressionPath(first: ExpressionPath, second: ExpressionPath): boolean {
+  return first.length === second.length && first.every((index, pathIndex) => index === second[pathIndex]);
+}
+
+function isExpressionPath(value: unknown): value is ExpressionPath {
+  return Array.isArray(value) && value.every((index) => Number.isInteger(index) && index >= 0);
+}
+
+function adjustExpressionPathAfterRemoval(sourcePath: ExpressionPath, targetPath: ExpressionPath): ExpressionPath {
+  const adjustedPath = [...targetPath];
+  const sharedDepth = Math.min(sourcePath.length, targetPath.length);
+  for (let depth = 0; depth < sharedDepth; depth++) {
+    const sourceIndex = sourcePath[depth];
+    const targetIndex = targetPath[depth];
+    if (sourceIndex === undefined || targetIndex === undefined) break;
+    if (!sourcePath.slice(0, depth).every((index, pathIndex) => index === targetPath[pathIndex])) return adjustedPath;
+    if (sourceIndex < targetIndex) {
+      adjustedPath[depth]--;
+      return adjustedPath;
+    }
+    if (sourceIndex > targetIndex) return adjustedPath;
+  }
+  return adjustedPath;
+}
+
+function getExpressionDropTarget(x: number, y: number): ExpressionDropTarget | undefined {
+  const element = document.elementFromPoint(x, y);
+  if (!(element instanceof Element)) return undefined;
+  const field = element.closest<HTMLElement>(".expression-field-drop-target[data-expression-path]");
+  if (field) {
+    const path = JSON.parse(field.dataset.expressionPath ?? "null") as unknown;
+    if (!isExpressionPath(path)) return undefined;
+    const bounds = field.getBoundingClientRect();
+    return {
+      kind: "field",
+      path,
+      position: y < bounds.top + bounds.height / 2 ? "before" : "after",
+    };
+  }
+  const group = element.closest<HTMLElement>(
+    ".expression-group-list[data-expression-path]",
+  );
+  if (!group) return undefined;
+  const path = JSON.parse(group.dataset.expressionPath ?? "null") as unknown;
+  return isExpressionPath(path) ? { kind: "group", path } : undefined;
+}
+
 function updateFunction(
   expression: Extract<IFieldDefinition, { kind: "function" }>,
   name: string,
@@ -96,7 +215,7 @@ export function formatExpression(expression: IFieldDefinition): string {
     case "math":
       return `${expression.oper} ${formatOperand(expression.field)}`;
     case "group":
-      return `(${expression.arguments.map((argument, index) => {
+      return expression.arguments.map((argument, index) => {
         if (index === 0) return formatOperand(argument);
         if (argument.kind === "math")
           return `${argument.oper} ${formatOperand(argument.field)}`;
@@ -104,9 +223,9 @@ export function formatExpression(expression: IFieldDefinition): string {
           ? argument.operator ?? expression.operator ?? "+"
           : expression.operator ?? "+";
         return `${operation} ${formatOperand(argument)}`;
-      }).join(" ")})`;
+      }).join(" ");
     case "function":
-      return `${expression.function || "Choose function"}(${expression.arguments.map(formatExpression).join(", ")})`;
+      return `${expression.function || "Choose function"}(${expression.arguments.map(formatOperand).join(", ")})`;
   }
 }
 
@@ -159,9 +278,87 @@ type NodeEditorProps = {
   onChange: (expression: IFieldDefinition) => void;
   onCalculationSelect?: () => void;
   onRemove?: () => void;
+  debugOperator?: MatchOperation | null;
+  path?: ExpressionPath;
+  onPointerDragStart?: (event: ReactPointerEvent<HTMLDivElement>, path: ExpressionPath) => void;
+  dragPreview?: ExpressionPath;
+  dragPosition?: "before" | "after";
   root?: boolean;
   allowGroup?: boolean;
 };
+
+type ExpressionMathElementProps = Omit<NodeEditorProps, "expression" | "root" | "allowGroup" | "debugOperator"> & {
+  expression: IFieldDefinition;
+  operator?: MatchOperation | null;
+};
+
+function ExpressionMathElement({
+  expression,
+  operator,
+  entity,
+  metadata,
+  functionDefinitions,
+  functionDefinitionsStatus,
+  functionDefinitionsError,
+  onChange,
+  onCalculationSelect,
+  path,
+  onPointerDragStart,
+  dragPreview,
+  dragPosition,
+}: ExpressionMathElementProps) {
+  const isMath = expression.kind === "math";
+  const operand = isMath ? expression.field : expression;
+  const actualOperator = isMath ? expression.oper : operator;
+  const updateOperand = (next: IFieldDefinition) => {
+    if (isMath) {
+      if (next.kind !== "group") onChange({ ...expression, field: next });
+      return;
+    }
+    onChange(next);
+  };
+
+  return (
+    <div className={`expression-math-element${isMath ? " expression-debug-target expression-debug-math-box" : ""}`}>
+      <div
+        className="expression-math-operation"
+      >
+        {actualOperator
+          ? <span className="expression-math-operation-label">{mathOperatorLabels[actualOperator]}</span>
+          : null}
+      </div>
+      <div
+        className={`expression-math-field${operand.kind === "group" ? " expression-math-field-group" : " expression-math-field-draggable"}`}
+        onPointerDown={path === undefined
+          ? undefined
+          : (event) => {
+            const bounds = event.currentTarget.getBoundingClientRect();
+            const dragEdge = bounds.left + (operand.kind === "group" ? 16 : 0);
+            if (event.clientX >= dragEdge && event.clientX <= dragEdge + 8)
+              onPointerDragStart?.(event, path);
+          }}
+      >
+        <NodeEditor
+          expression={operand}
+          entity={entity}
+          metadata={metadata}
+          functionDefinitions={functionDefinitions}
+          functionDefinitionsStatus={functionDefinitionsStatus}
+          functionDefinitionsError={functionDefinitionsError}
+          onChange={updateOperand}
+          onCalculationSelect={onCalculationSelect}
+          path={path}
+          onPointerDragStart={onPointerDragStart}
+          dragPreview={dragPreview}
+          dragPosition={dragPosition}
+          debugOperator={actualOperator}
+          allowGroup={false}
+        />
+      </div>
+      {isMath && <ExpressionDebugTooltip label="Math box" model={expression} />}
+    </div>
+  );
+}
 
 function NodeEditor({
   expression,
@@ -173,42 +370,67 @@ function NodeEditor({
   onChange,
   onCalculationSelect,
   onRemove,
+  path,
+  onPointerDragStart,
+  dragPreview,
+  dragPosition,
+  debugOperator,
   root = false,
   allowGroup = true,
 }: NodeEditorProps) {
   const replaceWith = (kind: ExpressionNodeKind) => onChange(createExpression(kind, functionDefinitions));
+  const isDropPreview = path !== undefined && dragPreview !== undefined && isSameExpressionPath(path, dragPreview);
   if (expression.kind === "field") {
     return (
-      <FieldBuilder
-        entity={entity}
-        metadata={metadata}
-        value={expression.field}
-        onChange={(field) => onChange({ kind: "field", field })}
-        showPath
-        ariaLabel="Expression field"
-        placeholder="Select field..."
-        allowValueSelection
-        allowCalculationSelection
-        initialSection="fields"
-        expressionBuilder={{
-          functionDefinitions,
-          functionDefinitionsStatus,
-          functionDefinitionsError,
-        }}
-        onCalculationSelect={onCalculationSelect}
-        onValueSelect={(value) => onChange({ kind: "value", value })}
-        onExpressionApply={onChange}
-      />
+      <div
+        className={`expression-field-drop-target${isDropPreview ? " expression-drop-preview" : ""}${isDropPreview && dragPosition ? ` expression-drop-position-${dragPosition}` : ""}`}
+        data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
+      >
+        <div className="expression-debug-target expression-debug-field-builder">
+          <FieldBuilder
+            entity={entity}
+            metadata={metadata}
+            value={expression.field}
+            onChange={(field) => onChange({ kind: "field", field })}
+            showPath
+            ariaLabel="Expression field"
+            placeholder="Select field..."
+            allowValueSelection
+            allowCalculationSelection
+            initialSection="fields"
+            expressionBuilder={{
+              functionDefinitions,
+              functionDefinitionsStatus,
+              functionDefinitionsError,
+            }}
+            debugModel={expression}
+            debugOperator={debugOperator}
+            onCalculationSelect={onCalculationSelect}
+            onValueSelect={(value) => onChange({ kind: "value", value })}
+            onExpressionApply={onChange}
+          />
+          <ExpressionDebugTooltip label="Field builder" model={expression} />
+        </div>
+      </div>
     );
   }
-  if (root && expression.kind === "group") {
+  if (expression.kind === "group") {
+    const groupDebugModel: IFieldDefinition = expression.operator === undefined && debugOperator != null
+      ? { ...expression, operator: debugOperator }
+      : expression;
     return (
-      <div className="expression-builder-tree">
+      <div
+        className={`expression-group-list expression-debug-target expression-debug-group-box${root ? " expression-group-root" : " expression-group-nested"}${isDropPreview ? " expression-drop-preview" : ""}`}
+        data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
+      >
         {expression.arguments.map((argument, index) => {
-          const updateArgument = (next: IFieldDefinition) => onChange({
-            ...expression,
-            arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
-          });
+          const argumentPath = path === undefined ? undefined : [...path, index];
+          const updateArgument = (next: IFieldDefinition) => {
+            const argumentsList = expression.arguments.map((item, itemIndex) =>
+              itemIndex === index ? next : item,
+            );
+            onChange({ ...expression, arguments: argumentsList });
+          };
           const appendMath = () => onChange({
             ...expression,
             arguments: [
@@ -217,91 +439,63 @@ function NodeEditor({
               ...expression.arguments.slice(index + 1),
             ],
           });
-          const operator = getGroupArgumentOperator(expression, argument, index);
 
           return (
-            <span className="expression-builder-tree-item" key={`tree-item-${index}`}>
-              {argument.kind === "math"
-                ? <label className="expression-builder-tree-operation">
-                  <span className="visually-hidden">Operation before item {index + 1}</span>
-                  <select
-                    aria-label={`Operation before item ${index + 1}`}
-                    value={argument.oper}
-                    onChange={(event) => updateArgument({
-                      ...argument,
-                      oper: event.target.value as MatchOperation,
-                    })}
-                  >
-                    {operations.map((operation) => (
-                      <option key={operation.value} value={operation.value}>{operation.value}</option>
-                    ))}
-                  </select>
-                </label>
-                : operator && <span className="expression-builder-tree-operator">{operator}</span>}
-              {argument.kind === "math"
-                ? <NodeEditor
-                  expression={argument.field}
-                  entity={entity}
-                  metadata={metadata}
-                  functionDefinitions={functionDefinitions}
-                  functionDefinitionsStatus={functionDefinitionsStatus}
-                  functionDefinitionsError={functionDefinitionsError}
-                  allowGroup={false}
-                  onChange={(field) => {
-                    if (field.kind !== "group") updateArgument({ ...argument, field });
-                  }}
-                  onCalculationSelect={appendMath}
-                />
-                : <NodeEditor
-                  expression={argument}
-                  entity={entity}
-                  metadata={metadata}
-                  functionDefinitions={functionDefinitions}
-                  functionDefinitionsStatus={functionDefinitionsStatus}
-                  functionDefinitionsError={functionDefinitionsError}
-                  onChange={updateArgument}
-                  onCalculationSelect={appendMath}
-                />}
-            </span>
+            <ExpressionMathElement
+              key={`expression-item-${index}`}
+              expression={argument}
+              operator={getGroupArgumentOperator(expression, argument, index)}
+              entity={entity}
+              metadata={metadata}
+              functionDefinitions={functionDefinitions}
+              functionDefinitionsStatus={functionDefinitionsStatus}
+              functionDefinitionsError={functionDefinitionsError}
+              path={argumentPath}
+              onPointerDragStart={onPointerDragStart}
+              dragPreview={dragPreview}
+              dragPosition={dragPosition}
+              onChange={updateArgument}
+              onCalculationSelect={appendMath}
+            />
           );
         })}
+        <ExpressionDebugTooltip label="Group box" model={groupDebugModel} />
       </div>
     );
   }
-  const title = expression.kind === "math"
-    ? "OPERATION"
-    : expression.kind === "group"
-      ? "GROUP"
-      : expression.kind === "function"
-        ? "FUNCTION"
-        : expression.kind === "value"
-          ? "CONSTANT"
-          : "FIELD";
+  if (expression.kind === "math") {
+    return (
+      <ExpressionMathElement
+        expression={expression}
+        entity={entity}
+        metadata={metadata}
+        functionDefinitions={functionDefinitions}
+        functionDefinitionsStatus={functionDefinitionsStatus}
+        functionDefinitionsError={functionDefinitionsError}
+        path={path}
+        onPointerDragStart={onPointerDragStart}
+        dragPreview={dragPreview}
+        dragPosition={dragPosition}
+        onChange={onChange}
+        onCalculationSelect={onCalculationSelect}
+      />
+    );
+  }
+  const title = expression.kind === "function"
+      ? "FUNCTION"
+      : "CONSTANT";
 
   return (
-    <div className={`expression-node expression-node-${expression.kind}${root ? " expression-node-root" : ""}`}>
+    <div
+      className={`expression-node expression-node-${expression.kind}${root ? " expression-node-root" : ""}`}
+      data-expression-kind={expression.kind}
+      data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
+    >
       <div className="expression-node-heading">
         <span className={`expression-node-kind expression-node-kind-${expression.kind}`}>
           {expression.kind === "function" && <Icon name="code" size={12} />}
           {title}
         </span>
-        {expression.kind === "math" && (
-          <label className="expression-operation-label">
-            <span className="visually-hidden">Operation</span>
-            <select
-              aria-label="Math operation"
-              value={expression.oper}
-              onChange={(event) => onChange({
-                ...expression,
-                oper: event.target.value as MatchOperation,
-              })}
-            >
-              {operations.map((operation) => (
-                <option key={operation.value} value={operation.value}>{operation.label}</option>
-              ))}
-            </select>
-          </label>
-        )}
         {!root && (
           <select
             className="expression-node-replace"
@@ -360,25 +554,6 @@ function NodeEditor({
         </div>
       )}
 
-      {expression.kind === "math" && (
-        <div className="expression-node-content expression-math-operand">
-          <span className="expression-operand-prefix">WITH</span>
-          <NodeEditor
-            expression={expression.field}
-            entity={entity}
-            metadata={metadata}
-            functionDefinitions={functionDefinitions}
-            functionDefinitionsStatus={functionDefinitionsStatus}
-            functionDefinitionsError={functionDefinitionsError}
-            allowGroup={false}
-            onChange={(field) => {
-              if (field.kind !== "group") onChange({ ...expression, field });
-            }}
-            onCalculationSelect={onCalculationSelect}
-          />
-        </div>
-      )}
-
       {expression.kind === "function" && (
         <div className="expression-function-editor">
           <label className="expression-function-select">
@@ -432,90 +607,6 @@ function NodeEditor({
         </div>
       )}
 
-      {expression.kind === "group" && (
-        <div className="expression-group-editor">
-          <div className="expression-group-terms">
-            {expression.arguments.map((argument, index) => (
-              <div className="expression-term" key={`term-${index}`}>
-                {index === 0
-                  ? <span className="expression-term-start">START</span>
-                  : argument.kind === "math"
-                    ? <span className="expression-term-operator" aria-hidden="true">{argument.oper}</span>
-                    : (
-                      <label className="expression-term-operator-select">
-                        <span className="visually-hidden">Operation before item {index + 1}</span>
-                        <select
-                          aria-label={`Operation before item ${index + 1}`}
-                          value={argument.kind === "group"
-                            ? argument.operator ?? expression.operator ?? "+"
-                            : expression.operator ?? "+"}
-                          onChange={(event) => {
-                            const operation = event.target.value as MatchOperation;
-                            const next = argument.kind === "group"
-                              ? { ...argument, operator: operation }
-                              : withOperation(argument, operation);
-                            onChange({
-                              ...expression,
-                              arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
-                            });
-                          }}
-                        >
-                          {operations.map((operation) => (
-                            <option key={operation.value} value={operation.value}>{operation.label}</option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-                <NodeEditor
-                  expression={argument}
-                  entity={entity}
-                  metadata={metadata}
-                  functionDefinitions={functionDefinitions}
-                  functionDefinitionsStatus={functionDefinitionsStatus}
-                  functionDefinitionsError={functionDefinitionsError}
-                  onChange={(next) => onChange({
-                    ...expression,
-                    arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
-                  })}
-                  onCalculationSelect={onCalculationSelect}
-                  onRemove={expression.arguments.length > 1
-                    ? () => onChange({
-                      ...expression,
-                      arguments: expression.arguments.filter((_, itemIndex) => itemIndex !== index),
-                    })
-                    : undefined}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="expression-add-actions" aria-label="Add expression item">
-            <span className="expression-add-label">ADD</span>
-            {([
-              ["field", "Field"],
-              ["value", "Constant"],
-              ["function", "Function"],
-              ["group", "Group"],
-            ] as const).map(([kind, label]) => (
-              <button
-                type="button"
-                className="expression-add-button"
-                key={kind}
-                disabled={kind === "function" && functionDefinitions.length === 0}
-                onClick={() => {
-                  const added = createExpression(kind, functionDefinitions);
-                  const next = expression.arguments.length > 0
-                    ? withOperation(added, "+")
-                    : added;
-                  onChange({ ...expression, arguments: [...expression.arguments, next] });
-                }}
-              >
-                <Icon name="plus" size={12} />
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -533,10 +624,147 @@ export default function ExpressionBuilder({
   const [expression, setExpression] = useState<IFieldDefinition>(
     initialExpression ?? createExpression(initialKind === "function" ? "function" : "group", functionDefinitions),
   );
+  const [pointerDrag, setPointerDrag] = useState<ExpressionPointerDrag>();
+  const [dragPreview, setDragPreview] = useState<ExpressionPath>();
+  const [dragPosition, setDragPosition] = useState<"before" | "after">();
+  const [copyFeedback, setCopyFeedback] = useState<{
+    json: string;
+    status: "copied" | "error";
+  }>();
+  const modelJson = JSON.stringify(expression, null, 2);
+  const copyStatus = copyFeedback?.json === modelJson ? copyFeedback.status : undefined;
   const validationError = getExpressionError(expression);
 
+  const copyModelJson = async () => {
+    try {
+      await navigator.clipboard.writeText(modelJson);
+      setCopyFeedback({ json: modelJson, status: "copied" });
+    } catch {
+      setCopyFeedback({ json: modelJson, status: "error" });
+    }
+  };
+
+  const groupNodeOnField = (
+    sourcePath: ExpressionPath,
+    targetPath: ExpressionPath,
+    position: "before" | "after",
+  ) => {
+    if (!sourcePath.length || !targetPath.length || isSameExpressionPath(sourcePath, targetPath)
+      || (sourcePath.length < targetPath.length
+        && sourcePath.every((index, pathIndex) => index === targetPath[pathIndex]))) return;
+    const sourceNode = getExpressionNode(expression, sourcePath);
+    const sourceParentPath = sourcePath.slice(0, -1);
+    const sourceParent = getExpressionNode(expression, sourceParentPath);
+    const sourceIndex = sourcePath[sourcePath.length - 1];
+    const targetNode = getExpressionNode(expression, targetPath);
+    const targetParent = getExpressionNode(expression, targetPath.slice(0, -1));
+    const targetIndex = targetPath[targetPath.length - 1];
+    if (!sourceNode || !isExpressionGroup(sourceParent) || sourceParent.arguments.length <= 1
+      || sourceIndex === undefined || !targetNode || !isExpressionGroup(targetParent)
+      || targetIndex === undefined) return;
+    const targetField = targetNode.kind === "math" ? targetNode.field : targetNode;
+    if (targetField.kind !== "field") return;
+
+    const sourceOperation = getGroupArgumentOperator(sourceParent, sourceNode, sourceIndex);
+    const targetOperation = getGroupArgumentOperator(targetParent, targetNode, targetIndex);
+    const sourceComesFirst = position === "before";
+    const removed = updateExpressionGroup(expression, sourceParentPath, (group) => ({
+      ...group,
+      arguments: group.arguments.filter((_, index) => index !== sourceIndex),
+    }));
+    const adjustedTargetPath = adjustExpressionPathAfterRemoval(sourcePath, targetPath);
+    const adjustedTarget = getExpressionNode(removed, adjustedTargetPath);
+    if (!adjustedTarget) return;
+    const adjustedTargetField = adjustedTarget.kind === "math" ? adjustedTarget.field : adjustedTarget;
+    if (adjustedTargetField.kind !== "field") return;
+    const sourceField = sourceNode.kind === "math" ? sourceNode.field : sourceNode;
+    const firstField = sourceComesFirst ? sourceField : adjustedTargetField;
+    const secondField = sourceComesFirst ? adjustedTargetField : sourceField;
+    const firstOperation = sourceComesFirst ? sourceOperation : targetOperation;
+    const secondOperation = sourceComesFirst ? targetOperation : sourceOperation;
+    const grouped: IFieldDefinition = {
+      kind: "group",
+      ...(firstOperation ? { operator: firstOperation } : {}),
+      arguments: [
+        firstField,
+        setExpressionOperation(secondField, secondOperation),
+      ],
+    };
+    setExpression(replaceExpressionNode(removed, adjustedTargetPath, grouped));
+  };
+
+  const moveNode = (sourcePath: ExpressionPath, targetPath: ExpressionPath) => {
+    if (!sourcePath.length || sourcePath.length <= targetPath.length
+      && sourcePath.every((index, pathIndex) => index === targetPath[pathIndex])) return;
+    const node = getExpressionNode(expression, sourcePath);
+    if (!node) return;
+    const removed = updateExpressionGroup(expression, sourcePath.slice(0, -1), (parent) => ({
+      ...parent,
+      arguments: parent.arguments.filter((_, index) => index !== sourcePath[sourcePath.length - 1]),
+    }));
+    const adjustedTargetPath = adjustExpressionPathAfterRemoval(sourcePath, targetPath);
+    const target = getExpressionNode(removed, adjustedTargetPath);
+    if (!target || !isExpressionGroup(target)) return;
+    const lastIndex = target.arguments.length - 1;
+    const operation = lastIndex < 0
+      ? null
+      : target.operator
+        ?? getGroupArgumentOperator(target, target.arguments[lastIndex]!, lastIndex)
+        ?? "+";
+    const moved = setExpressionOperation(node, operation);
+    setExpression(updateExpressionGroup(removed, adjustedTargetPath, (group) => ({
+      ...group,
+      arguments: [...group.arguments, moved],
+    })));
+  };
+
+  const startPointerDrag = (event: ReactPointerEvent<HTMLDivElement>, sourcePath: ExpressionPath) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setPointerDrag({ sourcePath, x: event.clientX, y: event.clientY });
+    setDragPreview(undefined);
+    setDragPosition(undefined);
+  };
+
+  const updatePointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!pointerDrag) return;
+    event.preventDefault();
+    const target = getExpressionDropTarget(event.clientX, event.clientY);
+    setPointerDrag({ ...pointerDrag, x: event.clientX, y: event.clientY });
+    setDragPreview(target?.path);
+    setDragPosition(target?.kind === "field" ? target.position : undefined);
+  };
+
+  const finishPointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!pointerDrag) return;
+    const target = getExpressionDropTarget(event.clientX, event.clientY);
+    if (target?.kind === "field") {
+      groupNodeOnField(pointerDrag.sourcePath, target.path, target.position);
+    } else if (target?.kind === "group") {
+      moveNode(pointerDrag.sourcePath, target.path);
+    }
+    setPointerDrag(undefined);
+    setDragPreview(undefined);
+    setDragPosition(undefined);
+  };
+
+  const cancelPointerDrag = () => {
+    setPointerDrag(undefined);
+    setDragPreview(undefined);
+    setDragPosition(undefined);
+  };
+
+  const draggedNode = pointerDrag ? getExpressionNode(expression, pointerDrag.sourcePath) : undefined;
+
   return (
-    <div className="expression-builder">
+    <div
+      className="expression-builder"
+      onPointerMove={updatePointerDrag}
+      onPointerUp={finishPointerDrag}
+      onPointerCancel={cancelPointerDrag}
+    >
       <NodeEditor
         expression={expression}
         entity={entity}
@@ -544,13 +772,45 @@ export default function ExpressionBuilder({
         functionDefinitions={functionDefinitions}
         functionDefinitionsStatus={functionDefinitionsStatus}
         functionDefinitionsError={functionDefinitionsError}
+        path={[]}
+        onPointerDragStart={startPointerDrag}
+        dragPreview={dragPreview}
+        dragPosition={dragPosition}
         onChange={setExpression}
         root
       />
 
-       <div className="expression-preview" aria-live="polite">
+      {pointerDrag && draggedNode && (
+        <div
+          className="expression-drag-preview"
+          style={{ left: pointerDrag.x + 12, top: pointerDrag.y + 12 }}
+          aria-hidden="true"
+        >
+          {formatExpression(draggedNode)}
+        </div>
+      )}
+
+      <div className="expression-preview" aria-live="polite">
         <span className="expression-preview-label">PREVIEW</span>
         <code>{formatExpression(expression)}</code>
+        <div className="expression-preview-json-heading">
+          <span className="expression-preview-label">MODEL JSON</span>
+          <button
+            type="button"
+            className="expression-preview-copy"
+            aria-label="Copy JSON model"
+            title="Copy JSON model"
+            onClick={copyModelJson}
+          >
+            <Icon name={copyStatus === "copied" ? "check" : "copy"} size={13} />
+          </button>
+          {copyStatus && (
+            <span className={`expression-preview-copy-status${copyStatus === "error" ? " expression-preview-copy-error" : ""}`} role="status">
+              {copyStatus === "copied" ? "Copied" : "Copy failed. Check clipboard permissions."}
+            </span>
+          )}
+        </div>
+        <pre className="expression-preview-json"><code>{modelJson}</code></pre>
       </div>
 
       <footer className="expression-builder-footer">
