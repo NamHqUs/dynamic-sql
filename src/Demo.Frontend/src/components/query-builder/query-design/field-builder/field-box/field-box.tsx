@@ -307,7 +307,7 @@ export default function FieldBox({
       {menuOpen && createPortal(<div
         ref={menuPopupRef}
         className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "value" ? " field-box-menu-popup-value" : ""}${activeSection === "calculation" && renderCalculation ? " field-box-menu-popup-calculation" : ""}`}
-        style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: activeSection === "calculation" ? "none" : menuPosition.maxHeight, transform: "none", margin: 0 }}
+        style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: hasAdditionalSections ? "none" : menuPosition.maxHeight, transform: "none", margin: 0 }}
         onMouseDown={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -357,7 +357,7 @@ export default function FieldBox({
                 }
               }}
             />
-            <button type="button" className="field-box-value-submit" onClick={selectConstantValue}>Apply</button>
+            <button type="button" className="field-box-value-submit" onClick={selectConstantValue}><Icon name="check" size={12} /> Apply</button>
           </div>
           : activeSection === "calculation" && allowCalculationSelection
             ? <div className={`field-box-value-panel field-box-calculation-panel${renderCalculation ? " field-box-calculation-panel-expanded" : ""}`} role="tabpanel" aria-label="Calculation">
