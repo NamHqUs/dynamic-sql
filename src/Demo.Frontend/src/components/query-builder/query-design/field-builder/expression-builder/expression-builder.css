@@ -98,7 +98,7 @@
 .expression-preview code {
   overflow-wrap: anywhere;
   color: #9298a2;
-  font: 12px/1.7 "DM Mono", monospace;
+  font: 12px/1.7 "Manrope", sans-serif;
 }
 
 .expression-preview-json {
@@ -113,7 +113,7 @@
 
 .expression-preview-json code {
   color: #c9d2e3;
-  font: 11px/1.55 "DM Mono", monospace;
+  font: 11px/1.55 "Manrope", sans-serif;
   white-space: pre;
 }
 
@@ -217,7 +217,7 @@
 .expression-debug-field-builder .field-box-menu .operator-trigger {
   width: max-content;
   flex: 0 0 auto;
-  font: 12px "DM Mono", monospace;
+  font: 12px "Manrope", sans-serif;
 }
 
 .expression-math-operation {
@@ -229,7 +229,7 @@
   box-sizing: border-box;
   padding-left: var(--expression-column-gap);
   color: #f5b5c4;
-  font: 13px "DM Mono", monospace;
+  font: 13px "Manrope", sans-serif;
 }
 
 .expression-group-nested > .expression-math-element > .expression-math-operation {

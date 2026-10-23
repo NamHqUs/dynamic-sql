@@ -199,7 +199,7 @@
 .expression-function-punctuation {
   flex: 0 0 auto;
   color: #aab3c2;
-  font: 10px "DM Mono", monospace;
+  font: 10px "Manrope", sans-serif;
 }
 
 .expression-function-parenthesis {
@@ -255,7 +255,7 @@
   align-items: center;
   gap: 4px;
   color: #a5ebd2;
-  font: 12px/1.5 "DM Mono", monospace;
+  font: 12px/1.5 "Manrope", sans-serif;
 }
 
 .expression-function-template-placeholder {

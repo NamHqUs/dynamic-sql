@@ -15,7 +15,7 @@
 
 .database-record-count {
   color: #919bad;
-  font: 12px "DM Mono", monospace;
+  font: 12px "Manrope", sans-serif;
 }
 
 .database-grid-wrap {
@@ -82,7 +82,7 @@
   color: inherit;
   background: transparent;
   border: 0;
-  font: 500 11px "DM Mono", monospace;
+  font: 500 11px "Manrope", sans-serif;
   letter-spacing: .6px;
   text-align: left;
   text-transform: uppercase;

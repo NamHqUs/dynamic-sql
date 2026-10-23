@@ -10,7 +10,7 @@
 .operator-form input::placeholder { color: #697385; }
 .operator-description { grid-column: 1 / -1; }
 .operator-template-list { display: grid; gap: 12px; margin-top: 14px; }
-.operator-template-list textarea { resize: vertical; font-family: "DM Mono", monospace; }
+.operator-template-list textarea { resize: vertical; font-family: "Manrope", sans-serif; }
 .operator-workspace .button:disabled, .operator-form:disabled { opacity: .72; }
 @media (max-width: 760px) {
   .operator-workspace { grid-template-columns: 1fr; }
