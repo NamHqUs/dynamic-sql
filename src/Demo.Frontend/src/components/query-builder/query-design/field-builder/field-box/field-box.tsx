@@ -26,6 +26,7 @@ type FieldBoxProps = {
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
   onCalculationSelect?: () => void;
+  onEscape?: () => void;
   renderCalculation?: (onComplete: () => void) => ReactNode;
 };
 
@@ -71,6 +72,7 @@ export default function FieldBox({
   initialConstantValue,
   onValueSelect,
   onCalculationSelect,
+  onEscape,
   renderCalculation,
 }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
@@ -312,13 +314,17 @@ export default function FieldBox({
         style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: hasAdditionalSections ? "none" : menuPosition.maxHeight, transform: "none", margin: 0 }}
         onMouseDown={(event) => {
           event.stopPropagation();
+          if (event.target instanceof Element && event.target.closest(
+            "button, input, select, textarea, a, label, [role='button'], [role='tab'], [role='option'], [contenteditable='true']",
+          )) return;
+          event.preventDefault();
         }}
         onKeyDown={(event) => {
           if (event.key !== "Escape") return;
           event.preventDefault();
           event.stopPropagation();
           setMenuOpen(false);
-          triggerRef.current?.focus();
+          onEscape?.();
         }}
         role="group"
         aria-label={`${ariaLabel} options`}

@@ -151,6 +151,7 @@ export default function FieldBuilder({
             setIsEditing(false);
             onCalculationSelect();
           } : undefined}
+          onEscape={cancelEdit}
           onValueSelect={(constantValue) => {
             setIsEditing(false);
             onValueSelect?.(constantValue);

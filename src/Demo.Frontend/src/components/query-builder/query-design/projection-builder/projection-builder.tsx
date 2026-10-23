@@ -415,7 +415,7 @@ function FieldCards({
                     entity={entity}
                     metadata={metadata}
                     value={columnExpression ? "" : field.name}
-                    autoFocus={columnExpression !== undefined}
+                    autoFocus
                     placeholder={columnExpression && columnExpression.kind !== "value" ? formatExpression(columnExpression) : undefined}
                     editMode
                     excludedPaths={definition.columns.filter((item) => item.field !== field.name).map((item) => item.field)}
