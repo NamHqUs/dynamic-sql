@@ -101,10 +101,10 @@
 .select-fields-row > .field-builder-editing .field-box-menu .operator-trigger:focus-visible,
 .sort-row-add > .field-builder-editing .field-box-menu .operator-trigger,
 .sort-row-add > .field-builder-editing .field-box-menu .operator-trigger:hover,
-.sort-row-add > .field-builder-editing .field-box-menu .operator-trigger:focus-visible { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; border-radius: 0; background: transparent; padding: 0; height: var(--field-box-height); box-sizing: border-box; font: 13px "Manrope", sans-serif; }
+.sort-row-add > .field-builder-editing .field-box-menu .operator-trigger:focus-visible { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; border-radius: 0; background: transparent; padding: 0; height: var(--field-box-height); box-sizing: border-box; font: 12px "DM Mono", monospace; }
 .projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger,
 .projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger:hover,
-.projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger:focus-visible { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; border-radius: 0; background: transparent; padding: 0; height: var(--field-box-height); box-sizing: border-box; font: 13px "Manrope", sans-serif; }
+.projection-row-fields > .field-builder-editing .field-box-menu .operator-trigger:focus-visible { display: inline-flex; align-items: center; gap: 5px; color: var(--purple); border: 0; border-radius: 0; background: transparent; padding: 0; height: var(--field-box-height); box-sizing: border-box; font: 12px "DM Mono", monospace; }
 .field-card .field-builder-editing .field-box-menu .operator-trigger,
 .field-card .field-builder-editing .field-box-menu .operator-trigger:hover,
 .field-card .field-builder-editing .field-box-menu .operator-trigger:focus-visible { color: #ded5ff; border: 0; border-radius: 0; background: transparent; padding: 0; height: var(--field-box-height); box-sizing: border-box; font: 12px "DM Mono", monospace; }

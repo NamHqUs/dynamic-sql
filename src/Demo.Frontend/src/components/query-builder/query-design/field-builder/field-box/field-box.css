@@ -9,6 +9,7 @@
 .field-box select { appearance: none; -webkit-appearance: none; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 7px 9px; font-size: 13px; outline: 0; min-width: 160px; height: var(--field-box-height, 34px); box-sizing: border-box; cursor: pointer; }
 .field-box-menu { position: relative; display: inline-flex; align-items: center; flex: 0 0 auto; height: var(--field-box-height, 34px); max-height: var(--field-box-height, 34px); }
 .field-box-menu .operator-trigger { width: max-content; color: #ded5ff; border: 1px solid #654f9f; border-radius: 5px; background: #29223e; padding: 7px 9px; height: var(--field-box-height, 34px); max-height: var(--field-box-height, 34px); box-sizing: border-box; font: 12px "DM Mono", monospace; line-height: normal; text-align: left; }
+.field-box-menu .field-box-trigger-label { font: inherit; }
 .field-box-menu .operator-trigger:hover, .field-box-menu .operator-trigger:focus-visible { border-color: #654f9f; color: #ded5ff; outline: 0; }
 .field-box-menu-selected .operator-trigger, .field-box-menu-selected .operator-trigger:hover, .field-box-menu-selected .operator-trigger:focus-visible { color: #ded5ff; border: 0; background: transparent; padding: 0; height: auto; max-height: none; outline: 0; }
 .field-box-menu .operator-menu { z-index: 20; transform: none; width: 200px; min-width: 200px; max-height: 420px; overflow-y: auto; }

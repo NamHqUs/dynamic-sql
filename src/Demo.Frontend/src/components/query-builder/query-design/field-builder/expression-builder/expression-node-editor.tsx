@@ -303,8 +303,16 @@ export default function NodeEditor({
     return (
       <div
         className={`expression-group-list expression-debug-target expression-debug-group-box${root ? " expression-group-root" : " expression-group-nested"}${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}${isDropPreview ? " expression-drop-preview" : ""}`}
-        tabIndex={selectionPath === undefined || root ? undefined : 0}
-        onClick={selectionPath === undefined ? undefined : selectExpression}
+        tabIndex={selectionPath === undefined ? undefined : root ? -1 : 0}
+        onClick={selectionPath === undefined ? undefined : (event) => {
+          selectExpression(event);
+          const target = event.target;
+          if (
+            !(target instanceof Element)
+            || !target.closest("button, input, select, textarea, a, [role='button'], [role='option'], [role='tab'], [contenteditable='true']")
+          )
+            event.currentTarget.focus();
+        }}
         onFocus={(event) => {
           if (event.target === event.currentTarget && selectionPath !== undefined)
             onSelect?.(selectionPath);

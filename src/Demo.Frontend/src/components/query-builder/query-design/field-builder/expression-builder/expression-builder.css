@@ -217,6 +217,7 @@
 .expression-debug-field-builder .field-box-menu .operator-trigger {
   width: max-content;
   flex: 0 0 auto;
+  font: 12px "DM Mono", monospace;
 }
 
 .expression-math-operation {

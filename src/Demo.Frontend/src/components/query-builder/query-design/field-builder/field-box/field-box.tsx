@@ -352,7 +352,7 @@ export default function FieldBox({
         aria-expanded={isMenuOpen}
         aria-haspopup="menu"
         onClick={() => {
-          if (editOnDoubleClick) return;
+          if (editOnDoubleClick && value) return;
           if (isMenuOpen) void requestCloseMenu();
           else openMenu();
         }}
@@ -370,8 +370,8 @@ export default function FieldBox({
             ? (pendingPath?.length ? pendingPath.join(".") : value)
             : selectedField || (activeAggregate && activeAggregate !== COUNT_AGGREGATE ? placeholder : selectedAggregate) || placeholder;
           return placeholderIcon && label === placeholder
-            ? <><Icon name="plus" size={12} /><span className="action-link-text">{label}</span></>
-            : label;
+            ? <><Icon name="plus" size={12} /><span className="action-link-text field-box-trigger-label">{label}</span></>
+            : <span className="field-box-trigger-label">{label}</span>;
         })()}
       </button>
       {isMenuOpen && createPortal(<div
