@@ -8,12 +8,7 @@
   box-sizing: border-box;
   padding: 14px;
   color: #e7e5ef;
-  border: 1px solid #403855;
   border-radius: 10px;
-  background:
-    radial-gradient(ellipse at 100% 0, #7355bb20, transparent 38%),
-    linear-gradient(145deg, #171923, #11151c 72%);
-  box-shadow: 0 18px 55px #05050e70, inset 0 1px #ffffff0a;
   font: 12px "Manrope", sans-serif;
 }
 
@@ -47,19 +42,52 @@
   font: 12px/1.65 "DM Mono", monospace;
 }
 
-.expression-builder-tree,
-.expression-builder-tree-item {
+.expression-builder-tree {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.expression-builder-tree-item {
+  display: grid;
   min-width: 0;
+  grid-template-columns: 38px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
 }
 
-.expression-builder-tree { flex-wrap: wrap; }
+.expression-builder-tree-item:first-child::before {
+  content: "";
+}
+
+.expression-builder-tree-item > .field-builder-editing,
+.expression-builder-tree-item > .field-builder-selected {
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+}
 
 .expression-builder-tree-operator {
+  justify-self: center;
   color: #ffb2c0;
   font: 14px "DM Mono", monospace;
+}
+
+.expression-builder-tree-operation select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 38px;
+  min-width: 38px;
+  height: 30px;
+  padding: 3px;
+  border: 1px solid #603748;
+  border-radius: 5px;
+  color: #ffb2c0;
+  background: #2b1d29;
+  font: 11px "DM Mono", monospace;
+  text-align: center;
+  cursor: pointer;
 }
 
 .expression-node {
@@ -73,7 +101,6 @@
 .expression-node-root {
   border-color: #4b4265;
   background: linear-gradient(145deg, #1d1b2a, #171b24 72%);
-  box-shadow: inset 0 1px #ffffff08;
 }
 
 .expression-node-heading {
@@ -336,7 +363,6 @@
 .expression-builder-footer {
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid #343849;
   padding-top: 10px;
 }
 
@@ -359,7 +385,6 @@
   border-color: #8168bf;
   color: #fff;
   background: #654f9f;
-  box-shadow: 0 5px 16px #503d842e;
 }
 
 .expression-apply-button:hover:not(:disabled),
@@ -373,7 +398,6 @@
   border-color: #343849;
   color: #778397;
   background: #222630;
-  box-shadow: none;
   cursor: not-allowed;
 }
 

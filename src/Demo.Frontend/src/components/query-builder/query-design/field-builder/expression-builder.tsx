@@ -54,7 +54,10 @@ function createExpression(kind: ExpressionNodeKind, functions: FunctionDefinitio
     case "group":
       return {
         kind: "group",
-        arguments: [{ kind: "field", field: "" }, { kind: "field", field: "" }],
+        arguments: [
+          { kind: "field", field: "" },
+          { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+        ],
       };
   }
 }
@@ -134,6 +137,18 @@ function getExpressionError(expression: IFieldDefinition): string | null {
   }
 }
 
+function getGroupArgumentOperator(
+  expression: Extract<IFieldDefinition, { kind: "group" }>,
+  argument: IFieldDefinition,
+  index: number,
+): MatchOperation | null {
+  if (argument.kind === "math") return argument.oper;
+  if (index === 0) return null;
+  return argument.kind === "group"
+    ? argument.operator ?? expression.operator ?? "+"
+    : expression.operator ?? "+";
+}
+
 type NodeEditorProps = {
   expression: IFieldDefinition;
   entity: MetadataEntity;
@@ -142,6 +157,7 @@ type NodeEditorProps = {
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
   onChange: (expression: IFieldDefinition) => void;
+  onCalculationSelect?: () => void;
   onRemove?: () => void;
   root?: boolean;
   allowGroup?: boolean;
@@ -155,6 +171,7 @@ function NodeEditor({
   functionDefinitionsStatus,
   functionDefinitionsError,
   onChange,
+  onCalculationSelect,
   onRemove,
   root = false,
   allowGroup = true,
@@ -169,7 +186,7 @@ function NodeEditor({
         onChange={(field) => onChange({ kind: "field", field })}
         showPath
         ariaLabel="Expression field"
-        placeholder="Choose a field…"
+        placeholder="Select field..."
         allowValueSelection
         allowCalculationSelection
         initialSection="fields"
@@ -178,6 +195,7 @@ function NodeEditor({
           functionDefinitionsStatus,
           functionDefinitionsError,
         }}
+        onCalculationSelect={onCalculationSelect}
         onValueSelect={(value) => onChange({ kind: "value", value })}
         onExpressionApply={onChange}
       />
@@ -186,23 +204,67 @@ function NodeEditor({
   if (root && expression.kind === "group") {
     return (
       <div className="expression-builder-tree">
-        {expression.arguments.map((argument, index) => (
-          <span className="expression-builder-tree-item" key={`tree-item-${index}`}>
-            {index > 0 && <span className="expression-builder-tree-operator">+</span>}
-            <NodeEditor
-              expression={argument}
-              entity={entity}
-              metadata={metadata}
-              functionDefinitions={functionDefinitions}
-              functionDefinitionsStatus={functionDefinitionsStatus}
-              functionDefinitionsError={functionDefinitionsError}
-              onChange={(next) => onChange({
-                ...expression,
-                arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
-              })}
-            />
-          </span>
-        ))}
+        {expression.arguments.map((argument, index) => {
+          const updateArgument = (next: IFieldDefinition) => onChange({
+            ...expression,
+            arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
+          });
+          const appendMath = () => onChange({
+            ...expression,
+            arguments: [
+              ...expression.arguments.slice(0, index + 1),
+              { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+              ...expression.arguments.slice(index + 1),
+            ],
+          });
+          const operator = getGroupArgumentOperator(expression, argument, index);
+
+          return (
+            <span className="expression-builder-tree-item" key={`tree-item-${index}`}>
+              {argument.kind === "math"
+                ? <label className="expression-builder-tree-operation">
+                  <span className="visually-hidden">Operation before item {index + 1}</span>
+                  <select
+                    aria-label={`Operation before item ${index + 1}`}
+                    value={argument.oper}
+                    onChange={(event) => updateArgument({
+                      ...argument,
+                      oper: event.target.value as MatchOperation,
+                    })}
+                  >
+                    {operations.map((operation) => (
+                      <option key={operation.value} value={operation.value}>{operation.value}</option>
+                    ))}
+                  </select>
+                </label>
+                : operator && <span className="expression-builder-tree-operator">{operator}</span>}
+              {argument.kind === "math"
+                ? <NodeEditor
+                  expression={argument.field}
+                  entity={entity}
+                  metadata={metadata}
+                  functionDefinitions={functionDefinitions}
+                  functionDefinitionsStatus={functionDefinitionsStatus}
+                  functionDefinitionsError={functionDefinitionsError}
+                  allowGroup={false}
+                  onChange={(field) => {
+                    if (field.kind !== "group") updateArgument({ ...argument, field });
+                  }}
+                  onCalculationSelect={appendMath}
+                />
+                : <NodeEditor
+                  expression={argument}
+                  entity={entity}
+                  metadata={metadata}
+                  functionDefinitions={functionDefinitions}
+                  functionDefinitionsStatus={functionDefinitionsStatus}
+                  functionDefinitionsError={functionDefinitionsError}
+                  onChange={updateArgument}
+                  onCalculationSelect={appendMath}
+                />}
+            </span>
+          );
+        })}
       </div>
     );
   }
@@ -312,6 +374,7 @@ function NodeEditor({
             onChange={(field) => {
               if (field.kind !== "group") onChange({ ...expression, field });
             }}
+            onCalculationSelect={onCalculationSelect}
           />
         </div>
       )}
@@ -356,6 +419,7 @@ function NodeEditor({
                         ...expression,
                         arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
                       })}
+                      onCalculationSelect={onCalculationSelect}
                     />
                   </div>
                 );
@@ -413,6 +477,7 @@ function NodeEditor({
                     ...expression,
                     arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
                   })}
+                  onCalculationSelect={onCalculationSelect}
                   onRemove={expression.arguments.length > 1
                     ? () => onChange({
                       ...expression,
@@ -472,11 +537,6 @@ export default function ExpressionBuilder({
 
   return (
     <div className="expression-builder">
-      <div className="expression-preview" aria-live="polite">
-        <span className="expression-preview-label">PREVIEW</span>
-        <code>{formatExpression(expression)}</code>
-      </div>
-
       <NodeEditor
         expression={expression}
         entity={entity}
@@ -487,6 +547,11 @@ export default function ExpressionBuilder({
         onChange={setExpression}
         root
       />
+
+       <div className="expression-preview" aria-live="polite">
+        <span className="expression-preview-label">PREVIEW</span>
+        <code>{formatExpression(expression)}</code>
+      </div>
 
       <footer className="expression-builder-footer">
         <div className="expression-builder-actions">

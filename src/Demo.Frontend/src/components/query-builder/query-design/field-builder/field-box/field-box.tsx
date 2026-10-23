@@ -25,6 +25,7 @@ type FieldBoxProps = {
   initialSection?: "fields" | "value" | "calculation";
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
+  onCalculationSelect?: () => void;
   renderCalculation?: (onComplete: () => void) => ReactNode;
 };
 
@@ -69,6 +70,7 @@ export default function FieldBox({
   initialSection = "fields",
   initialConstantValue,
   onValueSelect,
+  onCalculationSelect,
   renderCalculation,
 }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
@@ -309,8 +311,14 @@ export default function FieldBox({
         className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "value" ? " field-box-menu-popup-value" : ""}${activeSection === "calculation" && renderCalculation ? " field-box-menu-popup-calculation" : ""}`}
         style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: hasAdditionalSections ? "none" : menuPosition.maxHeight, transform: "none", margin: 0 }}
         onMouseDown={(event) => {
+          event.stopPropagation();
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "Escape") return;
           event.preventDefault();
           event.stopPropagation();
+          setMenuOpen(false);
+          triggerRef.current?.focus();
         }}
         role="group"
         aria-label={`${ariaLabel} options`}
@@ -335,7 +343,14 @@ export default function FieldBox({
             role="tab"
             aria-selected={activeSection === "calculation"}
             className={`field-box-chooser-tab${activeSection === "calculation" ? " active" : ""}`}
-            onClick={() => setActiveSection("calculation")}
+            onClick={() => {
+              if (onCalculationSelect) {
+                setMenuOpen(false);
+                onCalculationSelect();
+              } else {
+                setActiveSection("calculation");
+              }
+            }}
           >Calculation</button>}
         </div>}
         {activeSection === "value" && allowValueSelection

@@ -38,6 +38,7 @@ type FieldBuilderProps = {
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
   expressionBuilder?: FieldBuilderExpressionOptions;
+  onCalculationSelect?: () => void;
   onExpressionApply?: (expression: IFieldDefinition) => void;
 };
 
@@ -74,6 +75,7 @@ export default function FieldBuilder({
   initialSection = initialConstantValue !== undefined ? "value" : "fields",
   onValueSelect,
   expressionBuilder,
+  onCalculationSelect,
   onExpressionApply,
 }: FieldBuilderProps) {
   const [isEditing, setIsEditing] = useState(editMode);
@@ -145,6 +147,10 @@ export default function FieldBuilder({
           allowCalculationSelection={allowCalculationSelection}
           initialSection={initialSection}
           initialConstantValue={initialConstantValue}
+          onCalculationSelect={onCalculationSelect ? () => {
+            setIsEditing(false);
+            onCalculationSelect();
+          } : undefined}
           onValueSelect={(constantValue) => {
             setIsEditing(false);
             onValueSelect?.(constantValue);
