@@ -1,18 +1,20 @@
 import { type DragEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MetadataEntity, QueryDefinition } from "../query-builder-slice";
-import FieldBuilder from "../field-builder/field-builder";
+import { IFieldDefinition, MetadataEntity, QueryDefinition } from "../query-builder-slice";
+import FieldBuilder, { FieldBuilderExpressionOptions } from "../field-builder/field-builder";
 import Icon from "../../../icon/icon";
 
 const QUERY_FIELD_DRAG_TYPE = "application/x-query-field";
 
 type SortBuilderProps = {
   metadata: MetadataEntity[];
+  functionDefinitions: FieldBuilderExpressionOptions["functionDefinitions"];
+  functionDefinitionsStatus: string;
+  functionDefinitionsError: string;
   definition: QueryDefinition;
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
   draggedProjectionField: string | null;
-  isReadOnly: boolean;
   isPlanTextEditing: boolean;
   planTextControl: ReactNode;
   planTextEditor: ReactNode;
@@ -141,7 +143,7 @@ function SortDirectionMenu({
   );
 }
 
-export default function SortBuilder({ metadata, definition, entity, onDefinitionChange, draggedProjectionField, isReadOnly, isPlanTextEditing, planTextControl, planTextEditor }: SortBuilderProps) {
+export default function SortBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, draggedProjectionField, isPlanTextEditing, planTextControl, planTextEditor }: SortBuilderProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [isDropTarget, setIsDropTarget] = useState(false);
 
@@ -201,7 +203,7 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
           <div className="projection-title-row">
             <span className="section-kicker">SORTS</span>
           </div>
-          <p className="filter-description">{isReadOnly ? "Built-in query sort order is read-only." : "Select fields to sort the query results and choose the direction for each field."}</p>
+          <p className="filter-description">Select fields to sort the query results and choose the direction for each field.</p>
         </div>
         <div className="section-header-actions">
           {!isPlanTextEditing && <button
@@ -219,7 +221,6 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
       </div>
       {planTextEditor}
       {!isPlanTextEditing && <div
-        inert={isReadOnly}
         className={`sort-list${isDropTarget ? " sort-list-drop-target" : ""}`}
         onDragOver={(event) => {
           if (draggedProjectionField || isProjectFieldDrag(event)) {
@@ -240,8 +241,10 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
         }}
       >
         {definition.sorts.map((sort) => {
-          const calculatedProjection = Boolean(sort.expression)
-            || definition.columns.some((column) => column.expression && column.alias === sort.field);
+          const columnExpression = definition.columns.find((column) =>
+            column.alias === sort.field || column.field === sort.field)?.expression;
+          const calculationExpression: IFieldDefinition | undefined = sort.expression ?? columnExpression;
+          const calculatedProjection = Boolean(calculationExpression);
           return (
           <div className="field-card selected" key={sort.field}>
             <button type="button" className="field-card-remove" onClick={() => removeSort(sort.field)} aria-label={`Remove sort for ${sort.field}`} title={`Remove sort for ${sort.field}`}>
@@ -249,13 +252,30 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
             </button>
             <div className="field-card-details">
               <div className="field-card-primary">
-                {editingField === sort.field && !calculatedProjection
+                {editingField === sort.field
                   ? <FieldBuilder
                     entity={entity}
                     metadata={metadata}
-                    value={sort.field}
+                    value={calculatedProjection ? "" : sort.field}
                     editMode
                     ariaLabel="Sort field"
+                    allowCalculationSelection={calculatedProjection}
+                    initialSection={calculatedProjection ? "calculation" : undefined}
+                    expressionBuilder={calculationExpression ? {
+                      functionDefinitions,
+                      functionDefinitionsStatus,
+                      functionDefinitionsError,
+                      initialExpression: calculationExpression,
+                    } : undefined}
+                    onExpressionApply={(expression) => {
+                      onDefinitionChange({
+                        ...definition,
+                        sorts: definition.sorts.map((item) => item.field === sort.field
+                          ? { ...item, expression }
+                          : item),
+                      });
+                      setEditingField(null);
+                    }}
                     excludedPaths={definition.sorts.filter((item) => item.field !== sort.field).map((item) => item.field)}
                     onChange={(replacement) => {
                       replaceSort(sort.field, replacement);
@@ -265,13 +285,11 @@ export default function SortBuilder({ metadata, definition, entity, onDefinition
                   />
                   : <span
                     className="field-name editable"
-                    onDoubleClick={() => {
-                      if (!calculatedProjection) setEditingField(sort.field);
-                    }}
+                    onDoubleClick={() => setEditingField(sort.field)}
                     role="button"
-                    tabIndex={calculatedProjection ? -1 : 0}
+                    tabIndex={0}
                     onKeyDown={(event) => {
-                      if (!calculatedProjection && (event.key === "Enter" || event.key === " ")) setEditingField(sort.field);
+                      if (event.key === "Enter" || event.key === " ") setEditingField(sort.field);
                     }}
                   >{sort.field}</span>}
                 <span className="field-alias-separator" aria-hidden="true">|</span>

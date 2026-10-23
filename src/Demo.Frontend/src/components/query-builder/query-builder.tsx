@@ -480,7 +480,6 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               definition={definition}
               entity={entity}
               requestName={requestName}
-              isBuiltin={selectedRequestIsBuiltin}
               isResolvingPlanChanges={isApplyingPlanText}
               onRequestNameChange={updateRequestName}
               onDefinitionChange={updateDefinitionFromDesign}

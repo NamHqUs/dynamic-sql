@@ -13,7 +13,6 @@ type ProjectionBuilderProps = {
   functionDefinitionsError: string;
   definition: QueryDefinition;
   entity: MetadataEntity;
-  isReadOnly: boolean;
   onDefinitionChange: (definition: QueryDefinition) => void;
   onFieldDragStart: (field: string | null) => void;
 };
@@ -533,7 +532,7 @@ function FieldCards({
   </div>;
 }
 
-export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, isReadOnly, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
+export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
   const [editingAliasField, setEditingAliasField] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [isEditingProjectionText, setIsEditingProjectionText] = useState(false);
@@ -709,9 +708,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
             <span className="section-kicker">PROJECTION</span>
           </div>
           <p className="filter-description">
-            {isReadOnly
-              ? "Built-in query projection is read-only."
-              : isEditingProjectionText
+            {isEditingProjectionText
               ? "Edit fields or expressions, then switch back to Design UI to apply changes."
               : "Select fields to include. Drag a field to another field's left or right edge to reorder, or top or bottom edge to create a row."}
           </p>
@@ -750,8 +747,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
               title={isEditingProjectionText ? "Show projection design" : "Edit projection as plan text"}
               onClick={() => {
                 if (isEditingProjectionText) {
-                  if (!isReadOnly) applyProjectionText();
-                  else setIsEditingProjectionText(false);
+                  applyProjectionText();
                 } else {
                   setProjectionText(formatProjectionText(definition.columns, projectionRows));
                   setIsEditingProjectionText(true);
@@ -774,12 +770,11 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
             functionNames={functionDefinitions.map((definition) => definition.name)}
             value={projectionText}
             ariaLabel="Projection fields"
-            disabled={isReadOnly}
             placeholder="e.g. Customer.Name, Count(*)"
             onChange={setProjectionText}
           />
         </div>
-      ) : <div className="select-fields-row" inert={isReadOnly}>
+      ) : <div className="select-fields-row">
         <FieldCards
           fields={selectedFields}
           rows={projectionRows}

@@ -11,7 +11,6 @@ type PlanTextSectionEditorProps = {
   entityName: string;
   functionNames: string[];
   disabled: boolean;
-  readOnly: boolean;
   onLoadPlanText: () => Promise<string>;
   onApplyPlanText: (section: PlanTextSection, value: string, definition?: QueryDefinition) => Promise<QueryDefinition>;
   onDraftChange?: (value: string) => void;
@@ -195,7 +194,6 @@ export function usePlanTextSectionEditor({
   entityName,
   functionNames,
   disabled,
-  readOnly,
   onLoadPlanText,
   onApplyPlanText,
   onDraftChange,
@@ -250,10 +248,6 @@ export function usePlanTextSectionEditor({
 
   const toggleEditor = async () => {
     if (isEditing) {
-      if (readOnly) {
-        setIsEditing(false);
-        return;
-      }
       await applyPending(definition);
       return;
     }
@@ -289,7 +283,7 @@ export function usePlanTextSectionEditor({
         functionNames={functionNames}
         value={value}
         ariaLabel={`${title} plan text`}
-        disabled={disabled || readOnly || isApplying}
+        disabled={disabled || isApplying}
         placeholder={`Enter ${title.toLowerCase()} plan text`}
         onChange={updateValue}
       />

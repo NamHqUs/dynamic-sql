@@ -29,7 +29,6 @@ type FilterBuilderProps = {
   operatorsError: string;
   definition: QueryDefinition;
   entity: MetadataEntity;
-  isReadOnly: boolean;
   isPlanTextEditing: boolean;
   onDefinitionChange: (definition: QueryDefinition) => void;
   planTextControl: ReactNode;
@@ -713,7 +712,7 @@ function FilterRow({ filter, first, path, metadata, functionDefinitions, functio
   );
 }
 
-export default function FilterBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, operatorsStatus, operatorsError, definition, entity, isReadOnly, isPlanTextEditing, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
+export default function FilterBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, operatorsStatus, operatorsError, definition, entity, isPlanTextEditing, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
   const builderRef = useRef<HTMLDivElement>(null);
   const [filterItemWidth, setFilterItemWidth] = useState<number>();
   const [dragPreview, setDragPreview] = useState<DragPreview>();
@@ -937,7 +936,7 @@ export default function FilterBuilder({ metadata, functionDefinitions, functionD
           <div className="projection-title-row">
             <span className="section-kicker">FILTERS</span>
           </div>
-          <p className="filter-description">{isReadOnly ? "Built-in query filters are read-only." : "Drag a selected field here to create a filter."}</p>
+          <p className="filter-description">Drag a selected field here to create a filter.</p>
         </div>
         <div className="section-header-actions">
           {!isPlanTextEditing && <button
@@ -957,8 +956,7 @@ export default function FilterBuilder({ metadata, functionDefinitions, functionD
       {operatorsStatus === "loading" && <p className="filter-description">Loading filter operators…</p>}
       {operatorsStatus === "failed" && <p className="filter-description error" role="alert">{operatorsError}</p>}
       {!isPlanTextEditing && (
-        <div inert={isReadOnly}>
-          <FilterGroupEditor
+        <FilterGroupEditor
             group={definition.filters}
             metadata={metadata}
             functionDefinitions={functionDefinitions}
@@ -979,7 +977,6 @@ export default function FilterBuilder({ metadata, functionDefinitions, functionD
             showLogicalOperator={false}
             onChange={(filters) => onDefinitionChange({ ...definition, filters })}
           />
-        </div>
       )}
     </div>
   );
