@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -257,5 +258,18 @@ internal class _40_QueryDefintionTest : TestBase
             MatchOperation.Add,
             new ConstFieldDefinition(3L))));
 
+    }
+
+    [Test]
+    public void FieldDefinition_JsonParser()
+    {
+        var expression = "A + (Rount(B, 2) * (B - 1) - C) + <4>";
+        var group = (GroupFieldDefintion)QueryDefinitionParser.ParseField(expression);
+
+        var text = JsonSerializer.Serialize<IFieldDefinition>(group, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Converters = { new JsonStringEnumConverter() }
+        });
     }
 }
