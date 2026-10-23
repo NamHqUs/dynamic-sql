@@ -6,6 +6,7 @@ import type {
 } from "../../query-builder-slice";
 import FieldBuilder from "../field-builder";
 import ExpressionDebugTooltip from "../expression-debug-tooltip/expression-debug-tooltip";
+import ExpressionAddNextItem from "./expression-add-next-item";
 import Icon from "../../../../icon/icon";
 import type { FunctionDefinition } from "../../../../metadata-builder/function-definition/types";
 import FunctionBuilder from "../function-builder/function-builder";
@@ -14,7 +15,6 @@ import {
   isSameExpressionPath,
   mathOperatorLabels,
   mathOperators,
-  createExpression,
   withOperation,
   type ExpressionPath,
 } from "./expression-model";
@@ -28,7 +28,6 @@ type NodeEditorProps = {
   functionDefinitionsError: string;
   onChange: (expression: IFieldDefinition) => void;
   onCalculationSelect?: () => void;
-  autoAppendMathOnCalculationTab?: boolean;
   onRemove?: () => void;
   debugOperator?: MatchOperation | null;
   path?: ExpressionPath;
@@ -56,7 +55,6 @@ function ExpressionMathElement({
   functionDefinitionsError,
   onChange,
   onCalculationSelect,
-  autoAppendMathOnCalculationTab,
   path,
   onPointerDragStart,
   dragPreview,
@@ -120,7 +118,6 @@ function ExpressionMathElement({
           functionDefinitionsError={functionDefinitionsError}
           onChange={updateOperand}
           onCalculationSelect={onCalculationSelect}
-          autoAppendMathOnCalculationTab={autoAppendMathOnCalculationTab}
           path={path}
           onPointerDragStart={onPointerDragStart}
           dragPreview={dragPreview}
@@ -145,7 +142,6 @@ export default function NodeEditor({
   functionDefinitionsError,
   onChange,
   onCalculationSelect,
-  autoAppendMathOnCalculationTab,
   onRemove,
   path,
   onPointerDragStart,
@@ -166,6 +162,15 @@ export default function NodeEditor({
     event.stopPropagation();
     onSelect?.(selectionPath);
   };
+  const startSelectedDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isSelected || !path?.length || !onPointerDragStart) return;
+    const target = event.target;
+    if (target instanceof Element) {
+      if (target.closest("button, input, select, textarea, a, [role='button'], [role='option'], [role='tab'], [contenteditable='true'], .field-builder-value")) return;
+      if (target.closest(".expression-selectable") !== event.currentTarget) return;
+    }
+    onPointerDragStart(event, path);
+  };
   if (expression.kind === "field") {
     return (
       <div
@@ -175,6 +180,7 @@ export default function NodeEditor({
           if (event.target instanceof Element && event.target.closest(".field-builder-value")) return;
           selectExpression(event);
         }}
+        onPointerDown={startSelectedDrag}
         data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
       >
         <div className="expression-debug-target expression-debug-field-builder">
@@ -187,10 +193,8 @@ export default function NodeEditor({
             ariaLabel="Expression field"
             placeholder="Select field..."
             allowValueSelection
-            allowCalculationSelection
+            allowFunctionSelection
             initialSection="fields"
-            onCalculationTabSelect={autoAppendMathOnCalculationTab ? onCalculationSelect : undefined}
-            onFunctionTabSelect={() => onChange(createExpression("function", []))}
             expressionBuilder={{
               functionDefinitions,
               functionDefinitionsStatus,
@@ -198,10 +202,20 @@ export default function NodeEditor({
             }}
             debugModel={expression}
             debugOperator={debugOperator}
-            onCalculationSelect={onCalculationSelect}
             onValueSelect={(value) => onChange({ kind: "value", value })}
             onExpressionApply={onChange}
           />
+          {isSelected && (
+            <ExpressionAddNextItem
+              onAddNextItem={onCalculationSelect ?? (() => onChange({
+                kind: "group",
+                arguments: [
+                  expression,
+                  { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+                ],
+              }))}
+            />
+          )}
           <ExpressionDebugTooltip label="Field builder" model={expression} />
         </div>
       </div>
@@ -211,11 +225,19 @@ export default function NodeEditor({
     const groupDebugModel: IFieldDefinition = expression.operator === undefined && debugOperator != null
       ? { ...expression, operator: debugOperator }
       : expression;
+    const addNextItem = onCalculationSelect ?? (() => onChange({
+      ...expression,
+      arguments: [
+        ...expression.arguments,
+        { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+      ],
+    }));
     return (
       <div
         className={`expression-group-list expression-debug-target expression-debug-group-box${root ? " expression-group-root" : " expression-group-nested"}${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}${isDropPreview ? " expression-drop-preview" : ""}`}
-        tabIndex={selectionPath === undefined ? undefined : 0}
+        tabIndex={selectionPath === undefined || root ? undefined : 0}
         onClick={selectionPath === undefined ? undefined : selectExpression}
+        onPointerDown={startSelectedDrag}
         data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
       >
         {expression.arguments.map((argument, index) => {
@@ -251,13 +273,13 @@ export default function NodeEditor({
               dragPosition={dragPosition}
               onChange={updateArgument}
               onCalculationSelect={appendMath}
-              autoAppendMathOnCalculationTab={autoAppendMathOnCalculationTab}
               selectionPath={selectionPath === undefined ? undefined : [...selectionPath, index]}
               selectedPath={selectedPath}
               onSelect={onSelect}
             />
           );
         })}
+        {isSelected && !root && <ExpressionAddNextItem onAddNextItem={addNextItem} />}
         <ExpressionDebugTooltip label="Group box" model={groupDebugModel} />
       </div>
     );
@@ -277,7 +299,6 @@ export default function NodeEditor({
         dragPosition={dragPosition}
         onChange={onChange}
         onCalculationSelect={onCalculationSelect}
-        autoAppendMathOnCalculationTab={autoAppendMathOnCalculationTab}
         selectionPath={selectionPath}
         selectedPath={selectedPath}
         onSelect={onSelect}
@@ -293,6 +314,7 @@ export default function NodeEditor({
         className={`expression-debug-target expression-value-node${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}`}
         tabIndex={selectionPath === undefined ? undefined : 0}
         onClick={selectionPath === undefined ? undefined : selectExpression}
+        onPointerDown={startSelectedDrag}
         data-expression-kind={expression.kind}
         data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
       >
@@ -306,18 +328,27 @@ export default function NodeEditor({
           initialConstantValue={constantValue}
           initialSection="value"
           allowValueSelection
-          allowCalculationSelection
+          allowFunctionSelection
           expressionBuilder={{
             functionDefinitions,
             functionDefinitionsStatus,
             functionDefinitionsError,
           }}
           debugModel={expression}
-          onCalculationSelect={onCalculationSelect}
-          onCalculationTabSelect={autoAppendMathOnCalculationTab ? onCalculationSelect : undefined}
           onValueSelect={(value) => onChange({ ...expression, value })}
           onExpressionApply={onChange}
         />
+        {isSelected && (
+          <ExpressionAddNextItem
+            onAddNextItem={onCalculationSelect ?? (() => onChange({
+              kind: "group",
+              arguments: [
+                expression,
+                { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+              ],
+            }))}
+          />
+        )}
         {onRemove && (
           <button
             type="button"
@@ -334,6 +365,14 @@ export default function NodeEditor({
     );
   }
 
+  const addNextItem = onCalculationSelect ?? (() => onChange({
+    kind: "group",
+    arguments: [
+      expression,
+      { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+    ],
+  }));
+
   return (
     <FunctionBuilder
       expression={expression}
@@ -345,6 +384,8 @@ export default function NodeEditor({
       selectionPath={selectionPath}
       selectedPath={selectedPath}
       onSelect={onSelect}
+      onPointerDragStart={onPointerDragStart}
+      onAddNextItem={addNextItem}
       renderArgument={(argument, index, onArgumentChange) => {
         const appendMathToArgument = () => {
           const currentArgument = expression.arguments[index];
@@ -376,7 +417,10 @@ export default function NodeEditor({
             functionDefinitionsError={functionDefinitionsError}
             onChange={onArgumentChange}
             onCalculationSelect={appendMathToArgument}
-            autoAppendMathOnCalculationTab
+            path={path === undefined ? undefined : [...path, index]}
+            onPointerDragStart={onPointerDragStart}
+            dragPreview={dragPreview}
+            dragPosition={dragPosition}
             selectionPath={selectionPath === undefined ? undefined : [...selectionPath, index]}
             selectedPath={selectedPath}
             onSelect={onSelect}

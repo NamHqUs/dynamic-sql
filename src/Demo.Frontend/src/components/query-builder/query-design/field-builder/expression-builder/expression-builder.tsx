@@ -16,12 +16,15 @@ import {
   getExpressionError,
   getExpressionNode,
   getGroupArgumentOperator,
+  isExpressionContainer,
   isExpressionGroup,
   isSameExpressionPath,
+  normalizeExpressionTree,
+  removeExpressionNodeForMove,
   removeExpressionNode,
   replaceExpressionNode,
   setExpressionOperation,
-  updateExpressionGroup,
+  updateExpressionNode,
   type ExpressionPath,
   type ExpressionPointerDrag,
 } from "./expression-model";
@@ -89,26 +92,28 @@ export default function ExpressionBuilder({
       || (sourcePath.length < targetPath.length
         && sourcePath.every((index, pathIndex) => index === targetPath[pathIndex]))) return;
     const sourceNode = getExpressionNode(expression, sourcePath);
-    const sourceParentPath = sourcePath.slice(0, -1);
-    const sourceParent = getExpressionNode(expression, sourceParentPath);
+    const sourceParent = getExpressionNode(expression, sourcePath.slice(0, -1));
     const sourceIndex = sourcePath[sourcePath.length - 1];
     const targetNode = getExpressionNode(expression, targetPath);
     const targetParent = getExpressionNode(expression, targetPath.slice(0, -1));
     const targetIndex = targetPath[targetPath.length - 1];
-    if (!sourceNode || !isExpressionGroup(sourceParent) || sourceParent.arguments.length <= 1
-      || sourceIndex === undefined || !targetNode || !isExpressionGroup(targetParent)
+    if (!sourceNode || !isExpressionContainer(sourceParent)
+      || sourceIndex === undefined || !targetNode || !isExpressionContainer(targetParent)
       || targetIndex === undefined) return;
     const targetField = targetNode.kind === "math" ? targetNode.field : targetNode;
     if (targetField.kind !== "field") return;
 
-    const sourceOperation = getGroupArgumentOperator(sourceParent, sourceNode, sourceIndex);
-    const targetOperation = getGroupArgumentOperator(targetParent, targetNode, targetIndex);
+    const sourceOperation = sourceParent.kind === "group"
+      ? getGroupArgumentOperator(sourceParent, sourceNode, sourceIndex)
+      : null;
+    const targetOperation = targetParent.kind === "group"
+      ? getGroupArgumentOperator(targetParent, targetNode, targetIndex)
+      : null;
     const sourceComesFirst = position === "before";
-    const removed = updateExpressionGroup(expression, sourceParentPath, (group) => ({
-      ...group,
-      arguments: group.arguments.filter((_, index) => index !== sourceIndex),
-    }));
-    const adjustedTargetPath = adjustExpressionPathAfterRemoval(sourcePath, targetPath);
+    const removed = removeExpressionNodeForMove(expression, sourcePath);
+    const adjustedTargetPath = sourceParent.kind === "function"
+      ? targetPath
+      : adjustExpressionPathAfterRemoval(sourcePath, targetPath);
     const adjustedTarget = getExpressionNode(removed, adjustedTargetPath);
     if (!adjustedTarget) return;
     const adjustedTargetField = adjustedTarget.kind === "math" ? adjustedTarget.field : adjustedTarget;
@@ -126,19 +131,21 @@ export default function ExpressionBuilder({
         setExpressionOperation(secondField, secondOperation),
       ],
     };
-    setExpression(replaceExpressionNode(removed, adjustedTargetPath, grouped));
+    const updated = replaceExpressionNode(removed, adjustedTargetPath, grouped);
+    setExpression(normalizeExpressionTree(updated) ?? { kind: "field", field: "" });
   };
 
   const moveNode = (sourcePath: ExpressionPath, targetPath: ExpressionPath) => {
-    if (!sourcePath.length || sourcePath.length <= targetPath.length
-      && sourcePath.every((index, pathIndex) => index === targetPath[pathIndex])) return;
+    if (!sourcePath.length || isSameExpressionPath(sourcePath, targetPath)
+      || (sourcePath.length < targetPath.length
+        && sourcePath.every((index, pathIndex) => index === targetPath[pathIndex]))) return;
     const node = getExpressionNode(expression, sourcePath);
-    if (!node) return;
-    const removed = updateExpressionGroup(expression, sourcePath.slice(0, -1), (parent) => ({
-      ...parent,
-      arguments: parent.arguments.filter((_, index) => index !== sourcePath[sourcePath.length - 1]),
-    }));
-    const adjustedTargetPath = adjustExpressionPathAfterRemoval(sourcePath, targetPath);
+    const sourceParent = getExpressionNode(expression, sourcePath.slice(0, -1));
+    if (!node || !isExpressionContainer(sourceParent)) return;
+    const removed = removeExpressionNodeForMove(expression, sourcePath);
+    const adjustedTargetPath = sourceParent.kind === "function"
+      ? targetPath
+      : adjustExpressionPathAfterRemoval(sourcePath, targetPath);
     const target = getExpressionNode(removed, adjustedTargetPath);
     if (!target || !isExpressionGroup(target)) return;
     const lastIndex = target.arguments.length - 1;
@@ -148,10 +155,12 @@ export default function ExpressionBuilder({
         ?? getGroupArgumentOperator(target, target.arguments[lastIndex]!, lastIndex)
         ?? "+";
     const moved = setExpressionOperation(node, operation);
-    setExpression(updateExpressionGroup(removed, adjustedTargetPath, (group) => ({
-      ...group,
-      arguments: [...group.arguments, moved],
-    })));
+    const updated = updateExpressionNode(removed, adjustedTargetPath, (targetNode) =>
+      isExpressionGroup(targetNode)
+        ? { ...targetNode, arguments: [...targetNode.arguments, moved] }
+        : targetNode,
+    );
+    setExpression(normalizeExpressionTree(updated) ?? { kind: "field", field: "" });
   };
 
   const startPointerDrag = (event: ReactPointerEvent<HTMLDivElement>, sourcePath: ExpressionPath) => {
@@ -167,7 +176,8 @@ export default function ExpressionBuilder({
   const updatePointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!pointerDrag) return;
     event.preventDefault();
-    const target = getExpressionDropTarget(event.clientX, event.clientY);
+    const root = expressionBuilderRef.current;
+    const target = root ? getExpressionDropTarget(event.clientX, event.clientY, root) : undefined;
     setPointerDrag({ ...pointerDrag, x: event.clientX, y: event.clientY });
     setDragPreview(target?.path);
     setDragPosition(target?.kind === "field" ? target.position : undefined);
@@ -175,7 +185,8 @@ export default function ExpressionBuilder({
 
   const finishPointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!pointerDrag) return;
-    const target = getExpressionDropTarget(event.clientX, event.clientY);
+    const root = expressionBuilderRef.current;
+    const target = root ? getExpressionDropTarget(event.clientX, event.clientY, root) : undefined;
     if (target?.kind === "field") {
       groupNodeOnField(pointerDrag.sourcePath, target.path, target.position);
     } else if (target?.kind === "group") {

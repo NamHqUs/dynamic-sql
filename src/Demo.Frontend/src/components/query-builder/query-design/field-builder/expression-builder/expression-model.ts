@@ -72,13 +72,36 @@ export function isExpressionGroup(
   return expression.kind === "group";
 }
 
+export function isExpressionContainer(
+  expression: IFieldDefinition,
+): expression is Extract<IFieldDefinition, { kind: "group" | "function" }> {
+  return expression.kind === "group" || expression.kind === "function";
+}
+
 export function getExpressionNode(expression: IFieldDefinition, path: ExpressionPath): IFieldDefinition | undefined {
   let node = expression;
   for (const index of path) {
-    if (!isExpressionGroup(node) || !node.arguments[index]) return undefined;
+    if (!isExpressionContainer(node) || !node.arguments[index]) return undefined;
     node = node.arguments[index];
   }
   return node;
+}
+
+export function updateExpressionNode(
+  expression: IFieldDefinition,
+  path: ExpressionPath,
+  update: (node: IFieldDefinition) => IFieldDefinition,
+): IFieldDefinition {
+  if (!path.length) return update(expression);
+  if (!isExpressionContainer(expression)) return expression;
+  const [index, ...rest] = path;
+  if (index === undefined || !expression.arguments[index]) return expression;
+  return {
+    ...expression,
+    arguments: expression.arguments.map((argument, argumentIndex) =>
+      argumentIndex === index ? updateExpressionNode(argument, rest, update) : argument,
+    ),
+  };
 }
 
 export function updateExpressionGroup(
@@ -109,12 +132,16 @@ export function replaceExpressionNode(
   const parentPath = path.slice(0, -1);
   const index = path[path.length - 1];
   if (index === undefined) return expression;
-  return updateExpressionGroup(expression, parentPath, (parent) => ({
-    ...parent,
-    arguments: parent.arguments.map((argument, argumentIndex) =>
-      argumentIndex === index ? replacement : argument,
-    ),
-  }));
+  return updateExpressionNode(expression, parentPath, (parent) =>
+    isExpressionContainer(parent)
+      ? {
+        ...parent,
+        arguments: parent.arguments.map((argument, argumentIndex) =>
+          argumentIndex === index ? replacement : argument,
+        ),
+      }
+      : parent,
+  );
 }
 
 function removeExpressionNodeAtPath(
@@ -190,6 +217,61 @@ export function removeExpressionNode(
   return removeExpressionNodeAtPath(expression, path) ?? { kind: "field", field: "" };
 }
 
+export function removeExpressionNodeForMove(
+  expression: IFieldDefinition,
+  path: ExpressionPath,
+): IFieldDefinition {
+  if (!path.length || !isExpressionContainer(expression)) return expression;
+  const [index, ...rest] = path;
+  if (index === undefined || !expression.arguments[index]) return expression;
+  if (rest.length > 0) {
+    const updatedArgument = removeExpressionNodeForMove(expression.arguments[index]!, rest);
+    return {
+      ...expression,
+      arguments: expression.arguments.map((argument, argumentIndex) =>
+        argumentIndex === index ? updatedArgument : argument,
+      ),
+    };
+  }
+  if (expression.kind === "function") {
+    return {
+      ...expression,
+      arguments: expression.arguments.map((argument, argumentIndex) =>
+        argumentIndex === index ? { kind: "field", field: "" } : argument,
+      ),
+    };
+  }
+  return {
+    ...expression,
+    arguments: expression.arguments.filter((_, argumentIndex) => argumentIndex !== index),
+  };
+}
+
+export function normalizeExpressionTree(expression: IFieldDefinition): IFieldDefinition | undefined {
+  if (expression.kind === "group") {
+    const argumentsList = expression.arguments
+      .map(normalizeExpressionTree)
+      .filter((argument): argument is IFieldDefinition => argument !== undefined);
+    if (argumentsList.length === 0) return undefined;
+    return normalizeGroupArguments(expression, argumentsList);
+  }
+  if (expression.kind === "function") {
+    return {
+      ...expression,
+      arguments: expression.arguments.map((argument) =>
+        normalizeExpressionTree(argument) ?? { kind: "field", field: "" },
+      ),
+    };
+  }
+  if (expression.kind === "math") {
+    return {
+      ...expression,
+      field: normalizeExpressionTree(expression.field) ?? { kind: "field", field: "" },
+    };
+  }
+  return expression;
+}
+
 export function setExpressionOperation(
   expression: IFieldDefinition,
   operation: MatchOperation | null,
@@ -214,25 +296,24 @@ export function adjustExpressionPathAfterRemoval(
   sourcePath: ExpressionPath,
   targetPath: ExpressionPath,
 ): ExpressionPath {
+  const sourceParentPath = sourcePath.slice(0, -1);
+  if (sourceParentPath.length >= targetPath.length
+    || !sourceParentPath.every((index, pathIndex) => index === targetPath[pathIndex])) return targetPath;
+  const sourceIndex = sourcePath[sourcePath.length - 1];
+  const targetIndex = targetPath[sourceParentPath.length];
+  if (sourceIndex === undefined || targetIndex === undefined || sourceIndex >= targetIndex) return targetPath;
   const adjustedPath = [...targetPath];
-  const sharedDepth = Math.min(sourcePath.length, targetPath.length);
-  for (let depth = 0; depth < sharedDepth; depth++) {
-    const sourceIndex = sourcePath[depth];
-    const targetIndex = targetPath[depth];
-    if (sourceIndex === undefined || targetIndex === undefined) break;
-    if (!sourcePath.slice(0, depth).every((index, pathIndex) => index === targetPath[pathIndex])) return adjustedPath;
-    if (sourceIndex < targetIndex) {
-      adjustedPath[depth]--;
-      return adjustedPath;
-    }
-    if (sourceIndex > targetIndex) return adjustedPath;
-  }
+  adjustedPath[sourceParentPath.length]--;
   return adjustedPath;
 }
 
-export function getExpressionDropTarget(x: number, y: number): ExpressionDropTarget | undefined {
+export function getExpressionDropTarget(
+  x: number,
+  y: number,
+  root: HTMLElement,
+): ExpressionDropTarget | undefined {
   const element = document.elementFromPoint(x, y);
-  if (!(element instanceof Element)) return undefined;
+  if (!(element instanceof Element) || !root.contains(element)) return undefined;
   const field = element.closest<HTMLElement>(".expression-field-drop-target[data-expression-path]");
   if (field) {
     const path = JSON.parse(field.dataset.expressionPath ?? "null") as unknown;

@@ -27,9 +27,6 @@ type FieldBoxProps = {
   initialSection?: "fields" | "value" | "calculation";
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
-  onCalculationSelect?: () => void;
-  onCalculationTabSelect?: () => void;
-  onFunctionTabSelect?: () => void;
   onEscape?: () => void;
   renderCalculation?: (onComplete: () => void) => ReactNode;
   renderFunction?: (onComplete: () => void) => ReactNode;
@@ -77,9 +74,6 @@ export default function FieldBox({
   initialSection = "fields",
   initialConstantValue,
   onValueSelect,
-  onCalculationSelect,
-  onCalculationTabSelect,
-  onFunctionTabSelect,
   onEscape,
   renderCalculation,
   renderFunction,
@@ -170,18 +164,19 @@ export default function FieldBox({
     if (!isMenuOpen) return;
 
     const closeOnOutsideClick = (event: MouseEvent) => {
-      if (event.target instanceof Node
-        && !menuRef.current?.contains(event.target)
-        && !menuPopupRef.current?.contains(event.target)) closeMenu();
+      if (!(event.target instanceof Node)) return;
+      if (menuRef.current?.contains(event.target) || menuPopupRef.current?.contains(event.target)) return;
+      if (event.target instanceof Element && event.target.closest(".field-box-menu-popup")) return;
+      closeMenu();
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeMenu();
     };
 
-    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("mousedown", closeOnOutsideClick, true);
     document.addEventListener("keydown", closeOnEscape);
     return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("mousedown", closeOnOutsideClick, true);
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [isMenuOpen, popupManager]);
@@ -343,7 +338,7 @@ export default function FieldBox({
       </button>
       {isMenuOpen && createPortal(<div
         ref={menuPopupRef}
-        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "value" ? " field-box-menu-popup-value" : ""}${(activeSection === "calculation" && renderCalculation) || (activeSection === "function" && renderFunction) ? " field-box-menu-popup-calculation" : ""}`}
+        className={`operator-menu field-box-menu-popup${hasAdditionalSections ? " field-box-menu-popup-advanced" : ""}${activeSection === "fields" ? " field-box-menu-popup-fields" : ""}${activeSection === "value" ? " field-box-menu-popup-value" : ""}${activeSection === "calculation" && renderCalculation ? " field-box-menu-popup-calculation" : ""}${activeSection === "function" && renderFunction ? " field-box-menu-popup-function" : ""}`}
         style={{ position: "fixed", top: menuPosition.top, left: menuPosition.left, maxHeight: hasAdditionalSections ? "none" : menuPosition.maxHeight, transform: "none", margin: 0 }}
         onMouseDown={(event) => {
           event.stopPropagation();
@@ -387,28 +382,14 @@ export default function FieldBox({
             role="tab"
             aria-selected={activeSection === "calculation"}
             className={`field-box-chooser-tab${activeSection === "calculation" ? " active" : ""}`}
-            onClick={() => {
-              if (onCalculationTabSelect) {
-                closeMenu();
-                onCalculationTabSelect();
-              } else {
-                setActiveSection("calculation");
-              }
-            }}
+            onClick={() => setActiveSection("calculation")}
           ><Icon name="sliders" size={12} />Calculation</button>}
           {allowFunctionSelection && <button
             type="button"
             role="tab"
             aria-selected={activeSection === "function"}
             className={`field-box-chooser-tab${activeSection === "function" ? " active" : ""}`}
-            onClick={() => {
-              if (onFunctionTabSelect) {
-                closeMenu();
-                onFunctionTabSelect();
-              } else {
-                setActiveSection("function");
-              }
-            }}
+            onClick={() => setActiveSection("function")}
           ><Icon name="code" size={12} />Function</button>}
         </div>}
         {activeSection === "value" && allowValueSelection
@@ -434,16 +415,6 @@ export default function FieldBox({
           </div>
           : activeSection === "calculation" && allowCalculationSelection
             ? <div className={`field-box-value-panel field-box-calculation-panel${renderCalculation ? " field-box-calculation-panel-expanded" : ""}`} role="tabpanel" aria-label="Calculation">
-              {onCalculationSelect && (
-                <button
-                  type="button"
-                  className="field-box-add-math"
-                  onClick={() => {
-                    closeMenu();
-                    onCalculationSelect();
-                  }}
-                >Add math item</button>
-              )}
               {renderCalculation
                 ? renderCalculation(closeMenu)
                 : <span className="field-box-calculation-hint">Build an expression from fields, SQL functions, and values.</span>}

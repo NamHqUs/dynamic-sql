@@ -170,6 +170,83 @@ internal class _40_QueryDefintionTest : TestBase
     }
 
     [Test]
+    public void SubGroups_Operator_Priority_JsonSerialize()
+    {
+        var group = (GroupFieldDefintion)QueryDefinitionParser.ParseField("A - B * C + <3>");
+
+        var text = JsonSerializer.Serialize<IFieldDefinition>(group, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Converters = { new JsonStringEnumConverter() }
+        });
+
+        var expectedText = """
+            {
+              "oper": "Add",
+              "kind": "group",
+              "fields": [
+                {
+                  "kind": "field",
+                  "field": "A"
+                },
+                {
+                  "kind": "group",
+                  "operator": "-",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "B"
+                    },
+                    {
+                      "kind": "group",
+                      "operator": "*",
+                      "arguments": [
+                        {
+                          "kind": "field",
+                          "field": "C"
+                        },
+                        {
+                          "oper": "Subtract",
+                          "kind": "math",
+                          "field": {
+                            "kind": "field",
+                            "field": "D"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "oper": "Divide",
+                      "kind": "math",
+                      "field": {
+                        "kind": "field",
+                        "field": "E"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "oper": "Add",
+                  "kind": "math",
+                  "field": {
+                    "kind": "value",
+                    "value": 3
+                  }
+                }
+              ]
+            }
+            """;
+
+        Assert.That(text.Replace(" ", "").Replace("\r", "").Replace("\n", ""), Is.EqualTo(expectedText.Replace(" ", "").Replace("\r", "").Replace("\n", "")));
+
+        var roundTripped = JsonSerializer.Deserialize<IFieldDefinition>(text, new JsonSerializerOptions
+        {
+            Converters = { new JsonStringEnumConverter() }
+        }) ?? throw new InvalidOperationException("The serialized field expression did not produce a definition.");
+        Assert.That(roundTripped.ToText(), Is.EqualTo(group.ToText()));
+    }
+
+    [Test]
     public void SubGroups_JsonDeserialize()
     {
         var json = """

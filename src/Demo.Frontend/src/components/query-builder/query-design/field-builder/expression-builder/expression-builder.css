@@ -3,8 +3,8 @@
   --expression-operation-width: 56px;
   --expression-column-gap: 4px;
   --expression-operation-mask-background: #171b24;
-  --expression-debug-outline: 0;
-  --expression-debug-tooltip-display: none;
+  --expression-debug-outline: 2px solid #b9a5ff;
+  --expression-debug-tooltip-display: grid;
   display: grid;
   width: 100%;
   max-height: none;
@@ -128,6 +128,12 @@
   background: transparent;
 }
 
+.expression-group-root:not(:hover) {
+  box-sizing: border-box;
+  border: 1px solid #4b4265;
+  border-radius: 7px;
+}
+
 .expression-group-root::before {
   border: 0;
   background: none;
@@ -151,6 +157,31 @@
 .expression-debug-field-builder { max-width: 100%; }
 
 .expression-debug-field-builder .field-builder-editing { padding-left: 8px; }
+
+.expression-add-next-item {
+  position: absolute;
+  top: 50%;
+  right: -28px;
+  z-index: 2;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #4a4163;
+  border-radius: 4px;
+  color: #c5b5ff;
+  background: #211e30;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.expression-add-next-item:hover,
+.expression-add-next-item:focus-visible {
+  border-color: #8069cb;
+  color: #f0ecff;
+  outline: 0;
+}
 
 .expression-debug-field-builder .field-box-completed,
 .expression-debug-field-builder .field-box select,
@@ -232,6 +263,9 @@
   outline: 2px solid #9b82e6;
   outline-offset: 2px;
 }
+
+.expression-selectable.expression-selected { cursor: grab; }
+.expression-selectable.expression-selected:active { cursor: grabbing; }
 
 .expression-value-node {
   display: inline-flex;

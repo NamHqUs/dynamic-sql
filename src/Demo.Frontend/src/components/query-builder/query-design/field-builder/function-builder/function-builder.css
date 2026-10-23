@@ -195,3 +195,53 @@
   color: #8993a5;
   font-size: 11px;
 }
+
+.expression-function-template {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 8px;
+  padding: 12px;
+  box-sizing: border-box;
+  font: 12px "Manrope", sans-serif;
+}
+
+.expression-function-template-signature {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.expression-function-template-preview {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  color: #9ce4cb;
+  font: 12px/1.5 "DM Mono", monospace;
+}
+
+.expression-function-template-placeholder {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.expression-function-template-placeholder > span:last-child {
+  padding: 2px 5px;
+  border: 1px solid #4a4163;
+  border-radius: 4px;
+  color: #ded5ff;
+  background: #29223e;
+}
+
+.expression-function-template-status {
+  color: #aab3c2;
+  font: 11px "Manrope", sans-serif;
+}
+
+.expression-function-template > .expression-apply-button {
+  justify-self: end;
+}

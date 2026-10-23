@@ -4,6 +4,7 @@ import { IFieldDefinition, MatchOperation, MetadataEntity } from "../query-build
 import Icon from "../../../icon/icon";
 import ExpressionBuilder from "./expression-builder";
 import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
+import { FunctionTemplateBuilder } from "./function-builder/function-builder";
 import ExpressionDebugTooltip from "./expression-debug-tooltip/expression-debug-tooltip";
 import "./field-builder.css";
 
@@ -35,15 +36,13 @@ type FieldBuilderProps = {
   allowAggregates?: boolean;
   allowValueSelection?: boolean;
   allowCalculationSelection?: boolean;
+  allowFunctionSelection?: boolean;
   initialSection?: "fields" | "value" | "calculation";
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
   expressionBuilder?: FieldBuilderExpressionOptions;
   debugModel?: IFieldDefinition;
   debugOperator?: MatchOperation | null;
-  onCalculationSelect?: () => void;
-  onCalculationTabSelect?: () => void;
-  onFunctionTabSelect?: () => void;
   onExpressionApply?: (expression: IFieldDefinition) => void;
 };
 
@@ -76,15 +75,13 @@ export default function FieldBuilder({
   allowAggregates = true,
   allowValueSelection = false,
   allowCalculationSelection = false,
+  allowFunctionSelection = false,
   initialConstantValue,
   initialSection = initialConstantValue !== undefined ? "value" : "fields",
   onValueSelect,
   expressionBuilder,
   debugModel,
   debugOperator,
-  onCalculationSelect,
-  onCalculationTabSelect,
-  onFunctionTabSelect,
   onExpressionApply,
 }: FieldBuilderProps) {
   const [isEditing, setIsEditing] = useState(editMode);
@@ -106,16 +103,11 @@ export default function FieldBuilder({
       }}
     />
     : undefined;
-  const renderFunction = onExpressionApply && expressionBuilder
-    ? (closeMenu: () => void) => <ExpressionBuilder
-      key="function-expression-editor"
-      {...expressionBuilder}
-      initialKind="function"
-      initialExpression={expressionBuilder.initialExpression?.kind === "function"
-        ? expressionBuilder.initialExpression
-        : undefined}
-      entity={entity}
-      metadata={metadata}
+  const renderFunction = allowFunctionSelection && onExpressionApply && expressionBuilder
+    ? (closeMenu: () => void) => <FunctionTemplateBuilder
+      functionDefinitions={expressionBuilder.functionDefinitions}
+      functionDefinitionsStatus={expressionBuilder.functionDefinitionsStatus}
+      functionDefinitionsError={expressionBuilder.functionDefinitionsError}
       onApply={(expression) => {
         setIsEditing(false);
         onExpressionApply(expression);
@@ -151,21 +143,9 @@ export default function FieldBuilder({
       allowAggregates={allowAggregates}
       allowValueSelection={allowValueSelection}
       allowCalculationSelection={allowCalculationSelection}
-      allowFunctionSelection={Boolean(renderFunction)}
+      allowFunctionSelection={allowFunctionSelection && Boolean(renderFunction)}
       initialSection={initialSection}
       initialConstantValue={initialConstantValue}
-      onCalculationSelect={onCalculationSelect ? () => {
-        setIsEditing(false);
-        onCalculationSelect();
-      } : undefined}
-      onCalculationTabSelect={onCalculationTabSelect ? () => {
-        setIsEditing(false);
-        onCalculationTabSelect();
-      } : undefined}
-      onFunctionTabSelect={onFunctionTabSelect ? () => {
-        setIsEditing(false);
-        onFunctionTabSelect();
-      } : undefined}
       onEscape={cancelEdit}
       onValueSelect={(constantValue) => {
         setIsEditing(false);
