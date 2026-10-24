@@ -23,9 +23,12 @@ export default function SavedQueryList({
   const [searchTerm, setSearchTerm] = useState("");
 
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
-  const filteredRequests = normalizedSearchTerm
-    ? requests.filter((request) => request.name.toLowerCase().includes(normalizedSearchTerm))
-    : requests;
+  const sortedRequests = [...requests].sort((left, right) => (
+    left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: "base" })
+  ));
+  const filteredRequests = sortedRequests.filter((request) => (
+    !normalizedSearchTerm || request.name.toLowerCase().includes(normalizedSearchTerm)
+  ));
 
   return (
     <aside className="saved-query-library split-panel" aria-label="Saved queries">
@@ -60,38 +63,27 @@ export default function SavedQueryList({
         {status !== "failed" && status !== "loading" && requests.length > 0 && filteredRequests.length === 0 && (
           <p className="saved-query-status">No saved queries match “{searchTerm.trim()}”.</p>
         )}
-        {(["custom", "builtin"] as const).map((kind) => {
-          const items = filteredRequests.filter((item) => item.isBuiltin === (kind === "builtin"));
-          if (!items.length) return null;
-          return (
-            <section className="saved-query-group" key={kind}>
-              <h4>{kind === "builtin" ? "Built-in" : "Custom"} <span>{items.length}</span></h4>
-              <ul>
-                {items.map((item) => (
-                  <li key={`${kind}-${item.name}`}>
-                    <button
-                      type="button"
-                      className={`saved-query-item${selectedRequestName === item.name ? " active" : ""}`}
-                      onClick={() => onSelectRequest(item)}
-                      aria-current={selectedRequestName === item.name ? "page" : undefined}
-                    >
-                      <span className="saved-query-item-icon">
-                        <Icon name={item.isBuiltin ? "database" : "file-text"} size={14} />
-                      </span>
-                      <span className="saved-query-item-copy">
-                        <span className="saved-query-item-name">{item.name}</span>
-                        <span className="saved-query-item-description">
-                          {item.isBuiltin ? "Ready-to-use query" : "Your saved query"}
-                        </span>
-                      </span>
-                      <span className={`saved-query-kind ${kind}`}>{kind}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })}
+        {status !== "failed" && status !== "loading" && filteredRequests.length > 0 && (
+          <ul className="saved-query-list">
+            {filteredRequests.map((item) => (
+              <li key={item.name}>
+                <button
+                  type="button"
+                  className={`saved-query-item${selectedRequestName === item.name ? " active" : ""}`}
+                  onClick={() => onSelectRequest(item)}
+                  aria-current={selectedRequestName === item.name ? "page" : undefined}
+                >
+                  <span className="saved-query-item-copy">
+                    <span className="saved-query-item-name">{item.name}</span>
+                    <span className="saved-query-item-description">
+                      {item.isBuiltin ? "Ready-to-use query" : "Your saved query"}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </aside>
   );
