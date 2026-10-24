@@ -51,6 +51,7 @@ type NodeEditorProps = {
   selectedPath?: ExpressionPath;
   onSelect?: (path: ExpressionPath) => void;
   onUngroup?: (path: ExpressionPath) => void;
+  canUngroup?: boolean;
 };
 
 type ExpressionMathElementProps = Omit<NodeEditorProps, "expression" | "root" | "debugOperator"> & {
@@ -148,6 +149,7 @@ function ExpressionMathElement({
   selectedPath,
   onSelect,
   onUngroup,
+  canUngroup,
 }: ExpressionMathElementProps) {
   const actualOperator = operator === undefined ? expression.oper ?? null : operator;
   const updateOperator = (nextOperator: MatchOperation) =>
@@ -194,6 +196,7 @@ function ExpressionMathElement({
           selectedPath={selectedPath}
           onSelect={onSelect}
           onUngroup={onUngroup}
+          canUngroup={canUngroup}
         />
       </div>
     </div>
@@ -221,6 +224,7 @@ export default function NodeEditor({
   selectedPath,
   onSelect,
   onUngroup,
+  canUngroup,
 }: NodeEditorProps) {
   const isDropPreview = path !== undefined && dragPreview !== undefined && isSameExpressionPath(path, dragPreview);
   const isSelected = selectionPath !== undefined
@@ -259,6 +263,8 @@ export default function NodeEditor({
         selectionPath={selectionPath}
         selectedPath={selectedPath}
         onSelect={onSelect}
+        onUngroup={onUngroup}
+        canUngroup={canUngroup}
       />
     );
   }
@@ -387,11 +393,12 @@ export default function NodeEditor({
               selectionPath={selectionPath === undefined ? undefined : [...selectionPath, index]}
               selectedPath={selectedPath}
               onSelect={onSelect}
-              onUngroup={argument.kind === "group" ? onUngroup : undefined}
+              onUngroup={onUngroup}
+              canUngroup
             />
           );
         })}
-        {isSelected && !root && onUngroup && expression.arguments.length > 0 && (
+        {isSelected && !root && canUngroup && onUngroup && expression.arguments.length > 0 && (
           <button
             type="button"
             className="expression-ungroup"
@@ -535,6 +542,8 @@ export default function NodeEditor({
             selectionPath={selectionPath === undefined ? undefined : [...selectionPath, index]}
             selectedPath={selectedPath}
             onSelect={onSelect}
+            onUngroup={onUngroup}
+            canUngroup={false}
           />
         );
       }}

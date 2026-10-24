@@ -138,6 +138,9 @@ export default function ExpressionBuilder({
     const targetNode = getExpressionNode(expression, targetPath);
     const targetParent = getExpressionNode(expression, targetPath.slice(0, -1));
     const targetIndex = targetPath[targetPath.length - 1];
+    const sourceParentPath = sourcePath.slice(0, -1);
+    const targetParentPath = targetPath.slice(0, -1);
+    const sameParent = isSameExpressionPath(sourceParentPath, targetParentPath);
     if (!sourceNode || !isExpressionContainer(sourceParent)
       || sourceIndex === undefined || !targetNode || !isExpressionContainer(targetParent)
       || targetIndex === undefined) return;
@@ -158,8 +161,7 @@ export default function ExpressionBuilder({
       )
       : null;
     let removed = removeExpressionNodeForMove(expression, sourcePath);
-    if (sourceRemainingArgument && sourceRemainingOperation) {
-      const sourceParentPath = sourcePath.slice(0, -1);
+    if (!sameParent && sourceRemainingArgument && sourceRemainingOperation) {
       const remainingGroup = getExpressionNode(removed, sourceParentPath);
       if (remainingGroup?.kind === "group" && remainingGroup.arguments.length === 1) {
         removed = replaceExpressionNode(
@@ -306,10 +308,12 @@ export default function ExpressionBuilder({
     const parentPath = path.slice(0, -1);
     const parent = getExpressionNode(expression, parentPath);
     const index = path[path.length - 1];
-    if (group?.kind !== "group" || parent?.kind !== "group"
+    if (group?.kind !== "group" || !isExpressionContainer(parent)
       || index === undefined || group.arguments.length === 0) return;
 
-    const operation = getGroupArgumentOperator(group, index);
+    const operation = parent.kind === "group"
+      ? getGroupArgumentOperator(group, index)
+      : group.oper ?? null;
     const ungroupedArguments = group.arguments.map((argument, argumentIndex) =>
       setExpressionOperation(
         argument,
@@ -317,7 +321,7 @@ export default function ExpressionBuilder({
       ),
     );
     const updated = updateExpressionNode(expression, parentPath, (parentNode) =>
-      parentNode.kind === "group"
+      isExpressionContainer(parentNode)
         ? {
           ...parentNode,
           arguments: [

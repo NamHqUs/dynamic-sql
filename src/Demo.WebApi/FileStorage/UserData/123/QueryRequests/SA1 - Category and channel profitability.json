@@ -37,6 +37,30 @@
     {
       "Fields": [
         {
+          "kind": "field",
+          "field": ""
+        }
+      ],
+      "Alias": "NEW_LINE"
+    },
+    {
+      "Fields": [
+        {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "DiscountAmount"
+            }
+          ]
+        }
+      ],
+      "Alias": "Discounts"
+    },
+    {
+      "Fields": [
+        {
           "kind": "function",
           "function": "SUM",
           "arguments": [
@@ -48,6 +72,15 @@
         }
       ],
       "Alias": "UnitsSold"
+    },
+    {
+      "Fields": [
+        {
+          "kind": "field",
+          "field": ""
+        }
+      ],
+      "Alias": "NEW_LINE"
     },
     {
       "Fields": [
@@ -82,17 +115,11 @@
     {
       "Fields": [
         {
-          "kind": "function",
-          "function": "SUM",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "DiscountAmount"
-            }
-          ]
+          "kind": "field",
+          "field": ""
         }
       ],
-      "Alias": "Discounts"
+      "Alias": "NEW_LINE"
     },
     {
       "Fields": [
@@ -104,26 +131,21 @@
               "kind": "group",
               "fields": [
                 {
+                  "kind": "field",
+                  "field": "Quantity"
+                },
+                {
+                  "oper": "*",
                   "kind": "group",
                   "fields": [
                     {
                       "kind": "field",
-                      "field": "Quantity"
+                      "field": "UnitPrice"
                     },
                     {
-                      "oper": "*",
-                      "kind": "group",
-                      "fields": [
-                        {
-                          "kind": "field",
-                          "field": "UnitPrice"
-                        },
-                        {
-                          "oper": "-",
-                          "kind": "field",
-                          "field": "Product.CostPrice"
-                        }
-                      ]
+                      "oper": "-",
+                      "kind": "field",
+                      "field": "Product.CostPrice"
                     }
                   ]
                 },
@@ -142,6 +164,15 @@
     {
       "Fields": [
         {
+          "kind": "field",
+          "field": ""
+        }
+      ],
+      "Alias": "NEW_LINE"
+    },
+    {
+      "Fields": [
+        {
           "kind": "function",
           "function": "SUM",
           "arguments": [
@@ -149,18 +180,13 @@
               "kind": "group",
               "fields": [
                 {
-                  "kind": "group",
-                  "fields": [
-                    {
-                      "kind": "field",
-                      "field": "Quantity"
-                    },
-                    {
-                      "oper": "*",
-                      "kind": "field",
-                      "field": "UnitPrice"
-                    }
-                  ]
+                  "kind": "field",
+                  "field": "Quantity"
+                },
+                {
+                  "oper": "*",
+                  "kind": "field",
+                  "field": "UnitPrice"
                 },
                 {
                   "oper": "-",

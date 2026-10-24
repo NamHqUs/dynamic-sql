@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { QueryResult as QueryResultData } from "../query-design/query-builder-slice";
 import Icon from "../../icon/icon";
 import SqlStatement from "./sql-statement";
@@ -17,12 +18,45 @@ type QueryResultProps = {
   queryDisabled: boolean;
 };
 
+type CopyFeedback = {
+  statement: string;
+  status: "copied" | "error";
+};
+
 export default function QueryResult({ result, sqlStatement, resultView, onRunQuery, onGetSql, pageNumber, pageSize, onPageChange, pageNavigationEnabled, queryLoading, queryDisabled }: QueryResultProps) {
+  const [copyFeedback, setCopyFeedback] = useState<CopyFeedback | null>(null);
+  const currentCopyStatus = copyFeedback?.statement === sqlStatement ? copyFeedback.status : null;
+
+  const copyStatement = async () => {
+    if (!sqlStatement) return;
+
+    try {
+      await navigator.clipboard.writeText(sqlStatement);
+      setCopyFeedback({ statement: sqlStatement, status: "copied" });
+    } catch {
+      setCopyFeedback({ statement: sqlStatement, status: "error" });
+    }
+  };
+
   return (
     <section className="results-card query-results">
       <div className="results-head">
         <div className="query-result-title">
-          <div><span className="section-kicker">QUERY RESULT</span><p className="query-result-description">{resultView === "sql" ? "SQL statement" : result?.name || "Run a query to see results"}</p></div>
+          <div>
+            <span className="section-kicker">QUERY RESULT</span>
+            <div className="query-result-description-row">
+              <p className="query-result-description">{resultView === "sql" ? "SQL statement" : result?.name || "Run a query to see results"}</p>
+              {resultView === "sql" && sqlStatement && <>
+                <button className="query-result-copy" type="button" aria-label="Copy SQL statement" title="Copy SQL statement" onClick={copyStatement}>
+                  <Icon name="copy" size={14} />
+                </button>
+                <span className="query-result-copy-feedback" aria-live="polite">
+                  {currentCopyStatus === "copied" && "SQL copied"}
+                  {currentCopyStatus === "error" && "Copy failed. Check clipboard permissions."}
+                </span>
+              </>}
+            </div>
+          </div>
           {resultView === "data" && result && <span className="result-count">{result.totalRecords < 0 ? "1000+" : result.totalRecords} records</span>}
         </div>
         <div className="query-result-tools">
