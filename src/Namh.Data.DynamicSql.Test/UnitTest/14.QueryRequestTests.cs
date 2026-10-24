@@ -71,6 +71,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
+            Projection = QueryDefinitionParser.ParseProjection("Name"),
             Filter = new FilterDefinition(
                 LogicalOperator.And,
                 new FilterItemDefinition(
@@ -87,6 +88,29 @@ public class _14_QueryRequestTests : TestBase
         Assert.That(sql.CommandText, Does.Contain("Age"));
         Assert.That(sql.CommandText, Does.Contain("Id"));
         Assert.That(records, Is.Not.Null);
+    }
+
+    [Test]
+    public void DefinitionFiltersOnFunctionExpression()
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Filter = new FilterDefinition(
+                LogicalOperator.And,
+                new FilterItemDefinition(
+                    null,
+                    new FunctionFieldDefinition("Month", [new FieldDefinition("Birthday")]),
+                    BinaryOperator.Equals,
+                    new ConstFieldDefinition(3)))
+        };
+
+        var query = _db.Query(definition);
+        var sql = query.ToSql();
+        var records = query.ToList();
+
+        Assert.That(sql.CommandText, Does.Contain("CAST (STRFTIME ('%m', t0.\"Birthday\") AS INTEGER)"));
+        Assert.That(records.Select(record => record["Name"]), Is.EqualTo(new object?[] { "Charlie" }));
     }
 
     [Test]

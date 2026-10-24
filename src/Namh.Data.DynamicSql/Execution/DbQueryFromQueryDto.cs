@@ -235,13 +235,19 @@ internal static class DbQueryFromQueryDto
                 $"Filter fields must be field references. Received [{field.GetType().Name}].");
 
     private static Expression CreateFieldAccess(IFieldDefinition field, ParameterExpression parameter)
-        => field is FieldDefinition fieldDto
-            ? Expression.Call(
+        => field switch
+        {
+            FieldDefinition fieldDto => Expression.Call(
                 parameter,
                 typeof(IRecordParameter).GetProperty("Item")!.GetMethod!,
-                Expression.Constant(GetFilterFieldName(fieldDto)))
-            : throw new FormatException(
-                $"Filter field expressions must be field references. Received [{field.GetType().Name}].");
+                Expression.Constant(GetFilterFieldName(fieldDto))),
+            FunctionFieldDefinition or GroupFieldDefintion or MathFieldDefinition
+                => Expression.Call(
+                    typeof(DataValue).GetMethod(nameof(DataValue.QueryExpression))!,
+                    Expression.Constant(field, typeof(IFieldDefinition))),
+            _ => throw new FormatException(
+                $"Filter field expressions must be field references or query expressions. Received [{field.GetType().Name}].")
+        };
 
     private static Expression CreateFilterValue(
         FilterItemDefinition filter,
@@ -251,6 +257,8 @@ internal static class DbQueryFromQueryDto
         {
             null => Expression.Constant(null, typeof(object)),
             FieldDefinition field => CreateFieldAccess(field, parameter),
+            FunctionFieldDefinition or GroupFieldDefintion or MathFieldDefinition
+                => CreateFieldAccess(filter.Right, parameter),
             ConstFieldDefinition constant => CreateFilterConstant(constant.Value, filter.Parameterized),
             _ => throw new FormatException(
                 $"Filter right expressions must be field references or constants. Received [{filter.Right.GetType().Name}].")

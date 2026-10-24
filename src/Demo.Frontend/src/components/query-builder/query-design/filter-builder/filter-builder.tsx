@@ -1,5 +1,6 @@
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Icon from "../../../icon/icon";
 import { FilterOperatorDefinition, IFieldDefinition, MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
@@ -23,6 +24,40 @@ const fallbackOperators = [
   [12, "IS NULL"],
   [13, "IS NOT NULL"],
 ] as const;
+const builtinOperatorOrder = [0, 1, 4, 6, 5, 7, 2, 3, 8, 9, 10, 11, 12, 13];
+const operatorHints: Record<number, string> = {
+  0: "Matches this exact value",
+  1: "Does not match this exact value",
+  2: "Matches a pattern",
+  3: "Does not match a pattern",
+  4: "Greater than",
+  5: "Less than",
+  6: "Greater than or equal to",
+  7: "Less than or equal to",
+  8: "Within an inclusive range",
+  9: "Outside an inclusive range",
+  10: "Matches any listed value",
+  11: "Matches none of the listed values",
+  12: "Has no value",
+  13: "Has a value",
+};
+const allDataTypes = ["string", "number", "datetime", "boolean"];
+const fallbackOperatorDataTypes: Record<number, string[]> = {
+  0: allDataTypes,
+  1: allDataTypes,
+  2: ["string"],
+  3: ["string"],
+  4: ["number", "datetime"],
+  5: ["number", "datetime"],
+  6: ["number", "datetime"],
+  7: ["number", "datetime"],
+  8: ["number", "datetime"],
+  9: ["number", "datetime"],
+  10: allDataTypes,
+  11: allDataTypes,
+  12: allDataTypes,
+  13: allDataTypes,
+};
 const nullCheckOperations = new Set<number | string>([12, 13]);
 const multiValueOperations = new Set<number | string>([8, 9, 10, 11]);
 const logicalOperators = [
@@ -94,18 +129,44 @@ type OperatorSelectProps = {
   options: readonly OperatorOption[];
   ariaLabel: string;
   className: string;
+  groupByMeaning?: boolean;
 };
 
-function OperatorSelect({ value, onChange, options, ariaLabel, className }: OperatorSelectProps) {
+function OperatorSelect({ value, onChange, options, ariaLabel, className, groupByMeaning = false }: OperatorSelectProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, maxHeight: 420 });
   const selectedOption = options.find(([optionValue]) => optionValue === value) ?? options[0];
+  const renderOptions = (optionList: readonly OperatorOption[]) => optionList.map(([operatorValue, label]) => {
+    const hint = typeof operatorValue === "number" ? operatorHints[operatorValue] : undefined;
+    return (
+      <button
+        className={`operator-option${operatorValue === value ? " operator-option-selected" : ""}`}
+        type="button"
+        role="option"
+        aria-selected={operatorValue === value}
+        key={operatorValue}
+        title={hint}
+        onClick={() => {
+          onChange(operatorValue);
+          setOpen(false);
+        }}
+      >
+        <span className="operator-option-label">{label}</span>
+        {hint && <span className="operator-option-hint">{hint}</span>}
+      </button>
+    );
+  });
 
   useEffect(() => {
     if (!open) return;
 
     const closeOnOutsideClick = (event: MouseEvent) => {
-      if (event.target instanceof Node && !containerRef.current?.contains(event.target)) setOpen(false);
+      if (event.target instanceof Node
+        && !containerRef.current?.contains(event.target)
+        && !menuRef.current?.contains(event.target)) setOpen(false);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
@@ -119,36 +180,96 @@ function OperatorSelect({ value, onChange, options, ariaLabel, className }: Oper
     };
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current || !menuRef.current) return;
+
+    const updateMenuPosition = () => {
+      if (!triggerRef.current || !menuRef.current) return;
+      const bounds = triggerRef.current.getBoundingClientRect();
+      const menu = menuRef.current;
+      const menuHeight = menu.scrollHeight;
+      const menuWidth = menu.getBoundingClientRect().width;
+      const spaceBelow = window.innerHeight - bounds.bottom - 8;
+      const spaceAbove = bounds.top - 8;
+      const openAbove = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+      const availableHeight = Math.max(0, openAbove ? spaceAbove : spaceBelow);
+      const left = Math.max(4, Math.min(
+        bounds.left + (bounds.width - menuWidth) / 2,
+        window.innerWidth - menuWidth - 4,
+      ));
+
+      setMenuPosition({
+        top: openAbove
+          ? bounds.top - Math.min(menuHeight, availableHeight) - 4
+          : bounds.bottom + 4,
+        left,
+        maxHeight: availableHeight,
+      });
+    };
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [open]);
+
   return (
     <div className={className} ref={containerRef}>
       <button
+        ref={triggerRef}
         className="operator-trigger"
         type="button"
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
+        title={selectedOption[1]}
         onClick={() => setOpen((isOpen) => !isOpen)}
       >
         {selectedOption[1]}
       </button>
       {open && (
-        <div className="operator-menu" role="listbox" aria-label={`${ariaLabel} options`}>
-          {options.map(([operatorValue, label]) => (
-            <button
-              className={`operator-option${operatorValue === value ? " operator-option-selected" : ""}`}
-              type="button"
-              role="option"
-              aria-selected={operatorValue === value}
-              key={operatorValue}
-              onClick={() => {
-                onChange(operatorValue);
-                setOpen(false);
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        createPortal(<div
+          ref={menuRef}
+          className="operator-menu filter-operator-menu"
+          role="listbox"
+          aria-label={`${ariaLabel} options`}
+          style={{
+            position: "fixed",
+            top: menuPosition.top,
+            left: menuPosition.left,
+            maxHeight: menuPosition.maxHeight,
+            transform: "none",
+            margin: 0,
+          }}
+        >
+          {groupByMeaning
+            ? <>
+              {operatorGroups.map(({ label, values }) => {
+                const groupedOptions = options.filter(([operatorValue]) =>
+                  typeof operatorValue === "number" && values.some((value) => value === operatorValue),
+                );
+                return groupedOptions.length
+                  ? <div className="filter-operator-group" role="group" aria-label={label} key={label}>
+                    <span className="filter-operator-group-label">{label}</span>
+                    {renderOptions(groupedOptions)}
+                  </div>
+                  : null;
+              })}
+              {(() => {
+                const customOptions = options.filter(([operatorValue]) => typeof operatorValue === "string");
+                return customOptions.length
+                  ? <div className="filter-operator-group" role="group" aria-label="Custom operators">
+                    <span className="filter-operator-group-label">Custom</span>
+                    {renderOptions(customOptions)}
+                  </div>
+                  : null;
+              })()}
+            </>
+            : renderOptions(options)}
+        </div>, document.body)
       )}
     </div>
   );
@@ -174,20 +295,39 @@ function getOperatorOptions(
   operators: FilterOperatorDefinition[],
   fieldDataType: string | undefined,
 ): OperatorOption[] {
-  const compatibleCustomOperators = operators.filter((operator) =>
-    !operator.isBuiltin
-      && (!fieldDataType || operator.supportedDataTypes.some((dataType) =>
-        dataType.toLowerCase() === fieldDataType.toLowerCase(),
-      )),
-  );
-  return [
-    ...fallbackOperators,
-    ...compatibleCustomOperators.map((operator): OperatorOption => [
-      operator.id,
-      operator.symbol,
-    ]),
-  ];
+  const supportsFieldDataType = (supportedDataTypes: string[]) =>
+    !fieldDataType || supportedDataTypes.some((dataType) =>
+      dataType.toLowerCase() === fieldDataType.toLowerCase(),
+    );
+  const options = operators.length
+    ? operators
+      .filter((operator) => supportsFieldDataType(operator.supportedDataTypes))
+      .map((operator): OperatorOption => {
+        const builtinId = operator.isBuiltin && operator.id.startsWith("builtin:")
+          ? Number(operator.id.slice("builtin:".length))
+          : undefined;
+        return [builtinId !== undefined && Number.isInteger(builtinId) ? builtinId : operator.id, operator.symbol];
+      })
+    : fallbackOperators.filter(([value]) =>
+      supportsFieldDataType(fallbackOperatorDataTypes[value] ?? []),
+    );
+
+  return options.sort(([leftValue, leftLabel], [rightValue, rightLabel]) => {
+    const leftOrder = typeof leftValue === "number" ? builtinOperatorOrder.indexOf(leftValue) : -1;
+    const rightOrder = typeof rightValue === "number" ? builtinOperatorOrder.indexOf(rightValue) : -1;
+    if (leftOrder >= 0 || rightOrder >= 0) {
+      if (leftOrder < 0) return 1;
+      if (rightOrder < 0) return -1;
+      return leftOrder - rightOrder;
+    }
+    return leftLabel.localeCompare(rightLabel);
+  });
 }
+
+const operatorGroups = [
+  { label: "Symbols", values: [0, 1, 4, 6, 5, 7] },
+  { label: "Words", values: [2, 3, 8, 9, 10, 11, 12, 13] },
+] as const;
 
 function getDropPosition(event: DragEvent<HTMLElement>): DragPosition {
   const bounds = event.currentTarget.getBoundingClientRect();
@@ -701,6 +841,7 @@ function FilterRow({ filter, first, path, metadata, functionDefinitions, functio
         options={operatorOptions}
         ariaLabel="Filter operation"
         className="filter-operator-select"
+        groupByMeaning
       />
       <input
         value={nullCheckOperations.has(filter.operation) ? "" : filter.rightField ? `[${filter.rightField}]` : filter.value}

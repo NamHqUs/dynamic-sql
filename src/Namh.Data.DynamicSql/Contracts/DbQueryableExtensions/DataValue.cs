@@ -19,6 +19,7 @@ public abstract class DataValue
     public bool IsNotNull() => throw new NotImplementedException();
     public bool CompareTemplate(object value, string template) => throw new NotImplementedException();
     public static DataValue Parameter(object? value) => throw new NotImplementedException();
+    public static DataValue QueryExpression(IFieldDefinition expression) => throw new NotImplementedException();
 
     public static bool operator ==(DataValue value1, object value2) => throw new NotImplementedException();
     public static bool operator !=(DataValue value1, object value2) => throw new NotImplementedException();

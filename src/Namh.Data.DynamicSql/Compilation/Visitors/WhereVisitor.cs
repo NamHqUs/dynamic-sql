@@ -120,6 +120,14 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
             return new ValueExpression(parameter, typeof(object));
         }
 
+        if (node.Method.DeclaringType == typeof(DataValue) &&
+            node.Method.Name == nameof(DataValue.QueryExpression))
+        {
+            var expression = ((ConstantExpression)node.Arguments[0]).Value as IFieldDefinition
+                ?? throw new FormatException("A filter query expression cannot be null.");
+            return QueryContext.ParseQueryExpression(TableContext, expression);
+        }
+
         return base.VisitMethodCall(node);
     }
 

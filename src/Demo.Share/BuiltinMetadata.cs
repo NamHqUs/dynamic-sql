@@ -99,15 +99,15 @@ public class BuiltinMetadata
         new(
             Name : "User",
             Fields : [
-                new("Id"),
+                new("Id", DataType.Number),
                 new("Name"),
                 //new("ManagerId"),
                 //new("SchoolId"),
-                new("Age"),
-                new("Birthday"),
-                new("IsMale"),
-                new("TotalMembers", FieldType: FieldType.Aggregate) { RawSql ="Count(*)" },
-                new("TotalAges", FieldType: FieldType.Aggregate) { RawSql ="Sum(@Age)" },
+                new("Age", DataType.Number),
+                new("Birthday", DataType.Datetime),
+                new("IsMale", DataType.Boolean),
+                new("TotalMembers", DataType.Number, FieldType.Aggregate) { RawSql ="Count(*)" },
+                new("TotalAges", DataType.Number, FieldType.Aggregate) { RawSql ="Sum(@Age)" },
             ],
 
             Relations : [

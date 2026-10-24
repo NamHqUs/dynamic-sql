@@ -11,7 +11,7 @@ public class CustomFunctionDefintions
                 sqlTemplates: new Dictionary<string, string>
                 {
                     ["SqlServer"] = "DAY({1})",
-                    ["Sqlite"] = "STRFTIME('%d', {1})",
+                    ["Sqlite"] = "CAST(STRFTIME('%d', {1}) AS INTEGER)",
                     ["Postgres"] = "CAST(EXTRACT(DAY FROM {1}) AS INTEGER)"
                 }),
 
@@ -21,7 +21,7 @@ public class CustomFunctionDefintions
         sqlTemplates: new Dictionary<string, string>
         {
             ["SqlServer"] = "MONTH({1})",
-            ["Sqlite"] = "STRFTIME('%m', {1})",
+            ["Sqlite"] = "CAST(STRFTIME('%m', {1}) AS INTEGER)",
             ["Postgres"] = "CAST(EXTRACT(MONTH FROM {1}) AS INTEGER)"
         }),
 
@@ -31,7 +31,7 @@ public class CustomFunctionDefintions
         sqlTemplates: new Dictionary<string, string>
         {
             ["SqlServer"] = "YEAR({1})",
-            ["Sqlite"] = "STRFTIME('%Y', {1})",
+            ["Sqlite"] = "CAST(STRFTIME('%Y', {1}) AS INTEGER)",
             ["Postgres"] = "CAST(EXTRACT(YEAR FROM {1}) AS INTEGER)"
         }),
 
