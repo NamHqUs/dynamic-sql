@@ -28,9 +28,9 @@ internal static class DbQueryFromQueryDto
             foreach (var field in definition.Projection)
             {
                 var alias = string.IsNullOrWhiteSpace(field.Alias)
-                    ? field.Field.ToText()
+                    ? field.ToText()
                     : field.Alias;
-                selection[alias] = field.Field;
+                selection[alias] = field.Fields;
             }
 
             query = query.Select(selection);
@@ -241,7 +241,7 @@ internal static class DbQueryFromQueryDto
                 parameter,
                 typeof(IRecordParameter).GetProperty("Item")!.GetMethod!,
                 Expression.Constant(GetFilterFieldName(fieldDto))),
-            FunctionFieldDefinition or GroupFieldDefintion or MathFieldDefinition
+            FunctionFieldDefinition or GroupFieldDefintion
                 => Expression.Call(
                     typeof(DataValue).GetMethod(nameof(DataValue.QueryExpression))!,
                     Expression.Constant(field, typeof(IFieldDefinition))),
@@ -257,7 +257,7 @@ internal static class DbQueryFromQueryDto
         {
             null => Expression.Constant(null, typeof(object)),
             FieldDefinition field => CreateFieldAccess(field, parameter),
-            FunctionFieldDefinition or GroupFieldDefintion or MathFieldDefinition
+            FunctionFieldDefinition or GroupFieldDefintion
                 => CreateFieldAccess(filter.Right, parameter),
             ConstFieldDefinition constant => CreateFilterConstant(constant.Value, filter.Parameterized),
             _ => throw new FormatException(

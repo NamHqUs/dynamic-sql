@@ -3,73 +3,89 @@
   "Entity": "Employees",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Id"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
       "alias": "SalesRepId"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "CONCAT",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "FirstName"
-          },
-          {
-            "kind": "value",
-            "value": " "
-          },
-          {
-            "kind": "field",
-            "field": "LastName"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CONCAT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        }
+      ],
       "alias": "SalesRep"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Location.City"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Location.City"
+        }
+      ],
       "alias": "HomeCity"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Department.Name"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Department.Name"
+        }
+      ],
       "alias": "Department"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "SalesOrders.CountDistinctIf(Status = <Completed>, Id)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "SalesOrders.CountDistinctIf(Status = <Completed>, Id)"
+        }
+      ],
       "alias": "CompletedOrders"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity)"
+        }
+      ],
       "alias": "UnitsSold"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
+        }
+      ],
       "alias": "NetSales"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)"
+        }
+      ],
       "alias": "GrossProfit"
     }
   ],

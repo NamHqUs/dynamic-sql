@@ -46,9 +46,11 @@ type NodeEditorProps = {
   dragPreview?: ExpressionPath;
   dragPosition?: "before" | "inside" | "after";
   root?: boolean;
+  suppressOperator?: boolean;
   selectionPath?: ExpressionPath;
   selectedPath?: ExpressionPath;
   onSelect?: (path: ExpressionPath) => void;
+  onUngroup?: (path: ExpressionPath) => void;
 };
 
 type ExpressionMathElementProps = Omit<NodeEditorProps, "expression" | "root" | "debugOperator"> & {
@@ -145,25 +147,15 @@ function ExpressionMathElement({
   selectionPath,
   selectedPath,
   onSelect,
+  onUngroup,
 }: ExpressionMathElementProps) {
-  const isMath = expression.kind === "math";
-  const operand = isMath ? expression.field : expression;
-  const actualOperator = isMath ? (operator === null ? null : expression.oper) : operator;
-  const updateOperator = (nextOperator: MatchOperation) => {
-    onChange(isMath
-      ? { ...expression, oper: nextOperator }
-      : withOperation(expression, nextOperator));
-  };
-  const updateOperand = (next: IFieldDefinition) => {
-    if (isMath) {
-      if (next.kind !== "group") onChange({ ...expression, field: next });
-      return;
-    }
-    onChange(next);
-  };
+  const actualOperator = operator === undefined ? expression.oper ?? null : operator;
+  const updateOperator = (nextOperator: MatchOperation) =>
+    onChange(withOperation(expression, nextOperator));
+  const updateOperand = (next: IFieldDefinition) => onChange({ ...next, oper: expression.oper });
 
   return (
-    <div className={`expression-math-element${isMath ? " expression-debug-target expression-debug-math-box" : ""}${operand.kind === "group" && actualOperator ? " expression-math-element-group-operand" : ""}`}>
+    <div className={`expression-math-element${expression.kind === "group" && actualOperator ? " expression-math-element-group-operand" : ""}`}>
       <div className="expression-math-operation">
         {actualOperator && (
           <MathOperatorSelect
@@ -173,18 +165,18 @@ function ExpressionMathElement({
         )}
       </div>
       <div
-        className={`expression-math-field${operand.kind === "group" ? " expression-math-field-group" : " expression-math-field-draggable"}`}
+        className={`expression-math-field${expression.kind === "group" ? " expression-math-field-group" : " expression-math-field-draggable"}`}
         onPointerDown={path === undefined
           ? undefined
           : (event) => {
             const bounds = event.currentTarget.getBoundingClientRect();
-            const dragEdge = bounds.left + (operand.kind === "group" ? 16 : 0);
+            const dragEdge = bounds.left + (expression.kind === "group" ? 16 : 0);
             if (event.clientX >= dragEdge && event.clientX <= dragEdge + 8)
               onPointerDragStart?.(event, path);
           }}
       >
         <NodeEditor
-          expression={operand}
+          expression={expression}
           entity={entity}
           metadata={metadata}
           functionDefinitions={functionDefinitions}
@@ -197,12 +189,13 @@ function ExpressionMathElement({
           dragPreview={dragPreview}
           dragPosition={dragPosition}
           debugOperator={actualOperator}
+          suppressOperator
           selectionPath={selectionPath}
           selectedPath={selectedPath}
           onSelect={onSelect}
+          onUngroup={onUngroup}
         />
       </div>
-      {isMath && <ExpressionDebugTooltip label="Math box" model={expression} />}
     </div>
   );
 }
@@ -223,9 +216,11 @@ export default function NodeEditor({
   dragPosition,
   debugOperator,
   root = false,
+  suppressOperator = false,
   selectionPath,
   selectedPath,
   onSelect,
+  onUngroup,
 }: NodeEditorProps) {
   const isDropPreview = path !== undefined && dragPreview !== undefined && isSameExpressionPath(path, dragPreview);
   const isSelected = selectionPath !== undefined
@@ -245,6 +240,28 @@ export default function NodeEditor({
     }
     onPointerDragStart(event, path);
   };
+  if (!suppressOperator && expression.oper && expression.oper !== "+") {
+    return (
+      <ExpressionMathElement
+        expression={expression}
+        operator={expression.oper}
+        entity={entity}
+        metadata={metadata}
+        functionDefinitions={functionDefinitions}
+        functionDefinitionsStatus={functionDefinitionsStatus}
+        functionDefinitionsError={functionDefinitionsError}
+        onChange={onChange}
+        onCalculationSelect={onCalculationSelect}
+        path={path}
+        onPointerDragStart={onPointerDragStart}
+        dragPreview={dragPreview}
+        dragPosition={dragPosition}
+        selectionPath={selectionPath}
+        selectedPath={selectedPath}
+        onSelect={onSelect}
+      />
+    );
+  }
   if (expression.kind === "field") {
     return (
       <div
@@ -293,7 +310,7 @@ export default function NodeEditor({
                 kind: "group",
                 arguments: [
                   expression,
-                  { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+                  { kind: "field", field: "" },
                 ],
               }))}
             />
@@ -304,14 +321,14 @@ export default function NodeEditor({
     );
   }
   if (expression.kind === "group") {
-    const groupDebugModel: IFieldDefinition = expression.operator === undefined && debugOperator != null
-      ? { ...expression, operator: debugOperator }
+    const groupDebugModel: IFieldDefinition = expression.oper === undefined && debugOperator != null
+      ? { ...expression, oper: debugOperator }
       : expression;
     const addNextItem = onCalculationSelect ?? (() => onChange({
       ...expression,
       arguments: [
         ...expression.arguments,
-        { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+        { kind: "field", field: "" },
       ],
     }));
     return (
@@ -346,7 +363,7 @@ export default function NodeEditor({
             ...expression,
             arguments: [
               ...expression.arguments.slice(0, index + 1),
-              { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+              { kind: "field", field: "" },
               ...expression.arguments.slice(index + 1),
             ],
           });
@@ -355,7 +372,7 @@ export default function NodeEditor({
             <ExpressionMathElement
               key={`expression-item-${index}`}
               expression={argument}
-              operator={getGroupArgumentOperator(expression, argument, index)}
+              operator={getGroupArgumentOperator(argument, index)}
               entity={entity}
               metadata={metadata}
               functionDefinitions={functionDefinitions}
@@ -370,33 +387,27 @@ export default function NodeEditor({
               selectionPath={selectionPath === undefined ? undefined : [...selectionPath, index]}
               selectedPath={selectedPath}
               onSelect={onSelect}
+              onUngroup={argument.kind === "group" ? onUngroup : undefined}
             />
           );
         })}
+        {isSelected && !root && onUngroup && expression.arguments.length > 0 && (
+          <button
+            type="button"
+            className="expression-ungroup"
+            aria-label="Ungroup expression"
+            title="Ungroup"
+            onClick={(event) => {
+              event.stopPropagation();
+              if (path) onUngroup(path);
+            }}
+          >
+            <Icon name="ungroup" size={14} />
+          </button>
+        )}
         {isSelected && !root && <ExpressionAddNextItem onAddNextItem={addNextItem} />}
         <ExpressionDebugTooltip label="Group box" model={groupDebugModel} />
       </div>
-    );
-  }
-  if (expression.kind === "math") {
-    return (
-      <ExpressionMathElement
-        expression={expression}
-        entity={entity}
-        metadata={metadata}
-        functionDefinitions={functionDefinitions}
-        functionDefinitionsStatus={functionDefinitionsStatus}
-        functionDefinitionsError={functionDefinitionsError}
-        path={path}
-        onPointerDragStart={onPointerDragStart}
-        dragPreview={dragPreview}
-        dragPosition={dragPosition}
-        onChange={onChange}
-        onCalculationSelect={onCalculationSelect}
-        selectionPath={selectionPath}
-        selectedPath={selectedPath}
-        onSelect={onSelect}
-      />
     );
   }
   if (expression.kind === "value") {
@@ -444,7 +455,7 @@ export default function NodeEditor({
               kind: "group",
               arguments: [
                 expression,
-                { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+                { kind: "field", field: "" },
               ],
             }))}
           />
@@ -469,7 +480,7 @@ export default function NodeEditor({
     kind: "group",
     arguments: [
       expression,
-      { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+      { kind: "field", field: "" },
     ],
   }));
 
@@ -500,7 +511,7 @@ export default function NodeEditor({
                 ...group,
                 arguments: [
                   ...group.arguments,
-                  { kind: "math" as const, oper: "+" as const, field: { kind: "field" as const, field: "" } },
+                  { kind: "field" as const, field: "" },
                 ],
               }
               : item),

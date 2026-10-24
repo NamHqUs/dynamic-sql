@@ -161,7 +161,7 @@ export default function FieldBuilder({
     />
   );
   const fieldBoxDebugModel: IFieldDefinition = debugOperator
-    ? { kind: "math", oper: debugOperator, field: { kind: "field", field: value } }
+    ? { kind: "field", field: value, oper: debugOperator }
     : debugModel ?? { kind: "field", field: value };
 
   if (!value || editMode || isEditing) {

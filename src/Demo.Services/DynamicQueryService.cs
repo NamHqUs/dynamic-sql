@@ -32,7 +32,7 @@ public sealed class DynamicQueryService(
 
         return new TableDataDto(
             Name: query.Entity,
-            Columns: string.Join(",", query.Projection.Select(field => field.Alias ?? field.Field.ToText())),
+            Columns: string.Join(",", query.Projection.Select(field => field.Alias ?? field.ToText())),
             Rows: result.Records.Select(row => string.Join(",", row.Select(value => value.Value))).ToArray(),
             Page: query.Page,
             PageSize: query.PageSize,

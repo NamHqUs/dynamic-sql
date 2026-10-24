@@ -3,98 +3,107 @@
   "Entity": "LabResults",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "TestName"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "TestName"
+        }
+      ],
       "alias": "TestName"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Visit.Diagnosis.Category"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Visit.Diagnosis.Category"
+        }
+      ],
       "alias": "DiagnosisCategory"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COUNT",
-        "arguments": []
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": []
+        }
+      ],
       "alias": "TestCount"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "SUM",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "IsAbnormal"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "IsAbnormal"
+            }
+          ]
+        }
+      ],
       "alias": "AbnormalCount"
     },
     {
-      "field": {
-        "kind": "group",
-        "operator": "/",
-        "arguments": [
-          {
-            "kind": "group",
-            "operator": "*",
-            "arguments": [
-              {
-                "kind": "value",
-                "value": 100
-              },
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "IsAbnormal"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "kind": "function",
-            "function": "COUNT",
-            "arguments": []
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "group",
+          "fields": [
+            {
+              "kind": "value",
+              "value": 100
+            },
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "IsAbnormal"
+                }
+              ],
+              "oper": "*"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [],
+          "oper": "/"
+        }
+      ],
       "alias": "AbnormalPercent"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "AVG",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "ResultValue"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "AVG",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "ResultValue"
+            }
+          ]
+        }
+      ],
       "alias": "AverageResult"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "AVG",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "ReferenceMax"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "AVG",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "ReferenceMax"
+            }
+          ]
+        }
+      ],
       "alias": "AverageReferenceMaximum"
     }
   ],

@@ -21,6 +21,6 @@ internal class ProjectionDefinitionParser
         var separatorIndex = text.IndexOf('|');
         var fieldText = separatorIndex < 0 ? text.Trim() : text[..separatorIndex].Trim();
         var alias = separatorIndex < 0 ? null : text[(separatorIndex + 1)..].Trim();
-        return new ProjectionDefinition(FieldDefinitionParser.Parse(fieldText), alias);
+        return new ProjectionDefinition(FieldDefinitionParser.ParseExpression(fieldText), alias);
     }
 }

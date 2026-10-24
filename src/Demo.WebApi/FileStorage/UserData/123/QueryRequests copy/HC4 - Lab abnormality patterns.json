@@ -1,0 +1,155 @@
+{
+  "Name": "HC4 - Lab abnormality patterns",
+  "Entity": "LabResults",
+  "Projection": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "TestName"
+      },
+      "alias": "TestName"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Visit.Diagnosis.Category"
+      },
+      "alias": "DiagnosisCategory"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "COUNT",
+        "arguments": []
+      },
+      "alias": "TestCount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "IsAbnormal"
+          }
+        ]
+      },
+      "alias": "AbnormalCount"
+    },
+    {
+      "field": {
+        "kind": "group",
+        "operator": "/",
+        "arguments": [
+          {
+            "kind": "group",
+            "operator": "*",
+            "arguments": [
+              {
+                "kind": "value",
+                "value": 100
+              },
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "IsAbnormal"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": []
+          }
+        ]
+      },
+      "alias": "AbnormalPercent"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "AVG",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "ResultValue"
+          }
+        ]
+      },
+      "alias": "AverageResult"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "AVG",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "ReferenceMax"
+          }
+        ]
+      },
+      "alias": "AverageReferenceMaximum"
+    }
+  ],
+  "Filters": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": null,
+        "left": {
+          "kind": "field",
+          "field": "Visit.Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Completed"
+        },
+        "parameterized": true
+      },
+      {
+        "logicalOperator": null,
+        "left": {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": []
+        },
+        "operation": 6,
+        "right": {
+          "kind": "value",
+          "value": 5
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "Sorts": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "AbnormalPercent"
+        },
+        "direction": 1
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "TestCount"
+        },
+        "direction": 1
+      }
+    ]
+  ],
+  "Page": 1,
+  "PageSize": 10,
+  "IsBuiltin": false,
+  "Relations": []
+}

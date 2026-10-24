@@ -6,12 +6,16 @@ namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
 [JsonConverter(typeof(ProjectionDefinitionJsonConverter))]
-public sealed record ProjectionDefinition(IFieldDefinition Field, string? Alias = null)
+public sealed record ProjectionDefinition(IFieldDefinition[] Fields, string? Alias = null)
 {
     public const string NewLineAlias = "NEW_LINE";
 
     public bool IsNewLine
         => string.Equals(Alias, NewLineAlias, StringComparison.OrdinalIgnoreCase);
 
-    public string ToText() => Alias is null ? Field.ToText() : $"{Field.ToText()} | {Alias}";
+    public string ToText()
+    {
+        var expression = FieldDefinitionText.Format(Fields);
+        return Alias is null ? expression : $"{expression} | {Alias}";
+    }
 }

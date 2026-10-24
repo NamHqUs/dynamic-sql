@@ -299,7 +299,7 @@ public sealed class _16_QueryExpressionTests
             Projection =
             [
                 new ProjectionDefinition(
-                    QueryDefinitionParser.ParseField("Id + CostPrice + Id - CostPrice"),
+                    QueryDefinitionParser.ParseExpression("Id + CostPrice + Id - CostPrice"),
                     "Calculated")
             ]
         };
@@ -322,19 +322,18 @@ public sealed class _16_QueryExpressionTests
             Projection =
             [
                 new ProjectionDefinition(
-                    QueryDefinitionParser.ParseField("Id + CostPrice * Id - CostPrice"),
+                    QueryDefinitionParser.ParseExpression("Id + CostPrice * Id - CostPrice"),
                     "Calculated")
             ]
         };
         var serialized = JsonSerializer.Serialize(definition, options);
         var roundTripped = JsonSerializer.Deserialize<QueryDefinition>(serialized, options)
             ?? throw new InvalidOperationException("The serialized query request did not produce a definition.");
-        var group = (GroupFieldDefintion)roundTripped.Projection[0].Field;
-        Assert.That(group.Fields[1], Is.InstanceOf<GroupFieldDefintion>());
-        Assert.That(group.Fields[1], Is.Not.InstanceOf<MathFieldDefinition>());
-        Assert.That(group.Fields[2], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Subtract,
-            new FieldDefinition("CostPrice"))));
+        var fields = roundTripped.Projection[0].Fields;
+        Assert.That(fields, Has.Length.EqualTo(4));
+        Assert.That(fields[1], Is.EqualTo(new FieldDefinition("CostPrice")));
+        Assert.That(fields[2], Is.EqualTo(new FieldDefinition(MatchOperation.Multiply, "Id")));
+        Assert.That(fields[3], Is.EqualTo(new FieldDefinition(MatchOperation.Subtract, "CostPrice")));
 
         var sql = db.Query(roundTripped).ToSql();
 
@@ -345,7 +344,7 @@ public sealed class _16_QueryExpressionTests
     [Test]
     public void ProjectionSerializationPreservesOriginalStructureAndNamingPolicy()
     {
-        var projection = new ProjectionDefinition(new FieldDefinition("Name"), "ProductName");
+        var projection = new ProjectionDefinition([new FieldDefinition("Name")], "ProductName");
 
         var defaultJson = JsonSerializer.Serialize(projection);
         var webJson = JsonSerializer.Serialize(
@@ -353,25 +352,28 @@ public sealed class _16_QueryExpressionTests
             new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
         Assert.That(defaultJson, Is.EqualTo(
-            """{"Field":{"kind":"field","field":"Name"},"Alias":"ProductName"}"""));
+            """{"Fields":[{"kind":"field","field":"Name"}],"Alias":"ProductName"}"""));
         Assert.That(webJson, Is.EqualTo(
-            """{"field":{"kind":"field","field":"Name"},"alias":"ProductName"}"""));
+            """{"fields":[{"kind":"field","field":"Name"}],"alias":"ProductName"}"""));
     }
 
     [Test]
-    public void MathFieldSerializationUsesItsRawStructure()
+    public void ProjectionSerializationStoresOperatorsOnFields()
     {
         var projection = new ProjectionDefinition(
-            new MathFieldDefinition(MatchOperation.Multiply, new FieldDefinition("CostPrice")),
+            [
+                new FieldDefinition("CostPrice"),
+                new ConstFieldDefinition(MatchOperation.Multiply, 2)
+            ],
             "Calculated");
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
         var serialized = JsonSerializer.Serialize(projection, options);
 
         Assert.That(serialized, Is.EqualTo(
-            """{"field":{"oper":2,"field":{"kind":"field","field":"CostPrice"}},"alias":"Calculated"}"""));
+            """{"fields":[{"kind":"field","field":"CostPrice"},{"oper":"*","kind":"value","value":2}],"alias":"Calculated"}"""));
         var roundTripped = JsonSerializer.Deserialize<ProjectionDefinition>(serialized, options);
-        Assert.That(roundTripped, Is.EqualTo(projection));
+        Assert.That(roundTripped?.ToText(), Is.EqualTo(projection.ToText()));
     }
 
     [Test]
@@ -418,9 +420,9 @@ public sealed class _16_QueryExpressionTests
             Projection =
             [
                 new ProjectionDefinition(
-                    new FunctionFieldDefinition(
+                    [new FunctionFieldDefinition(
                         "RANDOM_SQL",
-                        [new ConstFieldDefinition(1)]),
+                        [new ConstFieldDefinition(1)])],
                     "Unsafe")
             ]
         };

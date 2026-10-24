@@ -25,15 +25,15 @@ internal class _33_DemoTest : TestBase
         {
             Entity = "Invoices",
             Projection = [
-                new (new FieldDefinition("InvoiceNumber")),
-                new (new FieldDefinition("Customer.Name"), "Name"),
-                new (new FieldDefinition("InvoiceDate")),
-                new (new FieldDefinition("DueDate")),
-                new (new FieldDefinition("TotalAmount")),
-                new (new FunctionFieldDefinition("DateSub", [
+                new ([new FieldDefinition("InvoiceNumber")]),
+                new ([new FieldDefinition("Customer.Name")], "Name"),
+                new ([new FieldDefinition("InvoiceDate")]),
+                new ([new FieldDefinition("DueDate")]),
+                new ([new FieldDefinition("TotalAmount")]),
+                new ([new FunctionFieldDefinition("DateSub", [
                     new FieldDefinition("DueDate"),
                     new FunctionFieldDefinition("GETDATE", []),
-                    ]), "DaysOverdue")
+                    ])], "DaysOverdue")
                 ],
             Filter = new FilterDefinition(
                 LogicalOperator.And,

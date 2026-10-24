@@ -3,71 +3,85 @@
   "Entity": "Claims",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Policy.Plan.Tier"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policy.Plan.Tier"
+        }
+      ],
       "alias": "Tier"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Policy.Plan.Name"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policy.Plan.Name"
+        }
+      ],
       "alias": "Plan"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "DenialReason"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "DenialReason"
+        }
+      ],
       "alias": "DenialReason"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COUNT",
-        "arguments": []
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": []
+        }
+      ],
       "alias": "DeniedClaims"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "SUM",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "BilledAmount"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "BilledAmount"
+            }
+          ]
+        }
+      ],
       "alias": "BilledAmount"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "SUM",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "AllowedAmount"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "AllowedAmount"
+            }
+          ]
+        }
+      ],
       "alias": "AllowedAmount"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "AVG",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "BilledAmount"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "AVG",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "BilledAmount"
+            }
+          ]
+        }
+      ],
       "alias": "AverageBilledAmount"
     }
   ],

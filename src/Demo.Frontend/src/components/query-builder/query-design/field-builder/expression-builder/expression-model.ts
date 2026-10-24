@@ -54,16 +54,14 @@ export function createExpression(kind: ExpressionNodeKind, functions: FunctionDe
         kind: "group",
         arguments: [
           { kind: "field", field: "" },
-          { kind: "math", oper: "+", field: { kind: "field", field: "" } },
+          { kind: "field", field: "" },
         ],
       };
   }
 }
 
 export function withOperation(expression: IFieldDefinition, oper: MatchOperation): IFieldDefinition {
-  if (expression.kind === "group") return { ...expression, operator: oper };
-  if (expression.kind === "math") return { ...expression, oper };
-  return { kind: "math", oper, field: expression };
+  return { ...expression, oper };
 }
 
 export function isExpressionGroup(
@@ -195,8 +193,8 @@ function removeExpressionNodeAtPath(
 
 function normalizeFirstGroupArgument(argumentsList: IFieldDefinition[]): IFieldDefinition[] {
   const firstArgument = argumentsList[0];
-  return firstArgument?.kind === "math"
-    ? [firstArgument.field, ...argumentsList.slice(1)]
+  return firstArgument?.oper
+    ? [{ ...firstArgument, oper: undefined }, ...argumentsList.slice(1)]
     : argumentsList;
 }
 
@@ -206,20 +204,11 @@ function normalizeGroupArguments(
 ): IFieldDefinition {
   if (argumentsList.length === 1) {
     const onlyArgument = argumentsList[0]!;
-    if (onlyArgument.kind === "math") return onlyArgument;
-    if (onlyArgument.kind === "field" && group.operator)
-      return { kind: "math", oper: group.operator, field: onlyArgument };
+    return { ...onlyArgument, oper: group.oper ?? onlyArgument.oper };
   }
-  const normalizedArguments = normalizeFirstGroupArgument(argumentsList);
-  if (normalizedArguments.length === 1 && normalizedArguments[0]?.kind === "field")
-    return normalizedArguments[0];
-  const firstArgument = argumentsList[0];
   return {
     ...group,
-    ...(firstArgument?.kind === "math" && !group.operator
-      ? { operator: firstArgument.oper }
-      : {}),
-    arguments: normalizedArguments,
+    arguments: normalizeFirstGroupArgument(argumentsList),
   };
 }
 
@@ -276,12 +265,6 @@ export function normalizeExpressionTree(expression: IFieldDefinition): IFieldDef
       ),
     };
   }
-  if (expression.kind === "math") {
-    return {
-      ...expression,
-      field: normalizeExpressionTree(expression.field) ?? { kind: "field", field: "" },
-    };
-  }
   return expression;
 }
 
@@ -289,12 +272,7 @@ export function setExpressionOperation(
   expression: IFieldDefinition,
   operation: MatchOperation | null,
 ): IFieldDefinition {
-  if (isExpressionGroup(expression)) return { ...expression, operator: operation ?? undefined };
-  if (expression.kind === "math") {
-    return operation ? { ...expression, oper: operation } : expression.field;
-  }
-  if (!operation) return expression;
-  return { kind: "math", oper: operation, field: expression };
+  return { ...expression, oper: operation ?? undefined };
 }
 
 export function isSameExpressionPath(first: ExpressionPath, second: ExpressionPath): boolean {
@@ -359,33 +337,29 @@ export function updateFunction(
 }
 
 export function formatExpression(expression: IFieldDefinition): string {
-  const formatOperand = (operand: IFieldDefinition) => operand.kind === "group"
-    ? `(${formatExpression(operand)})`
-    : formatExpression(operand);
-
+  const formatOperand = (operand: IFieldDefinition) => {
+    const text = formatExpression({ ...operand, oper: undefined });
+    return operand.kind === "group" ? `(${text})` : text;
+  };
+  let text: string;
   switch (expression.kind) {
     case "field":
-      return expression.field || "Select field";
+      text = expression.field || "Select field";
+      break;
     case "value":
-      return `<${String(expression.value ?? "")}>`;
-    case "math":
-      return `${expression.oper} ${formatOperand(expression.field)}`;
+      text = `<${String(expression.value ?? "")}>`;
+      break;
     case "group":
       return expression.arguments.map((argument, index) => {
-        if (index === 0)
-          return formatOperand(argument.kind === "math" ? argument.field : argument);
-        if (argument.kind === "math")
-          return `${argument.oper} ${formatOperand(argument.field)}`;
-        const operation = argument.kind === "group"
-          ? argument.operator ?? expression.operator ?? "+"
-          : expression.operator ?? "+";
-        return `${operation} ${formatOperand(argument)}`;
+        const operation = index === 0 ? undefined : argument.oper ?? "+";
+        return `${operation ? `${operation} ` : ""}${formatOperand(argument)}`;
       }).join(" ");
+      break;
     case "function":
-      return `${expression.function || "Choose function"}(${expression.arguments.map((argument) =>
-        argument.kind === "group" ? formatExpression(argument) : formatOperand(argument),
-      ).join(", ")})`;
+      text = `${expression.function || "Choose function"}(${expression.arguments.map(formatExpression).join(", ")})`;
+      break;
   }
+  return expression.oper && expression.oper !== "+" ? `${expression.oper} ${text}` : text;
 }
 
 export function getExpressionError(expression: IFieldDefinition): string | null {
@@ -394,10 +368,6 @@ export function getExpressionError(expression: IFieldDefinition): string | null 
       return expression.field.trim() ? null : "Choose a field for each field term.";
     case "value":
       return null;
-    case "math":
-      return expression.field.kind === "math"
-        ? "Choose a field, constant, or function as the operation operand."
-        : getExpressionError(expression.field);
     case "function":
       if (!expression.function) return "Choose a function.";
       for (const argument of expression.arguments) {
@@ -416,13 +386,9 @@ export function getExpressionError(expression: IFieldDefinition): string | null 
 }
 
 export function getGroupArgumentOperator(
-  expression: Extract<IFieldDefinition, { kind: "group" }>,
   argument: IFieldDefinition,
   index: number,
 ): MatchOperation | null {
   if (index === 0) return null;
-  if (argument.kind === "math") return argument.oper;
-  return argument.kind === "group"
-    ? argument.operator ?? expression.operator ?? "+"
-    : expression.operator ?? "+";
+  return argument.oper ?? "+";
 }

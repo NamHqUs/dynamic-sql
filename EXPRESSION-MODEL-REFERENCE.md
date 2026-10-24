@@ -1,198 +1,126 @@
 # Expression Model JSON Reference
 
-This document records the canonical JSON shape used when serializing backend
-projection expressions. It is distinct from the frontend's TypeScript
-`IFieldDefinition` type; do not infer the wire format from that type alone.
+This document records the canonical JSON shape for backend projection
+expressions. A projection expression is a flat `fields` array; there is no
+root group and no `math` wrapper. This differs from the frontend TypeScript
+expression type.
 
 The backend serializer is
-[`ProjectionDefinitionJsonConverter.WriteField`](./src/Namh.Data.DynamicSql/Contracts/QueryDefinitions/Parsers/ProjectionDefinitionJsonConverter.cs).
-The fixture below is also covered by
-[`SubGroups_JsonDeserialize`](./src/Namh.Data.DynamicSql.Test/UnitTest/40.QueryDefintionTest.cs).
+[`ProjectionDefinitionJsonConverter`](./src/Namh.Data.DynamicSql/Contracts/QueryDefinitions/Parsers/ProjectionDefinitionJsonConverter.cs).
+The format is covered by
+[`ProjectionJsonWritesOperatorOnEachExpressionNode`](./src/Namh.Data.DynamicSql.Test/UnitTest/40.QueryDefintionTest.cs).
 
-## Group and operator shape
+## Nodes and operators
 
-- A root group is written with an enum-name `oper`, `kind: "group"`, and
-  `fields`.
-- A nested group is written with `kind: "group"` and `arguments`; a non-add
-  group operation is written as the symbol-valued `operator` property.
-- A math term is written with an enum-name `oper`, `kind: "math"`, and a
-  math-compatible `field`. Its `field` is not a group, and math nodes do not
-  have an `arguments` property.
-- A constant such as `<3>` is represented by a `value` node with numeric
-  `value: 3`.
+- Each field, value, function, or group node has an `oper` property in the
+  model. JSON omits `oper` for the default `Add` operator and writes the
+  operator symbol (for example, `"-"` or `"*"`) when it is not `Add`.
+- A projection contains a `fields` array. The operator on each later item
+  connects it to the preceding expression item.
+- A group node has its own `oper` for how the group participates in its
+  containing expression, and a `fields` array for the group's contents.
+- Function arguments remain an array. An arithmetic argument is represented
+  by a group; a single field or value is represented directly.
+- Constants use `kind: "value"` and a scalar `value`.
 
-The enum names shown here (for example, `"Add"` and `"Subtract"`) require
-`JsonStringEnumConverter` in the serializer options. The nested group's
-`operator` remains a symbol (for example, `"-"`).
+## Flat expression
 
-## Example
-
-The canonical JSON for `A - B * (C - D) / E + <3>` is:
+`A + B - <3>` is represented without a root group or math wrappers:
 
 ```json
 {
-  "oper": "Add",
-  "kind": "group",
   "fields": [
-    {
-      "kind": "field",
-      "field": "A"
-    },
-    {
-      "kind": "group",
-      "operator": "-",
-      "arguments": [
-        {
-          "kind": "field",
-          "field": "B"
-        },
-        {
-          "kind": "group",
-          "operator": "*",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "C"
-            },
-            {
-              "oper": "Subtract",
-              "kind": "math",
-              "field": {
-                "kind": "field",
-                "field": "D"
-              }
-            }
-          ]
-        },
-        {
-          "oper": "Divide",
-          "kind": "math",
-          "field": {
-            "kind": "field",
-            "field": "E"
-          }
-        }
-      ]
-    },
-    {
-      "oper": "Add",
-      "kind": "math",
-      "field": {
-        "kind": "value",
-        "value": 3
-      }
-    }
-  ]
+    { "kind": "field", "field": "A" },
+    { "kind": "field", "field": "B" },
+    { "oper": "-", "kind": "value", "value": 3 }
+  ],
+  "alias": null
 }
 ```
 
-The outer group is additive: its second field is a subtractive group and its
-third field is an explicit add term. Inside the subtractive group, the nested
-multiplicative group keeps `C - D` together, while the divide term remains
-separate. This nesting preserves operator precedence and parentheses.
+## Parenthesized expression
 
-## Function calls with parenthesized arithmetic
-
-For the query-builder expression `A + (Round(B, <2>) * (B - <1>) - C) + <4>`,
-preserve the nested groups and operand kinds as shown below:
+For `A * (B - C + D) / <2>`, the grouped term is a node in the projection
+list. Its operation is multiplication; the operators inside its `fields`
+array describe `B - C + D`:
 
 ```json
 {
-  "oper": "Add",
-  "kind": "group",
+  "fields": [
+    { "kind": "field", "field": "A" },
+    {
+      "oper": "*",
+      "kind": "group",
+      "fields": [
+        { "kind": "field", "field": "B" },
+        { "oper": "-", "kind": "field", "field": "C" },
+        { "kind": "field", "field": "D" }
+      ]
+    },
+    { "oper": "/", "kind": "value", "value": 2 }
+  ],
+  "alias": null
+}
+```
+
+The query compiler applies normal arithmetic precedence to flat terms and
+retains parentheses through nested groups.
+
+## Function arguments
+
+`Round(A + B, <2>)` stores its arithmetic first argument as a group and the
+constant second argument directly:
+
+```json
+{
   "fields": [
     {
-      "kind": "field",
-      "field": "A"
-    },
-    {
-      "kind": "group",
+      "kind": "function",
+      "function": "Round",
       "arguments": [
         {
           "kind": "group",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "Round",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "B"
-                },
-                {
-                  "kind": "value",
-                  "value": 2
-                }
-              ]
-            },
-            {
-              "kind": "group",
-              "operator": "*",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "B"
-                },
-                {
-                  "oper": "Subtract",
-                  "kind": "math",
-                  "field": {
-                    "kind": "value",
-                    "value": 1
-                  }
-                }
-              ]
-            }
+          "fields": [
+            { "kind": "field", "field": "A" },
+            { "kind": "field", "field": "B" }
           ]
         },
-        {
-          "oper": "Subtract",
-          "kind": "math",
-          "field": {
-            "kind": "field",
-            "field": "C"
-          }
-        }
+        { "kind": "value", "value": 2 }
       ]
-    },
-    {
-      "oper": "Add",
-      "kind": "math",
-      "field": {
-        "kind": "value",
-        "value": 4
-      }
     }
-  ]
+  ],
+  "alias": null
 }
 ```
 
-Angle brackets mark numeric constants, so `<2>`, `<1>`, and `<4>` are all
-represented as `value` nodes. Preserve the inner additive group around the
-`Round` call and multiplication group, and represent `- C` as a separate
-subtractive math term. Flattening these groups or moving operators changes
-the expression structure.
-
-When `+ G * F` follows another term in a group, encode it as a nested
-additive group. Keep the multiplication as a math term inside that group's
-`arguments`; do not put a group in a math node's `field`:
+For `5 - (A - B) * (C - D)`, the two parenthesized operands are sibling
+groups, each carrying its operator in the containing list:
 
 ```json
 {
-  "kind": "group",
-  "arguments": [
+  "fields": [
+    { "kind": "value", "value": 5 },
     {
-      "kind": "field",
-      "field": "G"
+      "oper": "-",
+      "kind": "group",
+      "fields": [
+        { "kind": "field", "field": "A" },
+        { "oper": "-", "kind": "field", "field": "B" }
+      ]
     },
     {
-      "oper": "Multiply",
-      "kind": "math",
-      "field": {
-        "kind": "field",
-        "field": "F"
-      }
+      "oper": "*",
+      "kind": "group",
+      "fields": [
+        { "kind": "field", "field": "C" },
+        { "oper": "-", "kind": "field", "field": "D" }
+      ]
     }
-  ]
+  ],
+  "alias": null
 }
 ```
+
+The reader continues to accept legacy projection objects that contain a
+singular `field` and legacy `math` nodes. Serialization always writes the
+canonical `fields` array and stores operators directly on expression nodes.

@@ -69,7 +69,7 @@ public sealed class _24_FunctionMetadataTests
             new GroupFieldDefintion(
             [
                 new FieldDefinition("Amount"),
-                new MathFieldDefinition(MatchOperation.Add, new ConstFieldDefinition(3))
+                new ConstFieldDefinition(3)
             ])
         ]);
 
@@ -274,8 +274,8 @@ public sealed class _24_FunctionMetadataTests
                 Projection =
                 [
                     new ProjectionDefinition(
-                        new FunctionFieldDefinition(functionName,
-                            [new FieldDefinition("InvoiceDate"), new ConstFieldDefinition(1)]),
+                        [new FunctionFieldDefinition(functionName,
+                            [new FieldDefinition("InvoiceDate"), new ConstFieldDefinition(1)])],
                         "Result")
                 ]
             }).ToList().Single();
@@ -369,7 +369,7 @@ public sealed class _24_FunctionMetadataTests
         return context.Query(new QueryDefinition
         {
             Entity = "Items",
-            Projection = [new ProjectionDefinition(expression, "Result")]
+            Projection = [new ProjectionDefinition([expression], "Result")]
         }).ToSql();
     }
 

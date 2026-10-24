@@ -17,23 +17,45 @@ internal static class FieldDefinitionParser
                 .Where(argument => !string.IsNullOrWhiteSpace(argument))
                 .Select(argument => LooksLikePredicateExpression(argument)
                     ? new FieldDefinition(argument)
-                    : Parse(argument))
+                    : ParseArgument(argument))
                 .ToArray();
             return new FunctionFieldDefinition(text[..opening].Trim(), arguments);
         }
 
         if (IsWrappedBy(text, '(', ')'))
         {
-            return ParseSequence(text[1..^1]);
+            return new GroupFieldDefintion(ParseExpression(text[1..^1]));
         }
 
-        if (text[0] == '<' && text[^1] == '>')
+        if (IsWrappedBy(text, '<', '>'))
         {
             var value = text[1..^1];
             return new ConstFieldDefinition(ParseConstant(value));
         }
 
         return ParseSequence(text);
+    }
+
+    public static IFieldDefinition[] ParseExpression(string text)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        text = text.Trim();
+
+        if (IsWrappedBy(text, '(', ')'))
+            return ParseExpression(text[1..^1]);
+        if (TryGetFunctionCall(text, out _) || IsWrappedBy(text, '<', '>'))
+            return [Parse(text)];
+
+        return ParseSequenceFields(text);
+    }
+
+    private static IFieldDefinition ParseArgument(string text)
+    {
+        if (IsWrappedBy(text, '(', ')'))
+            return new GroupFieldDefintion(ParseExpression(text[1..^1]));
+
+        var fields = ParseExpression(text);
+        return fields.Length == 1 ? fields[0] : new GroupFieldDefintion(fields);
     }
 
     private static bool TryGetFunctionCall(string text, out int opening)
@@ -105,64 +127,36 @@ internal static class FieldDefinitionParser
 
     private static IFieldDefinition ParseSequence(string text)
     {
+        var fields = ParseSequenceFields(text);
+        return fields.Length == 1 ? fields[0] : new GroupFieldDefintion(fields);
+    }
+
+    private static IFieldDefinition[] ParseSequenceFields(string text)
+    {
         var parts = SplitBinaryOperators(text);
         if (parts.Count == 1)
-            return ParseAtom(parts[0]);
+            return [ParseAtom(parts[0])];
 
-        var additiveOperators = new List<int>();
+        var fields = new List<IFieldDefinition> { ParseAtom(parts[0]) };
         for (var index = 1; index < parts.Count; index += 2)
         {
             var operation = MatchOperationExtensions.ParseArithmetic(parts[index]);
-            if (operation is MatchOperation.Add or MatchOperation.Subtract)
-                additiveOperators.Add(index);
-        }
-
-        if (additiveOperators.Count == 0)
-            return ParseMultiplicativeSequence(parts, 0, parts.Count);
-
-        var fields = new List<IFieldDefinition>
-        {
-            ParseMultiplicativeSequence(parts, 0, additiveOperators[0])
-        };
-        for (var index = 0; index < additiveOperators.Count; index++)
-        {
-            var operatorIndex = additiveOperators[index];
-            var termEnd = index + 1 < additiveOperators.Count
-                ? additiveOperators[index + 1]
-                : parts.Count;
-            var operation = MatchOperationExtensions.ParseArithmetic(parts[operatorIndex]);
-            var operand = ParseMultiplicativeSequence(parts, operatorIndex + 1, termEnd);
-            fields.Add(operand is GroupFieldDefintion group
-                ? group with { Oper = operation }
-                : operand is IMathFieldDefinition mathOperand
-                    ? new MathFieldDefinition(operation, mathOperand)
-                    : throw new FormatException("A mathematical operator requires a math-compatible operand."));
-        }
-
-        return new GroupFieldDefintion(MatchOperation.Add, fields.ToArray());
-    }
-
-    private static IFieldDefinition ParseMultiplicativeSequence(
-        IReadOnlyList<string> parts,
-        int start,
-        int end)
-    {
-        var fields = new List<IFieldDefinition> { ParseAtom(parts[start]) };
-        for (var index = start + 1; index < end; index += 2)
-        {
-            var operation = MatchOperationExtensions.ParseArithmetic(parts[index]);
             var operand = ParseAtom(parts[index + 1]);
-            fields.Add(operand is GroupFieldDefintion group
-                ? group with { Oper = operation }
-                : operand is IMathFieldDefinition mathOperand
-                    ? new MathFieldDefinition(operation, mathOperand)
-                    : throw new FormatException("A mathematical operator requires a math-compatible operand."));
+            fields.Add(WithOperation(operand, operation));
         }
 
-        return fields.Count == 1
-            ? fields[0]
-            : new GroupFieldDefintion(MatchOperation.Add, fields.ToArray());
+        return fields.ToArray();
     }
+
+    private static IFieldDefinition WithOperation(IFieldDefinition field, MatchOperation operation)
+        => field switch
+        {
+            FieldDefinition value => value with { Oper = operation },
+            ConstFieldDefinition value => value with { Oper = operation },
+            FunctionFieldDefinition value => value with { Oper = operation },
+            GroupFieldDefintion value => value with { Oper = operation },
+            _ => throw new FormatException("A mathematical operator requires a supported field expression.")
+        };
 
     private static IFieldDefinition ParseAtom(string text)
     {
@@ -173,7 +167,7 @@ internal static class FieldDefinitionParser
         }
 
         if (IsWrappedBy(text, '(', ')') ||
-            (text[0] == '<' && text[^1] == '>') ||
+            IsWrappedBy(text, '<', '>') ||
             TryGetFunctionCall(text, out _))
         {
             return Parse(text);

@@ -36,7 +36,7 @@ internal sealed class DefinedData
         if (isExisted != 1)
         {
             StringBuilder sb = new("ATTACH DATABASE ':memory:' AS dbo;");
-            sb.Append(LoadScript("test-data.sqlite.sql", "sale-demo.sqlite.sql"));
+            sb.Append(LoadScript("unit-test.sqlite.sql", "sale-demo.sqlite.sql"));
             ExecuteNonQuery(cn, sb.ToString());
         }
 
@@ -50,7 +50,7 @@ internal sealed class DefinedData
 
         var isExisted = ExecuteScalar<int>(cn, "SELECT IIF(OBJECT_ID('dbo.[User]', 'U') IS NOT NULL, 1, 0);");
         if(isExisted != 1)
-            ExecuteNonQuery(cn, LoadScript("test-data.sqlserver.sql", "sale-demo.sqlserver.sql"));
+            ExecuteNonQuery(cn, LoadScript("unit-test.sqlserver.sql", "sale-demo.sqlserver.sql"));
         return cn;
     }
 
@@ -67,7 +67,7 @@ internal sealed class DefinedData
                 "WHERE table_schema = 'public' AND table_name = 'User');");
 
             if (!isExisted)
-                ExecuteNonQuery(cn, LoadScript("test-data.postgres.sql", "sale-demo.postgres.sql"));
+                ExecuteNonQuery(cn, LoadScript("unit-test.postgres.sql", "sale-demo.postgres.sql"));
         }
 
         return cn;

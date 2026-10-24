@@ -37,17 +37,13 @@ export type MetadataEntity = {
   rawSql?: string;
 };
 
-export type IFieldDefinition =
-  | IMathFieldDefinition
-  | { kind: "group"; operator?: MatchOperation; arguments: IFieldDefinition[] };
-
-export type IMathFieldDefinition =
-  | { kind: "field"; field: string }
-  | { kind: "value"; value: unknown }
-  | { kind: "math"; oper: MatchOperation; field: IFieldDefinition }
-  | { kind: "function"; function: string; arguments: IFieldDefinition[] };
-
 export type MatchOperation = "+" | "-" | "*" | "/" | "%" | "&" | "|";
+
+export type IFieldDefinition =
+  | { kind: "field"; field: string; oper?: MatchOperation }
+  | { kind: "value"; value: unknown; oper?: MatchOperation }
+  | { kind: "group"; arguments: IFieldDefinition[]; oper?: MatchOperation }
+  | { kind: "function"; function: string; arguments: IFieldDefinition[]; oper?: MatchOperation };
 
 export type QueryColumn = {
   field: string;
@@ -108,8 +104,18 @@ export type QueryDefinition = {
 export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns" | "projectionRows" | "filterPlanText"> & {
   filter: ApiQueryFilterGroup | null;
   sorts: { field: string | IFieldDefinition; direction: number }[];
-  projection: { field: IFieldDefinition; alias: string | null }[];
+  projection: ApiProjectionDefinition[];
 };
+
+export type ApiProjectionNode =
+  | { kind: "field"; field: string; oper?: MatchOperation }
+  | { kind: "value"; value: unknown; oper?: MatchOperation }
+  | { kind: "group"; fields: ApiProjectionNode[]; oper?: MatchOperation }
+  | { kind: "function"; function: string; arguments: ApiProjectionNode[]; oper?: MatchOperation };
+
+export type ApiProjectionDefinition =
+  | { fields: ApiProjectionNode[]; alias: string | null }
+  | { field: IFieldDefinition; alias: string | null };
 
 export type ReportDto = {
   fileName: string;
@@ -133,7 +139,7 @@ type ApiSavedQueryRequestDto = {
   name: string;
   entity: string;
   relations: RelationDefinition[];
-  projection: { field: IFieldDefinition; alias: string | null }[];
+  projection: ApiProjectionDefinition[];
   filters: ApiQueryFilterGroup | null;
   sorts: { field: IFieldDefinition; direction: number }[][] | null;
   page: number | null;
@@ -210,7 +216,7 @@ export function createApiQuery(definition: QueryDefinition) {
   return {
     ...query,
     projection: columns.map(({ field, alias, expression }) => ({
-      field: expression ?? { kind: "field", field },
+      fields: toApiProjectionFields(expression ?? { kind: "field", field }),
       alias,
     })),
     page: noPaging ? null : query.page,
@@ -246,16 +252,18 @@ function normalizeFieldDefinition(value: unknown): IFieldDefinition | undefined 
   if (!value || typeof value !== "object" || !("kind" in value)) return undefined;
 
   switch (value.kind) {
-    case "field":
-      return "field" in value && typeof value.field === "string"
-        ? { kind: "field", field: value.field }
-        : undefined;
-    case "value":
-      return "value" in value ? { kind: "value", value: value.value } : undefined;
+    case "field": {
+      if (!("field" in value) || typeof value.field !== "string") return undefined;
+      return applyApiOperator({ kind: "field", field: value.field }, value);
+    }
+    case "value": {
+      if (!("value" in value)) return undefined;
+      return applyApiOperator({ kind: "value", value: value.value }, value);
+    }
     case "math": {
       const oper = "oper" in value ? normalizeMatchOperation(value.oper) : undefined;
       const field = "field" in value ? normalizeFieldDefinition(value.field) : undefined;
-      return oper && field && isMathFieldDefinition(field) ? { kind: "math", oper, field } : undefined;
+      return oper && field ? { ...field, oper } : undefined;
     }
     case "group": {
       const argumentsValue = "arguments" in value ? value.arguments : "fields" in value ? value.fields : undefined;
@@ -266,14 +274,18 @@ function normalizeFieldDefinition(value: unknown): IFieldDefinition | undefined 
         if (!normalizedArgument) return undefined;
         arguments_.push(normalizedArgument);
       }
-      const operatorValue = "operator" in value ? value.operator : "oper" in value ? value.oper : undefined;
+      const operatorValue = "operator" in value ? value.operator : undefined;
       const operator = operatorValue === undefined ? undefined : normalizeMatchOperation(operatorValue);
       if (operatorValue !== undefined && !operator) return undefined;
-      return {
+      const group: IFieldDefinition = {
         kind: "group",
-        ...(operator ? { operator } : {}),
-        arguments: arguments_,
+        arguments: arguments_.map((argument, index) =>
+          operator && index > 0 && argument.oper === undefined
+            ? { ...argument, oper: operator }
+            : argument,
+        ),
       };
+      return applyApiOperator(group, value);
     }
     case "function": {
       if (!("function" in value) || typeof value.function !== "string"
@@ -284,42 +296,79 @@ function normalizeFieldDefinition(value: unknown): IFieldDefinition | undefined 
         if (!normalizedArgument) return undefined;
         arguments_.push(normalizedArgument);
       }
-      return { kind: "function", function: value.function, arguments: arguments_ };
+      return applyApiOperator(
+        { kind: "function", function: value.function, arguments: arguments_ },
+        value,
+      );
     }
     default:
       return undefined;
   }
 }
 
-function isFieldDefinition(value: unknown): value is IFieldDefinition {
-  return normalizeFieldDefinition(value) !== undefined;
+function applyApiOperator(
+  expression: IFieldDefinition,
+  node: object,
+): IFieldDefinition | undefined {
+  if (!("oper" in node)) return expression;
+  const operation = normalizeMatchOperation(node.oper);
+  if (!operation) return undefined;
+  if (operation === "+") return expression;
+  return { ...expression, oper: operation };
 }
 
-function isMathFieldDefinition(value: unknown): value is IMathFieldDefinition {
-  if (!value || typeof value !== "object" || !("kind" in value)) return false;
-  switch (value.kind) {
+export function normalizeApiProjectionDefinition(
+  projection: ApiProjectionDefinition,
+): IFieldDefinition | undefined {
+  if ("field" in projection)
+    return normalizeFieldDefinition(projection.field);
+  if (!Array.isArray(projection.fields) || projection.fields.length === 0)
+    return undefined;
+
+  const fields = projection.fields.map(normalizeFieldDefinition);
+  if (fields.some((field) => !field)) return undefined;
+  const definitions = fields.filter((field): field is IFieldDefinition => field !== undefined);
+  return definitions.length === 1
+    ? definitions[0]
+    : { kind: "group", arguments: definitions };
+}
+
+function toApiProjectionFields(expression: IFieldDefinition): ApiProjectionNode[] {
+  if (expression.kind === "group" && (!expression.oper || expression.oper === "+"))
+    return expression.arguments.map((argument) => toApiProjectionNode(argument));
+  return [toApiProjectionNode(expression)];
+}
+
+function toApiProjectionNode(expression: IFieldDefinition): ApiProjectionNode {
+  let node: ApiProjectionNode;
+  switch (expression.kind) {
     case "field":
-      return "field" in value && typeof value.field === "string";
+      node = { kind: "field", field: expression.field };
+      break;
     case "value":
-      return "value" in value;
-    case "math":
-      return "oper" in value
-        && isMatchOperation(value.oper)
-        && "field" in value
-        && isMathFieldDefinition(value.field);
-    case "function":
-      return "function" in value
-        && typeof value.function === "string"
-        && "arguments" in value
-        && Array.isArray(value.arguments)
-        && value.arguments.every(isFieldDefinition);
+      node = { kind: "value", value: expression.value };
+      break;
     case "group":
-      return "arguments" in value
-        && Array.isArray(value.arguments)
-        && value.arguments.every(isFieldDefinition);
-    default:
-      return false;
+      node = {
+        kind: "group",
+        fields: expression.arguments.map(toApiProjectionNode),
+      };
+      break;
+    case "function":
+      node = {
+        kind: "function",
+        function: expression.function,
+        arguments: expression.arguments.map((argument) => toApiProjectionNode(argument)),
+      };
+      break;
   }
+  return expression.oper && expression.oper !== "+"
+    ? { ...node, oper: expression.oper }
+    : node;
+}
+
+function isFieldDefinition(value: unknown): value is IFieldDefinition {
+  return normalizeFieldDefinition(value) !== undefined;
 }
 
 function isMatchOperation(value: unknown): value is MatchOperation {
@@ -328,27 +377,29 @@ function isMatchOperation(value: unknown): value is MatchOperation {
 }
 
 function expressionToText(expression: IFieldDefinition): string {
-  const formatOperand = (operand: IFieldDefinition) => operand.kind === "group"
-    ? `(${expressionToText(operand)})`
-    : expressionToText(operand);
-
+  const formatOperand = (operand: IFieldDefinition): string => {
+    const text = expressionToText({ ...operand, oper: undefined });
+    return operand.kind === "group" ? `(${text})` : text;
+  };
+  let text: string;
   switch (expression.kind) {
     case "field":
-      return expression.field;
+      text = expression.field;
+      break;
     case "value":
-      return `<${String(expression.value ?? "")}>`;
-    case "math":
-      return `${expression.oper} ${formatOperand(expression.field)}`;
+      text = `<${String(expression.value ?? "")}>`;
+      break;
     case "group":
-      return expression.arguments.map((argument, index) => {
-        if (index === 0) return formatOperand(argument);
-        if (argument.kind === "math")
-          return `${argument.oper} ${formatOperand(argument.field)}`;
-        return `${expression.operator ?? "+"} ${formatOperand(argument)}`;
+      text = expression.arguments.map((argument, index) => {
+        const operation = index === 0 ? undefined : argument.oper ?? "+";
+        return `${operation ? `${operation} ` : ""}${formatOperand(argument)}`;
       }).join(" ");
+      break;
     case "function":
-      return `${expression.function}[${expression.arguments.map(expressionToText).join(", ")}]`;
+      text = `${expression.function}[${expression.arguments.map(expressionToText).join(", ")}]`;
+      break;
   }
+  return expression.oper && expression.oper !== "+" ? `${expression.oper} ${text}` : text;
 }
 
 function filterOperandToText(operand: ApiFilterOperand | string): string {
@@ -400,7 +451,7 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
     entity: query.entity,
     relations: query.relations ?? [],
     columns: query.projection.map((projection, index) => {
-      const expression = normalizeFieldDefinition(projection.field);
+      const expression = normalizeApiProjectionDefinition(projection);
       if (!expression) throw new Error("Query API returned an unsupported projection expression.");
       return {
       field: expression.kind === "field"
@@ -414,7 +465,7 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
       ? projectionRows.map((row) => [...row])
       : query.projection.length
       ? [query.projection.map((projection, index) => {
-        const expression = normalizeFieldDefinition(projection.field);
+        const expression = normalizeApiProjectionDefinition(projection);
         if (!expression) throw new Error("Query API returned an unsupported projection expression.");
         return expression.kind === "field"
           ? expression.field
@@ -448,8 +499,10 @@ function fromApiSavedRequest(request: ApiSavedQueryRequestDto): SavedQueryReques
     }
 
     fields.push(projection);
-    row.push(projection.field.kind === "field"
-      ? projection.field.field
+    const expression = normalizeApiProjectionDefinition(projection);
+    if (!expression) throw new Error("Query API returned an unsupported projection expression.");
+    row.push(expression.kind === "field"
+      ? expression.field
       : `__calculated__${projection.alias || index}`);
   });
   if (row.length) projectionRows.push(row);
@@ -490,7 +543,7 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition 
     ...row.map((field) => {
       const index = request.definition.columns.findIndex((candidate) => candidate.field === field);
       return apiQuery.projection[index] ?? {
-        field: { kind: "field" as const, field },
+        fields: [{ kind: "field" as const, field }],
         alias: null,
       };
     }),
@@ -788,7 +841,8 @@ export const fetchQueryRequests = createAsyncThunk(
         || !Array.isArray(item.projection)
         || item.projection.some((projection: unknown) => !projection
           || typeof projection !== "object"
-          || !("field" in projection)
+          || (!("field" in projection)
+            && (!("fields" in projection) || !Array.isArray(projection.fields)))
           || !("alias" in projection))
         || (item.filters !== null && (!item.filters
           || typeof item.filters !== "object"

@@ -3,119 +3,130 @@
   "Entity": "InsurancePlans",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Name"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Name"
+        }
+      ],
       "alias": "Plan"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Tier"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Tier"
+        }
+      ],
       "alias": "Tier"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Policies.Count()"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policies.Count()"
+        }
+      ],
       "alias": "PolicyCount"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COALESCE",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Policies.PremiumPayments.SumIf(Status = <Paid>, Amount)"
-          },
-          {
-            "kind": "value",
-            "value": 0
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COALESCE",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Policies.PremiumPayments.SumIf(Status = <Paid>, Amount)"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        }
+      ],
       "alias": "PremiumRevenue"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Policies.Claims.Count()"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policies.Claims.Count()"
+        }
+      ],
       "alias": "ClaimCount"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COALESCE",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Policies.Claims.Sum(PaidAmount)"
-          },
-          {
-            "kind": "value",
-            "value": 0
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COALESCE",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Policies.Claims.Sum(PaidAmount)"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        }
+      ],
       "alias": "ClaimsPaid"
     },
     {
-      "field": {
-        "kind": "group",
-        "operator": "/",
-        "arguments": [
-          {
-            "kind": "group",
-            "operator": "*",
-            "arguments": [
-              {
-                "kind": "value",
-                "value": 100
-              },
-              {
-                "kind": "function",
-                "function": "COALESCE",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Policies.Claims.Sum(PaidAmount)"
-                  },
-                  {
-                    "kind": "value",
-                    "value": 0
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "kind": "function",
-            "function": "NULLIF",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Policies.PremiumPayments.SumIf(Status = <Paid>, Amount)"
-              },
-              {
-                "kind": "value",
-                "value": 0
-              }
-            ]
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "group",
+          "fields": [
+            {
+              "kind": "value",
+              "value": 100
+            },
+            {
+              "kind": "function",
+              "function": "COALESCE",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Policies.Claims.Sum(PaidAmount)"
+                },
+                {
+                  "kind": "value",
+                  "value": 0
+                }
+              ],
+              "oper": "*"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "function": "NULLIF",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Policies.PremiumPayments.SumIf(Status = <Paid>, Amount)"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ],
+          "oper": "/"
+        }
+      ],
       "alias": "MedicalLossRatioPercent"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Policies.Claims.CountIf(Status = <Denied>)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policies.Claims.CountIf(Status = <Denied>)"
+        }
+      ],
       "alias": "DeniedClaims"
     }
   ],

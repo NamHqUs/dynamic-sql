@@ -7,58 +7,36 @@ namespace Namh.Data.DynamicSql;
 [JsonConverter(typeof(FieldDefinitionJsonConverter))]
 public interface IFieldDefinition
 {
-    string ToText(Dictionary<string, object>? tags = null);
+    MatchOperation Oper { get; }
+    string ToText();
 }
 
-public interface IMathFieldDefinition : IFieldDefinition { }
-
-public record FieldDefinition(string FieldName) : IMathFieldDefinition
+public record FieldDefinition(MatchOperation Oper , string FieldName) : IFieldDefinition
 {
-    public string ToText(Dictionary<string, object>? tags = null) => FieldName;
+    public FieldDefinition(string fieldName) : this(MatchOperation.Add, fieldName) { }
+    public string ToText() => FieldName;
 }
 
-public record ConstFieldDefinition(object? Value) : IMathFieldDefinition
+public record ConstFieldDefinition(MatchOperation Oper, object? Value) : IFieldDefinition
 {
-    public string ToText(Dictionary<string, object>? tags = null) => $"<{Value}>";
+    public ConstFieldDefinition(object? value) : this(MatchOperation.Add, value) { }
+    public string ToText() => $"<{Value}>";
 }
-public record MathFieldDefinition(MatchOperation Oper, IMathFieldDefinition Field) : IMathFieldDefinition
+public record FunctionFieldDefinition(MatchOperation Oper, string FunctionName, IFieldDefinition[] Arguments) : IFieldDefinition
 {
-    public string ToText(Dictionary<string, object>? tags = null) => $" {Oper.ToSymbol()} {Field.ToText(tags)}";
+    public FunctionFieldDefinition(string functionName, IFieldDefinition[] arguments) : this(MatchOperation.Add, functionName, arguments) { }
+    public string ToText() => $"{FunctionName}({string.Join(", ", Arguments.Select(argument =>
+        argument is GroupFieldDefintion group
+            ? FieldDefinitionText.Format(group.Fields)
+            : argument.ToText()))})";
 }
-public record FunctionFieldDefinition(string FunctionName, IFieldDefinition[] Arguments) : IMathFieldDefinition
+
+public record GroupFieldDefintion(MatchOperation Oper, IFieldDefinition[] Fields) : IFieldDefinition
 {
-    public string ToText(Dictionary<string, object>? tags = null) => $"{FunctionName}({string.Join(", ", Arguments.Select(a => a.ToText(tags)))})";
-}
-public record GroupFieldDefintion(MatchOperation Oper, IFieldDefinition[] Fields) : IMathFieldDefinition
-{
-    public GroupFieldDefintion(IFieldDefinition[] fields)
-        : this(MatchOperation.Add, fields)
-    {
-    }
+    public GroupFieldDefintion(IFieldDefinition[] fields)  : this(MatchOperation.Add, fields) {  }
 
-    public string ToText(Dictionary<string, object>? tags = null)
-    {
-        tags ??= [];
-
-        if (!tags.ContainsKey("group-level"))
-            tags["group-level"] = 0;
-
-        var level = (int)tags["group-level"];
-        tags["group-level"] = level + 1;
-
-        var text = string.Join("", Fields.Select((field, index) => field switch
-        {
-            MathFieldDefinition => field.ToText(tags),
-            GroupFieldDefintion nested when index > 0
-                => $" {nested.Oper.ToSymbol()} {nested.ToText(tags)}",
-            _ when index > 0 => $" {Oper.ToSymbol()} {field.ToText(tags)}",
-            _ => field.ToText(tags)
-        }));
-
-        tags["group-level"] = level;
-
-        return level == 0 ? text : $"({text})";
-    }
+    public string ToText()
+        => FieldDefinitionText.Format(Fields);
 }
 
 public enum MatchOperation
@@ -70,6 +48,16 @@ public enum MatchOperation
     Modulus,
     BitwiseAnd,
     BitwiseOr,
+}
+
+internal static class FieldDefinitionText
+{
+    public static string Format(IEnumerable<IFieldDefinition> fields)
+        => string.Join(" ", fields.Select((field, index) =>
+            $"{(index == 0 ? string.Empty : field.Oper.ToSymbol() + " ")}{FormatOperand(field)}"));
+
+    private static string FormatOperand(IFieldDefinition field)
+        => field is GroupFieldDefintion ? $"({field.ToText()})" : field.ToText();
 }
 
 internal static class MatchOperationExtensions

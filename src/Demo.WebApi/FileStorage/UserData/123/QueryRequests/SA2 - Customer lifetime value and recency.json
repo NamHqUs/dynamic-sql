@@ -3,59 +3,71 @@
   "Entity": "Persons",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Id"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
       "alias": "PersonId"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "CONCAT",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "FirstName"
-          },
-          {
-            "kind": "value",
-            "value": " "
-          },
-          {
-            "kind": "field",
-            "field": "LastName"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CONCAT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        }
+      ],
       "alias": "Customer"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "CustomerOrders.CountDistinctIf(Status = <Completed>, Id)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "CustomerOrders.CountDistinctIf(Status = <Completed>, Id)"
+        }
+      ],
       "alias": "OrderCount"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "CustomerOrders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "CustomerOrders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
+        }
+      ],
       "alias": "LifetimeValue"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "CustomerOrders.MaxIf(Status = <Completed>, OrderDate)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "CustomerOrders.MaxIf(Status = <Completed>, OrderDate)"
+        }
+      ],
       "alias": "LastOrderDate"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "CustomerOrders.CountDistinctIf(Status = <Completed>, Channel)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "CustomerOrders.CountDistinctIf(Status = <Completed>, Channel)"
+        }
+      ],
       "alias": "ChannelsUsed"
     }
   ],

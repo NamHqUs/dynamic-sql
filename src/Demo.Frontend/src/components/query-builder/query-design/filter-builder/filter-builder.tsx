@@ -722,7 +722,7 @@ type FilterRowProps = {
 
 function FilterRow({ filter, first, path, metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, entity, onChange, onRemove, onGroup, onAdd, onAddField, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
   const update = (changes: Partial<QueryFilterItem>) => onChange({ ...filter, ...changes });
-  const fieldDataType = filter.fieldExpression?.kind === "group" || filter.fieldExpression?.kind === "math"
+  const fieldDataType = filter.fieldExpression?.kind === "group"
     ? "Number"
     : getFilterFieldDataType(entity, metadata, filter.field);
   const operatorOptions = getOperatorOptions(operators, fieldDataType);

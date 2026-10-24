@@ -90,6 +90,53 @@ class QueryContext(
         };
     }
 
+    public SqlExpression ParseQueryExpression(TableExpression tableContext, IFieldDefinition[] expressions, int depth = 0)
+    {
+        if (depth > 32)
+            throw new FormatException("Query expressions cannot be nested more than 32 levels.");
+        if (expressions is null || expressions.Length == 0)
+            throw new FormatException("A query expression cannot be empty.");
+        if (expressions.Any(expression => expression is null))
+            throw new FormatException("A query expression cannot contain null fields.");
+        if (expressions[0].Oper != MatchOperation.Add)
+            throw new FormatException("The first field in a query expression must use the add operator.");
+
+        var values = new Stack<SqlExpression>();
+        var operations = new Stack<MatchOperation>();
+        values.Push(ParseQueryExpression(tableContext, expressions[0], depth + 1));
+
+        for (var index = 1; index < expressions.Length; index++)
+        {
+            var operation = expressions[index].Oper;
+            if (!operation.IsArithmetic())
+                throw new FormatException($"Unsupported grouped projection operator [{operation}].");
+
+            while (operations.Count > 0 &&
+                GetArithmeticPrecedence(operations.Peek()) >= GetArithmeticPrecedence(operation))
+                Reduce();
+
+            operations.Push(operation);
+            values.Push(ParseQueryExpression(tableContext, expressions[index], depth + 1));
+        }
+
+        while (operations.Count > 0)
+            Reduce();
+
+        return values.Pop();
+
+        void Reduce()
+        {
+            var right = values.Pop();
+            var left = values.Pop();
+            var currentOperation = operations.Pop();
+            values.Push(new BinarySqlExpression(
+                left,
+                currentOperation.ToSymbol(),
+                right,
+                typeof(decimal)));
+        }
+    }
+
     private SqlExpression ParseFieldExpression(TableExpression tableContext, FieldDefinition expression)
         => string.IsNullOrWhiteSpace(expression.FieldName)
             ? throw new FormatException("A field query expression requires a field path.")
@@ -111,48 +158,7 @@ class QueryContext(
             ?? throw new FormatException("A grouped query expression cannot have null fields.");
         if (fields.Length == 0)
             throw new FormatException("A grouped query expression cannot be empty.");
-        if (fields.Length == 1)
-            return ParseQueryExpression(tableContext, fields[0], depth);
-
-        var values = new Stack<SqlExpression>();
-        var operations = new Stack<MatchOperation>();
-        values.Push(ParseQueryExpression(tableContext, fields[0], depth + 1));
-
-        for (var index = 1; index < fields.Length; index++)
-        {
-            var (operation, operand) = fields[index] switch
-            {
-                MathFieldDefinition mathField => (mathField.Oper, mathField.Field),
-                GroupFieldDefintion nestedGroup => (nestedGroup.Oper, nestedGroup),
-                _ => (group.Oper, fields[index])
-            };
-            if (!operation.IsArithmetic())
-                throw new FormatException($"Unsupported grouped projection operator [{operation}].");
-
-            while (operations.Count > 0 &&
-                GetArithmeticPrecedence(operations.Peek()) >= GetArithmeticPrecedence(operation))
-                Reduce();
-
-            operations.Push(operation);
-            values.Push(ParseQueryExpression(tableContext, operand, depth + 1));
-        }
-
-        while (operations.Count > 0)
-            Reduce();
-
-        return values.Pop();
-
-        void Reduce()
-        {
-            var right = values.Pop();
-            var left = values.Pop();
-            var operation = operations.Pop();
-            values.Push(new BinarySqlExpression(
-                left,
-                operation.ToSymbol(),
-                right,
-                typeof(decimal)));
-        }
+        return ParseQueryExpression(tableContext, fields, depth + 1);
     }
 
     private static int GetArithmeticPrecedence(MatchOperation operation)

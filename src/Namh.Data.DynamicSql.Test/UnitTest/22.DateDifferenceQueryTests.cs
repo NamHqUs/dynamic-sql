@@ -41,15 +41,15 @@ internal sealed class _22_DateDifferenceQueryTests
             Entity = "Invoices",
             Projection =
             [
-                new(new FieldDefinition("InvoiceNumber")),
-                new(new FieldDefinition("Customer.Name")),
-                new(new FieldDefinition("InvoiceDate")),
+                new([new FieldDefinition("InvoiceNumber")]),
+                new([new FieldDefinition("Customer.Name")]),
+                new([new FieldDefinition("InvoiceDate")]),
                 new(
-                    new FunctionFieldDefinition("DateSub",
+                    [new FunctionFieldDefinition("DateSub",
                     [
                         new FieldDefinition("DueDate"),
                         new FunctionFieldDefinition("GETDATE", [])
-                    ]),
+                    ])],
                     "DaysOverdue")
             ],
             Page = 1,

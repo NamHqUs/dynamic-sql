@@ -1,0 +1,102 @@
+{
+  "Name": "SA2 - Customer lifetime value and recency",
+  "Entity": "Persons",
+  "Projection": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": "PersonId"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CONCAT",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "FirstName"
+          },
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
+            "kind": "field",
+            "field": "LastName"
+          }
+        ]
+      },
+      "alias": "Customer"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "CustomerOrders.CountDistinctIf(Status = <Completed>, Id)"
+      },
+      "alias": "OrderCount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "CustomerOrders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
+      },
+      "alias": "LifetimeValue"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "CustomerOrders.MaxIf(Status = <Completed>, OrderDate)"
+      },
+      "alias": "LastOrderDate"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "CustomerOrders.CountDistinctIf(Status = <Completed>, Channel)"
+      },
+      "alias": "ChannelsUsed"
+    }
+  ],
+  "Filters": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": null,
+        "left": {
+          "kind": "field",
+          "field": "CustomerOrders.CountDistinctIf(Status = <Completed>, Id)"
+        },
+        "operation": 4,
+        "right": {
+          "kind": "value",
+          "value": 1
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "Sorts": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "LifetimeValue"
+        },
+        "direction": 1
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "LastOrderDate"
+        },
+        "direction": 1
+      }
+    ]
+  ],
+  "Page": 1,
+  "PageSize": 10,
+  "IsBuiltin": false,
+  "Relations": []
+}

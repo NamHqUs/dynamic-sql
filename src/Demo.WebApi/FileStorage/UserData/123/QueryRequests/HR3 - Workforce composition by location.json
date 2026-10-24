@@ -3,66 +3,84 @@
   "Entity": "Locations",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "City"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "City"
+        }
+      ],
       "alias": "OfficeCity"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "State"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "State"
+        }
+      ],
       "alias": "State"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.Count()"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.Count()"
+        }
+      ],
       "alias": "Headcount"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.CountDistinct(DepartmentId)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.CountDistinct(DepartmentId)"
+        }
+      ],
       "alias": "DepartmentsRepresented"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.CountIf(EmploymentType = <Full-time>)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.CountIf(EmploymentType = <Full-time>)"
+        }
+      ],
       "alias": "FullTime"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.CountIf(EmploymentType = <Part-time>)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.CountIf(EmploymentType = <Part-time>)"
+        }
+      ],
       "alias": "PartTime"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.CountIf(EmploymentType = <Contract>)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.CountIf(EmploymentType = <Contract>)"
+        }
+      ],
       "alias": "Contractors"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.Average(ElapsedYears(HireDate, <2025-10-31>))"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.Average(ElapsedYears(HireDate, <2025-10-31>))"
+        }
+      ],
       "alias": "AverageTenureYears"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.Sum(Salary)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.Sum(Salary)"
+        }
+      ],
       "alias": "AnnualPayroll"
     }
   ],

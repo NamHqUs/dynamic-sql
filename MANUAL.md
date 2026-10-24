@@ -352,9 +352,8 @@ Field references in filters use brackets:
 Values may be strings, integers, decimals, booleans, or `null`. JSON filter
 values are parameterized by the query pipeline.
 
-Calculated projections use a structured expression tree rather than SQL text.
-Supported nodes are `field`, numeric `value`, `math` (an operator-prefixed
-group term using `+`, `-`, `*`, `/`, `%`), `group`, and `function`
+Calculated projections use a structured expression list rather than SQL text.
+Supported nodes are `field`, numeric `value`, `group`, and `function`
 (`COUNT`, `SUM`, `AVG`, `ROUND`, `NULLIF`,
 `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`,
 `DateFormat`, `GETDATE`):
@@ -365,39 +364,38 @@ group term using `+`, `-`, `*`, `/`, `%`), `group`, and `function`
   "projection": [
     {
       "alias": "GrossProfit",
-      "field": {
-        "kind": "function",
-        "function": "SUM",
-        "arguments": [
-          {
-            "kind": "group",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "InvoiceItems.LineTotal"
-              },
-              {
-                "kind": "group",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "InvoiceItems.Quantity"
-                  },
-                  {
-                    "oper": "*",
-                    "kind": "math",
-                    "field": {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "group",
+              "fields": [
+                {
+                  "kind": "field",
+                  "field": "InvoiceItems.LineTotal"
+                },
+                {
+                  "oper": "-",
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "InvoiceItems.Quantity"
+                    },
+                    {
+                      "oper": "*",
                       "kind": "field",
                       "field": "CostPrice"
                     }
-                  }
-                ],
-                "operator": "-"
-              }
-            ]
-          }
-        ]
-      }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "sorts": [
@@ -408,12 +406,12 @@ group term using `+`, `-`, `*`, `/`, `%`), `group`, and `function`
 
 Related field references use metadata relation paths, so the query compiler
 creates the necessary joins. Numeric expression values are parameterized.
-Groups may specify an `operator` for unmarked arguments; it defaults to `+`.
-Text expressions with operators of the same precedence, such as
-`A + B + C - D`, are represented as one flat group whose later terms retain
-their own typed operators.
-For the canonical serialized JSON shape, including how root and nested groups
-are written, see the [Expression Model JSON Reference](./EXPRESSION-MODEL-REFERENCE.md).
+Each projection contains a flat `fields` array with no root group. The `oper`
+property belongs to each field/value/function/group node and defaults to `+`;
+parenthesized terms and arithmetic function arguments use nested `group`
+nodes. The compiler applies arithmetic precedence to flat terms.
+For examples of the canonical serialized shape, see the
+[Expression Model JSON Reference](./EXPRESSION-MODEL-REFERENCE.md).
 Function calls are validated against definitions in the metadata provider.
 The default provider includes the built-in functions shown above. Applications can add or override definitions with `FunctionDefinition`.
 Each definition specifies its UI-facing arguments, result type, and SQL

@@ -3,45 +3,57 @@
   "Entity": "Departments",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Name"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Name"
+        }
+      ],
       "alias": "Department"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.Count()"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.Count()"
+        }
+      ],
       "alias": "Headcount"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.Average(Salary)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.Average(Salary)"
+        }
+      ],
       "alias": "AverageSalary"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.Sum(Salary)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.Sum(Salary)"
+        }
+      ],
       "alias": "AnnualPayroll"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.PerformanceReviews.AverageIf(ReviewYear = <2025>, Rating)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.PerformanceReviews.AverageIf(ReviewYear = <2025>, Rating)"
+        }
+      ],
       "alias": "AverageRating"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Employees.PerformanceReviews.SumIf(ReviewYear = <2025>, BonusAmount)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employees.PerformanceReviews.SumIf(ReviewYear = <2025>, BonusAmount)"
+        }
+      ],
       "alias": "TotalBonuses"
     }
   ],

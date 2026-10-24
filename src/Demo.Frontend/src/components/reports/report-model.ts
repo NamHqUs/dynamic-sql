@@ -1,4 +1,7 @@
-import type { ReportDto } from "../query-builder/query-design/query-builder-slice";
+import {
+  normalizeApiProjectionDefinition,
+  type ReportDto,
+} from "../query-builder/query-design/query-builder-slice";
 import type { IFieldDefinition, QueryResult } from "../query-builder/query-design/query-builder-slice";
 import type { IconName } from "../icon/icon";
 
@@ -60,9 +63,6 @@ function isAggregateExpression(expression: IFieldDefinition): boolean {
     return ["count", "sum", "max", "min", "average", "avg"].includes(expression.function.toLowerCase())
       || expression.arguments.some(isAggregateExpression);
   }
-  if (expression.kind === "math") {
-    return isAggregateExpression(expression.field);
-  }
   if (expression.kind === "group") {
     return expression.arguments.some(isAggregateExpression);
   }
@@ -84,23 +84,27 @@ function metricRollup(expression: IFieldDefinition): MetricRollup {
   }
 }
 
-function expressionName(expression: IFieldDefinition): string {
+function expressionName(expression: IFieldDefinition, includeOperator = true): string {
+  let name: string;
   switch (expression.kind) {
     case "field":
-      return expression.field;
+      name = expression.field;
+      break;
     case "value":
-      return String(expression.value);
+      name = String(expression.value);
+      break;
     case "function":
-      return `${expression.function}(${expression.arguments.map(expressionName).join(", ")})`;
-    case "math":
-      return `${expression.oper} ${expressionName(expression.field)}`;
+      name = `${expression.function}(${expression.arguments.map(expressionName).join(", ")})`;
+      break;
     case "group":
-      return expression.arguments.map((argument, index) => index === 0
-        ? expressionName(argument)
-        : argument.kind === "math"
-          ? `${argument.oper} ${expressionName(argument.field)}`
-          : `${expression.operator ?? "+"} ${expressionName(argument)}`).join(" ");
+      name = expression.arguments.map((argument, index) => index === 0
+        ? expressionName(argument, false)
+        : `${argument.oper ?? "+"} ${expressionName(argument, false)}`).join(" ");
+      break;
   }
+  return includeOperator && expression.oper && expression.oper !== "+"
+    ? `${expression.oper} ${name}`
+    : name;
 }
 
 function outputColumn(columns: string[], candidates: string[]): string | null {
@@ -125,8 +129,9 @@ export function reportChartFields(report: ReportDto, result: QueryResult): {
   const metrics: string[] = [];
   const axes: string[] = [];
   const metricRollups: Record<string, MetricRollup> = {};
-  report.query.fields.forEach((projection) => {
-    const expression = projection.field;
+  report.query.projection.forEach((projection) => {
+    const expression = normalizeApiProjectionDefinition(projection);
+    if (!expression) throw new Error("Report API returned an unsupported projection expression.");
     const name = outputColumn(result.columns, [
       projection.alias || "",
       expressionName(expression),

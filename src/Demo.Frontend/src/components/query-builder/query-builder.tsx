@@ -199,8 +199,6 @@ function isExpressionAvailable(expression: IFieldDefinition, entity: MetadataEnt
     case "value":
       return expression.value === null || typeof expression.value === "string" || typeof expression.value === "boolean"
         || (typeof expression.value === "number" && Number.isFinite(expression.value));
-    case "math":
-      return isExpressionAvailable(expression.field, entity, metadata);
     case "group":
       return expression.arguments.every((argument) => isExpressionAvailable(argument, entity, metadata));
     case "function":

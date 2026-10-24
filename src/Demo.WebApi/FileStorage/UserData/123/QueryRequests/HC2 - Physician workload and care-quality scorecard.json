@@ -3,110 +3,123 @@
   "Entity": "Employees",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Id"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
       "alias": "DoctorId"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "CONCAT",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "FirstName"
-          },
-          {
-            "kind": "value",
-            "value": " "
-          },
-          {
-            "kind": "field",
-            "field": "LastName"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CONCAT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        }
+      ],
       "alias": "Physician"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Department.Name"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Department.Name"
+        }
+      ],
       "alias": "Department"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Location.City"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Location.City"
+        }
+      ],
       "alias": "ClinicCity"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "PhysicianVisits.CountIf(Status = <Completed>)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "PhysicianVisits.CountIf(Status = <Completed>)"
+        }
+      ],
       "alias": "VisitCount"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "PhysicianVisits.CountDistinctIf(Status = <Completed>, PersonId)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "PhysicianVisits.CountDistinctIf(Status = <Completed>, PersonId)"
+        }
+      ],
       "alias": "PatientCount"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "PhysicianVisits.AverageIf(Status = <Completed>, DurationMinutes)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "PhysicianVisits.AverageIf(Status = <Completed>, DurationMinutes)"
+        }
+      ],
       "alias": "AverageVisitMinutes"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "PhysicianVisits.SumIf(Status = <Completed>, Charge)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "PhysicianVisits.SumIf(Status = <Completed>, Charge)"
+        }
+      ],
       "alias": "Charges"
     },
     {
-      "field": {
-        "kind": "group",
-        "operator": "/",
-        "arguments": [
-          {
-            "kind": "group",
-            "operator": "*",
-            "arguments": [
-              {
-                "kind": "value",
-                "value": 100
-              },
-              {
-                "kind": "field",
-                "field": "PhysicianVisits.LabResults.CountIf(Visit.Status = <Completed> AND IsAbnormal = <true>)"
-              }
-            ]
-          },
-          {
-            "kind": "function",
-            "function": "NULLIF",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "PhysicianVisits.LabResults.CountIf(Visit.Status = <Completed>)"
-              },
-              {
-                "kind": "value",
-                "value": 0
-              }
-            ]
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "group",
+          "fields": [
+            {
+              "kind": "value",
+              "value": 100
+            },
+            {
+              "kind": "field",
+              "field": "PhysicianVisits.LabResults.CountIf(Visit.Status = <Completed> AND IsAbnormal = <true>)",
+              "oper": "*"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "function": "NULLIF",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "PhysicianVisits.LabResults.CountIf(Visit.Status = <Completed>)"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ],
+          "oper": "/"
+        }
+      ],
       "alias": "AbnormalLabPercent"
     }
   ],

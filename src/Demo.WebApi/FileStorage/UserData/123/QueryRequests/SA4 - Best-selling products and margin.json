@@ -3,89 +3,100 @@
   "Entity": "NorthStarProducts",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Id"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
       "alias": "ProductId"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Name"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Name"
+        }
+      ],
       "alias": "Product"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Category"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Category"
+        }
+      ],
       "alias": "Category"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity)"
+        }
+      ],
       "alias": "UnitsSold"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "OrderItems.CountDistinctIf(Order.Status = <Completed>, Order.Id)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "OrderItems.CountDistinctIf(Order.Status = <Completed>, Order.Id)"
+        }
+      ],
       "alias": "OrderCount"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
+        }
+      ],
       "alias": "NetRevenue"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)"
+        }
+      ],
       "alias": "GrossProfit"
     },
     {
-      "field": {
-        "kind": "group",
-        "operator": "/",
-        "arguments": [
-          {
-            "kind": "group",
-            "operator": "*",
-            "arguments": [
-              {
-                "kind": "value",
-                "value": 100
-              },
-              {
-                "kind": "field",
-                "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)"
-              }
-            ]
-          },
-          {
-            "kind": "function",
-            "function": "NULLIF",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
-              },
-              {
-                "kind": "value",
-                "value": 0
-              }
-            ]
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "group",
+          "fields": [
+            {
+              "kind": "value",
+              "value": 100
+            },
+            {
+              "kind": "field",
+              "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)",
+              "oper": "*"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "function": "NULLIF",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ],
+          "oper": "/"
+        }
+      ],
       "alias": "MarginPercent"
     }
   ],

@@ -3,89 +3,100 @@
   "Entity": "InsurancePlans",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Name"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Name"
+        }
+      ],
       "alias": "Plan"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Tier"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Tier"
+        }
+      ],
       "alias": "Tier"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Policies.Claims.Count()"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policies.Claims.Count()"
+        }
+      ],
       "alias": "ClaimsReceived"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Policies.Claims.CountIf(Status = <Paid>)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policies.Claims.CountIf(Status = <Paid>)"
+        }
+      ],
       "alias": "PaidClaims"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Policies.Claims.CountIf(Status = <Denied>)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policies.Claims.CountIf(Status = <Denied>)"
+        }
+      ],
       "alias": "DeniedClaims"
     },
     {
-      "field": {
-        "kind": "group",
-        "operator": "/",
-        "arguments": [
-          {
-            "kind": "group",
-            "operator": "*",
-            "arguments": [
-              {
-                "kind": "value",
-                "value": 100
-              },
-              {
-                "kind": "field",
-                "field": "Policies.Claims.CountIf(Status = <Denied>)"
-              }
-            ]
-          },
-          {
-            "kind": "function",
-            "function": "NULLIF",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Policies.Claims.Count()"
-              },
-              {
-                "kind": "value",
-                "value": 0
-              }
-            ]
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "group",
+          "fields": [
+            {
+              "kind": "value",
+              "value": 100
+            },
+            {
+              "kind": "field",
+              "field": "Policies.Claims.CountIf(Status = <Denied>)",
+              "oper": "*"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "function": "NULLIF",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Policies.Claims.Count()"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ],
+          "oper": "/"
+        }
+      ],
       "alias": "DenialPercent"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Policies.Claims.AverageIf(ProcessedDate IS NOT NULL, DateSub(ClaimDate, ProcessedDate))"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policies.Claims.AverageIf(ProcessedDate IS NOT NULL, DateSub(ClaimDate, ProcessedDate))"
+        }
+      ],
       "alias": "AverageProcessingDays"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Policies.Claims.Sum(PaidAmount)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policies.Claims.Sum(PaidAmount)"
+        }
+      ],
       "alias": "TotalPaid"
     }
   ],

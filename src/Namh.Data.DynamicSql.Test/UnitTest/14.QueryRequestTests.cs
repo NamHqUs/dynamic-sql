@@ -513,7 +513,7 @@ public class _14_QueryRequestTests : TestBase
 
         var definition = QueryDefinitionParser.Parse(json);
 
-        Assert.That(definition.Projection.Select(projection => projection.Field.ToText()),
+        Assert.That(definition.Projection.Select(projection => projection.ToText()),
             Is.EqualTo(new[] { "Id", "Name" }));
     }
 

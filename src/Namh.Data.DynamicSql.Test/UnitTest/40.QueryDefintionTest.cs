@@ -1,297 +1,147 @@
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
 [TestFixture]
-internal class _40_QueryDefintionTest : TestBase
+internal class _40_QueryDefintionTest
 {
     [Test]
-    public void AdditiveExpressionUsesOneFlatGroup()
+    public void AdditiveExpressionIsAFlatFieldList()
     {
-        const string text = "A + B + C - D";
+        var projection = QueryDefinitionParser.ParseProjection("A + B - <3>").Single();
 
-        var group = (GroupFieldDefintion)QueryDefinitionParser.ParseField(text);
-
-        Assert.That(group.Oper, Is.EqualTo(MatchOperation.Add));
-        Assert.That(group.Fields, Has.Length.EqualTo(4));
-        Assert.That(group.Fields[0], Is.EqualTo(new FieldDefinition("A")));
-        Assert.That(group.Fields[1], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Add,
-            new FieldDefinition("B"))));
-        Assert.That(group.Fields[2], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Add,
-            new FieldDefinition("C"))));
-        Assert.That(group.Fields[3], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Subtract,
-            new FieldDefinition("D"))));
-        Assert.That(group.ToText(), Is.EqualTo(text));
+        Assert.That(projection.Fields, Has.Length.EqualTo(3));
+        Assert.That(projection.Fields[0], Is.EqualTo(new FieldDefinition("A")));
+        Assert.That(projection.Fields[1], Is.EqualTo(new FieldDefinition("B")));
+        Assert.That(projection.Fields[2], Is.EqualTo(
+            new ConstFieldDefinition(MatchOperation.Subtract, 3)));
+        Assert.That(projection.ToText(), Is.EqualTo("A + B - <3>"));
     }
 
     [Test]
-    public void MultiplicativeTermsRemainNestedInsideAdditiveGroup()
+    public void ParenthesizedArithmeticIsAGroupOperand()
     {
-        var group = (GroupFieldDefintion)QueryDefinitionParser.ParseField("A + B * C - D");
+        var fields = QueryDefinitionParser.ParseProjection("A * (B - C + D) / <2>").Single().Fields;
 
-        Assert.That(group.Fields, Has.Length.EqualTo(3));
-        var multiplicativeGroup = (GroupFieldDefintion)group.Fields[1];
-        Assert.That(multiplicativeGroup.Oper, Is.EqualTo(MatchOperation.Add));
-        Assert.That(multiplicativeGroup.Fields[0], Is.EqualTo(new FieldDefinition("B")));
-        Assert.That(multiplicativeGroup.Fields[1], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Multiply,
-            new FieldDefinition("C"))));
-        Assert.That(group.Fields[1], Is.Not.InstanceOf<MathFieldDefinition>());
-        Assert.That(group.Fields[2], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Subtract,
-            new FieldDefinition("D"))));
-    }
+        Assert.That(fields, Has.Length.EqualTo(3));
+        Assert.That(fields[0], Is.EqualTo(new FieldDefinition("A")));
 
-    [TestCase("A + B - C", "A + B - C")]
-    [TestCase("A * B / C", "A * B / C")]
-    [TestCase("A + (B - C)", "A + (B - C)")]
-    [TestCase("A + B * C - D", "A + (B * C) - D")]
-    [TestCase("A - B * (C - D) / E + <3>", "A - (B * (C - D) / E) + <3>")]
-    public void SubGroups(string input, string expected)
-    {
-        var group = (GroupFieldDefintion)QueryDefinitionParser.ParseField(input);
-
-        var text = JsonSerializer.Serialize(group,
-            new JsonSerializerOptions { WriteIndented = true }
-        );
-        Assert.That(group.ToText().Replace(" ", ""), Is.EqualTo(expected.Replace(" ", "")));
-    }
-
-    [Test]
-    public void SubGroups1()
-    {
-        var group = (GroupFieldDefintion)QueryDefinitionParser.ParseField("A - B * (C - D) / E + <3>");
-
-        Assert.That(group.Oper, Is.EqualTo(MatchOperation.Add));
-        Assert.That(group.Fields, Has.Length.EqualTo(3));
-        Assert.That(group.Fields[0], Is.EqualTo(new FieldDefinition("A")));
-
-        var subtractedGroup = (GroupFieldDefintion)group.Fields[1];
-        Assert.That(subtractedGroup.Oper, Is.EqualTo(MatchOperation.Subtract));
-        Assert.That(subtractedGroup.Fields, Has.Length.EqualTo(3));
-        Assert.That(subtractedGroup.Fields[0], Is.EqualTo(new FieldDefinition("B")));
-        Assert.That(subtractedGroup.Fields[2], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Divide,
-            new FieldDefinition("E"))));
-
-        var multiplicativeGroup = (GroupFieldDefintion)subtractedGroup.Fields[1];
-        Assert.That(multiplicativeGroup.Oper, Is.EqualTo(MatchOperation.Multiply));
-        Assert.That(multiplicativeGroup.Fields, Has.Length.EqualTo(2));
-        Assert.That(multiplicativeGroup.Fields[0], Is.EqualTo(new FieldDefinition("C")));
-        Assert.That(multiplicativeGroup.Fields[1], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Subtract,
-            new FieldDefinition("D"))));
-        Assert.That(group.Fields[2], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Add,
-            new ConstFieldDefinition(3))));
-    }
-
-    [Test]
-    public void SubGroups_JsonSerialize()
-    {
-        var group = (GroupFieldDefintion)QueryDefinitionParser.ParseField("A - B * (C - D) / E + <3>");
-
-        var text = JsonSerializer.Serialize<IFieldDefinition>(group, new JsonSerializerOptions
+        var group = (GroupFieldDefintion)fields[1];
+        Assert.That(group.Oper, Is.EqualTo(MatchOperation.Multiply));
+        Assert.That(group.Fields, Is.EqualTo(new IFieldDefinition[]
         {
-            WriteIndented = true,
-            Converters = { new JsonStringEnumConverter() }
-        });
+            new FieldDefinition("B"),
+            new FieldDefinition(MatchOperation.Subtract, "C"),
+            new FieldDefinition("D")
+        }));
 
-        var expectedText = """
+        Assert.That(fields[2], Is.EqualTo(
+            new ConstFieldDefinition(MatchOperation.Divide, 2)));
+    }
+
+    [Test]
+    public void FunctionArgumentsRetainExpressionGroups()
+    {
+        var function = (FunctionFieldDefinition)QueryDefinitionParser
+            .ParseProjection("Round(A + B, <2>)")
+            .Single()
+            .Fields
+            .Single();
+
+        Assert.That(function.Arguments, Has.Length.EqualTo(2));
+        var group = (GroupFieldDefintion)function.Arguments[0];
+        Assert.That(group.Oper, Is.EqualTo(MatchOperation.Add));
+        Assert.That(group.Fields, Is.EqualTo(new IFieldDefinition[]
+        {
+            new FieldDefinition("A"),
+            new FieldDefinition("B")
+        }));
+        Assert.That(function.Arguments[1], Is.EqualTo(new ConstFieldDefinition(2)));
+    }
+
+    [Test]
+    public void ConsecutiveParenthesizedOperandsKeepTheirOperators()
+    {
+        var fields = QueryDefinitionParser.ParseProjection("<5> - (A - B) * (C - D)").Single().Fields;
+
+        Assert.That(fields, Has.Length.EqualTo(3));
+        Assert.That(fields[0], Is.EqualTo(new ConstFieldDefinition(5)));
+        var firstGroup = (GroupFieldDefintion)fields[1];
+        var secondGroup = (GroupFieldDefintion)fields[2];
+        Assert.That(firstGroup.Oper, Is.EqualTo(MatchOperation.Subtract));
+        Assert.That(secondGroup.Oper, Is.EqualTo(MatchOperation.Multiply));
+        Assert.That(firstGroup.Fields[1], Is.EqualTo(new FieldDefinition(MatchOperation.Subtract, "B")));
+        Assert.That(secondGroup.Fields[1], Is.EqualTo(new FieldDefinition(MatchOperation.Subtract, "D")));
+    }
+
+    [Test]
+    public void ProjectionJsonWritesOperatorOnEachExpressionNode()
+    {
+        var projection = QueryDefinitionParser.ParseProjection("A + B - <3>").Single();
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
+        var json = JsonSerializer.Serialize(projection, options);
+
+        Assert.That(json, Is.EqualTo(
+            """{"fields":[{"kind":"field","field":"A"},{"kind":"field","field":"B"},{"oper":"-","kind":"value","value":3}],"alias":null}"""));
+        var restored = JsonSerializer.Deserialize<ProjectionDefinition>(json, options)
+            ?? throw new InvalidOperationException("The projection JSON did not produce a definition.");
+        Assert.That(restored.ToText(), Is.EqualTo(projection.ToText()));
+    }
+
+    [Test]
+    public void LegacyProjectionMathNodesDeserializeIntoOperatorFields()
+    {
+        const string json = """
             {
-              "oper": "Add",
-              "kind": "group",
-              "fields": [
-                {
-                  "kind": "field",
-                  "field": "A"
-                },
-                {
-                  "kind": "group",
-                  "operator": "-",
-                  "arguments": [
-                    {
-                      "kind": "field",
-                      "field": "B"
-                    },
-                    {
-                      "kind": "group",
-                      "operator": "*",
-                      "arguments": [
-                        {
-                          "kind": "field",
-                          "field": "C"
-                        },
-                        {
-                          "oper": "Subtract",
-                          "kind": "math",
-                          "field": {
-                            "kind": "field",
-                            "field": "D"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "oper": "Divide",
-                      "kind": "math",
-                      "field": {
-                        "kind": "field",
-                        "field": "E"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "oper": "Add",
-                  "kind": "math",
-                  "field": {
-                    "kind": "value",
-                    "value": 3
+              "field": {
+                "oper": "Add",
+                "kind": "group",
+                "fields": [
+                  { "kind": "field", "field": "A" },
+                  {
+                    "oper": "Subtract",
+                    "kind": "math",
+                    "field": { "kind": "value", "value": 3 }
                   }
-                }
-              ]
+                ]
+              },
+              "alias": "Calculated"
             }
             """;
 
-        Assert.That(text.Replace(" ", "").Replace("\r", "").Replace("\n", ""), Is.EqualTo(expectedText.Replace(" ", "").Replace("\r", "").Replace("\n", "")));
+        var projection = JsonSerializer.Deserialize<ProjectionDefinition>(
+            json,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            ?? throw new InvalidOperationException("The legacy projection JSON did not produce a definition.");
 
-        var roundTripped = JsonSerializer.Deserialize<IFieldDefinition>(text, new JsonSerializerOptions
-        {
-            Converters = { new JsonStringEnumConverter() }
-        }) ?? throw new InvalidOperationException("The serialized field expression did not produce a definition.");
-        Assert.That(roundTripped.ToText(), Is.EqualTo(group.ToText()));
+        Assert.That(projection.Fields, Has.Length.EqualTo(2));
+        Assert.That(projection.Fields[1], Is.EqualTo(
+            new ConstFieldDefinition(MatchOperation.Subtract, 3L)));
+        Assert.That(projection.ToText(), Is.EqualTo("A - <3> | Calculated"));
     }
+}
 
+[TestFixture]
+internal class _40_QueryDefintionDatabaseTest : TestBase
+{
     [Test]
-    public void SubGroups_Operator_Priority_JsonSerialize()
+    public void OperatorFieldsRespectArithmeticPrecedence()
     {
-        /// 1 + 2*3 - 3
-        var group = new GroupFieldDefintion(MatchOperation.Add, new List<IFieldDefinition>()
-        {
-            new ConstFieldDefinition(1),
-            new MathFieldDefinition(MatchOperation.Add, new ConstFieldDefinition(2)),
-            new MathFieldDefinition(MatchOperation.Multiply, new ConstFieldDefinition(3)),
-            new MathFieldDefinition(MatchOperation.Subtract, new ConstFieldDefinition(3))
-        }.ToArray());
-
-        var query = new QueryDefinition()
+        var query = new QueryDefinition
         {
             Entity = "User",
-            Projection = [new ProjectionDefinition(group, "Calculated")]
+            Projection =
+            [
+                new ProjectionDefinition(
+                    QueryDefinitionParser.ParseExpression("<1> + <2> * <3> - <3>"),
+                    "Calculated")
+            ]
         };
-        var data = _db.Query(query).ToList();
 
-        Assert.That(data[0]["Calculated"], Is.EqualTo(1 + 2 * 3 - 3));
-    }
+        var result = _db.Query(query).ToList();
 
-    [Test]
-    public void SubGroups_JsonDeserialize()
-    {
-        var json = """
-            {
-              "oper": "Add",
-              "kind": "group",
-              "fields": [
-                {
-                  "kind": "field",
-                  "field": "A"
-                },
-                {
-                  "kind": "group",
-                  "operator": "-",
-                  "arguments": [
-                    {
-                      "kind": "field",
-                      "field": "B"
-                    },
-                    {
-                      "kind": "group",
-                      "operator": "*",
-                      "arguments": [
-                        {
-                          "kind": "field",
-                          "field": "C"
-                        },
-                        {
-                          "oper": "Subtract",
-                          "kind": "math",
-                          "field": {
-                            "kind": "field",
-                            "field": "D"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "oper": "Divide",
-                      "kind": "math",
-                      "field": {
-                        "kind": "field",
-                        "field": "E"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "oper": "Add",
-                  "kind": "math",
-                  "field": {
-                    "kind": "value",
-                    "value": 3
-                  }
-                }
-              ]
-            }
-            """;
-
-        var group = (GroupFieldDefintion) JsonSerializer.Deserialize<IFieldDefinition>(json, new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            Converters = { new JsonStringEnumConverter() }
-        })!;
-
-        Assert.That(group.Oper, Is.EqualTo(MatchOperation.Add));
-        Assert.That(group.Fields, Has.Length.EqualTo(3));
-        Assert.That(group.Fields[0], Is.EqualTo(new FieldDefinition("A")));
-
-        var subtractedGroup = (GroupFieldDefintion)group.Fields[1];
-        Assert.That(subtractedGroup.Oper, Is.EqualTo(MatchOperation.Subtract));
-        Assert.That(subtractedGroup.Fields, Has.Length.EqualTo(3));
-        Assert.That(subtractedGroup.Fields[0], Is.EqualTo(new FieldDefinition("B")));
-        Assert.That(subtractedGroup.Fields[2], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Divide,
-            new FieldDefinition("E"))));
-
-        var multiplicativeGroup = (GroupFieldDefintion)subtractedGroup.Fields[1];
-        Assert.That(multiplicativeGroup.Oper, Is.EqualTo(MatchOperation.Multiply));
-        Assert.That(multiplicativeGroup.Fields, Has.Length.EqualTo(2));
-        Assert.That(multiplicativeGroup.Fields[0], Is.EqualTo(new FieldDefinition("C")));
-        Assert.That(multiplicativeGroup.Fields[1], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Subtract,
-            new FieldDefinition("D"))));
-        Assert.That(group.Fields[2], Is.EqualTo(new MathFieldDefinition(
-            MatchOperation.Add,
-            new ConstFieldDefinition(3L))));
-
-    }
-
-    [Test]
-    public void FieldDefinition_JsonParser()
-    {
-        var expression = "A + (Rount(B, 2) * (B - 1) - C) + <4>";
-        var group = (GroupFieldDefintion)QueryDefinitionParser.ParseField(expression);
-
-        var text = JsonSerializer.Serialize<IFieldDefinition>(group, new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            Converters = { new JsonStringEnumConverter() }
-        });
+        Assert.That(result[0]["Calculated"], Is.EqualTo(4m));
     }
 }

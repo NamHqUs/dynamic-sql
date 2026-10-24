@@ -3,107 +3,116 @@
   "Entity": "Visits",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Diagnosis.Name"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Diagnosis.Name"
+        }
+      ],
       "alias": "Diagnosis"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Diagnosis.Category"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Diagnosis.Category"
+        }
+      ],
       "alias": "DiagnosisCategory"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Location.City"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Location.City"
+        }
+      ],
       "alias": "ClinicCity"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COUNT",
-        "arguments": []
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": []
+        }
+      ],
       "alias": "VisitCount"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COUNT_DISTINCT",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "PersonId"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT_DISTINCT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "PersonId"
+            }
+          ]
+        }
+      ],
       "alias": "UniquePatients"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "AVG",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Charge"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "AVG",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Charge"
+            }
+          ]
+        }
+      ],
       "alias": "AverageCharge"
     },
     {
-      "field": {
-        "kind": "group",
-        "operator": "/",
-        "arguments": [
-          {
-            "kind": "group",
-            "operator": "*",
-            "arguments": [
-              {
-                "kind": "value",
-                "value": 100
-              },
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "LabResults.CountIf(IsAbnormal = <true>)"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "kind": "function",
-            "function": "NULLIF",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "LabResults.Count()"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 0
-              }
-            ]
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "group",
+          "fields": [
+            {
+              "kind": "value",
+              "value": 100
+            },
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "LabResults.CountIf(IsAbnormal = <true>)"
+                }
+              ],
+              "oper": "*"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "function": "NULLIF",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "LabResults.Count()"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ],
+          "oper": "/"
+        }
+      ],
       "alias": "AbnormalLabPercent"
     }
   ],

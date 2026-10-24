@@ -3,73 +3,89 @@
   "Entity": "Employees",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Id"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
       "alias": "ManagerId"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "CONCAT",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "FirstName"
-          },
-          {
-            "kind": "value",
-            "value": " "
-          },
-          {
-            "kind": "field",
-            "field": "LastName"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CONCAT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        }
+      ],
       "alias": "Manager"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Department.Name"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Department.Name"
+        }
+      ],
       "alias": "Department"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "DirectReports.Count()"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "DirectReports.Count()"
+        }
+      ],
       "alias": "DirectReports"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "DirectReports.CountDistinct(LocationId)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "DirectReports.CountDistinct(LocationId)"
+        }
+      ],
       "alias": "TeamLocations"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "DirectReports.Average(Salary)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "DirectReports.Average(Salary)"
+        }
+      ],
       "alias": "AverageTeamSalary"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "DirectReports.PerformanceReviews.AverageIf(ReviewYear = <2025>, Rating)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "DirectReports.PerformanceReviews.AverageIf(ReviewYear = <2025>, Rating)"
+        }
+      ],
       "alias": "AverageTeamRating"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "DirectReports.Sum(Salary)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "DirectReports.Sum(Salary)"
+        }
+      ],
       "alias": "TeamPayroll"
     }
   ],

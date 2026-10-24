@@ -3,253 +3,265 @@
   "Entity": "OrderItems",
   "Projection": [
     {
-      "field": {
-        "kind": "function",
-        "function": "MonthKey",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Order.OrderDate"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "MonthKey",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Order.OrderDate"
+            }
+          ]
+        }
+      ],
       "alias": "SalesMonth"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "SUM",
-        "arguments": [
-          {
-            "kind": "group",
-            "operator": "-",
-            "arguments": [
-              {
-                "kind": "group",
-                "operator": "*",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Quantity"
-                  },
-                  {
-                    "kind": "field",
-                    "field": "UnitPrice"
-                  }
-                ]
-              },
-              {
-                "kind": "field",
-                "field": "DiscountAmount"
-              }
-            ]
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "group",
+              "fields": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "Quantity"
+                    },
+                    {
+                      "kind": "field",
+                      "field": "UnitPrice",
+                      "oper": "*"
+                    }
+                  ]
+                },
+                {
+                  "kind": "field",
+                  "field": "DiscountAmount",
+                  "oper": "-"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "alias": "Revenue"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COUNT_DISTINCT",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Order.Id"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT_DISTINCT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Order.Id"
+            }
+          ]
+        }
+      ],
       "alias": "OrderCount"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "LAG",
-        "arguments": [
-          {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "group",
-                "operator": "-",
-                "arguments": [
-                  {
-                    "kind": "group",
-                    "operator": "*",
-                    "arguments": [
-                      {
-                        "kind": "field",
-                        "field": "Quantity"
-                      },
-                      {
-                        "kind": "field",
-                        "field": "UnitPrice"
-                      }
-                    ]
-                  },
-                  {
-                    "kind": "field",
-                    "field": "DiscountAmount"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "kind": "value",
-            "value": 1
-          },
-          {
-            "kind": "function",
-            "function": "MonthKey",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Order.OrderDate"
-              }
-            ]
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "LAG",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "group",
+                      "fields": [
+                        {
+                          "kind": "field",
+                          "field": "Quantity"
+                        },
+                        {
+                          "kind": "field",
+                          "field": "UnitPrice",
+                          "oper": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "field",
+                      "field": "DiscountAmount",
+                      "oper": "-"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 1
+            },
+            {
+              "kind": "function",
+              "function": "MonthKey",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Order.OrderDate"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "alias": "PriorMonthRevenue"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "Difference",
-        "arguments": [
-          {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "group",
-                "operator": "-",
-                "arguments": [
-                  {
-                    "kind": "group",
-                    "operator": "*",
-                    "arguments": [
-                      {
-                        "kind": "field",
-                        "field": "Quantity"
-                      },
-                      {
-                        "kind": "field",
-                        "field": "UnitPrice"
-                      }
-                    ]
-                  },
-                  {
-                    "kind": "field",
-                    "field": "DiscountAmount"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "kind": "function",
-            "function": "LAG",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "group",
-                    "operator": "-",
-                    "arguments": [
-                      {
-                        "kind": "group",
-                        "operator": "*",
-                        "arguments": [
-                          {
-                            "kind": "field",
-                            "field": "Quantity"
-                          },
-                          {
-                            "kind": "field",
-                            "field": "UnitPrice"
-                          }
-                        ]
-                      },
-                      {
-                        "kind": "field",
-                        "field": "DiscountAmount"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 1
-              },
-              {
-                "kind": "function",
-                "function": "MonthKey",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Order.OrderDate"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "Difference",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "group",
+                      "fields": [
+                        {
+                          "kind": "field",
+                          "field": "Quantity"
+                        },
+                        {
+                          "kind": "field",
+                          "field": "UnitPrice",
+                          "oper": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "field",
+                      "field": "DiscountAmount",
+                      "oper": "-"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "function",
+              "function": "LAG",
+              "arguments": [
+                {
+                  "kind": "function",
+                  "function": "SUM",
+                  "arguments": [
+                    {
+                      "kind": "group",
+                      "fields": [
+                        {
+                          "kind": "group",
+                          "fields": [
+                            {
+                              "kind": "field",
+                              "field": "Quantity"
+                            },
+                            {
+                              "kind": "field",
+                              "field": "UnitPrice",
+                              "oper": "*"
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "field",
+                          "field": "DiscountAmount",
+                          "oper": "-"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "value",
+                  "value": 1
+                },
+                {
+                  "kind": "function",
+                  "function": "MonthKey",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "Order.OrderDate"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "alias": "RevenueChange"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "WINDOW_SUM",
-        "arguments": [
-          {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "group",
-                "operator": "-",
-                "arguments": [
-                  {
-                    "kind": "group",
-                    "operator": "*",
-                    "arguments": [
-                      {
-                        "kind": "field",
-                        "field": "Quantity"
-                      },
-                      {
-                        "kind": "field",
-                        "field": "UnitPrice"
-                      }
-                    ]
-                  },
-                  {
-                    "kind": "field",
-                    "field": "DiscountAmount"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "kind": "function",
-            "function": "MonthKey",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Order.OrderDate"
-              }
-            ]
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "WINDOW_SUM",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "group",
+                      "fields": [
+                        {
+                          "kind": "field",
+                          "field": "Quantity"
+                        },
+                        {
+                          "kind": "field",
+                          "field": "UnitPrice",
+                          "oper": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "field",
+                      "field": "DiscountAmount",
+                      "oper": "-"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "function",
+              "function": "MonthKey",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Order.OrderDate"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "alias": "RunningRevenue"
     }
   ],

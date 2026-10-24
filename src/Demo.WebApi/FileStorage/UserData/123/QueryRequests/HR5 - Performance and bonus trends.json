@@ -3,111 +3,122 @@
   "Entity": "PerformanceReviews",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Employee.Department.Name"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employee.Department.Name"
+        }
+      ],
       "alias": "Department"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "ReviewYear"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "ReviewYear"
+        }
+      ],
       "alias": "ReviewYear"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COUNT",
-        "arguments": []
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": []
+        }
+      ],
       "alias": "Reviews"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "AVG",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Rating"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "AVG",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Rating"
+            }
+          ]
+        }
+      ],
       "alias": "AverageRating"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COUNT_IF",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Rating >= <4>"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT_IF",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Rating >= <4>"
+            }
+          ]
+        }
+      ],
       "alias": "HighRatings"
     },
     {
-      "field": {
-        "kind": "group",
-        "operator": "/",
-        "arguments": [
-          {
-            "kind": "group",
-            "operator": "*",
-            "arguments": [
-              {
-                "kind": "value",
-                "value": 100
-              },
-              {
-                "kind": "function",
-                "function": "COUNT_IF",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Rating >= <4>"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "kind": "function",
-            "function": "COUNT",
-            "arguments": []
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "group",
+          "fields": [
+            {
+              "kind": "value",
+              "value": 100
+            },
+            {
+              "kind": "function",
+              "function": "COUNT_IF",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Rating >= <4>"
+                }
+              ],
+              "oper": "*"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [],
+          "oper": "/"
+        }
+      ],
       "alias": "HighRatingPercent"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "AVG",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Employee.Salary"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "AVG",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Employee.Salary"
+            }
+          ]
+        }
+      ],
       "alias": "AverageSalary"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "SUM",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "BonusAmount"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "BonusAmount"
+            }
+          ]
+        }
+      ],
       "alias": "TotalBonus"
     }
   ],

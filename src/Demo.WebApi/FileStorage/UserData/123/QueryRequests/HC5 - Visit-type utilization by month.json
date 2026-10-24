@@ -3,108 +3,117 @@
   "Entity": "Visits",
   "Projection": [
     {
-      "field": {
-        "kind": "function",
-        "function": "MonthKey",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "VisitDate"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "MonthKey",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "VisitDate"
+            }
+          ]
+        }
+      ],
       "alias": "VisitMonth"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "VisitType"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "VisitType"
+        }
+      ],
       "alias": "VisitType"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COUNT",
-        "arguments": []
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": []
+        }
+      ],
       "alias": "ScheduledVisits"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COUNT_IF",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Status = <No-Show>"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT_IF",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Status = <No-Show>"
+            }
+          ]
+        }
+      ],
       "alias": "NoShows"
     },
     {
-      "field": {
-        "kind": "group",
-        "operator": "/",
-        "arguments": [
-          {
-            "kind": "group",
-            "operator": "*",
-            "arguments": [
-              {
-                "kind": "value",
-                "value": 100
-              },
-              {
-                "kind": "function",
-                "function": "COUNT_IF",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Status = <No-Show>"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "kind": "function",
-            "function": "COUNT",
-            "arguments": []
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "group",
+          "fields": [
+            {
+              "kind": "value",
+              "value": 100
+            },
+            {
+              "kind": "function",
+              "function": "COUNT_IF",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Status = <No-Show>"
+                }
+              ],
+              "oper": "*"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [],
+          "oper": "/"
+        }
+      ],
       "alias": "NoShowPercent"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "AVG_IF",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Status = <Completed>"
-          },
-          {
-            "kind": "field",
-            "field": "DurationMinutes"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "AVG_IF",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Status = <Completed>"
+            },
+            {
+              "kind": "field",
+              "field": "DurationMinutes"
+            }
+          ]
+        }
+      ],
       "alias": "AverageMinutes"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "SUM",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "Charge"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Charge"
+            }
+          ]
+        }
+      ],
       "alias": "Charges"
     }
   ],

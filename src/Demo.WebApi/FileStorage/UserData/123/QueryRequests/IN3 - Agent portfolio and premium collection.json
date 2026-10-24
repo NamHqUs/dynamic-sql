@@ -3,83 +3,99 @@
   "Entity": "Employees",
   "Projection": [
     {
-      "field": {
-        "kind": "field",
-        "field": "Id"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
       "alias": "AgentId"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "CONCAT",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "FirstName"
-          },
-          {
-            "kind": "value",
-            "value": " "
-          },
-          {
-            "kind": "field",
-            "field": "LastName"
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CONCAT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        }
+      ],
       "alias": "Agent"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "Location.City"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Location.City"
+        }
+      ],
       "alias": "OfficeCity"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "AgentPolicies.Count()"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "AgentPolicies.Count()"
+        }
+      ],
       "alias": "PoliciesSold"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "AgentPolicies.CountIf(Status = <Active>)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "AgentPolicies.CountIf(Status = <Active>)"
+        }
+      ],
       "alias": "ActivePolicies"
     },
     {
-      "field": {
-        "kind": "function",
-        "function": "COALESCE",
-        "arguments": [
-          {
-            "kind": "field",
-            "field": "AgentPolicies.PremiumPayments.SumIf(Status = <Paid>, Amount)"
-          },
-          {
-            "kind": "value",
-            "value": 0
-          }
-        ]
-      },
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COALESCE",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "AgentPolicies.PremiumPayments.SumIf(Status = <Paid>, Amount)"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        }
+      ],
       "alias": "PaidPremiums"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "AgentPolicies.PremiumPayments.CountIf(Status = <Late>)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "AgentPolicies.PremiumPayments.CountIf(Status = <Late>)"
+        }
+      ],
       "alias": "LatePayments"
     },
     {
-      "field": {
-        "kind": "field",
-        "field": "AgentPolicies.PremiumPayments.CountIf(Status = <Missed>)"
-      },
+      "fields": [
+        {
+          "kind": "field",
+          "field": "AgentPolicies.PremiumPayments.CountIf(Status = <Missed>)"
+        }
+      ],
       "alias": "MissedPayments"
     }
   ],

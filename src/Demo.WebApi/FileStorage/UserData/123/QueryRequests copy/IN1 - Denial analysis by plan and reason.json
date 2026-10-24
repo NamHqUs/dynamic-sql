@@ -1,0 +1,114 @@
+{
+  "Name": "IN1 - Denial analysis by plan and reason",
+  "Entity": "Claims",
+  "Projection": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policy.Plan.Tier"
+      },
+      "alias": "Tier"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policy.Plan.Name"
+      },
+      "alias": "Plan"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "DenialReason"
+      },
+      "alias": "DenialReason"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "COUNT",
+        "arguments": []
+      },
+      "alias": "DeniedClaims"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "BilledAmount"
+          }
+        ]
+      },
+      "alias": "BilledAmount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "AllowedAmount"
+          }
+        ]
+      },
+      "alias": "AllowedAmount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "AVG",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "BilledAmount"
+          }
+        ]
+      },
+      "alias": "AverageBilledAmount"
+    }
+  ],
+  "Filters": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": null,
+        "left": {
+          "kind": "field",
+          "field": "Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Denied"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "Sorts": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "DeniedClaims"
+        },
+        "direction": 1
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "BilledAmount"
+        },
+        "direction": 1
+      }
+    ]
+  ],
+  "Page": 1,
+  "PageSize": 10,
+  "IsBuiltin": false,
+  "Relations": []
+}
