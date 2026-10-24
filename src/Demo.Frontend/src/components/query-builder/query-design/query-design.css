@@ -41,14 +41,14 @@
 .field-card-primary { display: flex; align-items: baseline; gap: 4px; min-width: 0; }
 .field-alias-input { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 4px; padding: 3px 6px; width: 105px; font: 12px "Manrope", sans-serif; outline: 0; }
 .field-alias-input:focus { border-color: #654f9f; }
-.field-name, .field-alias-value { color: #ded5ff; font: 12px "Manrope", sans-serif; }
+.field-name, .field-alias-value { color: #8993a5; font: 12px "Manrope", sans-serif; }
 .field-card .field-name { display: inline-block; max-width: min(360px, 45vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .field-alias-separator { display: inline-flex; align-items: center; color: #737e90; font: 12px "Manrope", sans-serif; line-height: 1; }
 .field-alias-value.editable { cursor: pointer; }
-.field-alias-value { color: #8993a5; }
+.field-alias-value { color: #ded5ff; }
 .field-alias-placeholder { display: inline-block; min-width: 48px; min-height: 1em; border: 0; background: transparent; padding: 0; cursor: pointer; }
-.field-name.editable { color: #ded5ff; cursor: pointer; }
-.field-alias-value.editable { color: #8993a5; cursor: pointer; }
+.field-name.editable { color: #8993a5; cursor: pointer; }
+.field-alias-value.editable { color: #ded5ff; cursor: pointer; }
 .field-name.editable:hover, .field-name.editable:focus, .field-alias-value.editable:hover, .field-alias-value.editable:focus { color: #fff; text-decoration: underline; }
 .field-card .field-builder-editing { height: auto; min-height: 0; }
 .field-card .field-box-menu-selected { height: auto; max-height: none; }

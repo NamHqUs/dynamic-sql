@@ -2,6 +2,7 @@ import { type DragEvent, type ReactNode, useEffect, useLayoutEffect, useRef, use
 import { createPortal } from "react-dom";
 import { IFieldDefinition, MetadataEntity, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder, { FieldBuilderExpressionOptions } from "../field-builder/field-builder";
+import { formatExpression } from "../field-builder/expression-builder";
 import Icon from "../../../icon/icon";
 
 const QUERY_FIELD_DRAG_TYPE = "application/x-query-field";
@@ -257,16 +258,18 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
                     entity={entity}
                     metadata={metadata}
                     value={calculatedProjection ? "" : sort.field}
+                    autoFocus
                     editMode
+                    placeholder={calculatedProjection ? sort.field : undefined}
                     ariaLabel="Sort field"
-                    allowCalculationSelection={calculatedProjection}
+                    allowCalculationSelection
                     initialSection={calculatedProjection ? "calculation" : undefined}
-                    expressionBuilder={calculationExpression ? {
+                    expressionBuilder={{
                       functionDefinitions,
                       functionDefinitionsStatus,
                       functionDefinitionsError,
                       initialExpression: calculationExpression,
-                    } : undefined}
+                    }}
                     onExpressionApply={(expression) => {
                       onDefinitionChange({
                         ...definition,
@@ -313,6 +316,20 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
             placeholderIcon
             ariaLabel="Field"
             excludedPaths={definition.sorts.map((sort) => sort.field)}
+            allowCalculationSelection
+            expressionBuilder={{
+              functionDefinitions,
+              functionDefinitionsStatus,
+              functionDefinitionsError,
+            }}
+            onExpressionApply={(expression) => {
+              const field = formatExpression(expression);
+              if (definition.sorts.some((sort) => sort.field === field)) return;
+              onDefinitionChange({
+                ...definition,
+                sorts: [...definition.sorts, { field, direction: "asc", expression }],
+              });
+            }}
             onChange={addSort}
           />
         </div>
