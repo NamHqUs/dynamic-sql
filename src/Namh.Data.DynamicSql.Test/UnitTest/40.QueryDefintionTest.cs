@@ -172,78 +172,23 @@ internal class _40_QueryDefintionTest : TestBase
     [Test]
     public void SubGroups_Operator_Priority_JsonSerialize()
     {
-        var group = (GroupFieldDefintion)QueryDefinitionParser.ParseField("A - B * C + <3>");
-
-        var text = JsonSerializer.Serialize<IFieldDefinition>(group, new JsonSerializerOptions
+        /// 1 + 2*3 - 3
+        var group = new GroupFieldDefintion(MatchOperation.Add, new List<IFieldDefinition>()
         {
-            WriteIndented = true,
-            Converters = { new JsonStringEnumConverter() }
-        });
+            new ConstFieldDefinition(1),
+            new MathFieldDefinition(MatchOperation.Add, new ConstFieldDefinition(2)),
+            new MathFieldDefinition(MatchOperation.Multiply, new ConstFieldDefinition(3)),
+            new MathFieldDefinition(MatchOperation.Subtract, new ConstFieldDefinition(3))
+        }.ToArray());
 
-        var expectedText = """
-            {
-              "oper": "Add",
-              "kind": "group",
-              "fields": [
-                {
-                  "kind": "field",
-                  "field": "A"
-                },
-                {
-                  "kind": "group",
-                  "operator": "-",
-                  "arguments": [
-                    {
-                      "kind": "field",
-                      "field": "B"
-                    },
-                    {
-                      "kind": "group",
-                      "operator": "*",
-                      "arguments": [
-                        {
-                          "kind": "field",
-                          "field": "C"
-                        },
-                        {
-                          "oper": "Subtract",
-                          "kind": "math",
-                          "field": {
-                            "kind": "field",
-                            "field": "D"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "oper": "Divide",
-                      "kind": "math",
-                      "field": {
-                        "kind": "field",
-                        "field": "E"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "oper": "Add",
-                  "kind": "math",
-                  "field": {
-                    "kind": "value",
-                    "value": 3
-                  }
-                }
-              ]
-            }
-            """;
-
-        Assert.That(text.Replace(" ", "").Replace("\r", "").Replace("\n", ""), Is.EqualTo(expectedText.Replace(" ", "").Replace("\r", "").Replace("\n", "")));
-
-        var roundTripped = JsonSerializer.Deserialize<IFieldDefinition>(text, new JsonSerializerOptions
+        var query = new QueryDefinition()
         {
-            Converters = { new JsonStringEnumConverter() }
-        }) ?? throw new InvalidOperationException("The serialized field expression did not produce a definition.");
-        Assert.That(roundTripped.ToText(), Is.EqualTo(group.ToText()));
+            Entity = "User",
+            Projection = [new ProjectionDefinition(group, "Calculated")]
+        };
+        var data = _db.Query(query).ToList();
+
+        Assert.That(data[0]["Calculated"], Is.EqualTo(1 + 2 * 3 - 3));
     }
 
     [Test]

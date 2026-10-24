@@ -113,7 +113,10 @@ class QueryContext(
         if (fields.Length == 1)
             return ParseQueryExpression(tableContext, fields[0], depth);
 
-        var result = ParseQueryExpression(tableContext, fields[0], depth + 1);
+        var values = new Stack<SqlExpression>();
+        var operations = new Stack<MatchOperation>();
+        values.Push(ParseQueryExpression(tableContext, fields[0], depth + 1));
+
         for (var index = 1; index < fields.Length; index++)
         {
             var (operation, operand) = fields[index] switch
@@ -125,15 +128,39 @@ class QueryContext(
             if (!operation.IsArithmetic())
                 throw new FormatException($"Unsupported grouped projection operator [{operation}].");
 
-            result = new BinarySqlExpression(
-                result,
-                operation.ToSymbol(),
-                ParseQueryExpression(tableContext, operand, depth + 1),
-                typeof(decimal));
+            while (operations.Count > 0 &&
+                GetArithmeticPrecedence(operations.Peek()) >= GetArithmeticPrecedence(operation))
+                Reduce();
+
+            operations.Push(operation);
+            values.Push(ParseQueryExpression(tableContext, operand, depth + 1));
         }
 
-        return result;
+        while (operations.Count > 0)
+            Reduce();
+
+        return values.Pop();
+
+        void Reduce()
+        {
+            var right = values.Pop();
+            var left = values.Pop();
+            var operation = operations.Pop();
+            values.Push(new BinarySqlExpression(
+                left,
+                operation.ToSymbol(),
+                right,
+                typeof(decimal)));
+        }
     }
+
+    private static int GetArithmeticPrecedence(MatchOperation operation)
+        => operation switch
+        {
+            MatchOperation.Add or MatchOperation.Subtract => 1,
+            MatchOperation.Multiply or MatchOperation.Divide or MatchOperation.Modulus => 2,
+            _ => throw new FormatException($"Unsupported grouped projection operator [{operation}].")
+        };
 
     private SqlExpression ParseFunctionExpression(TableExpression tableContext, FunctionFieldDefinition expression, int depth)
     {

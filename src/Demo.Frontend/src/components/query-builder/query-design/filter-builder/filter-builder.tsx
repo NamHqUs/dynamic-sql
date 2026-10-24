@@ -9,11 +9,22 @@ import { FunctionDefinition } from "../../../metadata-builder/function-definitio
 
 const fallbackOperators = [
   [0, "="],
-  [1, "!="],
-  [2, "contains"],
-  [3, ">"],
-  [4, "<"],
+  [1, "<>"],
+  [2, "LIKE"],
+  [3, "NOT LIKE"],
+  [4, ">"],
+  [5, "<"],
+  [6, ">="],
+  [7, "<="],
+  [8, "BETWEEN"],
+  [9, "NOT BETWEEN"],
+  [10, "IN"],
+  [11, "NOT IN"],
+  [12, "IS NULL"],
+  [13, "IS NOT NULL"],
 ] as const;
+const nullCheckOperations = new Set<number | string>([12, 13]);
+const multiValueOperations = new Set<number | string>([8, 9, 10, 11]);
 const logicalOperators = [
   [0, "AND"],
   [1, "OR"],
@@ -163,14 +174,19 @@ function getOperatorOptions(
   operators: FilterOperatorDefinition[],
   fieldDataType: string | undefined,
 ): OperatorOption[] {
-  const compatible = operators.filter((operator) =>
-    !fieldDataType || operator.supportedDataTypes.some((dataType) =>
-      dataType.toLowerCase() === fieldDataType.toLowerCase()),
+  const compatibleCustomOperators = operators.filter((operator) =>
+    !operator.isBuiltin
+      && (!fieldDataType || operator.supportedDataTypes.some((dataType) =>
+        dataType.toLowerCase() === fieldDataType.toLowerCase(),
+      )),
   );
-  return compatible.map((operator): OperatorOption => [
-    operator.isBuiltin ? Number(operator.id.split(":")[1]) : operator.id,
-    operator.symbol,
-  ]);
+  return [
+    ...fallbackOperators,
+    ...compatibleCustomOperators.map((operator): OperatorOption => [
+      operator.id,
+      operator.symbol,
+    ]),
+  ];
 }
 
 function getDropPosition(event: DragEvent<HTMLElement>): DragPosition {
@@ -682,13 +698,18 @@ function FilterRow({ filter, first, path, metadata, functionDefinitions, functio
       <OperatorSelect
         value={filter.operation}
         onChange={(operation) => update({ operation })}
-        options={operatorOptions.length ? operatorOptions : fallbackOperators}
+        options={operatorOptions}
         ariaLabel="Filter operation"
         className="filter-operator-select"
       />
       <input
-        value={filter.rightField ? `[${filter.rightField}]` : filter.value}
-        placeholder="<NULL>"
+        value={nullCheckOperations.has(filter.operation) ? "" : filter.rightField ? `[${filter.rightField}]` : filter.value}
+        placeholder={nullCheckOperations.has(filter.operation)
+          ? "No value needed"
+          : filter.operation === 8 || filter.operation === 9
+            ? "Lower, upper"
+            : multiValueOperations.has(filter.operation) ? "Comma-separated values" : "<NULL>"}
+        disabled={nullCheckOperations.has(filter.operation)}
         aria-label="Filter value"
         onChange={(event) => update({ value: event.target.value, rightField: undefined })}
       />

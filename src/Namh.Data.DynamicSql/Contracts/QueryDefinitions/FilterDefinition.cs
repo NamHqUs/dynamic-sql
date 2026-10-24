@@ -89,7 +89,6 @@ public enum BinaryOperator
     LessThan,
     GreaterThanOrEqual,
     LessThanOrEqual,
-
     Between,
     NotBetween,
     In,
