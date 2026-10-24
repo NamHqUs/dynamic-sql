@@ -2,7 +2,7 @@
 
 :root { font-size: 17px; font-family: "Manrope", sans-serif; color: #e9edf4; background: #080a0f; font-synthesis: none; --panel: #10131a; --panel-2: #151923; --line: #252b38; --muted: #8993a5; --purple: #a78bfa; --green: #53d5a1; }
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 0; background: radial-gradient(circle at 76% -10%, #1b1630 0, transparent 32%), #080a0f; }
+body { margin: 0; min-width: 0; background: radial-gradient(circle at 76% -10%, #1b1630 0, transparent 32%), #080a0f; background-attachment: fixed; background-repeat: no-repeat; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 .action-link-text { font-family: "Manrope", sans-serif; text-decoration: underline; }

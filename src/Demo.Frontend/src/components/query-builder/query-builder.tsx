@@ -3,11 +3,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
+import PanelSplitter from "../panel-splitter/panel-splitter";
 import { createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, IFieldDefinition, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import SavedQueryList from "./saved-query-list/saved-query-list";
 import { addRelationsToMetadata } from "../../utils/query-relations";
+import { useResizablePanel } from "../../utils/use-resizable-panel";
 import { replacePlanTextSectionValue } from "./query-design/plan-text-section-editor";
 import type { PlanTextSection } from "./query-design/plan-text-section-editor";
 import type { AppDispatch, RootState } from "../../store/store";
@@ -237,6 +239,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const dispatch = useDispatch<AppDispatch>();
   const showMessageBox = useMessageBox();
   const [searchParams, setSearchParams] = useSearchParams();
+  const savedQueriesPanel = useResizablePanel("query-builder-saved-queries");
   const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames, filterOperators, filterOperatorsStatus, filterOperatorsError, queryRequests, queryRequestsStatus, queryRequestsError } = useSelector((state: RootState) => state.queryBuilder);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
   const [requestName, setRequestName] = useState("");
@@ -466,6 +469,14 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               <Icon name="check" size={14} /> {isSavingQuery ? "Saving..." : "Save Query"}
             </button>
           </>}
+        </div>
+      </section>
+      {(queryRequestsError || queryRequestNotice) && <p className={`query-request-feedback${queryRequestsError ? " error" : ""}`} role={queryRequestsError ? "alert" : "status"}>
+        {queryRequestsError || queryRequestNotice}
+      </p>}
+
+      <section className="query-section query-design-section" aria-label="Section 1: Design">
+        <div className={`query-design-workspace split-workspace${savedQueriesPanel.collapsed ? " panel-collapsed" : ""}`} style={savedQueriesPanel.style}>
           <SavedQueryList
             requests={queryRequests}
             selectedRequestName={selectedRequestName}
@@ -476,14 +487,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               void dispatch(fetchQueryRequests());
             }}
           />
-        </div>
-      </section>
-      {(queryRequestsError || queryRequestNotice) && <p className={`query-request-feedback${queryRequestsError ? " error" : ""}`} role={queryRequestsError ? "alert" : "status"}>
-        {queryRequestsError || queryRequestNotice}
-      </p>}
-
-      <section className="query-builder-workspace query-builder-solo">
-        <div className="query-request-editor">
+          <PanelSplitter panel={savedQueriesPanel} label="saved queries panel" />
           <div className="query-design-area">
             <QueryDesign
               metadata={metadata}
@@ -509,6 +513,8 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
           </div>
         </div>
         {queryError && <p className="query-message error query-builder-error" role="alert">{queryError}</p>}
+      </section>
+      <section className="query-section query-result-section" aria-label="Section 2: Query Result">
         <QueryResult
           result={result}
           sqlStatement={sqlStatement}
