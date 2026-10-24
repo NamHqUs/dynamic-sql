@@ -1,0 +1,108 @@
+{
+  "Name": "IN4 - Claims adjudication by plan",
+  "Entity": "InsurancePlans",
+  "Projection": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": "Plan"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Tier"
+      },
+      "alias": "Tier"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policies.Claims.Count()"
+      },
+      "alias": "ClaimsReceived"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policies.Claims.CountIf(Status = <Paid>)"
+      },
+      "alias": "PaidClaims"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policies.Claims.CountIf(Status = <Denied>)"
+      },
+      "alias": "DeniedClaims"
+    },
+    {
+      "field": {
+        "kind": "group",
+        "operator": "/",
+        "arguments": [
+          {
+            "kind": "group",
+            "operator": "*",
+            "arguments": [
+              {
+                "kind": "value",
+                "value": 100
+              },
+              {
+                "kind": "field",
+                "field": "Policies.Claims.CountIf(Status = <Denied>)"
+              }
+            ]
+          },
+          {
+            "kind": "function",
+            "function": "NULLIF",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Policies.Claims.Count()"
+              },
+              {
+                "kind": "value",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "DenialPercent"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policies.Claims.AverageIf(ProcessedDate IS NOT NULL, DateSub(ClaimDate, ProcessedDate))"
+      },
+      "alias": "AverageProcessingDays"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policies.Claims.Sum(PaidAmount)"
+      },
+      "alias": "TotalPaid"
+    }
+  ],
+  "Filters": null,
+  "Sorts": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "ClaimsReceived"
+        },
+        "direction": 1
+      }
+    ]
+  ],
+  "Page": 1,
+  "PageSize": 10,
+  "IsBuiltin": false,
+  "Relations": []
+}

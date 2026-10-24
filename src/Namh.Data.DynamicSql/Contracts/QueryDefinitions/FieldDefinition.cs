@@ -29,7 +29,7 @@ public record FunctionFieldDefinition(string FunctionName, IFieldDefinition[] Ar
 {
     public string ToText(Dictionary<string, object>? tags = null) => $"{FunctionName}({string.Join(", ", Arguments.Select(a => a.ToText(tags)))})";
 }
-public record GroupFieldDefintion(MatchOperation Oper, IFieldDefinition[] Fields) : IFieldDefinition
+public record GroupFieldDefintion(MatchOperation Oper, IFieldDefinition[] Fields) : IMathFieldDefinition
 {
     public GroupFieldDefintion(IFieldDefinition[] fields)
         : this(MatchOperation.Add, fields)

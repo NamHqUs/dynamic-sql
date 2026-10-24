@@ -12,32 +12,32 @@ services:
     networks:
       - dbnet
 
-  postgres:
-    image: postgres:17
-    container_name: postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "NoPassword123!"
-      POSTGRES_DB: DynamicSqlTest
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - dbnet
+  # postgres:
+  #   image: postgres:17
+  #   container_name: postgres
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: "NoPassword123!"
+  #     POSTGRES_DB: DynamicSqlTest
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - dbnet
 
-  cloudbeaver:
-    image: dbeaver/cloudbeaver:latest
-    container_name: cloudbeaver
-    ports:
-      - "8978:8978"
-    volumes:
-      - cloudbeaver_data:/opt/cloudbeaver/workspace
-    depends_on:
-      - sqlserver
-      - postgres
-    networks:
-      - dbnet
+  # cloudbeaver:
+  #   image: dbeaver/cloudbeaver:latest
+  #   container_name: cloudbeaver
+  #   ports:
+  #     - "8978:8978"
+  #   volumes:
+  #     - cloudbeaver_data:/opt/cloudbeaver/workspace
+  #   depends_on:
+  #     - sqlserver
+  #     - postgres
+  #   networks:
+  #     - dbnet
 
 volumes:
   sqlserver_data:

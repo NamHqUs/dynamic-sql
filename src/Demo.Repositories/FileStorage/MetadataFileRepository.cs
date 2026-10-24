@@ -1,15 +1,16 @@
 using Demo.Contracts.Repositories;
 using Demo.Share;
+using Microsoft.Extensions.Configuration;
 using Namh.Data.DynamicSql;
 using System.Text.Json;
 
 namespace Demo.Repositories.FileStorage;
 
-public sealed class MetadataFileRepository(FilePathResolver filePathResolver)
+public sealed class MetadataFileRepository(IConfiguration configuration, FilePathResolver filePathResolver)
     : FileRepositoryBase<Entity>(filePathResolver, FOLDER_NAME), IMetadataRepository
 {
     private const string FOLDER_NAME = "UnitTestData";
-
+    private IReadOnlyCollection<Entity> _builtinEntities= default!;
     public void Reset(string userSectionId)
     {
         var dir = GetUserStoreFolder(userSectionId);
@@ -17,7 +18,26 @@ public sealed class MetadataFileRepository(FilePathResolver filePathResolver)
             Directory.Delete(dir, recursive: true);
     }
 
-    public override IReadOnlyCollection<Entity> GetBuiltin() => BuiltinMetadata.DefaultMetadata;
+    
+
+    public override IReadOnlyCollection<Entity> GetBuiltin() {
+        if (_builtinEntities is null)
+        {
+            var useCases = configuration.GetSection("DbProvider:UseCases").Get<string[]>() ?? Array.Empty<string>();
+
+            var list = new List<Entity>();
+            if (useCases.Contains("northstar-demo"))
+                list.AddRange(BuiltinMetadata.NorthStarDemoData);
+            if (useCases.Contains("sale-demo"))
+                list.AddRange(BuiltinMetadata.SaleDemoData);
+            if (useCases.Contains("unit-test"))
+                list.AddRange(BuiltinMetadata.UnitTestData);
+
+            _builtinEntities = list;
+        }
+
+        return _builtinEntities;
+    }
 
     public override IReadOnlyCollection<Entity> GetUserDefined(string userSectionId)
     {

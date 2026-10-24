@@ -73,6 +73,8 @@ internal sealed class FilterDefinitionParser
         {
             var modifier = Next();
             operation = $"{operation} {modifier.Text.ToLowerInvariant()}";
+            if (operation == "is not")
+                operation = $"{operation} {Next().Text.ToLowerInvariant()}";
         }
         var value = operation is "is null" or "is not null"
             ? null

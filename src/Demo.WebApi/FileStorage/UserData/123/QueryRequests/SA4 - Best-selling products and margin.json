@@ -1,0 +1,108 @@
+{
+  "Name": "SA4 - Best-selling products and margin",
+  "Entity": "NorthStarProducts",
+  "Projection": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": "ProductId"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": "Product"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Category"
+      },
+      "alias": "Category"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity)"
+      },
+      "alias": "UnitsSold"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "OrderItems.CountDistinctIf(Order.Status = <Completed>, Order.Id)"
+      },
+      "alias": "OrderCount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
+      },
+      "alias": "NetRevenue"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)"
+      },
+      "alias": "GrossProfit"
+    },
+    {
+      "field": {
+        "kind": "group",
+        "operator": "/",
+        "arguments": [
+          {
+            "kind": "group",
+            "operator": "*",
+            "arguments": [
+              {
+                "kind": "value",
+                "value": 100
+              },
+              {
+                "kind": "field",
+                "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)"
+              }
+            ]
+          },
+          {
+            "kind": "function",
+            "function": "NULLIF",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
+              },
+              {
+                "kind": "value",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "MarginPercent"
+    }
+  ],
+  "Filters": null,
+  "Sorts": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "GrossProfit"
+        },
+        "direction": 1
+      }
+    ]
+  ],
+  "Page": 1,
+  "PageSize": 10,
+  "IsBuiltin": false,
+  "Relations": []
+}

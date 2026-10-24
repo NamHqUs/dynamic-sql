@@ -1,6 +1,7 @@
 ﻿using Namh.Data.DynamicSql;
 using Namh.Data.DynamicSql.Compilation.Expressions;
 using Namh.Data.DynamicSql.Compilation.Models;
+using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using Namh.Data.DynamicSql.QueryBuilderDto.Parsers;
 using static Namh.Data.DynamicSql.SqlFunctionDefintion;
 
@@ -44,7 +45,7 @@ class QueryContext(
             fieldPath = fieldPath[(relation.Key.Length + 1)..];
         }
 
-        var i = fieldPath.LastIndexOf('.');
+        var i = FindLastUnnestedDot(fieldPath);
         var relationPath = i < 0 ? null : fieldPath[..i];
         var fieldName = fieldPath[(i + 1)..];
 
@@ -193,9 +194,134 @@ class QueryContext(
         if (expression is null)
             throw new FormatException($"Function argument [{definition.Name}] cannot be null.");
 
-        return expression is FieldDefinition { FieldName: "*" }
-            ? new FunctionSqlTokenArgument("*")
-            : new FunctionSqlExpressionArgument(ParseQueryExpression(tableContext, expression, depth));
+        if (expression is FieldDefinition { FieldName: "*" })
+            return new FunctionSqlTokenArgument("*");
+
+        if (definition.DataType == DataType.Boolean &&
+            expression is FieldDefinition predicate &&
+            LooksLikePredicate(predicate.FieldName))
+        {
+            var filter = FilterDefinitionParser.Parse(predicate.FieldName)
+                ?? throw new FormatException($"Function argument [{definition.Name}] requires a predicate.");
+            return new FunctionSqlExpressionArgument(
+                ParsePredicateExpression(tableContext, filter, depth));
+        }
+
+        return new FunctionSqlExpressionArgument(ParseQueryExpression(tableContext, expression, depth));
+    }
+
+    private SqlExpression ParsePredicateExpression(
+        TableExpression tableContext,
+        IFilterDefintion filter,
+        int depth)
+    {
+        if (filter is FilterDefinition group)
+        {
+            SqlExpression? result = null;
+            foreach (var child in group.Filters)
+            {
+                var expression = ParsePredicateExpression(tableContext, child, depth + 1);
+                if (result is null)
+                {
+                    result = expression;
+                    continue;
+                }
+
+                var logicalOperation = child is FilterItemDefinition { LogicalOperator: { } logicalOperator }
+                    ? logicalOperator
+                    : group.LogicalOperation;
+                result = new BinarySqlExpression(
+                    result,
+                    logicalOperation.ToString().ToUpperInvariant(),
+                    expression,
+                    typeof(bool));
+            }
+
+            return result
+                ?? throw new FormatException("A function predicate cannot be empty.");
+        }
+
+        if (filter is not FilterItemDefinition item)
+            throw new FormatException($"Unsupported function predicate [{filter.GetType().Name}].");
+
+        var left = ParseQueryExpression(tableContext, item.Left, depth + 1);
+        if (item.Operation is BinaryOperator.IsNull or BinaryOperator.IsNotNull)
+            return new PredicateExpression(
+                left,
+                item.Operation == BinaryOperator.IsNull ? "IS NULL" : "IS NOT NULL");
+
+        var right = item.Right
+            ?? throw new FormatException($"Predicate operator [{item.Operation}] requires a right operand.");
+        if (item.Operation is BinaryOperator.In or BinaryOperator.NotIn)
+        {
+            if (right is not GroupFieldDefintion values || values.Fields.Length == 0)
+                throw new FormatException("A function predicate set comparison requires values.");
+
+            return new SetPredicateExpression(
+                left,
+                item.Operation == BinaryOperator.In ? "IN" : "NOT IN",
+                values.Fields.Select(value => ParseQueryExpression(tableContext, value, depth + 1)).ToArray());
+        }
+
+        if (item.Operation is BinaryOperator.Between or BinaryOperator.NotBetween)
+        {
+            if (right is not GroupFieldDefintion { Fields.Length: 2 } range)
+                throw new FormatException("A function predicate range comparison requires two values.");
+
+            return new RangePredicateExpression(
+                left,
+                item.Operation == BinaryOperator.Between ? "BETWEEN" : "NOT BETWEEN",
+                ParseQueryExpression(tableContext, range.Fields[0], depth + 1),
+                ParseQueryExpression(tableContext, range.Fields[1], depth + 1));
+        }
+
+        if (item.Operation is BinaryOperator.Like or BinaryOperator.NotLike)
+            return new PredicateExpression(
+                left,
+                item.Operation == BinaryOperator.Like ? "LIKE" : "NOT LIKE",
+                ParseQueryExpression(tableContext, right, depth + 1));
+
+        var operation = item.Operation switch
+        {
+            BinaryOperator.Equals => "=",
+            BinaryOperator.NotEquals => "<>",
+            BinaryOperator.GreaterThan => ">",
+            BinaryOperator.LessThan => "<",
+            BinaryOperator.GreaterThanOrEqual => ">=",
+            BinaryOperator.LessThanOrEqual => "<=",
+            _ => throw new FormatException($"Unsupported function predicate operator [{item.Operation}].")
+        };
+
+        return new BinarySqlExpression(
+            left,
+            operation,
+            ParseQueryExpression(tableContext, right, depth + 1),
+            typeof(bool));
+    }
+
+    private static bool LooksLikePredicate(string expression)
+        => expression.IndexOfAny(['=', '>', '<']) >= 0 ||
+            expression.Contains(" LIKE ", StringComparison.OrdinalIgnoreCase) ||
+            expression.Contains(" NOT LIKE ", StringComparison.OrdinalIgnoreCase) ||
+            expression.Contains(" IN ", StringComparison.OrdinalIgnoreCase) ||
+            expression.Contains(" NOT IN ", StringComparison.OrdinalIgnoreCase) ||
+            expression.Contains(" IS ", StringComparison.OrdinalIgnoreCase);
+
+    private static int FindLastUnnestedDot(string fieldPath)
+    {
+        var depth = 0;
+        var lastDot = -1;
+        for (var index = 0; index < fieldPath.Length; index++)
+        {
+            if (fieldPath[index] == '(')
+                depth++;
+            else if (fieldPath[index] == ')')
+                depth--;
+            else if (fieldPath[index] == '.' && depth == 0)
+                lastDot = index;
+        }
+
+        return lastDot;
     }
 
     private FunctionSqlArgument? ParseDefaultFunctionArgument(
@@ -250,11 +376,6 @@ class QueryContext(
         if (FieldDefinitionParser.Parse(fieldName) is not FunctionFieldDefinition parsedFunction ||
             !metaProvider.TryGetFunction(parsedFunction.FunctionName, out var definition) ||
             definition is not { IsAggregate: true })
-            return false;
-        if (parsedFunction.Arguments.Any(argument =>
-            argument is not FieldDefinition field ||
-            field.FieldName.Contains('(') ||
-            field.FieldName.Contains(')')))
             return false;
 
         function = parsedFunction;

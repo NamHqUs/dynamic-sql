@@ -1,0 +1,92 @@
+{
+  "Name": "HR3 - Workforce composition by location",
+  "Entity": "Locations",
+  "Projection": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "City"
+      },
+      "alias": "OfficeCity"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "State"
+      },
+      "alias": "State"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.Count()"
+      },
+      "alias": "Headcount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.CountDistinct(DepartmentId)"
+      },
+      "alias": "DepartmentsRepresented"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.CountIf(EmploymentType = <Full-time>)"
+      },
+      "alias": "FullTime"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.CountIf(EmploymentType = <Part-time>)"
+      },
+      "alias": "PartTime"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.CountIf(EmploymentType = <Contract>)"
+      },
+      "alias": "Contractors"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.Average(ElapsedYears(HireDate, <2025-10-31>))"
+      },
+      "alias": "AverageTenureYears"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.Sum(Salary)"
+      },
+      "alias": "AnnualPayroll"
+    }
+  ],
+  "Filters": null,
+  "Sorts": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "Headcount"
+        },
+        "direction": 1
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "AnnualPayroll"
+        },
+        "direction": 1
+      }
+    ]
+  ],
+  "Page": 1,
+  "PageSize": 10,
+  "IsBuiltin": false,
+  "Relations": []
+}

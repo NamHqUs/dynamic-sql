@@ -18,23 +18,23 @@ public sealed class DbConnectionFactory : IDbConnectionFactory
 
     public DbConnectionFactory(IConfiguration configuration)
     {
-        if (!Enum.TryParse<DbServerType>(configuration["DbServerType"], ignoreCase: true, out var dbServerType))
-            throw new InvalidOperationException("DbServerType must be Sqlite, SqlServer, or Postgres.");
+        if (!Enum.TryParse<DbServerType>(configuration["DbProvider:Default"], ignoreCase: true, out var dbServerType))
+            throw new InvalidOperationException("DbProvider:Default must be Sqlite, SqlServer, or Postgres.");
 
         var connectionString = configuration.GetConnectionString(dbServerType.ToString())
             ?? throw new InvalidOperationException($"Connection string '{dbServerType}' is required.");
 
-        var path = configuration["DbScriptsPath"] ?? throw new InvalidOperationException("DbScriptsPath is required in the configuration.");
+        var path = configuration["DbProvider:DbScriptsPath"] ?? throw new InvalidOperationException("DbScriptsPath is required in the configuration.");
         path = new DirectoryInfo(path).FullName;
 
-        string[] getPaths(params string[] paths) =>
-           paths.Select(p => Path.Combine(path, p)).ToArray();
+        var useCases = configuration.GetSection("DbProvider:UseCases").Get<string[]>() ?? Array.Empty<string>();
+        var scripts = useCases.Select(s => Path.Combine(path, $"{s}.{dbServerType}.sql".ToLower())).ToArray();
 
         _dbProvider = dbServerType switch
         {
-            DbServerType.Sqlite => new SqliteDbProvider(connectionString, getPaths("sale-demo.sqlite.sql", "test-data.sqlite.sql")),
-            DbServerType.SqlServer => new SqlServerDbProvider(connectionString, getPaths("sale-demo.sqlserver.sql", "test-data.sqlserver.sql")),
-            DbServerType.Postgres => new PostgresDbProvider(connectionString, getPaths("sale-demo.postgres.sql", "test-data.postgres.sql")),
+            DbServerType.Sqlite => new SqliteDbProvider(connectionString, scripts),
+            DbServerType.SqlServer => new SqlServerDbProvider(connectionString, scripts),
+            DbServerType.Postgres => new PostgresDbProvider(connectionString, scripts),
             _ => throw new ArgumentOutOfRangeException(nameof(dbServerType), dbServerType, null)
         };
     }

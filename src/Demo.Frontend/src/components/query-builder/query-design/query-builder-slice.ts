@@ -44,7 +44,7 @@ export type IFieldDefinition =
 export type IMathFieldDefinition =
   | { kind: "field"; field: string }
   | { kind: "value"; value: unknown }
-  | { kind: "math"; oper: MatchOperation; field: IMathFieldDefinition }
+  | { kind: "math"; oper: MatchOperation; field: IFieldDefinition }
   | { kind: "function"; function: string; arguments: IFieldDefinition[] };
 
 export type MatchOperation = "+" | "-" | "*" | "/" | "%" | "&" | "|";
@@ -223,33 +223,76 @@ export function createApiQuery(definition: QueryDefinition) {
   };
 }
 
-function isFieldDefinition(value: unknown): value is IFieldDefinition {
-  if (!value || typeof value !== "object" || !("kind" in value)) return false;
+function normalizeMatchOperation(value: unknown): MatchOperation | undefined {
+  const operations: Record<string, MatchOperation> = {
+    add: "+",
+    subtract: "-",
+    multiply: "*",
+    divide: "/",
+    modulus: "%",
+    bitwiseand: "&",
+    bitwiseor: "|",
+  };
+  if (typeof value === "string") {
+    if (isMatchOperation(value)) return value;
+    return operations[value.toLowerCase()];
+  }
+  return typeof value === "number"
+    ? ["+", "-", "*", "/", "%", "&", "|"][value] as MatchOperation | undefined
+    : undefined;
+}
+
+function normalizeFieldDefinition(value: unknown): IFieldDefinition | undefined {
+  if (!value || typeof value !== "object" || !("kind" in value)) return undefined;
 
   switch (value.kind) {
     case "field":
-      return "field" in value && typeof value.field === "string";
+      return "field" in value && typeof value.field === "string"
+        ? { kind: "field", field: value.field }
+        : undefined;
     case "value":
-      return "value" in value;
-    case "math":
-      return "oper" in value
-        && isMatchOperation(value.oper)
-        && "field" in value
-        && isMathFieldDefinition(value.field);
-    case "group":
-      return (!("operator" in value) || isMatchOperation(value.operator))
-        && "arguments" in value
-        && Array.isArray(value.arguments)
-        && value.arguments.every(isFieldDefinition);
-    case "function":
-      return "function" in value
-        && typeof value.function === "string"
-        && "arguments" in value
-        && Array.isArray(value.arguments)
-        && value.arguments.every(isFieldDefinition);
+      return "value" in value ? { kind: "value", value: value.value } : undefined;
+    case "math": {
+      const oper = "oper" in value ? normalizeMatchOperation(value.oper) : undefined;
+      const field = "field" in value ? normalizeFieldDefinition(value.field) : undefined;
+      return oper && field && isMathFieldDefinition(field) ? { kind: "math", oper, field } : undefined;
+    }
+    case "group": {
+      const argumentsValue = "arguments" in value ? value.arguments : "fields" in value ? value.fields : undefined;
+      if (!Array.isArray(argumentsValue)) return undefined;
+      const arguments_: IFieldDefinition[] = [];
+      for (const argument of argumentsValue) {
+        const normalizedArgument = normalizeFieldDefinition(argument);
+        if (!normalizedArgument) return undefined;
+        arguments_.push(normalizedArgument);
+      }
+      const operatorValue = "operator" in value ? value.operator : "oper" in value ? value.oper : undefined;
+      const operator = operatorValue === undefined ? undefined : normalizeMatchOperation(operatorValue);
+      if (operatorValue !== undefined && !operator) return undefined;
+      return {
+        kind: "group",
+        ...(operator ? { operator } : {}),
+        arguments: arguments_,
+      };
+    }
+    case "function": {
+      if (!("function" in value) || typeof value.function !== "string"
+        || !("arguments" in value) || !Array.isArray(value.arguments)) return undefined;
+      const arguments_: IFieldDefinition[] = [];
+      for (const argument of value.arguments) {
+        const normalizedArgument = normalizeFieldDefinition(argument);
+        if (!normalizedArgument) return undefined;
+        arguments_.push(normalizedArgument);
+      }
+      return { kind: "function", function: value.function, arguments: arguments_ };
+    }
     default:
-      return false;
+      return undefined;
   }
+}
+
+function isFieldDefinition(value: unknown): value is IFieldDefinition {
+  return normalizeFieldDefinition(value) !== undefined;
 }
 
 function isMathFieldDefinition(value: unknown): value is IMathFieldDefinition {
@@ -268,6 +311,10 @@ function isMathFieldDefinition(value: unknown): value is IMathFieldDefinition {
       return "function" in value
         && typeof value.function === "string"
         && "arguments" in value
+        && Array.isArray(value.arguments)
+        && value.arguments.every(isFieldDefinition);
+    case "group":
+      return "arguments" in value
         && Array.isArray(value.arguments)
         && value.arguments.every(isFieldDefinition);
     default:
@@ -318,16 +365,21 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
     filters: group.filters.map((node): QueryFilterNode => {
       if ("filters" in node) return restoreGroup(node);
       const left = node.left ?? node.field;
-      const field = left === undefined ? "" : filterOperandToText(left);
-      const fieldExpression = isFieldDefinition(left) ? left : undefined;
+      const fieldExpression = normalizeFieldDefinition(left);
+      const field = typeof left === "string"
+        ? left
+        : fieldExpression
+          ? filterOperandToText(fieldExpression)
+          : "";
       const right = node.right;
-      const rightField = isFieldDefinition(right) && right.kind !== "value"
-        ? filterOperandToText(right)
+      const rightExpression = normalizeFieldDefinition(right);
+      const rightField = rightExpression && rightExpression.kind !== "value"
+        ? filterOperandToText(rightExpression)
         : undefined;
       const value = rightField
         ? ""
-        : isFieldDefinition(right) && right.kind === "value"
-        ? String(right.value ?? "")
+        : rightExpression?.kind === "value"
+        ? String(rightExpression.value ?? "")
         : "right" in node
           ? String(right ?? "")
           : String(node.value ?? "");
@@ -347,30 +399,38 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
   return {
     entity: query.entity,
     relations: query.relations ?? [],
-    columns: query.projection.map((projection, index) => ({
-      field: projection.field.kind === "field"
-        ? projection.field.field
+    columns: query.projection.map((projection, index) => {
+      const expression = normalizeFieldDefinition(projection.field);
+      if (!expression) throw new Error("Query API returned an unsupported projection expression.");
+      return {
+      field: expression.kind === "field"
+        ? expression.field
         : `__calculated__${projection.alias || index}`,
       alias: projection.alias,
-      ...(projection.field.kind === "field" ? {} : { expression: projection.field }),
-    })),
+      ...(expression.kind === "field" ? {} : { expression }),
+    };
+    }),
     projectionRows: projectionRows?.length
       ? projectionRows.map((row) => [...row])
       : query.projection.length
-      ? [query.projection.map((projection, index) => projection.field.kind === "field"
-        ? projection.field.field
-        : `__calculated__${projection.alias || index}`)]
+      ? [query.projection.map((projection, index) => {
+        const expression = normalizeFieldDefinition(projection.field);
+        if (!expression) throw new Error("Query API returned an unsupported projection expression.");
+        return expression.kind === "field"
+          ? expression.field
+          : `__calculated__${projection.alias || index}`;
+      })]
       : [[]],
     filters: query.filter ? restoreGroup(query.filter) : { logicalOperation: 0, filters: [] },
-    sorts: query.sorts.map((sort) => typeof sort.field === "string"
-      ? { ...sort, direction: sort.direction === 1 ? "desc" : "asc" }
-      : sort.field.kind === "field"
-        ? { field: sort.field.field, direction: sort.direction === 1 ? "desc" : "asc" }
-        : {
-          field: expressionToText(sort.field),
-          expression: sort.field,
-          direction: sort.direction === 1 ? "desc" : "asc",
-        }),
+    sorts: query.sorts.map((sort) => {
+      const direction = sort.direction === 1 ? "desc" : "asc";
+      if (typeof sort.field === "string") return { ...sort, direction };
+      const expression = normalizeFieldDefinition(sort.field);
+      if (!expression) throw new Error("Query API returned an unsupported sort expression.");
+      return expression.kind === "field"
+        ? { field: expression.field, direction }
+        : { field: expressionToText(expression), expression, direction };
+    }),
         page: query.page,
         pageSize: query.pageSize,
   };

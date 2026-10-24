@@ -15,7 +15,9 @@ internal static class FieldDefinitionParser
             var argumentsText = text[(opening + 1)..^1];
             var arguments = SplitTopLevel(argumentsText, ',')
                 .Where(argument => !string.IsNullOrWhiteSpace(argument))
-                .Select(Parse)
+                .Select(argument => LooksLikePredicateExpression(argument)
+                    ? new FieldDefinition(argument)
+                    : Parse(argument))
                 .ToArray();
             return new FunctionFieldDefinition(text[..opening].Trim(), arguments);
         }
@@ -54,6 +56,31 @@ internal static class FieldDefinitionParser
         }
 
         opening = -1;
+        return false;
+    }
+
+    private static bool LooksLikePredicateExpression(string text)
+        => text.Contains('=') ||
+            text.Contains("<>") ||
+            text.Contains(" < ", StringComparison.Ordinal) ||
+            text.Contains(" > ", StringComparison.Ordinal) ||
+            ContainsKeyword(text, "IS") ||
+            ContainsKeyword(text, "LIKE") ||
+            ContainsKeyword(text, "IN");
+
+    private static bool ContainsKeyword(string text, string keyword)
+    {
+        var start = 0;
+        while ((start = text.IndexOf(keyword, start, StringComparison.OrdinalIgnoreCase)) >= 0)
+        {
+            var beforeIsBoundary = start == 0 || !char.IsLetterOrDigit(text[start - 1]);
+            var afterIndex = start + keyword.Length;
+            var afterIsBoundary = afterIndex == text.Length || !char.IsLetterOrDigit(text[afterIndex]);
+            if (beforeIsBoundary && afterIsBoundary)
+                return true;
+            start = afterIndex;
+        }
+
         return false;
     }
 

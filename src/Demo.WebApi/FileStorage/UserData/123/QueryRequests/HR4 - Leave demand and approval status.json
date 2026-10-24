@@ -1,0 +1,97 @@
+{
+  "Name": "HR4 - Leave demand and approval status",
+  "Entity": "LeaveRequests",
+  "Projection": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employee.Department.Name"
+      },
+      "alias": "Department"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LeaveType"
+      },
+      "alias": "LeaveType"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Status"
+      },
+      "alias": "Status"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "COUNT",
+        "arguments": []
+      },
+      "alias": "Requests"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Days"
+          }
+        ]
+      },
+      "alias": "DaysRequested"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "AVG",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Days"
+          }
+        ]
+      },
+      "alias": "AverageRequestDays"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "COUNT_DISTINCT",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "EmployeeId"
+          }
+        ]
+      },
+      "alias": "EmployeesRequesting"
+    }
+  ],
+  "Filters": null,
+  "Sorts": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "DaysRequested"
+        },
+        "direction": 1
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "Requests"
+        },
+        "direction": 1
+      }
+    ]
+  ],
+  "Page": 1,
+  "PageSize": 10,
+  "IsBuiltin": false,
+  "Relations": []
+}

@@ -1,0 +1,146 @@
+{
+  "Name": "HC3 - High-risk patient care profile",
+  "Entity": "Persons",
+  "Projection": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": "PatientId"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CONCAT",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "FirstName"
+          },
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
+            "kind": "field",
+            "field": "LastName"
+          }
+        ]
+      },
+      "alias": "Patient"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "AgeOn",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "BirthDate"
+          },
+          {
+            "kind": "value",
+            "value": "2025-10-31"
+          }
+        ]
+      },
+      "alias": "Age"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "PatientVisits.CountIf(Status = <Completed> AND Diagnosis.IsChronic = <true>)"
+      },
+      "alias": "ChronicVisits"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "PatientVisits.CountIf(Status = <Completed>)"
+      },
+      "alias": "CompletedVisits"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "PatientVisits.LabResults.CountIf(Visit.Status = <Completed> AND IsAbnormal = <true>)"
+      },
+      "alias": "AbnormalResults"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "PatientVisits.SumIf(Status = <Completed>, Charge)"
+      },
+      "alias": "TotalCharges"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "PatientVisits.MaxIf(Status = <Completed>, VisitDate)"
+      },
+      "alias": "LastVisitDate"
+    }
+  ],
+  "Filters": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": null,
+        "left": {
+          "kind": "field",
+          "field": "PatientVisits.CountIf(Status = <Completed> AND Diagnosis.IsChronic = <true>)"
+        },
+        "operation": 4,
+        "right": {
+          "kind": "value",
+          "value": 0
+        },
+        "parameterized": true
+      },
+      {
+        "logicalOperator": null,
+        "left": {
+          "kind": "field",
+          "field": "PatientVisits.LabResults.CountIf(Visit.Status = <Completed> AND IsAbnormal = <true>)"
+        },
+        "operation": 4,
+        "right": {
+          "kind": "value",
+          "value": 0
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "Sorts": [
+    [
+      {
+        "field": {
+          "kind": "field",
+          "field": "AbnormalResults"
+        },
+        "direction": 1
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "ChronicVisits"
+        },
+        "direction": 1
+      },
+      {
+        "field": {
+          "kind": "field",
+          "field": "TotalCharges"
+        },
+        "direction": 1
+      }
+    ]
+  ],
+  "Page": 1,
+  "PageSize": 10,
+  "IsBuiltin": false,
+  "Relations": []
+}
