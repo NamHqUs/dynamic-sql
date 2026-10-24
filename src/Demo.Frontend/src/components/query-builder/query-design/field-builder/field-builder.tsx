@@ -31,7 +31,6 @@ type FieldBuilderProps = {
   ariaLabel?: string;
   excludedPaths?: string[];
   autoFocus?: boolean;
-  editOnDoubleClick?: boolean;
   editMode?: boolean;
   onCancel?: () => void;
   allowAggregates?: boolean;
@@ -71,7 +70,6 @@ export default function FieldBuilder({
   ariaLabel = "Field",
   excludedPaths = [],
   autoFocus,
-  editOnDoubleClick = false,
   editMode = false,
   onCancel,
   allowAggregates = true,
@@ -138,7 +136,6 @@ export default function FieldBuilder({
       onIncompleteChange={setHasIncompleteSelection}
       clearOnSelect
       autoFocus={autoFocus ?? (Boolean(value) || initialConstantValue !== undefined)}
-      editOnDoubleClick={editOnDoubleClick}
       showPath={showPath}
       placeholder={initialConstantValue === undefined ? placeholder : String(initialConstantValue)}
       placeholderIcon={placeholderIcon}
@@ -207,14 +204,7 @@ export default function FieldBuilder({
       <span
         className="field-builder-value"
         aria-label={`Selected ${ariaLabel.toLowerCase()}: ${value}`}
-        onClick={() => {
-          if (!editOnDoubleClick) setIsEditing(true);
-        }}
-        onDoubleClick={(event) => {
-          if (!editOnDoubleClick) return;
-          event.preventDefault();
-          setIsEditing(true);
-        }}
+        onClick={() => setIsEditing(true)}
         role="button"
         tabIndex={0}
         onKeyDown={(event) => {

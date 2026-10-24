@@ -20,7 +20,6 @@ type FieldBoxProps = {
   ariaLabel?: string;
   excludedPaths?: string[];
   autoFocus?: boolean;
-  editOnDoubleClick?: boolean;
   allowAggregates?: boolean;
   allowValueSelection?: boolean;
   allowCalculationSelection?: boolean;
@@ -71,7 +70,6 @@ export default function FieldBox({
   ariaLabel = "Field",
   excludedPaths = [],
   autoFocus = false,
-  editOnDoubleClick = false,
   allowAggregates = true,
   allowValueSelection = false,
   allowCalculationSelection = false,
@@ -358,17 +356,8 @@ export default function FieldBox({
         aria-expanded={isMenuOpen}
         aria-haspopup="menu"
         onClick={() => {
-          if (editOnDoubleClick && value) return;
           if (isMenuOpen) void requestCloseMenu();
           else openMenu();
-        }}
-        onDoubleClick={() => {
-          if (editOnDoubleClick && !isMenuOpen) openMenu();
-        }}
-        onKeyDown={(event) => {
-          if (!editOnDoubleClick || (event.key !== "Enter" && event.key !== " ")) return;
-          event.preventDefault();
-          openMenu();
         }}
       >
         {(() => {

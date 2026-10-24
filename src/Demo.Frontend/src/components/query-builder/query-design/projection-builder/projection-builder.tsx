@@ -453,7 +453,7 @@ function FieldCards({
                 : columnAlias
                   ? <><span
                     className="field-name editable"
-                    onDoubleClick={openColumnEditor}
+                    onClick={openColumnEditor}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
@@ -478,7 +478,7 @@ function FieldCards({
                   >{columnAlias}</span></>
                   : <span
                     className="field-name editable"
-                    onDoubleClick={openColumnEditor}
+                    onClick={openColumnEditor}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
@@ -517,7 +517,6 @@ function FieldCards({
           ariaLabel="Field"
           allowValueSelection
           allowCalculationSelection
-          editOnDoubleClick
           expressionBuilder={{
             functionDefinitions,
             functionDefinitionsStatus,

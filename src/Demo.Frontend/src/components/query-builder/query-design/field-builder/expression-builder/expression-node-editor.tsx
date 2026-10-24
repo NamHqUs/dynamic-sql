@@ -275,7 +275,6 @@ export default function NodeEditor({
               placeholder="Select field..."
               allowValueSelection
               allowFunctionSelection
-              editOnDoubleClick
               initialSection="fields"
               expressionBuilder={{
                 functionDefinitions,
@@ -429,7 +428,6 @@ export default function NodeEditor({
             initialSection="value"
             allowValueSelection
             allowFunctionSelection
-            editOnDoubleClick
             expressionBuilder={{
               functionDefinitions,
               functionDefinitionsStatus,

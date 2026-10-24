@@ -285,7 +285,7 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
                   />
                   : <span
                     className="field-name editable"
-                    onDoubleClick={() => setEditingField(sort.field)}
+                    onClick={() => setEditingField(sort.field)}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
@@ -312,7 +312,6 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
             placeholder="Field"
             placeholderIcon
             ariaLabel="Field"
-            editOnDoubleClick
             excludedPaths={definition.sorts.map((sort) => sort.field)}
             onChange={addSort}
           />
