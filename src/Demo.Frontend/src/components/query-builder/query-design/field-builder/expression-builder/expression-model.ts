@@ -204,10 +204,23 @@ function normalizeGroupArguments(
   group: Extract<IFieldDefinition, { kind: "group" }>,
   argumentsList: IFieldDefinition[],
 ): IFieldDefinition {
+  if (argumentsList.length === 1) {
+    const onlyArgument = argumentsList[0]!;
+    if (onlyArgument.kind === "math") return onlyArgument;
+    if (onlyArgument.kind === "field" && group.operator)
+      return { kind: "math", oper: group.operator, field: onlyArgument };
+  }
   const normalizedArguments = normalizeFirstGroupArgument(argumentsList);
   if (normalizedArguments.length === 1 && normalizedArguments[0]?.kind === "field")
     return normalizedArguments[0];
-  return { ...group, arguments: normalizedArguments };
+  const firstArgument = argumentsList[0];
+  return {
+    ...group,
+    ...(firstArgument?.kind === "math" && !group.operator
+      ? { operator: firstArgument.oper }
+      : {}),
+    arguments: normalizedArguments,
+  };
 }
 
 export function removeExpressionNode(

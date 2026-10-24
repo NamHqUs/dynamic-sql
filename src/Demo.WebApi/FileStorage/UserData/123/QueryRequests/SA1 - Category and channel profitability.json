@@ -1,23 +1,22 @@
 {
   "Name": "SA1 - Category and channel profitability",
-  "Entity": "OrderItems",
   "Projection": [
     {
-      "field": {
+      "Field": {
         "kind": "field",
         "field": "Product.Category"
       },
-      "alias": "Category"
+      "Alias": "Category"
     },
     {
-      "field": {
+      "Field": {
         "kind": "field",
         "field": "Order.Channel"
       },
-      "alias": "Channel"
+      "Alias": "Channel"
     },
     {
-      "field": {
+      "Field": {
         "kind": "function",
         "function": "COUNT_DISTINCT",
         "arguments": [
@@ -27,10 +26,10 @@
           }
         ]
       },
-      "alias": "OrdersContainingCategory"
+      "Alias": "OrdersContainingCategory"
     },
     {
-      "field": {
+      "Field": {
         "kind": "function",
         "function": "SUM",
         "arguments": [
@@ -40,10 +39,10 @@
           }
         ]
       },
-      "alias": "UnitsSold"
+      "Alias": "UnitsSold"
     },
     {
-      "field": {
+      "Field": {
         "kind": "function",
         "function": "SUM",
         "arguments": [
@@ -52,18 +51,16 @@
             "operator": "-",
             "arguments": [
               {
-                "kind": "group",
-                "operator": "*",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Quantity"
-                  },
-                  {
-                    "kind": "field",
-                    "field": "UnitPrice"
-                  }
-                ]
+                "kind": "field",
+                "field": "Quantity"
+              },
+              {
+                "oper": "Multiply",
+                "kind": "math",
+                "field": {
+                  "kind": "field",
+                  "field": "UnitPrice"
+                }
               },
               {
                 "kind": "field",
@@ -73,10 +70,10 @@
           }
         ]
       },
-      "alias": "NetRevenue"
+      "Alias": "NetRevenue"
     },
     {
-      "field": {
+      "Field": {
         "kind": "function",
         "function": "SUM",
         "arguments": [
@@ -86,10 +83,10 @@
           }
         ]
       },
-      "alias": "Discounts"
+      "Alias": "Discounts"
     },
     {
-      "field": {
+      "Field": {
         "kind": "function",
         "function": "SUM",
         "arguments": [
@@ -98,32 +95,26 @@
             "operator": "-",
             "arguments": [
               {
-                "kind": "group",
-                "operator": "*",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Quantity"
-                  },
-                  {
-                    "kind": "math",
-                    "oper": "*",
-                    "field": {
-                      "kind": "group",
-                      "operator": "-",
-                      "arguments": [
-                        {
-                          "kind": "field",
-                          "field": "UnitPrice"
-                        },
-                        {
-                          "kind": "field",
-                          "field": "Product.CostPrice"
-                        }
-                      ]
+                "kind": "field",
+                "field": "Quantity"
+              },
+              {
+                "oper": "Multiply",
+                "kind": "math",
+                "field": {
+                  "kind": "group",
+                  "operator": "-",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "UnitPrice"
+                    },
+                    {
+                      "kind": "field",
+                      "field": "Product.CostPrice"
                     }
-                  }
-                ]
+                  ]
+                }
               },
               {
                 "kind": "field",
@@ -133,13 +124,13 @@
           }
         ]
       },
-      "alias": "GrossProfit"
+      "Alias": "GrossProfit"
     },
     {
-      "field": {
+      "Field": {
+        "oper": "Divide",
         "kind": "group",
-        "operator": "/",
-        "arguments": [
+        "fields": [
           {
             "kind": "function",
             "function": "SUM",
@@ -182,14 +173,14 @@
           }
         ]
       },
-      "alias": "AverageCategoryRevenuePerOrder"
+      "Alias": "AverageCategoryRevenuePerOrder"
     }
   ],
   "Filters": {
     "logicalOperation": 0,
     "filters": [
       {
-        "logicalOperator": null,
+        "logicalOperator": 0,
         "left": {
           "kind": "field",
           "field": "Order.Status"
@@ -206,16 +197,18 @@
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "GrossProfit"
         },
-        "direction": 1
+        "Direction": "Descending"
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "OrderItems",
+  "Relations": [],
+  "FilterPlanText": null
 }

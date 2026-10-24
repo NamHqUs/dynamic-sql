@@ -148,14 +148,35 @@ export default function ExpressionBuilder({
       ? getGroupArgumentOperator(targetParent, targetNode, targetIndex)
       : null;
     const sourceComesFirst = position === "before";
-    const removed = removeExpressionNodeForMove(expression, sourcePath);
+    const sourceRemainingArgument = sourceParent.kind === "group" && sourceParent.arguments.length === 2
+      ? sourceParent.arguments.find((_, index) => index !== sourceIndex)
+      : undefined;
+    const sourceRemainingOperation = sourceParent.kind === "group" && sourceRemainingArgument
+      ? getGroupArgumentOperator(
+        sourceParent,
+        sourceRemainingArgument,
+        sourceParent.arguments.indexOf(sourceRemainingArgument),
+      )
+      : null;
+    let removed = removeExpressionNodeForMove(expression, sourcePath);
+    if (sourceRemainingArgument && sourceRemainingOperation) {
+      const sourceParentPath = sourcePath.slice(0, -1);
+      const remainingGroup = getExpressionNode(removed, sourceParentPath);
+      if (remainingGroup?.kind === "group" && remainingGroup.arguments.length === 1) {
+        removed = replaceExpressionNode(
+          removed,
+          sourceParentPath,
+          setExpressionOperation(remainingGroup.arguments[0]!, sourceRemainingOperation),
+        );
+      }
+    }
     const adjustedTargetPath = sourceParent.kind === "function"
       ? targetPath
       : adjustExpressionPathAfterRemoval(sourcePath, targetPath);
     const adjustedTarget = getExpressionNode(removed, adjustedTargetPath);
     if (!adjustedTarget) return;
-    const adjustedTargetOperand = adjustedTarget.kind === "math" ? adjustedTarget.field : adjustedTarget;
-    const sourceOperand = sourceNode.kind === "math" ? sourceNode.field : sourceNode;
+    const adjustedTargetOperand = adjustedTarget;
+    const sourceOperand = sourceNode;
     const firstOperand = sourceComesFirst ? sourceOperand : adjustedTargetOperand;
     const secondOperand = sourceComesFirst ? adjustedTargetOperand : sourceOperand;
     const firstOperation = sourceComesFirst ? sourceOperation : targetOperation;
@@ -180,26 +201,66 @@ export default function ExpressionBuilder({
     const node = getExpressionNode(expression, sourcePath);
     const sourceParent = getExpressionNode(expression, sourcePath.slice(0, -1));
     if (!node || !isExpressionContainer(sourceParent)) return;
-    const removed = removeExpressionNodeForMove(expression, sourcePath);
+    const sourceIndex = sourcePath[sourcePath.length - 1];
+    const remainingSourceArgument = sourceParent.kind === "group" && sourceIndex !== undefined
+      ? sourceParent.arguments.find((_, index) => index !== sourceIndex)
+      : undefined;
+    const remainingSourceOperation = sourceParent.kind === "group" && remainingSourceArgument
+      ? getGroupArgumentOperator(
+        sourceParent,
+        remainingSourceArgument,
+        sourceParent.arguments.indexOf(remainingSourceArgument),
+      )
+      : null;
+    const sourceParentPath = sourcePath.slice(0, -1);
+    const sourceContainerPath = sourceParentPath.slice(0, -1);
     const adjustedTargetPath = sourceParent.kind === "function"
       ? targetPath
       : adjustExpressionPathAfterRemoval(sourcePath, targetPath);
+    const collapseIntoTarget = sourceParent.kind === "group"
+      && sourceParent.arguments.length === 2
+      && isSameExpressionPath(sourceContainerPath, adjustedTargetPath);
+    let removed = removeExpressionNodeForMove(expression, sourcePath);
+    if (sourceParent.kind === "group" && remainingSourceArgument && remainingSourceOperation) {
+      const remainingGroup = getExpressionNode(removed, sourceParentPath);
+      if (remainingGroup?.kind === "group" && remainingGroup.arguments.length === 1) {
+        removed = replaceExpressionNode(
+          removed,
+          sourceParentPath,
+          setExpressionOperation(remainingGroup.arguments[0]!, remainingSourceOperation),
+        );
+      }
+    }
     const target = getExpressionNode(removed, adjustedTargetPath);
     if (!target || !isExpressionGroup(target)) return;
     const lastIndex = target.arguments.length - 1;
-    const operation = lastIndex < 0
+    const insertionIndex = collapseIntoTarget
+      ? sourceParentPath[sourceParentPath.length - 1] ?? 0
+      : lastIndex + 1;
+    const operation = insertionIndex === 0
+      ? null
+      : (sourceParent.kind === "group" && sourceParent.arguments.length === 2
+        ? remainingSourceOperation
+        : (lastIndex < 0
       ? null
       : target.operator
         ?? getGroupArgumentOperator(target, target.arguments[lastIndex]!, lastIndex)
-        ?? "+";
+        ?? "+"));
     const moved = setExpressionOperation(node, operation);
     const updated = updateExpressionNode(removed, adjustedTargetPath, (targetNode) =>
       isExpressionGroup(targetNode)
-        ? { ...targetNode, arguments: [...targetNode.arguments, moved] }
+        ? {
+          ...targetNode,
+          arguments: [
+            ...targetNode.arguments.slice(0, insertionIndex),
+            moved,
+            ...targetNode.arguments.slice(insertionIndex),
+          ],
+        }
         : targetNode,
     );
     setExpression(normalizeExpressionTree(updated) ?? { kind: "field", field: "" });
-    setSelectedPath([...adjustedTargetPath, lastIndex + 1]);
+    setSelectedPath([...adjustedTargetPath, insertionIndex]);
   };
 
   const reorderNodeAroundField = (

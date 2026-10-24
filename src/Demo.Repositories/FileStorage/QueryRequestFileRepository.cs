@@ -3,6 +3,7 @@ using Demo.Contracts.Dto;
 using Namh.Data.DynamicSql;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace Demo.Repositories.FileStorage;
 
@@ -15,7 +16,8 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
     private static readonly JsonSerializerOptions JSON_OPTIONS = new()
     {
         PropertyNameCaseInsensitive = true,
-        WriteIndented = true
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     public override IReadOnlyCollection<QueryRequestDto> GetBuiltin()

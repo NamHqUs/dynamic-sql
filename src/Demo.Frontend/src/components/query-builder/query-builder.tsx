@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
 import { createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, IFieldDefinition, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
@@ -237,6 +238,7 @@ function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity
 export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const dispatch = useDispatch<AppDispatch>();
   const showMessageBox = useMessageBox();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames, filterOperators, filterOperatorsStatus, filterOperatorsError, queryRequests, queryRequestsStatus, queryRequestsError } = useSelector((state: RootState) => state.queryBuilder);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
   const [requestName, setRequestName] = useState("");
@@ -267,6 +269,12 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
   const updateRequestName = (name: string) => {
     setRequestName(name);
+  };
+  const updateRequestRoute = (name: string | null) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (name) nextSearchParams.set("request", name);
+    else nextSearchParams.delete("request");
+    setSearchParams(nextSearchParams);
   };
   useEffect(() => {
     dispatch(fetchQueryMetadata());
@@ -357,6 +365,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
 
   const startNewRequest = () => {
+    updateRequestRoute(null);
     setSelectedRequestName(null);
     setSelectedRequestIsBuiltin(false);
     setRequestName("");
@@ -365,7 +374,11 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     updateDefinition(nextDefinition);
   };
 
-  const selectSavedRequest = (savedRequest: (typeof queryRequests)[number]) => {
+  const selectSavedRequest = (
+    savedRequest: (typeof queryRequests)[number],
+    updateRoute = true,
+  ) => {
+    if (updateRoute) updateRequestRoute(savedRequest.name);
     updateDefinition({
       ...fromApiQuery(savedRequest.query, savedRequest.projectionRows),
       filterPlanText: savedRequest.filterPlanText ?? null,
@@ -375,6 +388,13 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     setSelectedRequestIsBuiltin(savedRequest.isBuiltin);
     setQueryRequestNotice("");
   };
+  useEffect(() => {
+    const requestedName = searchParams.get("request");
+    if (!requestedName || selectedRequestName === requestedName) return;
+    const savedRequest = queryRequests.find((request) => request.name === requestedName);
+    if (savedRequest) selectSavedRequest(savedRequest, false);
+  }, [queryRequests, searchParams, selectedRequestName]);
+
   const persistCurrentRequest = async (currentDefinition: QueryDefinition) => {
     const name = requestName.trim();
     if (!name) {
@@ -410,6 +430,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     if (action !== "delete") return;
     const resultAction = await dispatch(deleteQueryRequest(selectedRequestName));
     if (deleteQueryRequest.fulfilled.match(resultAction)) {
+      updateRequestRoute(null);
       setSelectedRequestName(null);
       setSelectedRequestIsBuiltin(false);
       setRequestName("");
