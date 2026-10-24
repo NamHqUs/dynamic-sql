@@ -187,13 +187,19 @@ export default function FieldBox({
     const closeOnOutsideClick = (event: MouseEvent) => {
       if (!(event.target instanceof Node)) return;
       if (menuRef.current?.contains(event.target) || menuPopupRef.current?.contains(event.target)) return;
-      if (event.target instanceof Element
-        && event.target.closest(".field-box-menu-popup, .message-box-backdrop")) return;
+      if (event.target instanceof Element) {
+        const targetPopup = event.target.closest(".field-box-menu-popup");
+        const ownerPopup = triggerRef.current?.closest(".field-box-menu-popup");
+        if (targetPopup && targetPopup !== ownerPopup) return;
+        if (event.target.closest(".message-box-backdrop")) return;
+      }
       if (closeGuardRef.current) {
         event.preventDefault();
         event.stopPropagation();
       }
-      void requestCloseMenu();
+      void requestCloseMenu().then((closed) => {
+        if (closed) onEscape?.();
+      });
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") void requestCloseMenu();
@@ -205,7 +211,7 @@ export default function FieldBox({
       document.removeEventListener("mousedown", closeOnOutsideClick, true);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [isMenuOpen, popupManager]);
+  }, [isMenuOpen, onEscape, popupManager]);
   useEffect(() => {
     if (!isMenuOpen) setFieldSearch("");
   }, [isMenuOpen]);
