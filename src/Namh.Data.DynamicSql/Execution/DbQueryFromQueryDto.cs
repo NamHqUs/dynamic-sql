@@ -1,4 +1,5 @@
 using Namh.Data.DynamicSql;
+using Namh.Data.DynamicSql.Compilation.Expressions;
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using System.Linq.Expressions;
 using System.Text.Json;
@@ -14,6 +15,13 @@ internal static class DbQueryFromQueryDto
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(definition.Projection);
+
+        if (definition.Contexts is { Count: > 0 })
+        {
+            var sourceEntity = GetProviderEntityName(definition, definition.Entity);
+            var source = context.Query(sourceEntity);
+            return source.Provider.CreateQuery(new QueryDefinitionExpression(definition));
+        }
 
         var query = context.Query(definition.Entity);
 
@@ -63,7 +71,22 @@ internal static class DbQueryFromQueryDto
         return query;
     }
 
-    private static Expression<Func<IRecordParameter, bool>> CreateFilter(ConditionDefinition filter)
+    private static string GetProviderEntityName(QueryDefinition definition, string entityName)
+    {
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        while (true)
+        {
+            var context = definition.Contexts?.FirstOrDefault(queryContext =>
+                string.Equals(queryContext.Name, entityName, StringComparison.OrdinalIgnoreCase));
+            if (context is null)
+                return entityName;
+            if (!visited.Add(context.Name))
+                throw new FormatException($"Recursive query context [{context.Name}] is not supported.");
+            entityName = context.Query.Entity;
+        }
+    }
+
+    internal static Expression<Func<IRecordParameter, bool>> CreateFilter(ConditionDefinition filter)
     {
         var parameter = Expression.Parameter(typeof(IRecordParameter), "record");
         var body = CreateFilterBody(filter, parameter);

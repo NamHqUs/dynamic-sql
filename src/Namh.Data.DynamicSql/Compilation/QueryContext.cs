@@ -17,6 +17,9 @@ class QueryContext(
 
     public IEnumerable<DbParameter> DbParameters => _dbParameters;
 
+    public Entity GetEntity(string entityName)
+        => metaProvider.GetEntity(entityName);
+
     public TableExpression CreateTableContext(Entity entity)
     {
         return new TableExpression(entity, GetNextAlias());
@@ -28,6 +31,19 @@ class QueryContext(
             .FirstOrDefault(e => string.Equals(e.Alias, fieldPath, StringComparison.OrdinalIgnoreCase))
             ?.Item is SqlExpression projection)
             return projection;
+
+        var separator = fieldPath.IndexOf('.');
+        if (separator > 0)
+        {
+            var joinedTable = tableContext.JoinedTables
+                .FirstOrDefault(pair => string.Equals(
+                    pair.Key,
+                    fieldPath[..separator],
+                    StringComparison.OrdinalIgnoreCase))
+                .Value;
+            if (joinedTable is not null)
+                return ParseFieldPath(joinedTable, fieldPath[(separator + 1)..]);
+        }
 
         if (TryParseAggregateFunction(fieldPath, out var wrappedAggregate))
             return ParseFunctionExpression(tableContext, wrappedAggregate, 0);

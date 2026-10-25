@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Namh.Data.DynamicSql.Compilation.Expressions;
+using System.Linq.Expressions;
 
 namespace Namh.Data.DynamicSql.Compilation.Visitors;
 
@@ -34,4 +35,9 @@ class QueryVisitor(QueryContext queryContext) : ExpressionVisitor
 
         return Expression.Call(instance, node.Method, node.Arguments);
     }
+
+    protected override Expression VisitExtension(Expression node)
+        => node is QueryDefinitionExpression queryDefinition
+            ? new QueryDefinitionVisitor(QueryContext).Eval(queryDefinition.Definition)
+            : base.VisitExtension(node);
 }

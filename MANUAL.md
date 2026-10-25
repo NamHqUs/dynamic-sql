@@ -500,6 +500,44 @@ filters use the existing query expression syntax. Projection is a list of
 expressions, and sorts are a comma-separated string with an optional `ASC` or
 `DESC` direction.
 
+### Common table expressions
+
+`QueryDefinition.Contexts` defines named CTEs. Each context has a query, an
+optional join condition, and a join type. The join type defaults to `Left`;
+contexts without a condition are declared as CTEs but are not joined. The
+outer `Entity` may name either a metadata entity or a CTE, so a query can use a
+CTE as its `FROM` source:
+
+```yaml
+Entity: A
+Projection:
+  - A.Salary
+  - B.MinSalary
+Contexts:
+  - Name: A
+    Query:
+      Entity: Employees
+      Projection:
+        - Id
+        - Salary
+  - Name: B
+    JoinType: Inner
+    Query:
+      Entity: SalaryRules
+      Projection:
+        - Id
+        - MinSalary
+    Condition: A.Salary BETWEEN <B.MinSalary, B.MinSalary + 10000>
+```
+
+For a condition, unqualified left-side fields resolve against the outer source
+and unqualified right-side fields resolve against the joined context. Prefix a
+field with a CTE name (for example, `A.Salary`) to select a specific source.
+Arithmetic expressions and range/set conditions are supported; literal values
+remain SQL parameters. CTE names must be unique within the query, and a CTE
+must appear before any context query that uses it as its source. Recursive CTEs
+and contexts nested inside another context query are not supported.
+
 ## SQL diagnostics
 
 Inspect generated SQL without executing it:

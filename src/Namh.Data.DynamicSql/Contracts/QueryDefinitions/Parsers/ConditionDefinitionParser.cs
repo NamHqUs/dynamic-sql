@@ -6,13 +6,22 @@ namespace Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 internal sealed class ConditionDefinitionParser
 {
     private readonly List<Token> _tokens;
+    private readonly bool _parseJoinExpressions;
     private int _position;
 
     public static ConditionDefinition? Parse(string? text)
         => string.IsNullOrWhiteSpace(text) ? null : new ConditionDefinitionParser(text).Parse();
 
-    private ConditionDefinitionParser(string text)
-        => _tokens = Tokenize(text);
+    public static IConditionDefintion? ParseJoinCondition(string? text)
+        => string.IsNullOrWhiteSpace(text)
+            ? null
+            : new ConditionDefinitionParser(text, parseJoinExpressions: true).Parse();
+
+    private ConditionDefinitionParser(string text, bool parseJoinExpressions = false)
+    {
+        _tokens = Tokenize(text);
+        _parseJoinExpressions = parseJoinExpressions;
+    }
 
     private ConditionDefinition Parse()
     {
@@ -125,7 +134,7 @@ internal sealed class ConditionDefinitionParser
         };
     }
 
-    private static IFieldDefinition ParseMultipleFilterValue(Token token)
+    private IFieldDefinition ParseMultipleFilterValue(Token token)
     {
         if (token.Type != TokenType.FieldExpression ||
             token.Text.Length < 2 ||
@@ -135,13 +144,43 @@ internal sealed class ConditionDefinitionParser
 
         var values = token.Text[1..^1]
             .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .Select(value => (IFieldDefinition)new ConstFieldDefinition(ParseValue(value)))
+            .Select(value => _parseJoinExpressions
+                ? ParseJoinExpression(value)
+                : (IFieldDefinition)new ConstFieldDefinition(ParseValue(value)))
             .ToArray();
         if (values.Length == 0)
             throw new FormatException("Multiple filter values cannot be empty.");
 
         return new GroupFieldDefintion(values);
     }
+
+    private static IFieldDefinition ParseJoinExpression(string value)
+    {
+        if (value.Length >= 2 && value[0] is '\'' or '"' && value[^1] == value[0])
+            return new ConstFieldDefinition(ParseValue(value));
+
+        return ConvertNumericFields(FieldDefinitionParser.Parse(value));
+    }
+
+    private static IFieldDefinition ConvertNumericFields(IFieldDefinition expression)
+        => expression switch
+        {
+            FieldDefinition { FieldName: var fieldName } field
+                when int.TryParse(fieldName, NumberStyles.Integer, CultureInfo.InvariantCulture, out _) ||
+                     decimal.TryParse(fieldName, NumberStyles.Number, CultureInfo.InvariantCulture, out _) ||
+                     bool.TryParse(fieldName, out _) ||
+                     fieldName.Equals("null", StringComparison.OrdinalIgnoreCase)
+                => new ConstFieldDefinition(field.Oper, ParseValue(fieldName)),
+            GroupFieldDefintion group => group with
+            {
+                Fields = group.Fields.Select(ConvertNumericFields).ToArray()
+            },
+            FunctionFieldDefinition function => function with
+            {
+                Arguments = function.Arguments.Select(ConvertNumericFields).ToArray()
+            },
+            _ => expression
+        };
 
     private Token Next()
     {

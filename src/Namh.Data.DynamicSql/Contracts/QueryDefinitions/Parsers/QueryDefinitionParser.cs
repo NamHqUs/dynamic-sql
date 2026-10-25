@@ -32,7 +32,20 @@ public static partial class QueryDefinitionParser
             Filter = ConditionDefinitionParser.Parse(definition.Filter),
             Sorts = SortDefinitionParser.Parse(definition.Sorts),
             Page = definition.Page,
-            PageSize = definition.PageSize
+            PageSize = definition.PageSize,
+            Contexts = definition.Contexts?.Select(context =>
+            {
+                if (string.IsNullOrWhiteSpace(context.Name))
+                    throw new FormatException("A query context requires a name.");
+                if (context.Query is null)
+                    throw new FormatException($"Query context [{context.Name}] requires a query.");
+
+                return new QueryContextDefintion(
+                    context.Name,
+                    Parse(context.Query),
+                    ConditionDefinitionParser.ParseJoinCondition(context.Condition),
+                    context.JoinType ?? QueryJoinType.Left);
+            }).ToList()
         };
     }
 
@@ -45,7 +58,48 @@ public static partial class QueryDefinitionParser
     public static QueryDefinition Parse(string json)
     {
         using var document = JsonDocument.Parse(json);
-        var root = document.RootElement;
+        return ParseJsonDefinition(document.RootElement);
+    }
+
+    private static QueryDefinition ParseJsonDefinition(JsonElement root)
+    {
+        var contexts = TryGetProperty(root, "contexts", out var contextsElement)
+            ? contextsElement.ValueKind == JsonValueKind.Array
+                ? contextsElement.EnumerateArray().Select(context =>
+                {
+                    var name = TryGetProperty(context, "name", out var nameElement)
+                        ? nameElement.GetString()
+                        : null;
+                    if (string.IsNullOrWhiteSpace(name))
+                        throw new JsonException("A query context requires a name.");
+                    if (!TryGetProperty(context, "query", out var queryElement) ||
+                        queryElement.ValueKind != JsonValueKind.Object)
+                        throw new JsonException($"Query context [{name}] requires a query object.");
+
+                    IConditionDefintion? condition = null;
+                    if (TryGetProperty(context, "condition", out var conditionElement) &&
+                        conditionElement.ValueKind != JsonValueKind.Null)
+                    {
+                        condition = conditionElement.ValueKind == JsonValueKind.String
+                            ? ConditionDefinitionParser.Parse(conditionElement.GetString())
+                            : JsonSerializer.Deserialize<IConditionDefintion>(
+                                conditionElement,
+                                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                    }
+
+                    var joinType = !TryGetProperty(context, "joinType", out var joinTypeElement)
+                        ? QueryJoinType.Left
+                        : ParseJoinType(joinTypeElement);
+
+                    return new QueryContextDefintion(
+                        name,
+                        ParseJsonDefinition(queryElement),
+                        condition,
+                        joinType);
+                }).ToList()
+                : throw new JsonException("The contexts value must be an array.")
+            : null;
+
         var projectionElement = TryGetProperty(root, "projection", out var projection)
             ? projection
             : TryGetProperty(root, "fields", out var legacyProjection)
@@ -82,9 +136,20 @@ public static partial class QueryDefinitionParser
                 ? sorts.EnumerateArray().Select(ParseSort).ToList()
                 : [],
             Page = ReadInt(root, "page"),
-            PageSize = ReadInt(root, "pageSize")
+            PageSize = ReadInt(root, "pageSize"),
+            Contexts = contexts
         };
     }
+
+    private static QueryJoinType ParseJoinType(JsonElement element)
+        => element.ValueKind switch
+        {
+            JsonValueKind.Number when element.TryGetInt32(out var value) &&
+                Enum.IsDefined(typeof(QueryJoinType), value) => (QueryJoinType)value,
+            JsonValueKind.String when Enum.TryParse<QueryJoinType>(
+                element.GetString(), true, out var value) => value,
+            _ => throw new JsonException("A query context join type is invalid.")
+        };
 
     public static IFieldDefinition ParseField(string plainText) => FieldDefinitionParser.Parse(plainText);
     public static IFieldDefinition[] ParseExpression(string plainText) => FieldDefinitionParser.ParseExpression(plainText);

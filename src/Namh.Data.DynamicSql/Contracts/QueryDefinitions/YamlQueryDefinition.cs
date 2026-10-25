@@ -12,4 +12,13 @@ public record YamlQueryDefinition()
     public string? Sorts { get; set; }
     public int? Page { get; set; }
     public int? PageSize { get; set; }
+    public List<YamlQueryContextDefinition>? Contexts { get; set; }
+}
+
+public record YamlQueryContextDefinition
+{
+    public string? Name { get; set; }
+    public YamlQueryDefinition? Query { get; set; }
+    public string? Condition { get; set; }
+    public QueryJoinType? JoinType { get; set; }
 }

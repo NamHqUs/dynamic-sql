@@ -46,6 +46,8 @@ wheel to zoom, drag to pan).
 2. **Process the interface input** uses public query extensions to build a
    normal expression tree. YAML definitions are converted into the same
    expression surface by `DbQueryFromQueryDto`.
+   Definitions containing named contexts use `QueryDefinitionExpression` and
+   `QueryDefinitionVisitor` to represent CTEs and their joins.
 3. **Visit and build the IR** creates a dialect-independent `SqlExpression`
    tree. `SqlQueryCompiler` runs `QueryVisitor` and its clause visitors;
    `QueryContext` resolves metadata and relations, assigns aliases, applies
@@ -76,6 +78,7 @@ QueryDto
     -> IDbQueryable expression tree
     -> SqlQueryCompiler
     -> QueryVisitor and clause visitors
+    -> QueryDefinitionVisitor for definitions with named contexts
     -> TableExpression / SqlExpression IR
     -> SqlStatementGenerator(ISqlDialect)
     -> SQL command text + DbParameters
@@ -84,6 +87,9 @@ QueryDto
 `DbQueryFromQueryDto` maps DTO fields, filters, sorting, and paging onto the
 normal query API. It does not create SQL or bypass the visitors. The compiler
 then translates the resulting expression tree to IR before SQL rendering.
+`QueryDefinition.Contexts` follows a dedicated visitor path that builds
+`CommonTableExpression` and CTE-backed table-source IR while retaining the
+same generator and dialect boundary.
 
 ## Projects
 
@@ -204,6 +210,8 @@ It must remain dialect-independent. Dialect decisions belong in
 Important visitors include:
 
 - `QueryVisitor`: visits the overall query expression.
+- `QueryDefinitionVisitor`: translates `QueryDefinition.Contexts`, CTE queries,
+  and context join conditions to the same SQL IR.
 - `ClauseVisitor`: handles `Where`, `Select`, ordering, paging, `Count`, and
   `Any`.
 - `WhereVisitor`: translates predicates and parameter values.
@@ -232,6 +240,8 @@ The IR is in `Internal/Compilation/Expressions`. Important types include:
 - `SubqueryExpression`: nested query.
 - `AnyExpression`: `EXISTS` query.
 - `JoinExpression`: relationship join and join conditions.
+- `CommonTableExpression` and `CteTableExpression`: named CTE definitions and
+  references in a query's `FROM` or `JOIN` source.
 
 The IR must not depend on `ISqlDialect`.
 
@@ -256,6 +266,7 @@ parameterized.
 
 `SqlStatementGenerator` consumes a `TableExpression` and an `ISqlDialect`. It renders:
 
+- `WITH` CTE definitions and CTE table sources
 - `SELECT`
 - `FROM`
 - joins

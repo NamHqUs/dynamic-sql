@@ -42,6 +42,9 @@ class ClauseVisitor(QueryContext queryContext)
             return QueryContext.JoinCollection(tableContext, relationPath);
         }
 
+        if (root is QueryDefinitionExpression queryDefinition)
+            return new QueryDefinitionVisitor(QueryContext).Eval(queryDefinition.Definition);
+
         var dbQuery = (DbQueryable)((ConstantExpression)root).Value!;
         return QueryContext.CreateTableContext(dbQuery.Provider.Entity);
     }

@@ -24,12 +24,12 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         query.EnsureDefaultProjection();
         var limitedQuery = new TakeExpression(query.WithoutPaging(), maximumRecords);
         var alias = dialect.QuoteIdentifier("__bounded_count");
-        var text = $"SELECT COUNT(*)\nFROM ({RenderQuery(limitedQuery)}) AS {alias}";
+        var text = $"{RenderCommonTableExpressions(query)}SELECT COUNT(*)\nFROM ({RenderQuery(limitedQuery, includeCtes: false)}) AS {alias}";
 
         return new SqlStatement(text, parameters.ToArray());
     }
 
-    private string RenderQuery(TableExpression query, bool exists = false)
+    private string RenderQuery(TableExpression query, bool exists = false, bool includeCtes = true)
     {
         query.EnsureDefaultProjection();
         var hasGroupedAggregate = query.ProjectionItems
@@ -90,6 +90,9 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             takePrefix.Length != 0 ? null : query.Take,
             query.Orders.Count != 0);
 
+        if (includeCtes)
+            text = RenderCommonTableExpressions(query) + text;
+
         return text;
     }
 
@@ -107,7 +110,18 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     }
 
     private string RenderTable(TableExpression table)
-        => $"{dialect.RenderTable(table.Entity)} {table.Alias}";
+        => $"{(table.CommonTableExpressionName is { } cteName
+            ? dialect.QuoteIdentifier(cteName)
+            : dialect.RenderTable(table.Entity))} {table.Alias}";
+
+    private string RenderCommonTableExpressions(TableExpression query)
+        => query.CommonTableExpressions.Count == 0
+            ? string.Empty
+            : "WITH " + string.Join(",\n", query.CommonTableExpressions.Select(cte =>
+                $"{dialect.QuoteIdentifier(cte.Name)} AS (\n{Indent(RenderQuery(cte.Query))}\n)")) + "\n";
+
+    private static string Indent(string text)
+        => string.Join("\n", text.Split('\n').Select(line => "\t" + line));
 
     private string RenderOrder(OrderExpression order)
     {
