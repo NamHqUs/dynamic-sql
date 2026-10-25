@@ -1,145 +1,26 @@
 {
   "Name": "IN3 - Agent portfolio and premium collection",
   "Projection": [
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Id"
-        }
-      ],
-      "Alias": "AgentId"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "CONCAT",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "FirstName"
-            },
-            {
-              "kind": "value",
-              "value": " "
-            },
-            {
-              "kind": "field",
-              "field": "LastName"
-            }
-          ]
-        }
-      ],
-      "Alias": "Agent"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Location.City"
-        }
-      ],
-      "Alias": "OfficeCity"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "AgentPolicies.Count()"
-        }
-      ],
-      "Alias": "PoliciesSold"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "AgentPolicies.CountIf(Status = <Active>)"
-        }
-      ],
-      "Alias": "ActivePolicies"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "COALESCE",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "AgentPolicies.PremiumPayments.SumIf(Status = <Paid>, Amount)"
-            },
-            {
-              "kind": "value",
-              "value": 0
-            }
-          ]
-        }
-      ],
-      "Alias": "PaidPremiums"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "AgentPolicies.PremiumPayments.CountIf(Status = <Late>)"
-        }
-      ],
-      "Alias": "LatePayments"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "AgentPolicies.PremiumPayments.CountIf(Status = <Missed>)"
-        }
-      ],
-      "Alias": "MissedPayments"
-    }
+    { "Fields": [{ "kind": "field", "field": "Id" }], "Alias": "AgentId" },
+    { "Fields": [{ "kind": "function", "function": "CONCAT", "arguments": [{ "kind": "field", "field": "FirstName" }, { "kind": "value", "value": " " }, { "kind": "field", "field": "LastName" }] }], "Alias": "Agent" },
+    { "Fields": [{ "kind": "field", "field": "Location.City" }], "Alias": "OfficeCity" },
+    { "Fields": [{ "kind": "field", "field": "AgentPolicies.Status" }], "Alias": "PolicyStatus" },
+    { "Fields": [{ "kind": "field", "field": "AgentPolicies.PremiumPayments.Status" }], "Alias": "PaymentStatus" },
+    { "Fields": [{ "kind": "function", "function": "CountDistinct", "arguments": [{ "kind": "field", "field": "AgentPolicies.Id" }] }], "Alias": "PoliciesSold" },
+    { "Fields": [{ "kind": "function", "function": "CountDistinct", "arguments": [{ "kind": "field", "field": "AgentPolicies.PremiumPayments.Id" }] }], "Alias": "Installments" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "SUM", "arguments": [{ "kind": "field", "field": "AgentPolicies.PremiumPayments.Amount" }] }, { "kind": "value", "value": 2 }] }], "Alias": "PremiumAmount" }
   ],
   "Filters": {
     "logicalOperation": 0,
-    "filters": [
-      {
-        "logicalOperator": null,
-        "left": {
-          "kind": "field",
-          "field": "Department.Name"
-        },
-        "operation": 0,
-        "right": {
-          "kind": "value",
-          "value": "Insurance Agency"
-        },
-        "parameterized": true
-      },
-      {
-        "logicalOperator": 0,
-        "left": {
-          "kind": "field",
-          "field": "AgentPolicies.Count()"
-        },
-        "operation": 4,
-        "right": {
-          "kind": "value",
-          "value": 0
-        },
-        "parameterized": true
-      }
-    ]
+    "filters": [{
+      "logicalOperator": 0,
+      "left": { "kind": "field", "field": "Department.Name" },
+      "operation": 0,
+      "right": { "kind": "value", "value": "Insurance Agency" },
+      "parameterized": false
+    }]
   },
-  "Sorts": [
-    [
-      {
-        "Field": {
-          "kind": "field",
-          "field": "PaidPremiums"
-        },
-        "Direction": 1
-      }
-    ]
-  ],
+  "Sorts": [[{ "Field": { "kind": "field", "field": "PremiumAmount" }, "Direction": "Descending" }]],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,

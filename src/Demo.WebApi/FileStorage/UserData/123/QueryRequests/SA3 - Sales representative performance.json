@@ -54,45 +54,129 @@
     {
       "Fields": [
         {
-          "kind": "field",
-          "field": "SalesOrders.CountDistinctIf(Status = <Completed>, Id)"
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "SalesOrders.Id"
+            }
+          ]
         }
       ],
-      "Alias": "CompletedOrders"
+      "Alias": "Completed Orders"
     },
     {
       "Fields": [
         {
-          "kind": "field",
-          "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity)"
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "SalesOrders.Items.Quantity"
+            }
+          ]
         }
       ],
-      "Alias": "UnitsSold"
+      "Alias": "Units Sold"
     },
     {
       "Fields": [
         {
-          "kind": "field",
-          "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "SalesOrders.Items.Quantity"
+                    },
+                    {
+                      "oper": "*",
+                      "kind": "field",
+                      "field": "SalesOrders.Items.UnitPrice"
+                    },
+                    {
+                      "oper": "-",
+                      "kind": "field",
+                      "field": "SalesOrders.Items.DiscountAmount"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
         }
       ],
-      "Alias": "NetSales"
+      "Alias": "Net Sales"
     },
     {
       "Fields": [
         {
-          "kind": "field",
-          "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)"
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "SalesOrders.Items.Quantity"
+                    },
+                    {
+                      "oper": "*",
+                      "kind": "group",
+                      "fields": [
+                        {
+                          "kind": "field",
+                          "field": "SalesOrders.Items.UnitPrice"
+                        },
+                        {
+                          "oper": "-",
+                          "kind": "field",
+                          "field": "SalesOrders.Items.Product.CostPrice"
+                        }
+                      ]
+                    },
+                    {
+                      "oper": "-",
+                      "kind": "field",
+                      "field": "SalesOrders.Items.DiscountAmount"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
         }
       ],
-      "Alias": "GrossProfit"
+      "Alias": "Gross Profit"
     }
   ],
   "Filters": {
     "logicalOperation": 0,
     "filters": [
       {
-        "logicalOperator": null,
+        "logicalOperator": 0,
         "left": {
           "kind": "field",
           "field": "Department.Name"
@@ -102,20 +186,20 @@
           "kind": "value",
           "value": "Retail Sales"
         },
-        "parameterized": true
+        "parameterized": false
       },
       {
-        "logicalOperator": null,
+        "logicalOperator": 0,
         "left": {
           "kind": "field",
-          "field": "SalesOrders.CountIf(Status = <Completed>)"
+          "field": "SalesOrders.Status"
         },
-        "operation": 4,
+        "operation": 0,
         "right": {
           "kind": "value",
-          "value": 0
+          "value": "Completed"
         },
-        "parameterized": true
+        "parameterized": false
       }
     ]
   },
@@ -124,9 +208,9 @@
       {
         "Field": {
           "kind": "field",
-          "field": "NetSales"
+          "field": "Net Sales"
         },
-        "Direction": 1
+        "Direction": "Descending"
       }
     ]
   ],

@@ -1,73 +1,15 @@
 {
   "Name": "HR1 - Department compensation and performance",
   "Projection": [
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Name"
-        }
-      ],
-      "Alias": "Department"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Employees.Count()"
-        }
-      ],
-      "Alias": "Headcount"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Employees.Average(Salary)"
-        }
-      ],
-      "Alias": "AverageSalary"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Employees.Sum(Salary)"
-        }
-      ],
-      "Alias": "AnnualPayroll"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Employees.PerformanceReviews.AverageIf(ReviewYear = <2025>, Rating)"
-        }
-      ],
-      "Alias": "AverageRating"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Employees.PerformanceReviews.SumIf(ReviewYear = <2025>, BonusAmount)"
-        }
-      ],
-      "Alias": "TotalBonuses"
-    }
+    { "Fields": [{ "kind": "field", "field": "Name" }], "Alias": "Department" },
+    { "Fields": [{ "kind": "function", "function": "CountDistinct", "arguments": [{ "kind": "field", "field": "Employees.Id" }] }], "Alias": "Headcount" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "AVG", "arguments": [{ "kind": "field", "field": "Employees.Salary" }] }, { "kind": "value", "value": 2 }] }], "Alias": "AverageSalary" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "SUM", "arguments": [{ "kind": "field", "field": "Employees.Salary" }] }, { "kind": "value", "value": 2 }] }], "Alias": "AnnualPayroll" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "AVG", "arguments": [{ "kind": "field", "field": "Employees.PerformanceReviews.Rating" }] }, { "kind": "value", "value": 2 }] }], "Alias": "AverageRating" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "SUM", "arguments": [{ "kind": "field", "field": "Employees.PerformanceReviews.BonusAmount" }] }, { "kind": "value", "value": 2 }] }], "Alias": "TotalBonuses" }
   ],
   "Filters": null,
-  "Sorts": [
-    [
-      {
-        "Field": {
-          "kind": "field",
-          "field": "AnnualPayroll"
-        },
-        "Direction": 1
-      }
-    ]
-  ],
+  "Sorts": [[{ "Field": { "kind": "field", "field": "AnnualPayroll" }, "Direction": "Descending" }]],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,

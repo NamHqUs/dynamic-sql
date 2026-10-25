@@ -1,152 +1,20 @@
 {
   "Name": "HR5 - Performance and bonus trends",
   "Projection": [
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Employee.Department.Name"
-        }
-      ],
-      "Alias": "Department"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "ReviewYear"
-        }
-      ],
-      "Alias": "ReviewYear"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "COUNT",
-          "arguments": []
-        }
-      ],
-      "Alias": "Reviews"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "AVG",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "Rating"
-            }
-          ]
-        }
-      ],
-      "Alias": "AverageRating"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "COUNT_IF",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "Rating >= <4>"
-            }
-          ]
-        }
-      ],
-      "Alias": "HighRatings"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "group",
-          "fields": [
-            {
-              "kind": "value",
-              "value": 100
-            },
-            {
-              "kind": "function",
-              "function": "COUNT_IF",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Rating >= <4>"
-                }
-              ],
-              "oper": "*"
-            }
-          ]
-        },
-        {
-          "kind": "function",
-          "function": "COUNT",
-          "arguments": [],
-          "oper": "/"
-        }
-      ],
-      "Alias": "HighRatingPercent"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "AVG",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "Employee.Salary"
-            }
-          ]
-        }
-      ],
-      "Alias": "AverageSalary"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "SUM",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "BonusAmount"
-            }
-          ]
-        }
-      ],
-      "Alias": "TotalBonus"
-    }
+    { "Fields": [{ "kind": "field", "field": "Employee.Department.Name" }], "Alias": "Department" },
+    { "Fields": [{ "kind": "field", "field": "ReviewYear" }], "Alias": "ReviewYear" },
+    { "Fields": [{ "kind": "field", "field": "Rating" }], "Alias": "Rating" },
+    { "Fields": [{ "kind": "function", "function": "COUNT", "arguments": [{ "kind": "field", "field": "*" }] }], "Alias": "Reviews" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "AVG", "arguments": [{ "kind": "field", "field": "Rating" }] }, { "kind": "value", "value": 2 }] }], "Alias": "AverageRating" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "AVG", "arguments": [{ "kind": "field", "field": "Employee.Salary" }] }, { "kind": "value", "value": 2 }] }], "Alias": "AverageSalary" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "SUM", "arguments": [{ "kind": "field", "field": "BonusAmount" }] }, { "kind": "value", "value": 2 }] }], "Alias": "TotalBonus" }
   ],
   "Filters": null,
-  "Sorts": [
-    [
-      {
-        "Field": {
-          "kind": "field",
-          "field": "ReviewYear"
-        },
-        "Direction": 1
-      },
-      {
-        "Field": {
-          "kind": "field",
-          "field": "AverageRating"
-        },
-        "Direction": 1
-      },
-      {
-        "Field": {
-          "kind": "field",
-          "field": "TotalBonus"
-        },
-        "Direction": 1
-      }
-    ]
-  ],
+  "Sorts": [[
+    { "Field": { "kind": "field", "field": "ReviewYear" }, "Direction": "Descending" },
+    { "Field": { "kind": "field", "field": "Rating" }, "Direction": "Descending" },
+    { "Field": { "kind": "field", "field": "TotalBonus" }, "Direction": "Descending" }
+  ]],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,

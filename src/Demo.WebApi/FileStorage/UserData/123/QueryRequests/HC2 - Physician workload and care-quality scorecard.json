@@ -1,176 +1,47 @@
 {
   "Name": "HC2 - Physician workload and care-quality scorecard",
   "Projection": [
+    { "Fields": [{ "kind": "field", "field": "Id" }], "Alias": "DoctorId" },
+    { "Fields": [{ "kind": "function", "function": "CONCAT", "arguments": [{ "kind": "field", "field": "FirstName" }, { "kind": "value", "value": " " }, { "kind": "field", "field": "LastName" }] }], "Alias": "Physician" },
+    { "Fields": [{ "kind": "field", "field": "Department.Name" }], "Alias": "Department" },
+    { "Fields": [{ "kind": "field", "field": "Location.City" }], "Alias": "ClinicCity" },
+    { "Fields": [{ "kind": "function", "function": "CountDistinct", "arguments": [{ "kind": "field", "field": "PhysicianVisits.Id" }] }], "Alias": "VisitCount" },
+    { "Fields": [{ "kind": "function", "function": "CountDistinct", "arguments": [{ "kind": "field", "field": "PhysicianVisits.Patient.Id" }] }], "Alias": "PatientCount" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "AVG", "arguments": [{ "kind": "field", "field": "PhysicianVisits.DurationMinutes" }] }, { "kind": "value", "value": 1 }] }], "Alias": "AverageVisitMinutes" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "SUM", "arguments": [{ "kind": "field", "field": "PhysicianVisits.Charge" }] }, { "kind": "value", "value": 2 }] }], "Alias": "Charges" },
     {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Id"
-        }
-      ],
-      "Alias": "DoctorId"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "CONCAT",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "FirstName"
-            },
-            {
-              "kind": "value",
-              "value": " "
-            },
-            {
-              "kind": "field",
-              "field": "LastName"
-            }
+      "Fields": [{
+        "kind": "function", "function": "ROUND", "arguments": [{
+          "kind": "group", "fields": [
+            { "kind": "value", "value": 100 },
+            { "oper": "*", "kind": "function", "function": "SUM", "arguments": [{
+              "kind": "group", "fields": [
+                { "kind": "field", "field": "PhysicianVisits.LabResults.IsAbnormal" },
+                { "oper": "*", "kind": "value", "value": 1 }
+              ]
+            }] },
+            { "oper": "/", "kind": "function", "function": "NULLIF", "arguments": [
+              { "kind": "function", "function": "COUNT", "arguments": [{ "kind": "field", "field": "PhysicianVisits.LabResults.Id" }] },
+              { "kind": "value", "value": 0 }
+            ] }
           ]
-        }
-      ],
-      "Alias": "Physician"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Department.Name"
-        }
-      ],
-      "Alias": "Department"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Location.City"
-        }
-      ],
-      "Alias": "ClinicCity"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "PhysicianVisits.CountIf(Status = <Completed>)"
-        }
-      ],
-      "Alias": "VisitCount"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "PhysicianVisits.CountDistinctIf(Status = <Completed>, PersonId)"
-        }
-      ],
-      "Alias": "PatientCount"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "PhysicianVisits.AverageIf(Status = <Completed>, DurationMinutes)"
-        }
-      ],
-      "Alias": "AverageVisitMinutes"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "PhysicianVisits.SumIf(Status = <Completed>, Charge)"
-        }
-      ],
-      "Alias": "Charges"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "group",
-          "fields": [
-            {
-              "kind": "value",
-              "value": 100
-            },
-            {
-              "kind": "field",
-              "field": "PhysicianVisits.LabResults.CountIf(Visit.Status = <Completed> AND IsAbnormal = <true>)",
-              "oper": "*"
-            }
-          ]
-        },
-        {
-          "kind": "function",
-          "function": "NULLIF",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "PhysicianVisits.LabResults.CountIf(Visit.Status = <Completed>)"
-            },
-            {
-              "kind": "value",
-              "value": 0
-            }
-          ],
-          "oper": "/"
-        }
-      ],
+        }, { "kind": "value", "value": 2 }]
+      }],
       "Alias": "AbnormalLabPercent"
     }
   ],
   "Filters": {
-    "logicalOperation": 0,
+    "logicalOperation": 1,
     "filters": [
-      {
-        "logicalOperator": null,
-        "left": {
-          "kind": "field",
-          "field": "Department.Name"
-        },
-        "operation": 10,
-        "right": {
-          "kind": "group",
-          "arguments": [
-            {
-              "kind": "value",
-              "value": "Primary Care"
-            },
-            {
-              "kind": "value",
-              "value": "Specialty Care"
-            },
-            {
-              "kind": "value",
-              "value": "Emergency Medicine"
-            }
-          ]
-        },
-        "parameterized": true
-      }
+      { "logicalOperator": 1, "left": { "kind": "field", "field": "Department.Name" }, "operation": 0, "right": { "kind": "value", "value": "Primary Care" }, "parameterized": false },
+      { "logicalOperator": 1, "left": { "kind": "field", "field": "Department.Name" }, "operation": 0, "right": { "kind": "value", "value": "Specialty Care" }, "parameterized": false },
+      { "logicalOperator": 1, "left": { "kind": "field", "field": "Department.Name" }, "operation": 0, "right": { "kind": "value", "value": "Emergency Medicine" }, "parameterized": false }
     ]
   },
-  "Sorts": [
-    [
-      {
-        "Field": {
-          "kind": "field",
-          "field": "VisitCount"
-        },
-        "Direction": 1
-      },
-      {
-        "Field": {
-          "kind": "field",
-          "field": "Charges"
-        },
-        "Direction": 1
-      }
-    ]
-  ],
+  "Sorts": [[
+    { "Field": { "kind": "field", "field": "VisitCount" }, "Direction": "Descending" },
+    { "Field": { "kind": "field", "field": "Charges" }, "Direction": "Descending" }
+  ]],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,

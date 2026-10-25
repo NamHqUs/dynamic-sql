@@ -270,7 +270,7 @@ public sealed class _16_QueryExpressionTests
         Assert.That(sql.CommandText, Does.Match(@"SUM\s*\(\s*\(t1\.""LineTotal"" - \(t1\.""Quantity"" \* t0\.""CostPrice""\)\)\)"));
         Assert.That(sql.CommandText, Does.Match(@"NULLIF\s*\(\s*SUM\s*\(t1\.""LineTotal""\), @p"));
         Assert.That(sql.CommandText, Does.Contain("GROUP BY t0.\"Id\", t0.\"Name\""));
-        Assert.That(sql.CommandText, Does.Match(@"ORDER BY SUM\s*\("));
+        Assert.That(sql.CommandText, Does.Contain("ORDER BY \"GrossProfit\" DESC"));
         Assert.That(sql.CommandText, Does.Match(@"ORDER BY[\s\S]*DESC"));
         Assert.That(sql.Parameters.Select(parameter => parameter.Value),
             Is.EquivalentTo(new object?[] { 100m, 0m, 2m }));

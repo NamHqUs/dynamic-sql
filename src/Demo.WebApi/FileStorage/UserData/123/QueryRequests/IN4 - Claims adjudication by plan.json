@@ -1,120 +1,18 @@
 {
   "Name": "IN4 - Claims adjudication by plan",
   "Projection": [
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Name"
-        }
-      ],
-      "Alias": "Plan"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Tier"
-        }
-      ],
-      "Alias": "Tier"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Policies.Claims.Count()"
-        }
-      ],
-      "Alias": "ClaimsReceived"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Policies.Claims.CountIf(Status = <Paid>)"
-        }
-      ],
-      "Alias": "PaidClaims"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Policies.Claims.CountIf(Status = <Denied>)"
-        }
-      ],
-      "Alias": "DeniedClaims"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "group",
-          "fields": [
-            {
-              "kind": "value",
-              "value": 100
-            },
-            {
-              "kind": "field",
-              "field": "Policies.Claims.CountIf(Status = <Denied>)",
-              "oper": "*"
-            }
-          ]
-        },
-        {
-          "kind": "function",
-          "function": "NULLIF",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "Policies.Claims.Count()"
-            },
-            {
-              "kind": "value",
-              "value": 0
-            }
-          ],
-          "oper": "/"
-        }
-      ],
-      "Alias": "DenialPercent"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Policies.Claims.AverageIf(ProcessedDate IS NOT NULL, DateSub(ClaimDate, ProcessedDate))"
-        }
-      ],
-      "Alias": "AverageProcessingDays"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Policies.Claims.Sum(PaidAmount)"
-        }
-      ],
-      "Alias": "TotalPaid"
-    }
+    { "Fields": [{ "kind": "field", "field": "Policy.Plan.Name" }], "Alias": "Plan" },
+    { "Fields": [{ "kind": "field", "field": "Policy.Plan.Tier" }], "Alias": "Tier" },
+    { "Fields": [{ "kind": "field", "field": "Status" }], "Alias": "ClaimStatus" },
+    { "Fields": [{ "kind": "function", "function": "COUNT", "arguments": [{ "kind": "field", "field": "*" }] }], "Alias": "ClaimsReceived" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "AVG", "arguments": [{ "kind": "function", "function": "DateSub", "arguments": [{ "kind": "field", "field": "ClaimDate" }, { "kind": "field", "field": "ProcessedDate" }] }] }, { "kind": "value", "value": 1 }] }], "Alias": "AverageProcessingDays" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "SUM", "arguments": [{ "kind": "field", "field": "PaidAmount" }] }, { "kind": "value", "value": 2 }] }], "Alias": "TotalPaid" }
   ],
-  "Filters": null,
-  "Sorts": [
-    [
-      {
-        "Field": {
-          "kind": "field",
-          "field": "ClaimsReceived"
-        },
-        "Direction": 1
-      }
-    ]
-  ],
+  "Sorts": [[{ "Field": { "kind": "field", "field": "ClaimsReceived" }, "Direction": "Descending" }]],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Entity": "InsurancePlans",
+  "Entity": "Claims",
   "Relations": [],
   "FilterPlanText": null
 }

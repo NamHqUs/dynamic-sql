@@ -50,7 +50,7 @@ public class _13_SqlDialectTests
             .ToSql()
             .CommandText;
 
-        Assert.That(sql, Does.Contain("ORDER BY t0.[Id] ASC"));
+        Assert.That(sql, Does.Contain("ORDER BY [Id] ASC"));
         Assert.That(sql, Does.Not.Contain("ORDER BY (SELECT 1)"));
     }
 

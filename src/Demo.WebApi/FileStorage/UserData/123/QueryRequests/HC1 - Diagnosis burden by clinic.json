@@ -1,156 +1,47 @@
 {
   "Name": "HC1 - Diagnosis burden by clinic",
   "Projection": [
+    { "Fields": [{ "kind": "field", "field": "Diagnosis.Name" }], "Alias": "Diagnosis" },
+    { "Fields": [{ "kind": "field", "field": "Diagnosis.Category" }], "Alias": "DiagnosisCategory" },
+    { "Fields": [{ "kind": "field", "field": "Location.City" }], "Alias": "ClinicCity" },
+    { "Fields": [{ "kind": "function", "function": "CountDistinct", "arguments": [{ "kind": "field", "field": "Id" }] }], "Alias": "VisitCount" },
+    { "Fields": [{ "kind": "function", "function": "CountDistinct", "arguments": [{ "kind": "field", "field": "Patient.Id" }] }], "Alias": "UniquePatients" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "AVG", "arguments": [{ "kind": "field", "field": "Charge" }] }, { "kind": "value", "value": 2 }] }], "Alias": "AverageCharge" },
     {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Diagnosis.Name"
-        }
-      ],
-      "Alias": "Diagnosis"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Diagnosis.Category"
-        }
-      ],
-      "Alias": "DiagnosisCategory"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Location.City"
-        }
-      ],
-      "Alias": "ClinicCity"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "COUNT",
-          "arguments": []
-        }
-      ],
-      "Alias": "VisitCount"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "COUNT_DISTINCT",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "PersonId"
-            }
-          ]
-        }
-      ],
-      "Alias": "UniquePatients"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "AVG",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "Charge"
-            }
-          ]
-        }
-      ],
-      "Alias": "AverageCharge"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "group",
-          "fields": [
-            {
-              "kind": "value",
-              "value": 100
-            },
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "LabResults.CountIf(IsAbnormal = <true>)"
-                }
-              ],
-              "oper": "*"
-            }
-          ]
-        },
-        {
-          "kind": "function",
-          "function": "NULLIF",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "LabResults.Count()"
-                }
+      "Fields": [{
+        "kind": "function", "function": "ROUND", "arguments": [{
+          "kind": "group", "fields": [
+            { "kind": "value", "value": 100 },
+            { "oper": "*", "kind": "function", "function": "SUM", "arguments": [{
+              "kind": "group", "fields": [
+                { "kind": "field", "field": "LabResults.IsAbnormal" },
+                { "oper": "*", "kind": "value", "value": 1 }
               ]
-            },
-            {
-              "kind": "value",
-              "value": 0
-            }
-          ],
-          "oper": "/"
-        }
-      ],
+            }] },
+            { "oper": "/", "kind": "function", "function": "NULLIF", "arguments": [
+              { "kind": "function", "function": "COUNT", "arguments": [{ "kind": "field", "field": "LabResults.Id" }] },
+              { "kind": "value", "value": 0 }
+            ] }
+          ]
+        }, { "kind": "value", "value": 2 }]
+      }],
       "Alias": "AbnormalLabPercent"
     }
   ],
   "Filters": {
     "logicalOperation": 0,
-    "filters": [
-      {
-        "logicalOperator": null,
-        "left": {
-          "kind": "field",
-          "field": "Status"
-        },
-        "operation": 0,
-        "right": {
-          "kind": "value",
-          "value": "Completed"
-        },
-        "parameterized": true
-      }
-    ]
+    "filters": [{
+      "logicalOperator": 0,
+      "left": { "kind": "field", "field": "Status" },
+      "operation": 0,
+      "right": { "kind": "value", "value": "Completed" },
+      "parameterized": false
+    }]
   },
-  "Sorts": [
-    [
-      {
-        "Field": {
-          "kind": "field",
-          "field": "VisitCount"
-        },
-        "Direction": 1
-      },
-      {
-        "Field": {
-          "kind": "field",
-          "field": "AbnormalLabPercent"
-        },
-        "Direction": 1
-      }
-    ]
-  ],
+  "Sorts": [[
+    { "Field": { "kind": "field", "field": "VisitCount" }, "Direction": "Descending" },
+    { "Field": { "kind": "field", "field": "AbnormalLabPercent" }, "Direction": "Descending" }
+  ]],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,

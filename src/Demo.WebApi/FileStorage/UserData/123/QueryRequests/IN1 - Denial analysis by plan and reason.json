@@ -1,125 +1,28 @@
 {
   "Name": "IN1 - Denial analysis by plan and reason",
   "Projection": [
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Policy.Plan.Tier"
-        }
-      ],
-      "Alias": "Tier"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Policy.Plan.Name"
-        }
-      ],
-      "Alias": "Plan"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "DenialReason"
-        }
-      ],
-      "Alias": "DenialReason"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "COUNT",
-          "arguments": []
-        }
-      ],
-      "Alias": "DeniedClaims"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "SUM",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "BilledAmount"
-            }
-          ]
-        }
-      ],
-      "Alias": "BilledAmount"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "SUM",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "AllowedAmount"
-            }
-          ]
-        }
-      ],
-      "Alias": "AllowedAmount"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "AVG",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "BilledAmount"
-            }
-          ]
-        }
-      ],
-      "Alias": "AverageBilledAmount"
-    }
+    { "Fields": [{ "kind": "field", "field": "Policy.Plan.Tier" }], "Alias": "Tier" },
+    { "Fields": [{ "kind": "field", "field": "Policy.Plan.Name" }], "Alias": "Plan" },
+    { "Fields": [{ "kind": "field", "field": "DenialReason" }], "Alias": "DenialReason" },
+    { "Fields": [{ "kind": "function", "function": "COUNT", "arguments": [{ "kind": "field", "field": "*" }] }], "Alias": "DeniedClaims" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "SUM", "arguments": [{ "kind": "field", "field": "BilledAmount" }] }, { "kind": "value", "value": 2 }] }], "Alias": "BilledAmount" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "SUM", "arguments": [{ "kind": "field", "field": "AllowedAmount" }] }, { "kind": "value", "value": 2 }] }], "Alias": "AllowedAmount" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "AVG", "arguments": [{ "kind": "field", "field": "BilledAmount" }] }, { "kind": "value", "value": 2 }] }], "Alias": "AverageBilledAmount" }
   ],
   "Filters": {
     "logicalOperation": 0,
-    "filters": [
-      {
-        "logicalOperator": null,
-        "left": {
-          "kind": "field",
-          "field": "Status"
-        },
-        "operation": 0,
-        "right": {
-          "kind": "value",
-          "value": "Denied"
-        },
-        "parameterized": true
-      }
-    ]
+    "filters": [{
+      "logicalOperator": 0,
+      "left": { "kind": "field", "field": "Status" },
+      "operation": 0,
+      "right": { "kind": "value", "value": "Denied" },
+      "parameterized": false
+    }]
   },
-  "Sorts": [
-    [
-      {
-        "Field": {
-          "kind": "field",
-          "field": "DeniedClaims"
-        },
-        "Direction": 1
-      },
-      {
-        "Field": {
-          "kind": "field",
-          "field": "BilledAmount"
-        },
-        "Direction": 1
-      }
-    ]
-  ],
+  "Sorts": [[
+    { "Field": { "kind": "field", "field": "DeniedClaims" }, "Direction": "Descending" },
+    { "Field": { "kind": "field", "field": "BilledAmount" }, "Direction": "Descending" }
+  ]],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,

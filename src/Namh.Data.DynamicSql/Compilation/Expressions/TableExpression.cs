@@ -9,7 +9,7 @@ internal sealed record JoinExpression(
     string JoinType,
     IReadOnlyList<SqlExpression> Conditions);
 
-internal sealed record OrderExpression(SqlExpression Expression, bool Descending);
+internal sealed record OrderExpression(SqlExpression Expression, bool Descending, string? ProjectionAlias = null);
 
 class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQueryable))
 {

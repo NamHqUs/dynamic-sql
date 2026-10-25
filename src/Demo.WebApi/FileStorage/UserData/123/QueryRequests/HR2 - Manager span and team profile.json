@@ -1,129 +1,29 @@
 {
   "Name": "HR2 - Manager span and team profile",
   "Projection": [
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Id"
-        }
-      ],
-      "Alias": "ManagerId"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "function",
-          "function": "CONCAT",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "FirstName"
-            },
-            {
-              "kind": "value",
-              "value": " "
-            },
-            {
-              "kind": "field",
-              "field": "LastName"
-            }
-          ]
-        }
-      ],
-      "Alias": "Manager"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "Department.Name"
-        }
-      ],
-      "Alias": "Department"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "DirectReports.Count()"
-        }
-      ],
-      "Alias": "DirectReports"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "DirectReports.CountDistinct(LocationId)"
-        }
-      ],
-      "Alias": "TeamLocations"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "DirectReports.Average(Salary)"
-        }
-      ],
-      "Alias": "AverageTeamSalary"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "DirectReports.PerformanceReviews.AverageIf(ReviewYear = <2025>, Rating)"
-        }
-      ],
-      "Alias": "AverageTeamRating"
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "DirectReports.Sum(Salary)"
-        }
-      ],
-      "Alias": "TeamPayroll"
-    }
+    { "Fields": [{ "kind": "field", "field": "Id" }], "Alias": "ManagerId" },
+    { "Fields": [{ "kind": "function", "function": "CONCAT", "arguments": [{ "kind": "field", "field": "FirstName" }, { "kind": "value", "value": " " }, { "kind": "field", "field": "LastName" }] }], "Alias": "Manager" },
+    { "Fields": [{ "kind": "field", "field": "Department.Name" }], "Alias": "Department" },
+    { "Fields": [{ "kind": "function", "function": "CountDistinct", "arguments": [{ "kind": "field", "field": "DirectReports.Id" }] }], "Alias": "DirectReports" },
+    { "Fields": [{ "kind": "function", "function": "CountDistinct", "arguments": [{ "kind": "field", "field": "DirectReports.LocationId" }] }], "Alias": "TeamLocations" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "AVG", "arguments": [{ "kind": "field", "field": "DirectReports.Salary" }] }, { "kind": "value", "value": 2 }] }], "Alias": "AverageTeamSalary" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "AVG", "arguments": [{ "kind": "field", "field": "DirectReports.PerformanceReviews.Rating" }] }, { "kind": "value", "value": 2 }] }], "Alias": "AverageTeamRating" },
+    { "Fields": [{ "kind": "function", "function": "ROUND", "arguments": [{ "kind": "function", "function": "SUM", "arguments": [{ "kind": "field", "field": "DirectReports.Salary" }] }, { "kind": "value", "value": 2 }] }], "Alias": "TeamPayroll" }
   ],
   "Filters": {
     "logicalOperation": 0,
-    "filters": [
-      {
-        "logicalOperator": null,
-        "left": {
-          "kind": "field",
-          "field": "DirectReports.Count()"
-        },
-        "operation": 4,
-        "right": {
-          "kind": "value",
-          "value": 0
-        },
-        "parameterized": true
-      }
-    ]
+    "filters": [{
+      "logicalOperator": 0,
+      "left": { "kind": "function", "function": "CountDistinct", "arguments": [{ "kind": "field", "field": "DirectReports.Id" }] },
+      "operation": 4,
+      "right": { "kind": "value", "value": 0 },
+      "parameterized": false
+    }]
   },
-  "Sorts": [
-    [
-      {
-        "Field": {
-          "kind": "field",
-          "field": "DirectReports"
-        },
-        "Direction": 1
-      },
-      {
-        "Field": {
-          "kind": "field",
-          "field": "TeamPayroll"
-        },
-        "Direction": 1
-      }
-    ]
-  ],
+  "Sorts": [[
+    { "Field": { "kind": "field", "field": "DirectReports" }, "Direction": "Descending" },
+    { "Field": { "kind": "field", "field": "TeamPayroll" }, "Direction": "Descending" }
+  ]],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,

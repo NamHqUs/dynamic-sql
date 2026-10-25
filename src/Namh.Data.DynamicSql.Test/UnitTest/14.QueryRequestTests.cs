@@ -326,6 +326,22 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
+    public void DefinitionSortsByProjectedAlias()
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Projection = QueryDefinitionParser.ParseProjection("Name, Count[] | TotalCount"),
+            Sorts = [new SortDefinition(new FieldDefinition("TotalCount"), QuerySortDirection.Descending)]
+        };
+
+        var sql = _db.Query(definition).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("ORDER BY \"TotalCount\" DESC"));
+        Assert.That(sql, Does.Not.Contain("ORDER BY COUNT"));
+    }
+
+    [Test]
     public void YmlDefinitionSupportsSortExpressions()
     {
         const string yml = """

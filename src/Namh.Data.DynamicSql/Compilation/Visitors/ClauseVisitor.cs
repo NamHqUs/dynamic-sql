@@ -108,9 +108,13 @@ class ClauseVisitor(QueryContext queryContext)
     {
         if (methodCall.Arguments[1] is ConstantExpression { Value: IFieldDefinition sortField })
         {
+            var projectionAlias = sortField is FieldDefinition { Oper: MatchOperation.Add } fieldDefinition
+                ? FindProjectionAlias(tableContext, fieldDefinition.FieldName)
+                : null;
             tableContext.Orders.Add(new OrderExpression(
                 QueryContext.ParseQueryExpression(tableContext, sortField),
-                methodCall.Method.Name.EndsWith("DescendingField", StringComparison.Ordinal)));
+                methodCall.Method.Name.EndsWith("DescendingField", StringComparison.Ordinal),
+                projectionAlias));
             return tableContext;
         }
 
@@ -122,8 +126,14 @@ class ClauseVisitor(QueryContext queryContext)
         foreach (var field in fields)
             tableContext.Orders.Add(new OrderExpression(
                 QueryContext.ParseFieldPath(tableContext, field),
-                descending));
+                descending,
+                FindProjectionAlias(tableContext, field)));
 
         return tableContext;
     }
+
+    private static string? FindProjectionAlias(TableExpression tableContext, string fieldPath)
+        => tableContext.ProjectionItems
+            .FirstOrDefault(item => string.Equals(item.Alias, fieldPath, StringComparison.OrdinalIgnoreCase))
+            ?.Alias;
 }

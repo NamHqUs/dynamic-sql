@@ -111,9 +111,11 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
     private string RenderOrder(OrderExpression order)
     {
-        var expression = order.Expression is AggregateExpression { GroupWithQuery: true } aggregate
-            ? RenderAggregateSelect(aggregate)
-            : RenderExpression(order.Expression);
+        var expression = order.ProjectionAlias is not null
+            ? dialect.QuoteIdentifier(order.ProjectionAlias)
+            : order.Expression is AggregateExpression { GroupWithQuery: true } aggregate
+                ? RenderAggregateSelect(aggregate)
+                : RenderExpression(order.Expression);
 
         return $"{expression}{(order.Descending ? " DESC" : " ASC")}";
     }
