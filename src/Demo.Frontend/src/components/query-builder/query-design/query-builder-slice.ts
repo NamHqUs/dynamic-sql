@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { apiUrls } from "../../../const/api-urls";
 import type { FunctionDefinition } from "../../metadata-builder/function-definition/types";
 
@@ -905,6 +905,7 @@ const queryBuilderSlice = createSlice({
     queryRequests: [] as SavedQueryRequestDto[],
     queryRequestsStatus: "idle",
     queryRequestsError: "",
+    debugUiEnabled: false,
     functionDefinitions: [] as FunctionDefinition[],
     functionDefinitionsStatus: "idle",
     functionDefinitionsError: "",
@@ -924,6 +925,9 @@ const queryBuilderSlice = createSlice({
       state.metadata = [];
       state.metadataStatus = "idle";
       state.metadataError = "";
+    },
+    setExpressionDebugUiEnabled(state, action: PayloadAction<boolean>) {
+      state.debugUiEnabled = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -1085,6 +1089,10 @@ const queryBuilderSlice = createSlice({
   },
 });
 
-export const { clearQueryResult, invalidateQueryMetadata } = queryBuilderSlice.actions;
+export const {
+  clearQueryResult,
+  invalidateQueryMetadata,
+  setExpressionDebugUiEnabled,
+} = queryBuilderSlice.actions;
 export { fromApiQuery };
 export default queryBuilderSlice.reducer;

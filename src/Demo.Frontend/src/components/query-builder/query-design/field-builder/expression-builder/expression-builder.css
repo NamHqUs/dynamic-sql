@@ -99,6 +99,20 @@
   gap: 6px;
 }
 
+.expression-builder[data-debug-ui="false"] .expression-debug-target:hover,
+.expression-builder[data-debug-ui="false"] .expression-debug-target:focus-within {
+  outline: none;
+}
+
+.expression-builder[data-debug-ui="false"] .expression-debug-panel {
+  display: none;
+}
+
+.expression-builder[data-debug-ui="false"] .expression-debug-target:hover > .expression-debug-tooltip,
+.expression-builder[data-debug-ui="false"] .expression-debug-target:focus-within > .expression-debug-tooltip {
+  display: none;
+}
+
 .expression-preview code {
   overflow-wrap: anywhere;
   color: #9298a2;

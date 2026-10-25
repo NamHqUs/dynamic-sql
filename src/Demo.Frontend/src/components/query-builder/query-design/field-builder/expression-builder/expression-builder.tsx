@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSelector } from "react-redux";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type {
   IFieldDefinition,
@@ -8,6 +9,7 @@ import { FieldBoxPopupContext } from "../field-box/field-box-popup-context";
 import Icon from "../../../../icon/icon";
 import { useMessageBox } from "../../../../message-box/message-box";
 import type { FunctionDefinition } from "../../../../metadata-builder/function-definition/types";
+import type { RootState } from "../../../../../store/store";
 import NodeEditor from "./expression-node-editor";
 import {
   adjustExpressionPathAfterRemoval,
@@ -56,6 +58,9 @@ export default function ExpressionBuilder({
   onApply,
   registerCloseGuard,
 }: ExpressionBuilderProps) {
+  const expressionDebugUiEnabled = useSelector(
+    (state: RootState) => state.queryBuilder.debugUiEnabled,
+  );
   const showMessageBox = useMessageBox();
   const [activeFieldBoxPopupId, setActiveFieldBoxPopupId] = useState<symbol | null>(null);
   const popupManager = useMemo(
@@ -429,6 +434,7 @@ export default function ExpressionBuilder({
       <div
         ref={expressionBuilderRef}
         className="expression-builder"
+        data-debug-ui={expressionDebugUiEnabled}
         onClick={() => setSelectedPath(undefined)}
         onPointerMove={updatePointerDrag}
         onPointerUp={finishPointerDrag}

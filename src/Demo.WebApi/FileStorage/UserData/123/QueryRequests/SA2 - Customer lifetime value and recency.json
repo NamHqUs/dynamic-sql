@@ -36,29 +36,42 @@
     {
       "Fields": [
         {
-          "kind": "field",
-          "field": ""
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
         }
       ],
-      "Alias": "NEW_LINE"
+      "Alias": "Order Count"
     },
     {
       "Fields": [
         {
-          "kind": "field",
-          "field": "CountDistinct(Id) AS Order Count"
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Orders.Items.Quantity"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
         }
       ],
-      "Alias": null
-    },
-    {
-      "Fields": [
-        {
-          "kind": "field",
-          "field": "ROUND(SUM(Orders.Items.Quantity), \u003C2\u003E) AS Lifetime Value"
-        }
-      ],
-      "Alias": null
+      "Alias": "Lifetime Value"
     }
   ],
   "Filters": null,

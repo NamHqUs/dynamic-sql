@@ -21,18 +21,12 @@ npm run dev
 
 ## Expression builder debug visuals
 
-The expression builder's debug outline and model tooltip are enabled by default, but appear only while an element is hovered or focused. The persistent left borders on groups and field boxes are structural styling and remain visible.
+The expression builder's debug outline, model tooltips, and model JSON panel are controlled by `debugUiEnabled` in the `queryBuilder` Redux state. To change what appears after a browser refresh, edit the `debugUiEnabled` value in the slice's `initialState` (`true` shows the debug UI; `false` hides it). This is a source-code flag and does not require a `.env` setting.
 
-To turn debug visuals off, set these variables in `.expression-builder` in `src/components/query-builder/query-design/field-builder/expression-builder.css`:
+To change it at runtime, dispatch `setExpressionDebugUiEnabled(false)` to turn the debug UI off, or `setExpressionDebugUiEnabled(true)` to turn it back on. In Redux DevTools, dispatch the corresponding action as:
 
-```css
---expression-debug-outline: none;
---expression-debug-tooltip-display: none;
+```json
+{ "type": "queryBuilder/setExpressionDebugUiEnabled", "payload": false }
 ```
 
-To turn them back on, use:
-
-```css
---expression-debug-outline: 2px solid #b9a5ff;
---expression-debug-tooltip-display: grid;
-```
+To change the default, edit `debugUiEnabled` in `src/components/query-builder/query-design/query-builder-slice.ts`. The persistent left borders on groups and field boxes are structural styling and remain visible.

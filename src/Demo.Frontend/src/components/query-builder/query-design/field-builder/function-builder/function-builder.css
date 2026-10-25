@@ -119,11 +119,13 @@
 }
 
 .expression-function-editor {
-  display: inline-flex;
-  max-width: 100%;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
-  gap: 3px;
-  white-space: nowrap;
+  column-gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .expression-function-select {
@@ -217,17 +219,15 @@
 }
 
 .expression-function-arguments {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 3px;
+  display: grid;
+  min-width: 0;
+  gap: 4px;
 }
 
 .expression-function-argument {
-  display: inline-flex;
+  display: flex;
   min-width: 0;
   align-items: center;
-  gap: 3px;
 }
 
 .expression-function-punctuation {
@@ -243,14 +243,19 @@
   line-height: 1;
 }
 
+.expression-function-close {
+  align-self: center;
+  margin-left: 4px;
+}
+
 .expression-node-function .expression-function-editor {
-  display: inline-flex;
-  width: max-content;
-  max-width: 100%;
-  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
-  gap: 3px;
-  white-space: nowrap;
+  column-gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .expression-function-empty {

@@ -259,6 +259,9 @@ export default function FunctionBuilder({
             openOnDoubleClick
             onChange={(name) => onChange(updateFunction(expression, name, functionDefinitions))}
           />
+          {expression.function && (
+            <span className="expression-function-punctuation expression-function-parenthesis" aria-hidden="true">(</span>
+          )}
           {(onRemove || onAddNextItem) && (
             <div className="expression-function-actions">
               {onRemove && (
@@ -282,42 +285,40 @@ export default function FunctionBuilder({
           )}
         </div>
         {expression.function && (
-          <>
-            <span className="expression-function-punctuation expression-function-parenthesis" aria-hidden="true">(</span>
-            <div className="expression-function-arguments">
-              {expression.arguments.map((argument, index) => {
-                const argumentDefinition = definition?.arguments[index];
-                const argumentLabel = argumentDefinition
-                  ? `${argumentDefinition.name} (${argumentDefinition.dataType})`
-                  : `Argument ${index + 1}`;
-                return (
-                  <div
-                    className="expression-function-argument"
-                    key={`${expression.function}-${index}`}
-                    role="group"
-                    aria-label={argumentLabel}
-                  >
-                    {index > 0 && <span className="expression-function-punctuation" aria-hidden="true">,</span>}
-                    {renderArgument(
-                      argument,
-                      index,
-                      (next) => onChange({
-                        ...expression,
-                        arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
-                      }),
-                      () => onChange({
-                        ...expression,
-                        arguments: expression.arguments.map((item, itemIndex) =>
-                          itemIndex === index ? { kind: "field", field: "" } : item,
-                        ),
-                      }),
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <span className="expression-function-punctuation expression-function-parenthesis" aria-hidden="true">)</span>
-          </>
+          <div className="expression-function-arguments" role="group" aria-label="Function arguments">
+            {expression.arguments.map((argument, index) => {
+              const argumentDefinition = definition?.arguments[index];
+              const argumentLabel = argumentDefinition
+                ? `${argumentDefinition.name} (${argumentDefinition.dataType})`
+                : `Argument ${index + 1}`;
+              return (
+                <div
+                  className="expression-function-argument"
+                  key={`${expression.function}-${index}`}
+                  role="group"
+                  aria-label={argumentLabel}
+                >
+                  {renderArgument(
+                    argument,
+                    index,
+                    (next) => onChange({
+                      ...expression,
+                      arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
+                    }),
+                    () => onChange({
+                      ...expression,
+                      arguments: expression.arguments.map((item, itemIndex) =>
+                        itemIndex === index ? { kind: "field", field: "" } : item,
+                      ),
+                    }),
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {expression.function && (
+          <span className="expression-function-punctuation expression-function-parenthesis expression-function-close" aria-hidden="true">)</span>
         )}
       </div>
     </div>
