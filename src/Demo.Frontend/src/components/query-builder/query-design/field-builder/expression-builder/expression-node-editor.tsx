@@ -543,9 +543,18 @@ export default function NodeEditor({
         const appendMathToArgument = () => {
           const currentArgument = expression.arguments[index];
           if (!currentArgument) return;
-          const group = currentArgument.kind === "group"
-            ? currentArgument
-            : { kind: "group" as const, arguments: [currentArgument] };
+          if (currentArgument.kind === "group") {
+            onChange({
+              ...expression,
+              arguments: [
+                ...expression.arguments.slice(0, index + 1),
+                { kind: "field", field: "", oper: "+" },
+                ...expression.arguments.slice(index + 1),
+              ],
+            });
+            return;
+          }
+          const group = { kind: "group" as const, arguments: [currentArgument] };
           onChange({
             ...expression,
             arguments: expression.arguments.map((item, itemIndex) => itemIndex === index
@@ -560,6 +569,34 @@ export default function NodeEditor({
           });
         };
 
+        const argumentPath = path === undefined ? undefined : [...path, index];
+        const argumentSelectionPath = selectionPath === undefined ? undefined : [...selectionPath, index];
+        if (argument.oper === "+") {
+          return (
+            <ExpressionMathElement
+              expression={argument}
+              operator="+"
+              entity={entity}
+              metadata={metadata}
+              functionDefinitions={functionDefinitions}
+              functionDefinitionsStatus={functionDefinitionsStatus}
+              functionDefinitionsError={functionDefinitionsError}
+              onChange={onArgumentChange}
+              onCalculationSelect={appendMathToArgument}
+              onRemove={onArgumentRemove}
+              path={argumentPath}
+              onPointerDragStart={onPointerDragStart}
+              dragPreview={dragPreview}
+              dragPosition={dragPosition}
+              selectionPath={argumentSelectionPath}
+              selectedPath={selectedPath}
+              onSelect={onSelect}
+              onUngroup={onUngroup}
+              canUngroup={false}
+            />
+          );
+        }
+
         return (
           <NodeEditor
             expression={argument}
@@ -571,11 +608,11 @@ export default function NodeEditor({
             onChange={onArgumentChange}
             onRemove={onArgumentRemove}
             onCalculationSelect={appendMathToArgument}
-            path={path === undefined ? undefined : [...path, index]}
+            path={argumentPath}
             onPointerDragStart={onPointerDragStart}
             dragPreview={dragPreview}
             dragPosition={dragPosition}
-            selectionPath={selectionPath === undefined ? undefined : [...selectionPath, index]}
+            selectionPath={argumentSelectionPath}
             selectedPath={selectedPath}
             onSelect={onSelect}
             onUngroup={onUngroup}

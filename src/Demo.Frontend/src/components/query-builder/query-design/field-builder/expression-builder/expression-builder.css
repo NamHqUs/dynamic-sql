@@ -159,11 +159,11 @@
 
 .expression-group-nested {
   gap: 7px;
-  padding: 9px 10px 9px 13px;
+  padding: 9px 24px 9px 13px;
   border: 0;
   border-radius: 9px;
-  background: transparent;
-  box-shadow: none;
+  background: linear-gradient(145deg, #202632, #171d27 72%);
+  box-shadow: inset 0 1px 0 #ffffff08;
 }
 
 .expression-group-nested::before {
@@ -265,9 +265,9 @@
   transition: opacity .12s .18s, visibility 0s .3s;
 }
 
-.expression-node-function.expression-item-controls:hover:not(:has(.expression-function-argument:hover, .expression-function-argument:focus-within)) > .expression-function-editor > .expression-function-label > .expression-function-actions,
+.expression-node-function.expression-item-controls:has(> .expression-function-editor > .expression-function-label > .expression-function-select > .operator-trigger:hover, > .expression-function-editor > .expression-function-label > .expression-function-actions:hover) > .expression-function-editor > .expression-function-label > .expression-function-actions,
 .expression-node-function.expression-item-controls:focus-within:not(:has(.expression-function-argument:hover, .expression-function-argument:focus-within)) > .expression-function-editor > .expression-function-label > .expression-function-actions,
-.expression-node-function.expression-item-controls.expression-selected:not(:has(.expression-function-argument:hover, .expression-function-argument:focus-within)) > .expression-function-editor > .expression-function-label > .expression-function-actions {
+.expression-node-function.expression-item-controls:has(> .expression-function-editor > .expression-function-label > .expression-function-select > .operator-trigger:focus-visible) > .expression-function-editor > .expression-function-label > .expression-function-actions {
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
@@ -311,7 +311,7 @@
 .expression-group-actions {
   position: absolute;
   top: 50%;
-  right: -88px;
+  right: -64px;
   z-index: 3;
   display: flex;
   align-items: center;
@@ -325,9 +325,9 @@
   justify-content: center;
   gap: 4px;
   padding: 2px;
-  border: 1px solid #3b4050;
+  border: 1px solid #343a49;
   border-radius: 7px;
-  background: linear-gradient(135deg, #1a1d27, #141821);
+  background: linear-gradient(135deg, #202531 0%, #11151d 100%);
   box-shadow: inset 0 1px 0 #ffffff0a;
 }
 
