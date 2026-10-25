@@ -187,6 +187,5 @@
   "PageSize": 10,
   "IsBuiltin": false,
   "Entity": "Persons",
-  "Relations": [],
   "FilterPlanText": null
 }

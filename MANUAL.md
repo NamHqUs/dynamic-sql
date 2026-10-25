@@ -270,12 +270,9 @@ Use `QueryYml` when a screen, API, or report supplies query rules at runtime:
 ```csharp
 var rows = db.QueryYml("""
 Entity: User
-Relations:
-  - "Manager2: Manager(ManagerId)"
 Projection:
   - Name
   - Manager.Name | Manager-Name
-  - Manager2.Name | Second-Manager-Name
 Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Age] < 12)"
 Sorts: Manager.Name DESC
 Page: 1
@@ -286,9 +283,6 @@ PageSize: 50
 Supported properties:
 
 - `entity`: metadata entity name.
-- `relations`: optional independent relations written as
-  `name: relationPath(key[, sourceKey:targetKey])`. A key without a mapping
-  maps a column to itself. Every entry creates a distinct named relation.
 - `projection`: projection expressions; use `|` to specify an output alias.
 - Legacy YAML and JSON definitions using `Fields` remain readable.
 - Saved-query projections on `QueryRequestDto` are stored as a flat list.
@@ -314,24 +308,6 @@ the query engine, so the active provider handles their SQL representation.
 Plan-text filters use `=`/`<>`, quote string values with double quotes, and
 write right-side field references in brackets; this text can be parsed back
 into the same filter structure.
-
-When relations are present, plan text lists the root under `Entity` and each
-independent relation under `Relations`:
-
-```text
-Entity: InvoiceItems
-Relations:
-  OtherItem: Invoice.Items(Id:InvoiceId)
-Projection: Product.Name, OtherItem.Product.Name
-Filters: Product.Id < OtherItem.Product.Id
-```
-
-The name on the left of `:` is the field-path prefix used by projections,
-filters, and sorts. The relation path on the right identifies the metadata
-relationship being reused; the parent-to-target key pairs in parentheses are
-required for every relation. To create a self-join directly from the root entity,
-use the root entity name as the relation path (for example,
-`b: InvoiceItems(InvoiceId:InvoiceId)`).
 
 Field references in filters use brackets:
 
@@ -509,8 +485,6 @@ and `GETDATE()` renders the provider's current date and time.
 var query = QueryDefinitionParser.ParseFromYml("""
 Name: Product totals
 Entity: InvoiceItems
-Relations:
-  - "b: InvoiceItems(InvoiceId)"
 Projection:
   - Product.Name|Product
   - Count()|ItemCount
@@ -520,13 +494,11 @@ Sorts: ItemCount DESC
 var fileQuery = QueryDefinitionParser.ParseFromYml(new FileInfo("query.yml"));
 ```
 
-YAML query definitions use the same properties as `QueryDefinition`. Entity
-aliases and sorts are plain-text expressions parsed by their respective
-definition parsers. Projection and filters use the existing query expression
-syntax. Relations use the string form `alias: RelationPath(key[, ...])`;
-quote the value so YAML treats it as a string. A key can map different columns
-with `fromColumn:toColumn`. Projection is a list of expressions, and sorts are a
-comma-separated string with an optional `ASC` or `DESC` direction.
+YAML query definitions use the same properties as `QueryDefinition`. Sorts are
+plain-text expressions parsed by the sort definition parser. Projection and
+filters use the existing query expression syntax. Projection is a list of
+expressions, and sorts are a comma-separated string with an optional `ASC` or
+`DESC` direction.
 
 ## SQL diagnostics
 

@@ -99,16 +99,7 @@ public sealed class ReportService(
             throw new FormatException("Query request fields must not be repeated.");
         var values = lines.ToDictionary(item => item.Key, item => item.Value, StringComparer.OrdinalIgnoreCase);
 
-        var parsedEntities = values.GetValueOrDefault("Entities");
-        var parsedRelations = values.GetValueOrDefault("Relations");
-        var hasEntity = values.TryGetValue("Entity", out var parsedEntity);
-        if (parsedEntities is not null && parsedRelations is not null)
-            throw new FormatException("Use either Relations or the legacy Entities list, not both.");
-        if (hasEntity && parsedEntities is not null)
-            throw new FormatException("Use either Entity or the legacy Entities list, not both.");
-        if (!hasEntity)
-            parsedEntity = ParseEntityList(parsedEntities).Entity;
-        var resolvedEntity = parsedEntity
+        var resolvedEntity = values.GetValueOrDefault("Entity")
             ?? throw new FormatException("Query request requires an Entity.");
         if (!string.Equals(resolvedEntity, entity, StringComparison.Ordinal))
             throw new FormatException("Entity cannot be changed in the request structure.");
@@ -132,11 +123,6 @@ public sealed class ReportService(
         return new QueryDefinition
         {
             Entity = resolvedEntity,
-            Relations = parsedRelations is not null
-                ? ParseRelations(parsedRelations)
-                : parsedEntities is not null
-                    ? ParseEntityList(parsedEntities).Relations
-                    : [],
             Projection = projection,
             Filter = filter,
             Sorts = sorts,
@@ -153,69 +139,7 @@ public sealed class ReportService(
         if (entity is not null)
             return ParseQueryRequestString(text, entity[(entity.IndexOf(':') + 1)..].Trim());
 
-        var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
-        var entitiesHeader = Array.FindIndex(lines, line =>
-            line.Trim().Equals("Entities:", StringComparison.OrdinalIgnoreCase));
-        var rootEntity = entitiesHeader < 0
-            ? null
-            : lines.Skip(entitiesHeader + 1)
-                .TakeWhile(line => string.IsNullOrWhiteSpace(line) || char.IsWhiteSpace(line[0]))
-                .Select(line => line.Trim())
-                .FirstOrDefault(line => line.Length > 0);
-        if (string.IsNullOrWhiteSpace(rootEntity))
-            throw new FormatException("Exactly one non-empty Entity or Entities root is required.");
-
-        return ParseQueryRequestString(text, rootEntity);
-    }
-
-    private static (string Entity, List<RelationDefinition> Relations) ParseEntityList(string? value)
-    {
-        var entries = (value ?? string.Empty)
-            .Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (entries.Length == 0)
-            throw new FormatException("Entities requires a root entity.");
-
-        return (entries[0], ParseRelations(string.Join(Environment.NewLine, entries.Skip(1))));
-    }
-
-    private static List<RelationDefinition> ParseRelations(string value)
-    {
-        var entries = value
-            .Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(entry => (entry.StartsWith("- ", StringComparison.Ordinal) ? entry[2..] : entry).Trim().Trim('"'))
-            .ToArray();
-        var relations = new List<RelationDefinition>();
-        foreach (var entry in entries)
-        {
-            var separator = entry.IndexOf(':');
-            if (separator < 1)
-                throw new FormatException($"Invalid relation definition [{entry}].");
-
-            var name = entry[..separator].Trim();
-            var relationText = entry[(separator + 1)..].Trim();
-            var keyStart = relationText.LastIndexOf('(');
-            if (keyStart < 1 || !relationText.EndsWith(')'))
-                throw new FormatException($"Relation [{name}] requires relation key mappings.");
-
-            var relationPath = relationText[..keyStart].Trim();
-            var relatedKeys = SplitTopLevel(relationText[(keyStart + 1)..^1], ',')
-                .Select(keyText =>
-                {
-                    var keySeparator = keyText.IndexOf(':');
-                    var fromColumn = keySeparator < 0 ? keyText.Trim() : keyText[..keySeparator].Trim();
-                    var toColumn = keySeparator < 0 ? fromColumn : keyText[(keySeparator + 1)..].Trim();
-                    if (string.IsNullOrWhiteSpace(fromColumn) || string.IsNullOrWhiteSpace(toColumn))
-                        throw new FormatException($"Invalid relation key mapping [{keyText}].");
-                    return new RelationItem(fromColumn, toColumn);
-                })
-                .ToList();
-            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(relationPath) || relatedKeys.Count == 0)
-                throw new FormatException($"Invalid relation definition [{entry}].");
-
-            relations.Add(new RelationDefinition(name, relationPath, relatedKeys));
-        }
-
-        return relations;
+        throw new FormatException("Query request requires an Entity.");
     }
 
     public ReportDto? UpdateReport(

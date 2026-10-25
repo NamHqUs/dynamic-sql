@@ -27,7 +27,7 @@ public record FunctionFieldDefinition(MatchOperation Oper, string FunctionName, 
     public FunctionFieldDefinition(string functionName, IFieldDefinition[] arguments) : this(MatchOperation.Add, functionName, arguments) { }
     public string ToText() => $"{FunctionName}({string.Join(", ", Arguments.Select(argument =>
         argument is GroupFieldDefintion group
-            ? FieldDefinitionText.Format(group.Fields)
+            ? FieldDefinitionHelper.Format(group.Fields)
             : argument.ToText()))})";
 }
 
@@ -36,7 +36,7 @@ public record GroupFieldDefintion(MatchOperation Oper, IFieldDefinition[] Fields
     public GroupFieldDefintion(IFieldDefinition[] fields)  : this(MatchOperation.Add, fields) {  }
 
     public string ToText()
-        => FieldDefinitionText.Format(Fields);
+        => FieldDefinitionHelper.Format(Fields);
 }
 
 public enum MatchOperation
@@ -50,7 +50,7 @@ public enum MatchOperation
     BitwiseOr,
 }
 
-internal static class FieldDefinitionText
+internal static class FieldDefinitionHelper
 {
     public static string Format(IEnumerable<IFieldDefinition> fields)
         => string.Join(" ", fields.Select((field, index) =>

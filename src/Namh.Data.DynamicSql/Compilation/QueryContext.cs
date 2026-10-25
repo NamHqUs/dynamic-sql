@@ -9,8 +9,7 @@ namespace Namh.Data.DynamicSql.Compilation;
 
 class QueryContext(
     IMetaProvider metaProvider,
-    IFunctionProvider functionProvider,
-    IReadOnlyList<RelationDefinition> relations)
+    IFunctionProvider functionProvider)
 {
     private int _aliasCount;
     public readonly Stack<(string ArgumentName, TableExpression TableContext)> Arguments = new();
@@ -20,10 +19,7 @@ class QueryContext(
 
     public TableExpression CreateTableContext(Entity entity)
     {
-        var table = new TableExpression(entity, GetNextAlias());
-
-        RegisterRelations(table);
-        return table;
+        return new TableExpression(entity, GetNextAlias());
     }
 
     public SqlExpression ParseFieldPath(TableExpression tableContext, string fieldPath)
@@ -35,16 +31,6 @@ class QueryContext(
 
         if (TryParseAggregateFunction(fieldPath, out var wrappedAggregate))
             return ParseFunctionExpression(tableContext, wrappedAggregate, 0);
-
-        var queryRoot = tableContext.JoinHost;
-        var relation = queryRoot.Relations
-            .OrderByDescending(pair => pair.Key.Length)
-            .FirstOrDefault(pair => fieldPath.StartsWith($"{pair.Key}.", StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrEmpty(relation.Key))
-        {
-            tableContext = relation.Value;
-            fieldPath = fieldPath[(relation.Key.Length + 1)..];
-        }
 
         var i = FindLastUnnestedDot(fieldPath);
         var relationPath = i < 0 ? null : fieldPath[..i];
@@ -415,71 +401,6 @@ class QueryContext(
                     return (rel, next);
                 })
                 .ToList();
-    }
-
-    private void RegisterRelations(TableExpression tableContext)
-    {
-        foreach (var relation in relations)
-        {
-            if (relation is null)
-                throw new FormatException("A relation cannot be null.");
-            if (string.IsNullOrWhiteSpace(relation.Name) ||
-                string.IsNullOrWhiteSpace(relation.RelationPath))
-                throw new FormatException("A relation requires a name and a relation path.");
-            if (relation.RelatedKeys is not { Count: > 0 })
-                throw new FormatException($"Relation [{relation.Name}] requires at least one relation key.");
-
-            TableExpression parentTable;
-            Entity targetEntity;
-            if (string.Equals(
-                relation.RelationPath,
-                tableContext.Entity.Name,
-                StringComparison.OrdinalIgnoreCase))
-            {
-                parentTable = tableContext;
-                targetEntity = tableContext.Entity;
-            }
-            else
-            {
-                var relationPath = ParseRelationPath(tableContext, relation.RelationPath).ToArray();
-                if (relationPath.Length == 0)
-                    throw new FormatException($"Relation [{relation.Name}] requires a relation path.");
-
-                parentTable = ApplyJoin(tableContext, relationPath.Take(relationPath.Length - 1));
-                targetEntity = relationPath[^1].joinedEntity;
-            }
-            if (string.IsNullOrWhiteSpace(relation.Name) ||
-                relation.Name.Split('.').Any(segment => string.IsNullOrWhiteSpace(segment)))
-                throw new FormatException($"Relation [{relation.Name}] is invalid.");
-            if (string.Equals(relation.Name, relation.RelationPath, StringComparison.OrdinalIgnoreCase))
-                throw new FormatException($"Relation [{relation.Name}] must differ from its relation path.");
-
-            if (tableContext.Relations.ContainsKey(relation.Name))
-                throw new FormatException($"Relation [{relation.Name}] is defined more than once.");
-
-            var aliasTable = new TableExpression(targetEntity, GetNextAlias())
-            {
-                JoinRoot = tableContext.JoinHost
-            };
-            var conditions = new List<SqlExpression>();
-            foreach (var key in relation.RelatedKeys)
-            {
-                if (key is null)
-                    throw new FormatException($"Relation [{relation.Name}] contains an empty relation key.");
-                if (string.IsNullOrWhiteSpace(key.FromDbColumn) ||
-                    string.IsNullOrWhiteSpace(key.ToDbColumn))
-                    throw new FormatException($"Relation [{relation.Name}] contains an incomplete relation key.");
-
-                conditions.Add(new BinarySqlExpression(
-                    new FieldExpression(aliasTable.Alias, targetEntity.GetField(key.ToDbColumn)),
-                    "=",
-                    new FieldExpression(parentTable.Alias, parentTable.Entity.GetField(key.FromDbColumn)),
-                    typeof(bool)));
-            }
-
-            tableContext.Relations.Add(relation.Name, aliasTable);
-            tableContext.JoinHost.Joins.Add(new JoinExpression(aliasTable, "LEFT JOIN", conditions));
-        }
     }
 
     private TableExpression ApplyJoin(TableExpression tableContext, IEnumerable<(Relation relation, Entity joinedEntity)> joinedData)

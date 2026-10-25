@@ -75,7 +75,6 @@ public sealed class DynamicQueryService(
         return new QueryDefinition
         {
             Entity = query.Entity,
-            Relations = query.Relations,
             Projection = query.Projection,
             Filter = PrepareGroup(query.Filter),
             Sorts = query.Sorts,

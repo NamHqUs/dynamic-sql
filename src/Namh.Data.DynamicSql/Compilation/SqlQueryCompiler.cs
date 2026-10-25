@@ -19,10 +19,9 @@ internal sealed class SqlQueryCompiler(
     internal const int TotalRecordsLimit = 1000;
     public CompiledQuery Compile(
         Expression expression,
-        IReadOnlyList<RelationDefinition> relations,
         bool includeTotalRecords = false)
     {
-        var queryContext = new QueryContext(metaProvider, functionProvider, relations);
+        var queryContext = new QueryContext(metaProvider, functionProvider);
         var tableExpression = (TableExpression)new QueryVisitor(queryContext).Visit(expression);
         var statementGenerator = new SqlStatementGenerator(sqlDialect);
         var generatedSql = statementGenerator.Generate(tableExpression, queryContext.DbParameters);

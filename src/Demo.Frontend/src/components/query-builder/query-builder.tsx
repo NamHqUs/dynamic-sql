@@ -8,7 +8,6 @@ import { createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators,
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import SavedQueryList from "./saved-query-list/saved-query-list";
-import { addRelationsToMetadata } from "../../utils/query-relations";
 import { useResizablePanel } from "../../utils/use-resizable-panel";
 import { replacePlanTextSectionValue } from "./query-design/plan-text-section-editor";
 import type { PlanTextSection } from "./query-design/plan-text-section-editor";
@@ -35,7 +34,6 @@ export function setQueryBuilderDefinition(definition: QueryDefinition) {
 function createDefinition(entity: string, fields: MetadataField[] = []): QueryDefinition {
   return {
     entity,
-    relations: [],
     columns: fields.map((field) => ({ field: field.name, alias: null })),
     filters: { logicalOperation: 0, filters: [] },
     sorts: [],
@@ -78,31 +76,24 @@ function loadDefinition(): QueryDefinition {
 }
 
 function normalizeQueryDefinition(value: unknown): QueryDefinition | null {
-  if (!isRecord(value) || ("relations" in value && "entityAliases" in value)) return null;
-
-  const savedRelations = value.relations ?? value.entityAliases;
-  if (!Array.isArray(savedRelations)) return null;
-
-  const relations = savedRelations.map((savedRelation) => {
-    if (!isRecord(savedRelation)) return savedRelation;
-    const { alias, ...relation } = savedRelation;
-    return {
-      ...relation,
-      name: typeof relation.name === "string" ? relation.name : alias,
-    };
-  });
-  const normalized = { ...value, relations };
-  delete normalized.entityAliases;
-
-  return isQueryDefinition(normalized) ? normalized : null;
+  if (!isRecord(value) || !isQueryDefinition(value)) return null;
+  const definition = value as QueryDefinition;
+  return {
+    entity: definition.entity,
+    columns: definition.columns,
+    projectionRows: definition.projectionRows,
+    filterPlanText: definition.filterPlanText,
+    filters: definition.filters,
+    sorts: definition.sorts,
+    page: definition.page,
+    pageSize: definition.pageSize,
+  };
 }
 
 function isQueryDefinition(value: unknown): value is QueryDefinition {
   if (!isRecord(value)) return false;
   const definition = value as Partial<QueryDefinition>;
   return typeof definition.entity === "string"
-    && Array.isArray(definition.relations)
-    && definition.relations.every(isRelationDefinition)
     && Array.isArray(definition.columns)
     && definition.columns.every((column) => column !== null
       && typeof column === "object"
@@ -125,16 +116,6 @@ function isQueryDefinition(value: unknown): value is QueryDefinition {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function isRelationDefinition(value: unknown): value is QueryDefinition["relations"][number] {
-  return isRecord(value)
-    && typeof value.name === "string"
-    && typeof value.relationPath === "string"
-    && Array.isArray(value.relatedKeys)
-    && value.relatedKeys.every((key) => isRecord(key)
-      && typeof key.fromDbColumn === "string"
-      && typeof key.toDbColumn === "string");
 }
 
 function pruneFilters(group: QueryFilterGroup, entity: MetadataEntity, metadata: MetadataEntity[]): QueryFilterGroup {
@@ -253,14 +234,6 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     planTextCommitRef.current = commit ?? (async (currentDefinition) => currentDefinition);
   }, []);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
-  const contextMetadata = useMemo(
-    () => addRelationsToMetadata(metadata, definition.entity, definition.relations),
-    [metadata, definition.entity, definition.relations],
-  );
-  const contextEntity = useMemo(
-    () => contextMetadata.find((item) => item.name === definition.entity),
-    [contextMetadata, definition.entity],
-  );
   const updateDefinition = (nextDefinition: QueryDefinition) => {
     setQueryBuilderDefinition(nextDefinition);
     setDefinition(nextDefinition);
@@ -292,9 +265,9 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
       updateDefinition(createDefinition(metadata[0].name, metadata[0].fields));
       return;
     }
-    const selectedEntity = contextEntity;
+    const selectedEntity = entity;
     if (!selectedEntity) return;
-    const reconciled = reconcileDefinition(definition, selectedEntity, contextMetadata);
+    const reconciled = reconcileDefinition(definition, selectedEntity, metadata);
     if (!reconciled.columns.length) {
       updateDefinition({
         ...reconciled,
@@ -303,7 +276,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     } else if (reconciled !== definition) {
       updateDefinition(reconciled);
     }
-  }, [metadata, definition.entity, definition.relations]);
+  }, [metadata, definition.entity]);
 
   const runQuery = async () => {
     const queryDefinition = await planTextCommitRef.current(definition);

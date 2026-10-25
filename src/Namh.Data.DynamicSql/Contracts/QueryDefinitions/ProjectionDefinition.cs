@@ -8,6 +8,11 @@ namespace Namh.Data.DynamicSql;
 [JsonConverter(typeof(ProjectionDefinitionJsonConverter))]
 public sealed record ProjectionDefinition(IFieldDefinition[] Fields, string? Alias = null)
 {
+    public ProjectionDefinition(string field, string? alias = null)
+        : this([new FieldDefinition(field)], alias)
+    {
+    }
+
     public const string NewLineAlias = "NEW_LINE";
 
     public bool IsNewLine
@@ -15,7 +20,7 @@ public sealed record ProjectionDefinition(IFieldDefinition[] Fields, string? Ali
 
     public string ToText()
     {
-        var expression = FieldDefinitionText.Format(Fields);
+        var expression = FieldDefinitionHelper.Format(Fields);
         return Alias is null ? expression : $"{expression} | {Alias}";
     }
 }

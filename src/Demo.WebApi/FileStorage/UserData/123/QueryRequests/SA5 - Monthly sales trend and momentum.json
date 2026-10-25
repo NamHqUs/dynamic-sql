@@ -95,6 +95,5 @@
   "PageSize": 10,
   "IsBuiltin": false,
   "Entity": "Orders",
-  "Relations": [],
   "FilterPlanText": null
 }

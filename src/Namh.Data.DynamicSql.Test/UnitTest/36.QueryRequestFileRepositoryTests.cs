@@ -40,8 +40,7 @@ public sealed class _36_QueryRequestFileRepositoryTests
                   "pageSize": null,
                   "filterPlanText": "Name = <Alice Johnson> AND Id = <1>",
                   "isBuiltin": true,
-                  "entity": "User",
-                  "EntityAliases": [{ "Alias": "Manager2", "RelationPath": "Manager", "RelatedKeys": [] }]
+                  "entity": "User"
                 }
                 """);
 
@@ -60,7 +59,6 @@ public sealed class _36_QueryRequestFileRepositoryTests
             Assert.That(queryRequest.Filters, Is.TypeOf<FilterDefinition>());
             Assert.That(queryRequest.Filters!.Filters, Has.Count.EqualTo(1));
             Assert.That(queryRequest.Filters.Filters[0], Is.TypeOf<FilterItemDefinition>());
-            Assert.That(queryRequest.Relations.Single().Name, Is.EqualTo("Manager2"));
             Assert.That(queryRequest.FilterPlanText, Is.EqualTo("Name = <Alice Johnson> AND Id = <1>"));
 
             repository.Save("test-user", queryRequest);
@@ -70,9 +68,7 @@ public sealed class _36_QueryRequestFileRepositoryTests
             Assert.That(savedProjection.GetArrayLength(), Is.EqualTo(3));
             Assert.That(savedProjection[1].GetProperty("Alias").GetString(), Is.EqualTo("NEW_LINE"));
             Assert.That(savedFile.RootElement.GetProperty("Filters").ValueKind, Is.EqualTo(JsonValueKind.Object));
-            var savedRelations = savedFile.RootElement.GetProperty("Relations");
-            Assert.That(savedRelations[0].GetProperty("Name").GetString(), Is.EqualTo("Manager2"));
-            Assert.That(savedRelations[0].TryGetProperty("Alias", out _), Is.False);
+            Assert.That(savedFile.RootElement.TryGetProperty("Relations", out _), Is.False);
             Assert.That(savedFile.RootElement.GetProperty("FilterPlanText").GetString(),
                 Is.EqualTo("Name = <Alice Johnson> AND Id = <1>"));
         }

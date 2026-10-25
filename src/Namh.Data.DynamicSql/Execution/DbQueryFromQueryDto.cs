@@ -15,9 +15,7 @@ internal static class DbQueryFromQueryDto
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(definition.Projection);
 
-        var query = context.Query(
-            definition.Entity,
-            definition.Relations);
+        var query = context.Query(definition.Entity);
 
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));

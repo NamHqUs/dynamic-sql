@@ -24,17 +24,14 @@ public class DynamicSqlContext(
     {
     }
 
-    public IDbQueryable Query(
-        string entity,
-        IReadOnlyList<RelationDefinition>? relations = null)
+    public IDbQueryable Query(string entity)
     {
         var queryProvider = new DbQueryProvider(
             metaProvider,
             functionProvider,
             dbConnection,
             _sqlDialect,
-            entity,
-            relations ?? []);
+            entity);
 
         return new DbQueryable(queryProvider);
     }

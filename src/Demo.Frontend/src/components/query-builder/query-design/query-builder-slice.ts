@@ -23,11 +23,6 @@ export type MetadataRelation = {
 };
 
 export type RelationKey = { fromDbColumn: string; toDbColumn: string };
-export type RelationDefinition = {
-  name: string;
-  relationPath: string;
-  relatedKeys: RelationKey[];
-};
 
 export type MetadataEntity = {
   name: string;
@@ -91,7 +86,6 @@ type ApiQueryFilterGroup = Omit<QueryFilterGroup, "filters"> & {
 
 export type QueryDefinition = {
   entity: string;
-  relations: RelationDefinition[];
   columns: QueryColumn[];
   projectionRows?: string[][];
   filterPlanText?: string | null;
@@ -138,7 +132,6 @@ export type SavedQueryRequestDto = {
 type ApiSavedQueryRequestDto = {
   name: string;
   entity: string;
-  relations: RelationDefinition[];
   projection: ApiProjectionDefinition[];
   filters: ApiQueryFilterGroup | null;
   sorts: { field: IFieldDefinition; direction: number }[][] | null;
@@ -449,7 +442,6 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
 
   return {
     entity: query.entity,
-    relations: query.relations ?? [],
     columns: query.projection.map((projection, index) => {
       const expression = normalizeApiProjectionDefinition(projection);
       if (!expression) throw new Error("Query API returned an unsupported projection expression.");
@@ -511,7 +503,6 @@ function fromApiSavedRequest(request: ApiSavedQueryRequestDto): SavedQueryReques
     name: request.name,
     query: {
       entity: request.entity,
-      relations: request.relations,
       projection: fields,
       filter: request.filters,
       sorts: request.sorts?.flat() ?? [],
@@ -552,7 +543,6 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition 
   return {
     name: request.name,
     entity: apiQuery.entity,
-    relations: apiQuery.relations,
     projection,
     filters: apiQuery.filter,
     sorts: apiQuery.sorts.length ? [apiQuery.sorts] : null,
@@ -835,9 +825,8 @@ export const fetchQueryRequests = createAsyncThunk(
       const payload = await requestJson(apiUrls.queryRequests.list);
       if (!Array.isArray(payload) || payload.some((item) => !item
         || typeof item.name !== "string"
-        || typeof item.entity !== "string"
-        || !Array.isArray(item.relations)
-        || typeof item.isBuiltin !== "boolean"
+         || typeof item.entity !== "string"
+         || typeof item.isBuiltin !== "boolean"
         || !Array.isArray(item.projection)
         || item.projection.some((projection: unknown) => !projection
           || typeof projection !== "object"

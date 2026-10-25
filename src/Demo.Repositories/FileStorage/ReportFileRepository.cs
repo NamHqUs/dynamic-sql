@@ -183,7 +183,6 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
                 query = new QueryDefinition
                 {
                     Entity = query.Entity,
-                    Relations = query.Relations,
                     Projection = legacyFields.EnumerateArray()
                         .Select(field => JsonSerializer.Deserialize<ProjectionDefinition>(
                             field.GetRawText(),
@@ -200,7 +199,6 @@ public sealed class ReportFileRepository : FileRepositoryBase<ReportDto>, IRepor
                 query = new QueryDefinition
                 {
                     Entity = query.Entity,
-                    Relations = query.Relations,
                     Projection = legacyColumns.EnumerateArray().Select(ParseLegacyProjection).ToList(),
                     Filter = query.Filter,
                     Sorts = query.Sorts,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FilterOperatorDefinition, MetadataEntity, QueryDefinition } from "./query-builder-slice";
 import { FunctionDefinition } from "../../metadata-builder/function-definition/types";
 import ProjectionBuilder from "./projection-builder/projection-builder";
@@ -6,7 +6,6 @@ import SortBuilder from "./sort-builder/sort-builder";
 import FilterBuilder from "./filter-builder/filter-builder";
 import { usePlanTextSectionEditor } from "./plan-text-section-editor";
 import type { PlanTextSection } from "./plan-text-section-editor";
-import { addRelationsToMetadata } from "../../../utils/query-relations";
 import "./query-design.css";
 
 type QueryDesignProps = {
@@ -53,11 +52,6 @@ export default function QueryDesign({
   onRegisterPlanTextCommit,
 }: QueryDesignProps) {
   const [draggedProjectionField, setDraggedProjectionField] = useState<string | null>(null);
-  const contextMetadata = useMemo(
-    () => addRelationsToMetadata(metadata, definition.entity, definition.relations),
-    [metadata, definition.entity, definition.relations],
-  );
-  const contextEntity = contextMetadata.find((item) => item.name === definition.entity);
   const handleDefinitionChange = (nextDefinition: QueryDefinition) => {
     onDefinitionChange(nextDefinition.filters === definition.filters
       ? nextDefinition
@@ -65,7 +59,7 @@ export default function QueryDesign({
   };
   const filterPlanText = usePlanTextSectionEditor({
     section: "Filter",
-    metadata: contextMetadata,
+    metadata,
     entityName: definition.entity,
     functionNames,
     disabled: isResolvingPlanChanges,
@@ -76,7 +70,7 @@ export default function QueryDesign({
   });
   const sortPlanText = usePlanTextSectionEditor({
     section: "Sorts",
-    metadata: contextMetadata,
+    metadata,
     entityName: definition.entity,
     functionNames,
     disabled: isResolvingPlanChanges,
@@ -113,7 +107,6 @@ export default function QueryDesign({
             const selectedEntity = metadata.find((item) => item.name === event.target.value);
             onDefinitionChange({
               entity: event.target.value,
-              relations: [],
               columns: selectedEntity?.fields.map((field) => ({ field: field.name, alias: null })) ?? [],
               filters: { logicalOperation: 0, filters: [] },
               sorts: [],
@@ -137,17 +130,17 @@ export default function QueryDesign({
       {metadataStatus === "failed" && <p className="query-message error" role="alert">{metadataError}</p>}
       {entity && <div className="query-builder-body">
         <ProjectionBuilder
-          metadata={contextMetadata}
+          metadata={metadata}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
           definition={definition}
-          entity={contextEntity ?? entity}
+          entity={entity}
           onDefinitionChange={handleDefinitionChange}
           onFieldDragStart={setDraggedProjectionField}
         />
         <FilterBuilder
-          metadata={contextMetadata}
+          metadata={metadata}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
@@ -155,19 +148,19 @@ export default function QueryDesign({
           operatorsStatus={filterOperatorsStatus}
           operatorsError={filterOperatorsError}
           definition={definition}
-          entity={contextEntity ?? entity}
+          entity={entity}
           isPlanTextEditing={filterPlanText.isEditing}
           onDefinitionChange={handleDefinitionChange}
           planTextControl={filterPlanText.control}
           planTextEditor={filterPlanText.editor}
         />
         <SortBuilder
-          metadata={contextMetadata}
+          metadata={metadata}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
           definition={definition}
-          entity={contextEntity ?? entity}
+          entity={entity}
           onDefinitionChange={handleDefinitionChange}
           draggedProjectionField={draggedProjectionField}
           isPlanTextEditing={sortPlanText.isEditing}

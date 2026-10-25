@@ -6,9 +6,6 @@ public record YamlQueryDefinition()
 {
     public string? Name { get; set; }
     public string? Entity { get; set; }
-    public List<string?>? Relations { get; set; }
-    [YamlMember(Alias = "EntityAliases")]
-    public List<string?>? LegacyEntityAliases { get; set; }
     public List<string?>? Projection { get; set; }
     public List<List<string>>? LegacyProjectionRows { get; set; }
     public string? Filter { get; set; }

@@ -8,7 +8,6 @@ using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 public sealed class QueryDefinition
 {
     public required string Entity { get; init; }
-    public List<RelationDefinition> Relations { get; init; } = [];
     public List<ProjectionDefinition> Projection { get; init; } = [];
     public FilterDefinition? Filter { get; init; }
     public List<SortDefinition> Sorts { get; init; } = [];
@@ -22,13 +21,6 @@ public sealed class QueryDefinition
     {
         List<string> lines = [];
         lines.Add($"Entity: {Entity}");
-
-        if (Relations.Count > 0)
-        {
-            lines.Add("Relations:");
-            lines.AddRange(Relations.Select(relation =>
-                $"  - \"{relation.Name}: {relation.RelationPath}({string.Join(", ", relation.RelatedKeys.Select(key => $"{key.FromDbColumn}:{key.ToDbColumn}"))})\""));
-        }
 
         if (Projection.Count > 0)
         {

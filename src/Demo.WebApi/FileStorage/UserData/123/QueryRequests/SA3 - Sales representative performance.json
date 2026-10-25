@@ -218,6 +218,5 @@
   "PageSize": 10,
   "IsBuiltin": false,
   "Entity": "Employees",
-  "Relations": [],
   "FilterPlanText": null
 }

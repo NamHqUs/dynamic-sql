@@ -54,7 +54,6 @@ internal sealed class _41_QueryRequestSqlComparisonTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = request.Entity,
-            Relations = request.Relations,
             Projection = request.Projection,
             Filter = request.Filters,
             Sorts = request.Sorts?.SelectMany(sorts => sorts).ToList() ?? [],
@@ -184,7 +183,6 @@ internal sealed class _41_QueryRequestSqlComparisonTests : TestBase
     private sealed class StoredQueryRequest
     {
         public required string Entity { get; init; }
-        public List<RelationDefinition> Relations { get; init; } = [];
         public List<ProjectionDefinition> Projection { get; init; } = [];
         public FilterDefinition? Filters { get; init; }
         public List<List<SortDefinition>>? Sorts { get; init; }

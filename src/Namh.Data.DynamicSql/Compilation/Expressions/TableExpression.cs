@@ -25,7 +25,6 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQue
     public readonly Entity Entity = entity;
     public readonly List<FieldExpression> Fields = [];
     public readonly Dictionary<string, TableExpression> JoinedTables = [];
-    public readonly Dictionary<string, TableExpression> Relations = new(StringComparer.OrdinalIgnoreCase);
     public TableExpression? JoinRoot { get; set; }
     protected int? TakeCount;
     protected int? SkipCount;
@@ -48,8 +47,6 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQue
         JoinRoot = source.JoinRoot;
         foreach (var pair in source.JoinedTables)
             JoinedTables[pair.Key] = pair.Value;
-        foreach (var pair in source.Relations)
-            Relations[pair.Key] = pair.Value;
     }
 
     protected virtual StringBuilder TranslateSelect()

@@ -245,6 +245,5 @@
   "PageSize": 10,
   "IsBuiltin": false,
   "Entity": "OrderItems",
-  "Relations": [],
   "FilterPlanText": null
 }
