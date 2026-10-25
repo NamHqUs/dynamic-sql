@@ -25,7 +25,7 @@ public class _14_QueryRequestTests : TestBase
 
         Assert.That(sql.CommandText, Does.Contain("SELECT"));
         Assert.That(sql.CommandText, Does.Contain("ORDER BY"));
-        Assert.That(sql.CommandText, Does.Contain("LIMIT 10 OFFSET 0"));
+        Assert.That(sql.CommandText, Does.Contain(_sqlDialect.RenderPaging(0, 10, hasOrderBy: true)));
         Assert.That(sql.CommandText, Does.Contain("@p0"));
         Assert.That(sql.Parameters.Select(parameter => parameter.Value), Is.EqualTo(new object?[] { 18 }));
     }
@@ -36,17 +36,21 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, Average(Age) | AverageAge"),
-            Filter = QueryDefinitionParser.ParseFilter("Average(Age) > 12"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, AVG(Age) | AverageAge"),
+            Filter = QueryDefinitionParser.ParseFilter("AVG(Age) > 12"),
             PageSize = 50
         };
 
         var sql = _db.Query(definition).ToSql().CommandText;
+        var nameColumn = System.Text.RegularExpressions.Regex.Escape(
+            "t0." + _sqlDialect.QuoteIdentifier("Name"));
+        var ageColumn = System.Text.RegularExpressions.Regex.Escape(
+            "t0." + _sqlDialect.QuoteIdentifier("Age"));
 
-        Assert.That(sql, Does.Contain("GROUP BY t0.\"Name\""));
-        Assert.That(sql, Does.Contain("HAVING (AVG (t0.\"Age\") >"));
-        Assert.That(sql, Does.Not.Contain("WHERE (("));
-        Assert.That(sql, Does.Not.Contain("SELECT AVG"));
+        Assert.That(sql, Does.Match(@"GROUP BY\s+" + nameColumn));
+        Assert.That(sql, Does.Match(@"HAVING\s+\(\s*AVG\s*\(\s*" + ageColumn + @"\s*\)\s*>"));
+        Assert.That(sql, Does.Not.Match(@"(?i)\bWHERE\s*\(\s*\("));
+        Assert.That(sql, Does.Not.Match(@"(?i)\bSELECT\s+AVG\b"));
     }
 
     [Test]
@@ -108,8 +112,20 @@ public class _14_QueryRequestTests : TestBase
         var query = _db.Query(definition);
         var sql = query.ToSql();
         var records = query.ToList();
+        var monthFunction = _functionProvider.GetFunction("Month");
+        var expectedMonthExpression = monthFunction
+            .GetSqlTemplate(_sqlDialect.Key)
+            .Replace("{1}", "t0." + _sqlDialect.QuoteIdentifier("Birthday"), StringComparison.Ordinal);
+        var normalizedSql = System.Text.RegularExpressions.Regex.Replace(
+            sql.CommandText,
+            @"\s+",
+            string.Empty);
+        var normalizedExpectedMonthExpression = System.Text.RegularExpressions.Regex.Replace(
+            expectedMonthExpression,
+            @"\s+",
+            string.Empty);
 
-        Assert.That(sql.CommandText, Does.Contain("CAST (STRFTIME ('%m', t0.\"Birthday\") AS INTEGER)"));
+        Assert.That(normalizedSql, Does.Contain(normalizedExpectedMonthExpression));
         Assert.That(records.Select(record => record["Name"]), Is.EqualTo(new object?[] { "Charlie" }));
     }
 
@@ -251,7 +267,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, Count() | InvoiceCount, Sum(Age) | Revenue, Average(Age) | AverageOrderValue"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, COUNT() | InvoiceCount, SUM(Age) | Revenue, AVG(Age) | AverageOrderValue"),
             Filter = null
         };
 
@@ -274,7 +290,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, Count[Id] | InvoiceCount, Sum[Age] | TotalAge, Average[Age] | AverageAge"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, COUNT[Id] | InvoiceCount, SUM[Age] | TotalAge, AVG[Age] | AverageAge"),
             Filter = null
         };
 
@@ -337,7 +353,8 @@ public class _14_QueryRequestTests : TestBase
 
         var sql = _db.Query(definition).ToSql().CommandText;
 
-        Assert.That(sql, Does.Contain("ORDER BY \"TotalCount\" DESC"));
+        Assert.That(sql, Does.Contain(
+            "ORDER BY " + _sqlDialect.QuoteIdentifier("TotalCount") + " DESC"));
         Assert.That(sql, Does.Not.Contain("ORDER BY COUNT"));
     }
 

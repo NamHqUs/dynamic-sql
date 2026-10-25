@@ -49,9 +49,9 @@ type FieldBuilderProps = {
 function getFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {
   const segments = value.split(".");
   const lastSegment = segments[segments.length - 1] ?? "";
-  const aggregateField = value.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/)?.[2]
-    ?? lastSegment.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/)?.[2];
-  if (value.startsWith("Count()") || aggregateField) return "Number";
+  const aggregateField = value.match(/^(COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i)?.[2]
+    ?? lastSegment.match(/^(COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i)?.[2];
+  if (value.toUpperCase().startsWith("COUNT()") || aggregateField) return "Number";
 
   const owner = resolveEntity(entity, metadata, segments.slice(0, -1));
   return owner?.fields.find((field) => field.name === lastSegment)?.dataType;

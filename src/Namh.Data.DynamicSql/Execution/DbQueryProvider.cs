@@ -11,6 +11,7 @@ namespace Namh.Data.DynamicSql.Execution;
 
 class DbQueryProvider(
     IMetaProvider metaProvider,
+    IFunctionProvider functionProvider,
     IDbConnection dbConnection,
     ISqlDialect sqlDialect,
     string entityName,
@@ -143,7 +144,7 @@ class DbQueryProvider(
         => Translate(expression, includeTotalRecords: false);
 
     private CompiledQuery Translate(Expression expression, bool includeTotalRecords)
-        => new SqlQueryCompiler(metaProvider, sqlDialect)
+        => new SqlQueryCompiler(metaProvider, functionProvider, sqlDialect)
             .Compile(expression, relations, includeTotalRecords);
 
     private static long ConvertTotalRecords(object? value)

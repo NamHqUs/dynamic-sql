@@ -242,7 +242,7 @@ The IR must not depend on `ISqlDialect`.
 | Query root | `IDbQueryable` | Deferred query and expression-tree root |
 | C# field input | `IRecordParameter` / `DataValue` | Dynamic fields, parameters, and related queries |
 | JSON input | `QueryDto`, `FilterDto`, `SortDto` | Serializable query transport, including page and page size |
-| Metadata | `IMetaProvider`, `Entity`, `Field`, `Relation`, `FunctionDefinition` | Runtime schema, relationships, and function signatures |
+| Metadata | `IMetaProvider`, `IFunctionProvider`, `Entity`, `Field`, `Relation`, `FunctionDefinition` | Runtime schema, relationships, and function signatures |
 | Compiler IR | Internal `SqlExpression` hierarchy | Provider-independent query representation |
 | SQL target | `ISqlDialect` | SQL Server, SQLite, PostgreSQL, or a custom provider |
 | Diagnostic output | `SqlQuery`, `SqlQueryParameter` | SQL text plus parameter values for `ToSql` |
@@ -264,7 +264,7 @@ parameterized.
 - provider-specific paging
 - field and identifier quoting
 - aggregate subqueries
-- dialect-keyed function templates from `IMetaProvider`
+- dialect-keyed function templates from `IFunctionProvider`
 - parameters
 
 It also preserves readable diagnostics formatting. SQL execution uses the
@@ -274,7 +274,7 @@ diagnostic formatter.
 Function definitions select templates using the dialect's stable string
 identifier, and require a template for each supported dialect. Templates are
 trusted metadata; query expression values remain parameterized. Applications
-can enumerate definitions with `IMetaProvider.GetFunctions()` when building a
+can enumerate definitions with `FunctionProvider.GetFunctions()` when building a
 function-selection UI. Custom `ISqlDialect` implementations provide their own
 identifier to render metadata-defined functions.
 

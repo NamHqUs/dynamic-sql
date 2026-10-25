@@ -52,26 +52,6 @@ public class CustomFunctionDefintions
         CreateDateAdjustment("YearAdd", "year", "years",
             "Adds the specified number of years to a date or date-time."),
 
-        new (
-            "Average",
-            [new("number", DataType.Number)],
-            DataType.Number,
-            sqlTemplates: new Dictionary<string, string>
-            {
-                ["SqlServer"] = "AVG({1})",
-                ["Sqlite"] = "AVG({1})",
-                ["Postgres"] = "AVG({1})"
-            },
-            description: "Returns the average of numeric values.",
-            isAggregate: true),
-
-        CreateStandardFunction(
-            "COUNT_DISTINCT",
-            [new("expression", DataType.Number)],
-            DataType.Number,
-            "COUNT(DISTINCT {1})",
-            "Counts distinct non-null values.",
-            isAggregate: true),
         CreateStandardFunction(
             "CountDistinct",
             [new("expression", DataType.Number)],
@@ -80,7 +60,7 @@ public class CustomFunctionDefintions
             "Counts distinct non-null values in a related collection.",
             isAggregate: true),
         CreateStandardFunction(
-            "COALESCE",
+            "Coalesce",
             [
                 new("value", DataType.Number),
                 new("fallback", DataType.Number)
@@ -89,7 +69,7 @@ public class CustomFunctionDefintions
             "COALESCE({1}, {2})",
             "Returns the first non-null numeric value."),
         new(
-            "CONCAT",
+            "Concat",
             [
                 new("first", DataType.String),
                 new("separator", DataType.String),
@@ -143,7 +123,7 @@ public class CustomFunctionDefintions
             "({1} - {2})",
             "Returns the difference between two numeric values."),
         CreateStandardFunction(
-            "LAG",
+            "Lag",
             [
                 new("expression", DataType.Number),
                 new("offset", DataType.Number),
@@ -153,7 +133,7 @@ public class CustomFunctionDefintions
             "LAG({1}, {2}) OVER (ORDER BY {3} ASC)",
             "Returns the previous row's value in ascending order."),
         CreateStandardFunction(
-            "WINDOW_SUM",
+            "WindowSum",
             [
                 new("expression", DataType.Number),
                 new("orderBy", DataType.String)

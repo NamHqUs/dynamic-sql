@@ -14,7 +14,10 @@ public sealed class DynamicQueryService(
     public string GetSqlQueryString(QueryDefinition query)
     {
         using var connection = connectionFactory.CreateConnection();
-        using var context = new DynamicSqlContext(connection, metadataService.GetMetaProvider());
+        using var context = new DynamicSqlContext(
+            connection,
+            metadataService.GetMetaProvider(),
+            metadataService.GetFunctionProvider());
         return context.Query(PrepareQuery(query, connection)).ToSql().CommandText;
     }
 
@@ -23,7 +26,10 @@ public sealed class DynamicQueryService(
         CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        using var context = new DynamicSqlContext(connection, metadataService.GetMetaProvider());
+        using var context = new DynamicSqlContext(
+            connection,
+            metadataService.GetMetaProvider(),
+            metadataService.GetFunctionProvider());
         var result = await context.Query(PrepareQuery(query, connection))
             .ToListWithTotalRecordsAsync(cancellationToken);
 

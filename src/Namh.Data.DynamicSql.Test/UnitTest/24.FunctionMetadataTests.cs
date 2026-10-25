@@ -197,24 +197,28 @@ public sealed class _24_FunctionMetadataTests
                 ["Postgres"] = "CAST({1} AS DATE)"
             },
             description: "Returns the date portion of a value.");
-        var metadata = new MetaProvider(Metadata, [customFunction]);
+        var functionProvider = new FunctionProvider([customFunction]);
 
-        Assert.That(metadata.GetFunctions().Select(function => function.Name),
+        Assert.That(functionProvider.GetFunctions().Select(function => function.Name),
             Does.Contain("TODAY").And.Contain("SUM"));
-        Assert.That(metadata.GetFunction("today"), Is.SameAs(customFunction));
+        Assert.That(functionProvider.GetFunction("today"), Is.SameAs(customFunction));
         Assert.That(customFunction.Description, Is.EqualTo("Returns the date portion of a value."));
     }
 
     [Test]
     public void BuiltInDateFunctionsHaveFriendlyNamesDescriptionsAndProviderSql()
     {
-        var functions = new MetaProvider(Metadata, CustomFunctionDefintions.Functions).GetFunctions().ToDictionary(
+        var functions = new FunctionProvider(CustomFunctionDefintions.Functions).GetFunctions().ToDictionary(
             function => function.Name,
             StringComparer.OrdinalIgnoreCase);
 
         Assert.That(functions.Keys, Does.Contain("DateSub").And.Contain("MonthSub").And.Contain("YearSub")
             .And.Contain("DateAdd").And.Contain("MonthAdd").And.Contain("YearAdd").And.Contain("DateFormat"));
         Assert.That(functions.Keys, Does.Not.Contain("DATEDIFF").And.Not.Contain("STRFTIME"));
+        Assert.That(functions.Keys, Does.Contain("COUNT").And.Contain("SUM").And.Contain("AVG")
+            .And.Not.Contain("Average").And.Not.Contain("COUNT_DISTINCT"));
+        Assert.That(functions.Keys, Does.Contain("CountDistinct").And.Contain("Coalesce").And.Contain("Concat")
+            .And.Contain("Lag").And.Contain("WindowSum"));
         Assert.That(functions.Values.All(function => !string.IsNullOrWhiteSpace(function.Description)), Is.True);
         Assert.That(functions["COUNT"].ResultType, Is.EqualTo(DataType.Number));
         Assert.That(functions["DateAdd"].ResultType, Is.EqualTo(DataType.Datetime));
@@ -257,7 +261,8 @@ public sealed class _24_FunctionMetadataTests
 
         using var context = new DynamicSqlContext(
             connection,
-            new MetaProvider(Metadata, CustomFunctionDefintions.Functions),
+            new MetaProvider(Metadata),
+            new FunctionProvider(CustomFunctionDefintions.Functions),
             new SqliteDialect());
 
         var cases = new Dictionary<string, DateTime>
@@ -363,8 +368,13 @@ public sealed class _24_FunctionMetadataTests
         ISqlDialect? dialect = null)
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
-        var metadata = new MetaProvider(Metadata, functions?? CustomFunctionDefintions.Functions);
-        using var context = new DynamicSqlContext(connection, metadata, dialect ?? new SqliteDialect());
+        var metadata = new MetaProvider(Metadata);
+        var functionProvider = new FunctionProvider(functions ?? CustomFunctionDefintions.Functions);
+        using var context = new DynamicSqlContext(
+            connection,
+            metadata,
+            functionProvider,
+            dialect ?? new SqliteDialect());
 
         return context.Query(new QueryDefinition
         {

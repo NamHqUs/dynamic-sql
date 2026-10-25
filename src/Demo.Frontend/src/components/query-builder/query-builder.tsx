@@ -181,12 +181,12 @@ function isAvailableAggregateField(
 function isProjectionColumnAvailable(column: string, entity: MetadataEntity, metadata: MetadataEntity[]): boolean {
   if (isAvailableFieldPath(entity, metadata, column)) return true;
 
-  const wrappedAggregate = column.match(/^(Count|Sum|Max|Min|Average)\(([^()]*)\)$/i);
+  const wrappedAggregate = column.match(/^(COUNT|SUM|MAX|MIN|AVG)\(([^()]*)\)$/i);
   if (wrappedAggregate) {
     return isAvailableAggregateField(wrappedAggregate[1], wrappedAggregate[2], entity, metadata);
   }
 
-  const pathAggregate = column.match(/^(.*)\.(Count|Sum|Max|Min|Average)\(([^()]*)\)$/i);
+  const pathAggregate = column.match(/^(.*)\.(COUNT|SUM|MAX|MIN|AVG)\(([^()]*)\)$/i);
   if (!pathAggregate) return false;
 
   const aggregateOwner = resolveEntityPath(entity, metadata, pathAggregate[1].split("."));

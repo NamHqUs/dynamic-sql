@@ -61,7 +61,7 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
     }
 
     private static IReadOnlyCollection<SqlFunctionDefintion> GetBuiltInDefinitions()
-        => new MetaProvider([])
+        => new FunctionProvider()
             .RegisterFunctions(CustomFunctionDefintions.Functions)
             .GetFunctions();
 

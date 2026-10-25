@@ -8,6 +8,7 @@ public class TestBase
 {
     protected DynamicSqlContext _db = null!;
     protected ISqlDialect _sqlDialect = null!;
+    protected IFunctionProvider _functionProvider = null!;
     private IDbConnection _connection = null!;
 
     [OneTimeSetUp]
@@ -15,9 +16,14 @@ public class TestBase
     {
         _connection = DefinedData.GetDbConnection(DbServerType.SqlServer);
 
-        //IMetaProvider metaProvider = new MetaProvider(DefinedMetadata.Metadata, CustomFunctionDefintions.Functions);
-        IMetaProvider metaProvider = new MetaProvider(BuiltinMetadata.NorthStarDemoData, CustomFunctionDefintions.Functions);
-        _db = new DynamicSqlContext(_connection, metaProvider);
+        var entities = BuiltinMetadata.UnitTestData
+            .Concat(BuiltinMetadata.SaleDemoData)
+            .Concat(BuiltinMetadata.NorthStarDemoData);
+
+        _sqlDialect = SqlDialect.ForConnection(_connection);
+        IMetaProvider metaProvider = new MetaProvider(entities);
+        _functionProvider = new FunctionProvider(CustomFunctionDefintions.Functions);
+        _db = new DynamicSqlContext(_connection, metaProvider, _functionProvider, _sqlDialect);
     }
 
 

@@ -38,8 +38,8 @@ type FieldBoxProps = {
 const RELATION_PREFIX = "relation:";
 const FIELD_PREFIX = "field:";
 const AGGREGATE_PREFIX = "aggregate:";
-const COUNT_AGGREGATE = "Count()";
-const AGGREGATES = ["Count()", "Sum", "Max", "Min", "Average"] as const;
+const COUNT_AGGREGATE = "COUNT()";
+const AGGREGATES = ["COUNT()", "SUM", "MAX", "MIN", "AVG"] as const;
 const NUMERIC_DATA_TYPES = new Set(["number", "byte", "short", "int", "integer", "long", "float", "double", "decimal"]);
 const aggregateSegment = (segment: string) =>
   AGGREGATES.find((aggregate) => segment === aggregate || segment.startsWith(`${aggregate}(`));
@@ -216,13 +216,13 @@ export default function FieldBox({
   useEffect(() => {
     if (menuOpen && popupManager && popupManager.activeMenuId !== popupId.current) setMenuOpen(false);
   }, [menuOpen, popupManager]);
-  const rootAggregateMatch = value.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^()]*)\)$/);
-  const legacyAggregateMatch = valueSegments[valueSegments.length - 1]?.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/);
+  const rootAggregateMatch = value.match(/^(COUNT\(\)|SUM|MAX|MIN|AVG)\(([^()]*)\)$/i);
+  const legacyAggregateMatch = valueSegments[valueSegments.length - 1]?.match(/^(COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i);
   const aggregateMatch = rootAggregateMatch ?? legacyAggregateMatch;
   const aggregateWrapsPath = pendingAggregateWrapsPath ?? Boolean(rootAggregateMatch);
   const aggregateFieldPath = rootAggregateMatch
     ? rootAggregateMatch[2].split(".")
-    : valueSegments.slice(-1)[0]?.match(/^(?:Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/)?.[1]?.split(".");
+    : valueSegments.slice(-1)[0]?.match(/^(?:COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i)?.[1]?.split(".");
   const rawPath = pendingPath ?? (
     rootAggregateMatch
       ? aggregateFieldPath?.slice(0, -1) ?? []

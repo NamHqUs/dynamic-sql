@@ -9,6 +9,7 @@ namespace Namh.Data.DynamicSql.Compilation;
 
 class QueryContext(
     IMetaProvider metaProvider,
+    IFunctionProvider functionProvider,
     IReadOnlyList<RelationDefinition> relations)
 {
     private int _aliasCount;
@@ -171,7 +172,7 @@ class QueryContext(
 
     private SqlExpression ParseFunctionExpression(TableExpression tableContext, FunctionFieldDefinition expression, int depth)
     {
-        var definition = metaProvider.GetFunction(expression.FunctionName);
+        var definition = functionProvider.GetFunction(expression.FunctionName);
         var suppliedArguments = expression.Arguments
             ?? throw new FormatException("A function's arguments cannot be null.");
         var minimumArgumentCount = definition.Arguments.Count(argument => !argument.Optional);
@@ -380,7 +381,7 @@ class QueryContext(
             return false;
 
         if (FieldDefinitionParser.Parse(fieldName) is not FunctionFieldDefinition parsedFunction ||
-            !metaProvider.TryGetFunction(parsedFunction.FunctionName, out var definition) ||
+            !functionProvider.TryGetFunction(parsedFunction.FunctionName, out var definition) ||
             definition is not { IsAggregate: true })
             return false;
 

@@ -451,7 +451,7 @@ var monthLabel = new FunctionFieldDto("DateFormat",
 `DateFormat` is currently SQLite-specific. The provider-specific SQL remains internal; for
 example, `DateSub` uses `DATEDIFF(day, ...)` on SQL Server.
 
-`IMetaProvider.GetFunctions()` exposes the registered definitions for
+`FunctionProvider.GetFunctions()` exposes the registered definitions for
 applications that build a function-selection UI.
 
 Adding a database provider does not require changes to a fixed dialect enum.
@@ -470,7 +470,8 @@ var toDate = new FunctionDefinition(
         ["Oracle"] = "TO_DATE({1}, 'YYYY-MM-DD')"
     });
 
-var metadata = new MetaProvider(entities, functions: [toDate]);
+var metadata = new MetaProvider(entities);
+var functionProvider = new FunctionProvider([toDate]);
 ```
 
 For example, an application can expose a one-argument `TODAY(value)` wrapper
@@ -489,8 +490,9 @@ var today = new FunctionDefinition(
         ["Postgres"] = "CAST({1} AS DATE)"
     });
 
-var metadata = new MetaProvider(entities, functions: [today]);
-using var context = new DynamicSqlContext(connection, metadata, dialect);
+var metadata = new MetaProvider(entities);
+var functionProvider = new FunctionProvider([today]);
+using var context = new DynamicSqlContext(connection, metadata, functionProvider, dialect);
 ```
 
 The function call still receives an expression DTO, such as

@@ -13,6 +13,7 @@ internal sealed record CompiledQuery(
 
 internal sealed class SqlQueryCompiler(
     IMetaProvider metaProvider,
+    IFunctionProvider functionProvider,
     ISqlDialect sqlDialect)
 {
     internal const int TotalRecordsLimit = 1000;
@@ -21,7 +22,7 @@ internal sealed class SqlQueryCompiler(
         IReadOnlyList<RelationDefinition> relations,
         bool includeTotalRecords = false)
     {
-        var queryContext = new QueryContext(metaProvider, relations);
+        var queryContext = new QueryContext(metaProvider, functionProvider, relations);
         var tableExpression = (TableExpression)new QueryVisitor(queryContext).Visit(expression);
         var statementGenerator = new SqlStatementGenerator(sqlDialect);
         var generatedSql = statementGenerator.Generate(tableExpression, queryContext.DbParameters);

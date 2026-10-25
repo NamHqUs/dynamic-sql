@@ -23,7 +23,7 @@
       "Fields": [
         {
           "kind": "function",
-          "function": "COUNT_DISTINCT",
+          "function": "CountDistinct",
           "arguments": [
             {
               "kind": "field",
@@ -200,7 +200,7 @@
         {
           "oper": "/",
           "kind": "function",
-          "function": "COUNT_DISTINCT",
+          "function": "CountDistinct",
           "arguments": [
             {
               "kind": "field",

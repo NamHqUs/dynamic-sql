@@ -43,7 +43,7 @@ internal class _23_FilterParserTest : TestBase
         var query = new QueryDefinition
         {
             Entity = "Invoices",
-            Projection = QueryDefinitionParser.ParseProjection("Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, Count() | InvoiceCount, Sum(TotalAmount) | Revenue, Average(TotalAmount) | AverageOrderValue"),
+            Projection = QueryDefinitionParser.ParseProjection("Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, COUNT() | InvoiceCount, SUM(TotalAmount) | Revenue, AVG(TotalAmount) | AverageOrderValue"),
             Filter = QueryDefinitionParser.ParseFilter("Status <> <Draft> And Sum(TotalAmount) > 200"),
         };
 

@@ -20,7 +20,7 @@
     {
       "Fields": [{
         "kind": "function", "function": "ROUND", "arguments": [{
-          "kind": "function", "function": "LAG", "arguments": [
+          "kind": "function", "function": "Lag", "arguments": [
             { "kind": "function", "function": "SUM", "arguments": [{
               "kind": "group", "fields": [
                 { "kind": "field", "field": "Items.Quantity" },
@@ -46,7 +46,7 @@
                 { "oper": "-", "kind": "field", "field": "Items.DiscountAmount" }
               ]
             }] },
-            { "kind": "function", "function": "LAG", "arguments": [
+            { "kind": "function", "function": "Lag", "arguments": [
               { "kind": "function", "function": "SUM", "arguments": [{
                 "kind": "group", "fields": [
                   { "kind": "field", "field": "Items.Quantity" },
@@ -65,7 +65,7 @@
     {
       "Fields": [{
         "kind": "function", "function": "ROUND", "arguments": [{
-          "kind": "function", "function": "WINDOW_SUM", "arguments": [
+          "kind": "function", "function": "WindowSum", "arguments": [
             { "kind": "function", "function": "SUM", "arguments": [{
               "kind": "group", "fields": [
                 { "kind": "field", "field": "Items.Quantity" },

@@ -95,9 +95,11 @@ public sealed class MetadataService : IMetadataService
     }
 
     public IMetaProvider GetMetaProvider()
-        => new MetaProvider(
-            GetAllEntities(_userSectionManager.GetSectionId()),
-            _functionDefinitionService.GetAll().Select(e => e.ToFunctionDefinition()));
+        => new MetaProvider(GetAllEntities(_userSectionManager.GetSectionId()));
+
+    public IFunctionProvider GetFunctionProvider()
+        => new FunctionProvider(
+            _functionDefinitionService.GetAll().Select(definition => definition.ToFunctionDefinition()));
 
     private IReadOnlyList<Entity> GetAllEntities(string userSectionId)
     {

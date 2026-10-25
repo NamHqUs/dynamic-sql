@@ -284,9 +284,9 @@ function getFilterFieldDataType(entity: MetadataEntity, metadata: MetadataEntity
   const fieldPath = value.replace(/^\[|\]$/g, "");
   const segments = fieldPath.split(".");
   const lastSegment = segments[segments.length - 1] ?? "";
-  const aggregateField = fieldPath.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/)?.[2]
-    ?? lastSegment.match(/^(Count\(\)|Sum|Max|Min|Average)\(([^)]*)\)$/)?.[2];
-  if (fieldPath.startsWith("Count()") || aggregateField) return "Number";
+  const aggregateField = fieldPath.match(/^(COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i)?.[2]
+    ?? lastSegment.match(/^(COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i)?.[2];
+  if (fieldPath.toUpperCase().startsWith("COUNT()") || aggregateField) return "Number";
   const owner = resolveEntity(entity, metadata, segments.slice(0, -1));
   return owner?.fields.find((field) => field.name === lastSegment)?.dataType;
 }
