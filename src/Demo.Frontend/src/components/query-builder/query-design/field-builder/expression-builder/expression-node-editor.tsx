@@ -308,29 +308,31 @@ export default function NodeEditor({
               onExpressionApply={onChange}
             />
           </div>
-          <ExpressionAddNextItem
-            onAddNextItem={onCalculationSelect ?? (() => onChange({
-              kind: "group",
-              arguments: [
-                expression,
-                { kind: "field", field: "" },
-              ],
-            }))}
-          />
-          {onRemove && (
-            <button
-              type="button"
-              className="expression-remove"
-              aria-label="Delete"
-              title="Delete"
-              onClick={(event) => {
-                event.stopPropagation();
-                onRemove();
-              }}
-            >
-              <Icon name="delete" size={13} />
-            </button>
-          )}
+          <div className="expression-actions-bar">
+            {onRemove && (
+              <button
+                type="button"
+                className="expression-remove"
+                aria-label="Delete"
+                title="Delete"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRemove();
+                }}
+              >
+                <Icon name="delete" size={13} />
+              </button>
+            )}
+            <ExpressionAddNextItem
+              onAddNextItem={onCalculationSelect ?? (() => onChange({
+                kind: "group",
+                arguments: [
+                  expression,
+                  { kind: "field", field: "" },
+                ],
+              }))}
+            />
+          </div>
           <ExpressionDebugTooltip label="Field builder" model={expression} />
         </div>
       </div>
@@ -404,9 +406,9 @@ export default function NodeEditor({
             />
           );
         })}
-        {!root && <ExpressionAddNextItem onAddNextItem={addNextItem} />}
-        {((!root && canUngroup && onUngroup && expression.arguments.length > 0) || onRemove) && (
-          <div className="expression-group-actions">
+        {((!root && (canUngroup && onUngroup && expression.arguments.length > 0 || onRemove))
+          || (!root && onCalculationSelect)) && (
+          <div className="expression-group-actions expression-actions-bar">
             {!root && canUngroup && onUngroup && expression.arguments.length > 0 && (
               <button
                 type="button"
@@ -421,7 +423,7 @@ export default function NodeEditor({
                 <Icon name="ungroup" size={14} />
               </button>
             )}
-            {onRemove && (
+            {!root && onRemove && (
               <button
                 type="button"
                 className="expression-remove"
@@ -435,6 +437,7 @@ export default function NodeEditor({
                 <Icon name="delete" size={13} />
               </button>
             )}
+            {!root && <ExpressionAddNextItem onAddNextItem={addNextItem} />}
           </div>
         )}
         <ExpressionDebugTooltip label="Group box" model={groupDebugModel} />
@@ -484,29 +487,31 @@ export default function NodeEditor({
               onExpressionApply={onChange}
             />
           </div>
-          <ExpressionAddNextItem
-            onAddNextItem={onCalculationSelect ?? (() => onChange({
-              kind: "group",
-              arguments: [
-                expression,
-                { kind: "field", field: "" },
-              ],
-            }))}
-          />
-          {onRemove && (
-            <button
-              type="button"
-              className="expression-remove"
-              aria-label="Delete"
-              title="Delete"
-              onClick={(event) => {
-                event.stopPropagation();
-                onRemove();
-              }}
-            >
-              <Icon name="delete" size={13} />
-            </button>
-          )}
+          <div className="expression-actions-bar">
+            {onRemove && (
+              <button
+                type="button"
+                className="expression-remove"
+                aria-label="Delete"
+                title="Delete"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRemove();
+                }}
+              >
+                <Icon name="delete" size={13} />
+              </button>
+            )}
+            <ExpressionAddNextItem
+              onAddNextItem={onCalculationSelect ?? (() => onChange({
+                kind: "group",
+                arguments: [
+                  expression,
+                  { kind: "field", field: "" },
+                ],
+              }))}
+            />
+          </div>
           <ExpressionDebugTooltip label="Field box" model={expression} />
         </div>
       </div>

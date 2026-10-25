@@ -267,7 +267,7 @@ export default function FunctionBuilder({
             <span className="expression-function-punctuation expression-function-parenthesis" aria-hidden="true">(</span>
           )}
           {(onRemove || onAddNextItem) && (
-            <div className="expression-function-actions">
+            <div className="expression-function-actions expression-actions-bar">
               {onRemove && (
                 <button
                   type="button"

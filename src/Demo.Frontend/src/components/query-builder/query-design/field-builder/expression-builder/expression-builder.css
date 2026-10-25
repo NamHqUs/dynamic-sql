@@ -227,7 +227,8 @@
 .expression-item-controls > .expression-add-next-item,
 .expression-item-controls > .expression-remove,
 .expression-item-controls > .expression-ungroup,
-.expression-item-controls > .expression-group-actions {
+.expression-item-controls > .expression-group-actions,
+.expression-item-controls > .expression-actions-bar {
   visibility: hidden;
   opacity: 0;
   transition: opacity .12s .18s, visibility 0s .3s;
@@ -237,18 +238,20 @@
 .expression-item-controls:hover > .expression-remove,
 .expression-item-controls:hover > .expression-ungroup,
 .expression-item-controls:hover > .expression-group-actions,
+.expression-item-controls:hover > .expression-actions-bar,
 .expression-item-controls:focus-within > .expression-add-next-item,
 .expression-item-controls:focus-within > .expression-remove,
 .expression-item-controls:focus-within > .expression-ungroup,
 .expression-item-controls:focus-within > .expression-group-actions,
+.expression-item-controls:focus-within > .expression-actions-bar,
 .expression-item-controls.expression-selected > .expression-add-next-item,
 .expression-item-controls.expression-selected > .expression-remove,
 .expression-item-controls.expression-selected > .expression-ungroup,
 .expression-item-controls.expression-selected > .expression-group-actions,
-.expression-field-drop-target.expression-item-controls:hover > .expression-debug-field-builder > .expression-add-next-item,
-.expression-field-drop-target.expression-item-controls:hover > .expression-debug-field-builder > .expression-remove,
-.expression-field-drop-target.expression-item-controls:focus-within > .expression-debug-field-builder > .expression-add-next-item,
-.expression-field-drop-target.expression-item-controls:focus-within > .expression-debug-field-builder > .expression-remove {
+.expression-item-controls.expression-selected > .expression-actions-bar,
+.expression-field-drop-target.expression-item-controls:hover > .expression-debug-field-builder > .expression-actions-bar,
+.expression-field-drop-target.expression-item-controls:focus-within > .expression-debug-field-builder > .expression-actions-bar,
+.expression-field-drop-target.expression-item-controls.expression-selected > .expression-debug-field-builder > .expression-actions-bar {
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
@@ -296,27 +299,65 @@
   transform: translateY(-50%);
 }
 
-.expression-group-actions {
+.expression-debug-field-builder.expression-item-controls > .expression-actions-bar {
   position: absolute;
   top: 50%;
-  right: -24px;
+  right: auto;
+  left: calc(100% + 8px);
   z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
   transform: translateY(-50%);
 }
 
-.expression-group-actions > .expression-remove,
-.expression-group-actions > .expression-ungroup {
+.expression-group-actions {
+  position: absolute;
+  top: 50%;
+  right: -88px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+}
+
+.expression-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid #3b4050;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #1a1d27, #141821);
+  box-shadow: inset 0 1px 0 #ffffff0a;
+}
+
+.expression-actions-bar > .expression-remove,
+.expression-actions-bar > .expression-ungroup,
+.expression-actions-bar > .expression-add-next-item {
   position: static;
   width: 22px;
   height: 22px;
   flex: 0 0 22px;
   margin: 0;
+  border: 0;
+  background: transparent;
   transform: none;
+}
+
+.expression-actions-bar > .expression-add-next-item:hover,
+.expression-actions-bar > .expression-add-next-item:focus-visible {
+  border: 0;
+  background: transparent;
+}
+
+.expression-actions-bar > .expression-add-next-item {
+  top: auto;
+  right: auto;
+}
+
+.expression-actions-bar > .expression-ungroup {
+  top: auto;
+  right: auto;
 }
 
 .expression-add-next-item {

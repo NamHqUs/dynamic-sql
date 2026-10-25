@@ -85,7 +85,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
+  width: max-content;
   gap: 4px;
   min-height: 22px;
   transform: translateX(-50%);
