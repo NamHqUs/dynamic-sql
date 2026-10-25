@@ -75,8 +75,8 @@ fragments.
 
 For a collection relationship, an aggregate path is evaluated at that
 relationship's grain. For example, a report rooted at `Persons` can project
-`CustomerOrders.Items.Sum(...)` and
-`CustomerOrders.CountDistinct(Id)` without joining order items into the
+`Orders.Items.Sum(...)` and
+`Orders.CountDistinct(Id)` without joining order items into the
 person-level rowset. Keep independent one-to-many measures independent; do not
 join orders, payments, claims, labs, reviews, and leaves into one flat rowset
 and attempt to repair inflated totals with a final `DISTINCT`.
@@ -141,11 +141,11 @@ Entity: Persons
 Projection:
   - Id | PersonId
   - CONCAT(FirstName, < >, LastName) | Customer
-  - CustomerOrders.CountDistinctIf(Status = <Completed>, Id) | OrderCount
-  - CustomerOrders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount) | LifetimeValue
-  - CustomerOrders.MaxIf(Status = <Completed>, OrderDate) | LastOrderDate
-  - CustomerOrders.CountDistinctIf(Status = <Completed>, Channel) | ChannelsUsed
-Filter: "[CustomerOrders.CountDistinctIf(Status = <Completed>, Id)] > <1>"
+  - Orders.CountDistinctIf(Status = <Completed>, Id) | OrderCount
+  - Orders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount) | LifetimeValue
+  - Orders.MaxIf(Status = <Completed>, OrderDate) | LastOrderDate
+  - Orders.CountDistinctIf(Status = <Completed>, Channel) | ChannelsUsed
+Filter: "[Orders.CountDistinctIf(Status = <Completed>, Id)] > <1>"
 Sorts: LifetimeValue DESC, LastOrderDate DESC
 Page: 1
 PageSize: 10

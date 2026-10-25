@@ -38,7 +38,7 @@
       "fields": [
         {
           "kind": "field",
-          "field": "CustomerOrders.CountDistinctIf(Status = <Completed>, Id)"
+          "field": "Orders.CountDistinctIf(Status = <Completed>, Id)"
         }
       ],
       "alias": "OrderCount"
@@ -46,8 +46,18 @@
     {
       "fields": [
         {
-          "kind": "field",
-          "field": "CustomerOrders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
+          "kind": "function",
+          "function": "Round",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Orders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
         }
       ],
       "alias": "LifetimeValue"
@@ -56,7 +66,7 @@
       "fields": [
         {
           "kind": "field",
-          "field": "CustomerOrders.MaxIf(Status = <Completed>, OrderDate)"
+          "field": "Orders.MaxIf(Status = <Completed>, OrderDate)"
         }
       ],
       "alias": "LastOrderDate"
@@ -65,7 +75,7 @@
       "fields": [
         {
           "kind": "field",
-          "field": "CustomerOrders.CountDistinctIf(Status = <Completed>, Channel)"
+          "field": "Orders.CountDistinctIf(Status = <Completed>, Channel)"
         }
       ],
       "alias": "ChannelsUsed"
@@ -78,7 +88,7 @@
         "logicalOperator": null,
         "left": {
           "kind": "field",
-          "field": "CustomerOrders.CountDistinctIf(Status = <Completed>, Id)"
+          "field": "Orders.CountDistinctIf(Status = <Completed>, Id)"
         },
         "operation": 4,
         "right": {

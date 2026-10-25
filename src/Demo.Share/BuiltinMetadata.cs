@@ -85,7 +85,7 @@ public class BuiltinMetadata
                 ],
                 Relations:
                 [
-                    new("CustomerOrders", "Orders", RelationType.Collection, [new("Id", "PersonId")]),
+                    new("Orders", "Orders", RelationType.Collection, [new("Id", "PersonId")]),
                     new("PatientVisits", "Visits", RelationType.Collection, [new("Id", "PersonId")]),
                     new("MemberPolicies", "Policies", RelationType.Collection, [new("Id", "PersonId")])
                 ]),
