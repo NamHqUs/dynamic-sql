@@ -1,4 +1,4 @@
-# Expression Model JSON Reference
+# Query Model JSON Reference
 
 This document records the canonical JSON shape for backend projection
 expressions. A projection expression is a flat `fields` array; there is no

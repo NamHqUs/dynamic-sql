@@ -379,7 +379,7 @@ property belongs to each field/value/function/group node and defaults to `+`;
 parenthesized terms and arithmetic function arguments use nested `group`
 nodes. The compiler applies arithmetic precedence to flat terms.
 For examples of the canonical serialized shape, see the
-[Expression Model JSON Reference](./EXPRESSION-MODEL-REFERENCE.md).
+[Query Model JSON Reference](./QUERY-MODEL-REFERENCE.md).
 Function calls are validated against definitions in the metadata provider.
 The default provider includes the built-in functions shown above. Applications can add or override definitions with `FunctionDefinition`.
 Each definition specifies its UI-facing arguments, result type, and SQL
@@ -501,7 +501,7 @@ expressions, and sorts are a comma-separated string with an optional `ASC` or
 `DESC` direction.
 
 For the canonical JSON projection-expression and `Contexts` shapes, see the
-[expression model reference](EXPRESSION-MODEL-REFERENCE.md).
+[query model reference](QUERY-MODEL-REFERENCE.md).
 
 ### Common table expressions
 

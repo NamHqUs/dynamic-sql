@@ -124,7 +124,7 @@ Preserve the complete request shape and designer state:
   `PageSize`, and `IsBuiltin`.
 - Keep each projection as `{ "Fields": [...], "Alias": "..." }`. Expression
   nodes inside `Fields` use the canonical wire shape in
-  [EXPRESSION-MODEL-REFERENCE.md](../EXPRESSION-MODEL-REFERENCE.md).
+  [QUERY-MODEL-REFERENCE.md](../QUERY-MODEL-REFERENCE.md).
 - Preserve output aliases exactly, including spaces; sort expressions that
   refer to an alias must use the same spelling. Keep `NEW_LINE` projection
   entries, encoded as an empty field with alias `NEW_LINE`, because they
