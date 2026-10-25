@@ -41,7 +41,7 @@
           "arguments": [
             {
               "kind": "field",
-              "field": "Id"
+              "field": "Orders.Id"
             }
           ]
         }
@@ -87,10 +87,102 @@
         }
       ],
       "Alias": "Lifetime Value"
+    },
+    {
+      "Fields": [
+        {
+          "kind": "field",
+          "field": ""
+        }
+      ],
+      "Alias": "NEW_LINE"
+    },
+    {
+      "Fields": [
+        {
+          "kind": "function",
+          "function": "MAX",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Orders.OrderDate"
+            }
+          ]
+        }
+      ],
+      "Alias": "Last Order Date"
+    },
+    {
+      "Fields": [
+        {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Orders.Channel"
+            }
+          ]
+        }
+      ],
+      "Alias": "Channels Used"
     }
   ],
-  "Filters": null,
-  "Sorts": null,
+  "Filters": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Orders.Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Completed"
+        },
+        "parameterized": false
+      },
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Orders.Id"
+            }
+          ]
+        },
+        "operation": 4,
+        "right": {
+          "kind": "value",
+          "value": "1"
+        },
+        "parameterized": false
+      }
+    ]
+  },
+  "Sorts": [
+    [
+      {
+        "Field": {
+          "kind": "field",
+          "field": "Lifetime Value"
+        },
+        "Direction": "Descending"
+      },
+      {
+        "Field": {
+          "kind": "field",
+          "field": "Last Order Date"
+        },
+        "Direction": "Descending"
+      }
+    ]
+  ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
