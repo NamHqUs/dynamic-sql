@@ -8,7 +8,6 @@ public abstract class DataValue
     public override int GetHashCode() => throw new NotImplementedException();
 
     public T As<T>() =>  throw new NotImplementedException();
-    public bool RawCompare(string statement) => throw new NotImplementedException();
     public bool Like(object value) => throw new NotImplementedException();
     public bool NotLike(object value) => throw new NotImplementedException();
     public bool Between(object lower, object upper) => throw new NotImplementedException();

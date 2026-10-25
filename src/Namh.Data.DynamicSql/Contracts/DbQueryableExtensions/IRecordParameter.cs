@@ -8,7 +8,5 @@ public interface IRecordParameter
 
     DataValue DbColumn(string dbColumnName);
 
-    DataValue RawSql(string sqlString);
-
     IDbQueryable Query(string fieldName);
 }

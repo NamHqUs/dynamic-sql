@@ -42,13 +42,6 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        if (node.Method.DeclaringType == typeof(DataValue) && node.Method.Name == nameof(DataValue.RawCompare))
-        {
-            var left = Visit(node.Object!);
-            var right = ((ConstantExpression)node.Arguments[0]).Value;
-            return new CompareSqlExpression((SqlExpression)left, right?.ToString() ?? string.Empty, typeof(bool));
-        }
-
         if (node.Method.DeclaringType == typeof(DataValue) && node.Method.Name == nameof(DataValue.Like))
         {
             var left = (SqlExpression)Visit(node.Object!);

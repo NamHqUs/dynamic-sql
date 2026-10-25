@@ -179,14 +179,6 @@ var users = db.Query("User")
     .ToList();
 ```
 
-Use `RawCompare` only with trusted, application-controlled SQL fragments:
-
-```csharp
-var users = db.Query("User")
-    .Where(user => user["Name"].RawCompare("like 'A%'"))
-    .ToList();
-```
-
 ### Projections and aliases
 
 ```csharp
@@ -587,19 +579,11 @@ var hasManagers = await db.Query("User")
     .AnyAsync(user => user["ManagerId"] != null, cancellationToken);
 ```
 
-## Raw SQL and security
+## Query security
 
-`DbColumn` and `RawSql` are escape hatches for trusted, provider-specific
-expressions:
-
-```csharp
-var query = db.Query("User")
-    .Where(user => user.DbColumn("Id") > 100)
-    .Where(user => user.RawSql("DATEDIFF(day, [Birthday], GETDATE())") > 3650);
-```
-
-Never interpolate untrusted input into `RawSql` or `RawCompare`. Normal
-comparison values are parameterized.
+Query values are passed as parameters; the C# query API does not expose
+methods for inserting raw SQL fragments. SQL expressions in trusted metadata,
+such as aggregate definitions, must not be derived from untrusted input.
 
 ## Build and test
 

@@ -13,10 +13,7 @@ class RecordParameterVisitor(QueryContext queryContext) : QueryVisitor(queryCont
                 return CreateField(node);
 
             case nameof(IRecordParameter.DbColumn):
-                return CreateRawSqlField(node, isDbColumn: true);
-
-            case nameof(IRecordParameter.RawSql):
-                return CreateRawSqlField(node, isDbColumn: false);
+                return CreateDbColumnField(node);
 
             default:
                 throw new NotImplementedException(string.Format("not support method {0}.{1}", node.Method.DeclaringType?.Name, node.Method.Name));
@@ -37,19 +34,13 @@ class RecordParameterVisitor(QueryContext queryContext) : QueryVisitor(queryCont
     }
 
     //e => e.DbColumn("dbColName")
-    //e => e.RawSql("Select Count(*) From...")
-    private FieldExpression CreateRawSqlField(MethodCallExpression node, bool isDbColumn)
+    private FieldExpression CreateDbColumnField(MethodCallExpression node)
     {
         var argName = (node.Object as ParameterExpression)!.Name;
         var tableContext = QueryContext.Arguments.First(e => e.ArgumentName == argName).TableContext;
 
         var expression = Visit(node.Arguments[0]);
-
         var dbColumn = (string) Expression.Lambda(expression).Compile().DynamicInvoke()!;
-        var field = new Field(dbColumn) { RawSql = dbColumn };
-
-        return isDbColumn
-            ? new FieldExpression(tableContext.Alias, field)
-            : new RawSqlFieldExpression("RawSql", dbColumn);
+        return new FieldExpression(tableContext.Alias, new Field(dbColumn));
     }
 }

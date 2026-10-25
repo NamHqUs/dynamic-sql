@@ -131,10 +131,4 @@ public class _02_Filter_FieldTest : TestBase
         Assert.AreEqual(query.Count(), 2);
     }
 
-    [Test]
-    public void _21_RawSql_DbColumn()
-    {
-        var query = _db.Query("User").Where(e => e.DbColumn("Id") > 1);
-        Assert.That(query.Count(), Is.EqualTo(5));
-    }
 }

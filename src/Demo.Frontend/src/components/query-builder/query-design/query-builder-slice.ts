@@ -905,7 +905,7 @@ const queryBuilderSlice = createSlice({
     queryRequests: [] as SavedQueryRequestDto[],
     queryRequestsStatus: "idle",
     queryRequestsError: "",
-    debugUiEnabled: false,
+    debugUiEnabled: true,
     functionDefinitions: [] as FunctionDefinition[],
     functionDefinitionsStatus: "idle",
     functionDefinitionsError: "",

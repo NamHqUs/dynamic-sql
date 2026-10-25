@@ -5,28 +5,6 @@
 public class _03_Filter_OperatorTest : TestBase
 {
     [Test]
-    public void _01_String_In()
-    {
-        //string[] names = ["Alice", "Bob"];
-        //var query = _db.Query("User")
-        //    .Where(e => names.Contains(e["Name"].As<string>()));
-
-        var query = _db.Query("User")
-            .Where(e => e["Name"].RawCompare("in ('Alice', 'Bob')"));
-
-        Assert.That(query.Count(), Is.EqualTo(2));
-    }
-
-    [Test]
-    public void _01_String_Like()
-    {
-        var query = _db.Query("User")
-            .Where(e => e["Name"].RawCompare("like '%Ali%'"));  // StartWith -> Ali%, EndWith -> %Ali, Contains -> %Ali%
-
-        Assert.That(query.Count(), Is.EqualTo(1));
-    }
-
-    [Test]
     public void _21_Alias()
     {
         var query = _db.Query("User")

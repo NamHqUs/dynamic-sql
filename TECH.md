@@ -135,7 +135,6 @@ It provides:
 
 - Indexer field access
 - `DbColumn`
-- `RawSql`
 - Related query access through `Query`
 
 `DataValue` overloads make comparisons and expressions possible without
@@ -209,7 +208,7 @@ Important visitors include:
   `Any`.
 - `WhereVisitor`: translates predicates and parameter values.
 - `SelectVisitor`: translates projections and `DataRecord` aliases.
-- `RecordParameterVisitor`: translates field, raw SQL, database-column, and
+- `RecordParameterVisitor`: translates field, database-column, and
   related-query access.
 - `LambdaVisitor`: common lambda traversal behavior.
 
@@ -226,7 +225,6 @@ The IR is in `Internal/Compilation/Expressions`. Important types include:
 - `ValueExpression`: literal or parameter placeholder.
 - `BinarySqlExpression`: binary operations.
 - `PredicateExpression`: predicates such as `LIKE`.
-- `CompareSqlExpression`: raw comparison operators.
 - `ProjectionExpression`: aliased projection.
 - `FunctionSqlExpression`: metadata-defined function call with expression or
   SQL-token arguments.
@@ -242,7 +240,7 @@ The IR must not depend on `ISqlDialect`.
 | Boundary | Supported types | Purpose |
 | --- | --- | --- |
 | Query root | `IDbQueryable` | Deferred query and expression-tree root |
-| C# field input | `IRecordParameter` / `DataValue` | Dynamic fields, parameters, trusted raw SQL, and related queries |
+| C# field input | `IRecordParameter` / `DataValue` | Dynamic fields, parameters, and related queries |
 | JSON input | `QueryDto`, `FilterDto`, `SortDto` | Serializable query transport, including page and page size |
 | Metadata | `IMetaProvider`, `Entity`, `Field`, `Relation`, `FunctionDefinition` | Runtime schema, relationships, and function signatures |
 | Compiler IR | Internal `SqlExpression` hierarchy | Provider-independent query representation |
@@ -252,7 +250,7 @@ The IR must not depend on `ISqlDialect`.
 
 `DataValue` is an expression-building token, not a database value object. Its
 operators are consumed while translating expression trees; query values are
-parameterized unless the caller explicitly uses a trusted raw-SQL escape hatch.
+parameterized.
 
 ## `SqlStatementGenerator`
 
@@ -350,10 +348,10 @@ Do not build provider-specific SQL inside visitors or `QueryContext`.
 
 ## Security boundaries
 
-Normal values must flow through `QueryContext.AddDbParameter`. Do not inline
-untrusted values into raw SQL. `RawSql`, `RawCompare`, and raw metadata
-expressions are trusted escape hatches and must not receive user-controlled
-text without validation.
+Normal query values must flow through `QueryContext.AddDbParameter`. The C#
+query API has no raw-SQL insertion methods. Raw SQL retained in trusted
+metadata, such as entity table expressions and aggregate definitions, must
+not be derived from user-controlled text.
 
 ## Testing
 

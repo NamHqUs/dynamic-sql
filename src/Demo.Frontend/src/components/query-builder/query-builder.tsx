@@ -240,7 +240,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const showMessageBox = useMessageBox();
   const [searchParams, setSearchParams] = useSearchParams();
   const savedQueriesPanel = useResizablePanel("query-builder-saved-queries");
-  const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames, filterOperators, filterOperatorsStatus, filterOperatorsError, queryRequests, queryRequestsStatus, queryRequestsError } = useSelector((state: RootState) => state.queryBuilder);
+  const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames, filterOperators, filterOperatorsStatus, filterOperatorsError, queryRequests, queryRequestsStatus, queryRequestsError, debugUiEnabled } = useSelector((state: RootState) => state.queryBuilder);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
   const [requestName, setRequestName] = useState("");
   const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
@@ -379,6 +379,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     savedRequest: (typeof queryRequests)[number],
     updateRoute = true,
   ) => {
+    if (debugUiEnabled) console.log("Saved Query Request:", savedRequest);
     if (updateRoute) updateRequestRoute(savedRequest.name);
     updateDefinition({
       ...fromApiQuery(savedRequest.query, savedRequest.projectionRows),

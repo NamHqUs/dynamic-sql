@@ -135,8 +135,6 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 ? dialect.RenderStringConcatenation(RenderExpression(binary.Left), RenderExpression(binary.Right))
                 : $"{RenderExpression(binary.Left)} {binary.Operator} {RenderExpression(binary.Right)}")})",
 
-            CompareSqlExpression compare => $"({RenderExpression(compare.Left)} {compare.Comparison})",
-
             TemplateCompareSqlExpression compare => RenderTemplateComparison(compare),
 
             RangePredicateExpression range =>
