@@ -1,18 +1,17 @@
 {
   "Name": "SA2 - Customer lifetime value and recency",
-  "Entity": "Persons",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Id"
         }
       ],
-      "alias": "PersonId"
+      "Alias": "PersonId"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "CONCAT",
@@ -32,93 +31,42 @@
           ]
         }
       ],
-      "alias": "Customer"
+      "Alias": "Customer"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
-          "field": "Orders.CountDistinctIf(Status = <Completed>, Id)"
+          "field": ""
         }
       ],
-      "alias": "OrderCount"
+      "Alias": "NEW_LINE"
     },
     {
-      "fields": [
-        {
-          "kind": "function",
-          "function": "Round",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "Orders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        }
-      ],
-      "alias": "LifetimeValue"
-    },
-    {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
-          "field": "Orders.MaxIf(Status = <Completed>, OrderDate)"
+          "field": "CountDistinct(Id) AS Order Count"
         }
       ],
-      "alias": "LastOrderDate"
+      "Alias": null
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
-          "field": "Orders.CountDistinctIf(Status = <Completed>, Channel)"
+          "field": "ROUND(SUM(Orders.Items.Quantity), \u003C2\u003E) AS Lifetime Value"
         }
       ],
-      "alias": "ChannelsUsed"
+      "Alias": null
     }
   ],
-  "Filters": {
-    "logicalOperation": 0,
-    "filters": [
-      {
-        "logicalOperator": null,
-        "left": {
-          "kind": "field",
-          "field": "Orders.CountDistinctIf(Status = <Completed>, Id)"
-        },
-        "operation": 4,
-        "right": {
-          "kind": "value",
-          "value": 1
-        },
-        "parameterized": true
-      }
-    ]
-  },
-  "Sorts": [
-    [
-      {
-        "field": {
-          "kind": "field",
-          "field": "LifetimeValue"
-        },
-        "direction": 1
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "LastOrderDate"
-        },
-        "direction": 1
-      }
-    ]
-  ],
+  "Filters": null,
+  "Sorts": null,
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Persons",
+  "Relations": [],
+  "FilterPlanText": null
 }

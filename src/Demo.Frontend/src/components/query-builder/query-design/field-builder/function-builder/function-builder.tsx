@@ -251,28 +251,36 @@ export default function FunctionBuilder({
       data-expression-kind={expression.kind}
       data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
     >
-      {onRemove && (
-        <button
-          type="button"
-          className="expression-remove"
-          aria-label="Delete"
-          title="Delete"
-          onClick={(event) => {
-            event.stopPropagation();
-            onRemove();
-          }}
-        >
-          <Icon name="delete" size={13} />
-        </button>
-      )}
-
       <div className="expression-function-editor">
-        <FunctionSelect
-          value={expression.function}
-          choices={choices}
-          openOnDoubleClick
-          onChange={(name) => onChange(updateFunction(expression, name, functionDefinitions))}
-        />
+        <div className="expression-function-label">
+          <FunctionSelect
+            value={expression.function}
+            choices={choices}
+            openOnDoubleClick
+            onChange={(name) => onChange(updateFunction(expression, name, functionDefinitions))}
+          />
+          {(onRemove || onAddNextItem) && (
+            <div className="expression-function-actions">
+              {onRemove && (
+                <button
+                  type="button"
+                  className="expression-remove"
+                  aria-label="Delete"
+                  title="Delete"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRemove();
+                  }}
+                >
+                  <Icon name="delete" size={13} />
+                </button>
+              )}
+              {onAddNextItem && (
+                <ExpressionAddNextItem onAddNextItem={onAddNextItem} />
+              )}
+            </div>
+          )}
+        </div>
         {expression.function && (
           <>
             <span className="expression-function-punctuation expression-function-parenthesis" aria-hidden="true">(</span>
@@ -288,7 +296,6 @@ export default function FunctionBuilder({
                     key={`${expression.function}-${index}`}
                     role="group"
                     aria-label={argumentLabel}
-                    title={argumentLabel}
                   >
                     {index > 0 && <span className="expression-function-punctuation" aria-hidden="true">,</span>}
                     {renderArgument(
@@ -313,9 +320,6 @@ export default function FunctionBuilder({
           </>
         )}
       </div>
-      {onAddNextItem && (
-        <ExpressionAddNextItem onAddNextItem={onAddNextItem} />
-      )}
     </div>
   );
 }

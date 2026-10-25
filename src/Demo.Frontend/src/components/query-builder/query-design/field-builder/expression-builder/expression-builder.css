@@ -152,13 +152,6 @@
   box-shadow: none;
 }
 
-.expression-group-nested.expression-item-controls:hover,
-.expression-group-nested.expression-item-controls:focus-within,
-.expression-group-nested.expression-selected {
-  margin-right: 28px;
-  padding-right: 36px;
-}
-
 .expression-group-nested::before {
   left: 5px;
   width: 2px;
@@ -206,7 +199,7 @@
   box-sizing: border-box;
   height: 34px;
   min-height: 34px;
-  padding: 0 30px 0 8px;
+  padding: 0 8px;
   border: 1px solid #51446f;
   border-radius: 7px;
   background: linear-gradient(135deg, #29223f, #211d32);
@@ -216,26 +209,28 @@
   border-color: #d66a78;
   background: #43252c;
 }
-.expression-debug-field-builder .field-builder-selected { padding-right: 34px; }
 
 .expression-item-controls > .expression-add-next-item,
 .expression-item-controls > .expression-remove,
-.expression-item-controls > .expression-ungroup {
+.expression-item-controls > .expression-ungroup,
+.expression-item-controls > .expression-group-actions {
   visibility: hidden;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity .12s, visibility .12s;
+  transition: opacity .12s .18s, visibility 0s .3s;
 }
 
 .expression-item-controls:hover > .expression-add-next-item,
 .expression-item-controls:hover > .expression-remove,
 .expression-item-controls:hover > .expression-ungroup,
+.expression-item-controls:hover > .expression-group-actions,
 .expression-item-controls:focus-within > .expression-add-next-item,
 .expression-item-controls:focus-within > .expression-remove,
 .expression-item-controls:focus-within > .expression-ungroup,
+.expression-item-controls:focus-within > .expression-group-actions,
 .expression-item-controls.expression-selected > .expression-add-next-item,
 .expression-item-controls.expression-selected > .expression-remove,
 .expression-item-controls.expression-selected > .expression-ungroup,
+.expression-item-controls.expression-selected > .expression-group-actions,
 .expression-field-drop-target.expression-item-controls:hover > .expression-debug-field-builder > .expression-add-next-item,
 .expression-field-drop-target.expression-item-controls:hover > .expression-debug-field-builder > .expression-remove,
 .expression-field-drop-target.expression-item-controls:focus-within > .expression-debug-field-builder > .expression-add-next-item,
@@ -243,21 +238,38 @@
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
+  transition: opacity .12s, visibility 0s;
+}
+
+.expression-node-function.expression-item-controls > .expression-function-editor > .expression-function-label > .expression-function-actions {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s .18s, visibility 0s .3s;
+}
+
+.expression-node-function.expression-item-controls:hover:not(:has(.expression-function-argument:hover, .expression-function-argument:focus-within)) > .expression-function-editor > .expression-function-label > .expression-function-actions,
+.expression-node-function.expression-item-controls:focus-within:not(:has(.expression-function-argument:hover, .expression-function-argument:focus-within)) > .expression-function-editor > .expression-function-label > .expression-function-actions,
+.expression-node-function.expression-item-controls.expression-selected:not(:has(.expression-function-argument:hover, .expression-function-argument:focus-within)) > .expression-function-editor > .expression-function-label > .expression-function-actions {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity .12s, visibility 0s;
 }
 
 .expression-group-list.expression-item-controls:has(.expression-item-controls:hover) > .expression-add-next-item,
 .expression-group-list.expression-item-controls:has(.expression-item-controls:hover) > .expression-remove,
-.expression-group-list.expression-item-controls:has(.expression-item-controls:hover) > .expression-ungroup {
+.expression-group-list.expression-item-controls:has(.expression-item-controls:hover) > .expression-ungroup,
+.expression-group-list.expression-item-controls:has(.expression-item-controls:hover) > .expression-group-actions {
   visibility: hidden;
   opacity: 0;
-  pointer-events: none;
 }
 
 .expression-item-controls > .expression-remove,
 .expression-debug-field-builder.expression-item-controls > .expression-remove {
   position: absolute;
   top: calc(50% - 25px);
-  right: -28px;
+  right: -24px;
   z-index: 3;
   width: 22px;
   height: 22px;
@@ -266,28 +278,37 @@
 
 .expression-debug-field-builder.expression-item-controls > .expression-remove {
   top: 50%;
-  right: 4px;
+  right: -24px;
   transform: translateY(-50%);
 }
 
-.expression-group-list > .expression-remove,
-.expression-group-list > .expression-ungroup {
-  left: auto;
-  right: 4px;
+.expression-group-actions {
+  position: absolute;
+  top: 50%;
+  right: -24px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transform: translateY(-50%);
 }
 
-.expression-group-list > .expression-remove {
-  top: calc(50% - 31px);
-}
-
-.expression-group-list > .expression-ungroup {
-  top: calc(50% + 9px);
+.expression-group-actions > .expression-remove,
+.expression-group-actions > .expression-ungroup {
+  position: static;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  margin: 0;
+  transform: none;
 }
 
 .expression-add-next-item {
   position: absolute;
   top: 50%;
-  right: -28px;
+  right: -50px;
   z-index: 2;
   display: grid;
   width: 22px;
@@ -443,7 +464,21 @@
 
 .expression-math-field:active::before { cursor: grabbing; }
 
-.expression-field-drop-target { position: relative; border-radius: 5px; }
+.expression-field-drop-target {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  border-radius: 5px;
+}
+
+.expression-math-field:has(> .expression-field-drop-target),
+.expression-math-field:has(> .expression-node-function) {
+  width: fit-content;
+  max-width: 100%;
+  justify-self: start;
+}
 
 .expression-selectable { outline: 0; }
 

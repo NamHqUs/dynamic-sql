@@ -404,34 +404,38 @@ export default function NodeEditor({
             />
           );
         })}
-        {!root && canUngroup && onUngroup && expression.arguments.length > 0 && (
-          <button
-            type="button"
-            className="expression-ungroup"
-            aria-label="Ungroup expression"
-            title="Ungroup"
-            onClick={(event) => {
-              event.stopPropagation();
-              if (path) onUngroup(path);
-            }}
-          >
-            <Icon name="ungroup" size={14} />
-          </button>
-        )}
         {!root && <ExpressionAddNextItem onAddNextItem={addNextItem} />}
-        {onRemove && (
-          <button
-            type="button"
-            className="expression-remove"
-            aria-label="Delete"
-            title="Delete"
-            onClick={(event) => {
-              event.stopPropagation();
-              onRemove();
-            }}
-          >
-            <Icon name="delete" size={13} />
-          </button>
+        {((!root && canUngroup && onUngroup && expression.arguments.length > 0) || onRemove) && (
+          <div className="expression-group-actions">
+            {!root && canUngroup && onUngroup && expression.arguments.length > 0 && (
+              <button
+                type="button"
+                className="expression-ungroup"
+                aria-label="Ungroup expression"
+                title="Ungroup"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (path) onUngroup(path);
+                }}
+              >
+                <Icon name="ungroup" size={14} />
+              </button>
+            )}
+            {onRemove && (
+              <button
+                type="button"
+                className="expression-remove"
+                aria-label="Delete"
+                title="Delete"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRemove();
+                }}
+              >
+                <Icon name="delete" size={13} />
+              </button>
+            )}
+          </div>
         )}
         <ExpressionDebugTooltip label="Group box" model={groupDebugModel} />
       </div>
@@ -457,52 +461,54 @@ export default function NodeEditor({
         data-expression-kind={expression.kind}
         data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
       >
-        <div className={`expression-field-box-drop-target${isDropPreview ? " expression-drop-preview" : ""}${isDropPreview && dragPosition ? ` expression-drop-position-${dragPosition}` : ""}`}>
-          <FieldBuilder
-            entity={entity}
-            metadata={metadata}
-            value={`<${constantValue}>`}
-            onChange={(field) => onChange({ kind: "field", field })}
-            showPath
-            ariaLabel="Expression constant"
-            initialConstantValue={constantValue}
-            initialSection="value"
-            allowValueSelection
-            allowFunctionSelection
-            expressionBuilder={{
-              functionDefinitions,
-              functionDefinitionsStatus,
-              functionDefinitionsError,
-            }}
-            debugModel={expression}
-            onValueSelect={(value) => onChange({ ...expression, value })}
-            onExpressionApply={onChange}
+        <div className="expression-debug-target expression-debug-field-builder expression-item-controls">
+          <div className={`expression-field-box-drop-target${isDropPreview ? " expression-drop-preview" : ""}${isDropPreview && dragPosition ? ` expression-drop-position-${dragPosition}` : ""}`}>
+            <FieldBuilder
+              entity={entity}
+              metadata={metadata}
+              value={`<${constantValue}>`}
+              onChange={(field) => onChange({ kind: "field", field })}
+              showPath
+              ariaLabel="Expression constant"
+              initialConstantValue={constantValue}
+              initialSection="value"
+              allowValueSelection
+              allowFunctionSelection
+              expressionBuilder={{
+                functionDefinitions,
+                functionDefinitionsStatus,
+                functionDefinitionsError,
+              }}
+              debugModel={expression}
+              onValueSelect={(value) => onChange({ ...expression, value })}
+              onExpressionApply={onChange}
+            />
+          </div>
+          <ExpressionAddNextItem
+            onAddNextItem={onCalculationSelect ?? (() => onChange({
+              kind: "group",
+              arguments: [
+                expression,
+                { kind: "field", field: "" },
+              ],
+            }))}
           />
+          {onRemove && (
+            <button
+              type="button"
+              className="expression-remove"
+              aria-label="Delete"
+              title="Delete"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRemove();
+              }}
+            >
+              <Icon name="delete" size={13} />
+            </button>
+          )}
+          <ExpressionDebugTooltip label="Field box" model={expression} />
         </div>
-        <ExpressionAddNextItem
-          onAddNextItem={onCalculationSelect ?? (() => onChange({
-            kind: "group",
-            arguments: [
-              expression,
-              { kind: "field", field: "" },
-            ],
-          }))}
-        />
-        {onRemove && (
-          <button
-            type="button"
-            className="expression-remove"
-            aria-label="Delete"
-            title="Delete"
-            onClick={(event) => {
-              event.stopPropagation();
-              onRemove();
-            }}
-          >
-            <Icon name="delete" size={13} />
-          </button>
-        )}
-        <ExpressionDebugTooltip label="Field box" model={expression} />
       </div>
     );
   }
