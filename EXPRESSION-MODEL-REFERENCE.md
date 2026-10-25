@@ -31,7 +31,7 @@ The format is covered by
 {
   "fields": [
     { "kind": "field", "field": "A" },
-    { "oper": "+", "kind": "field", "field": "B",  },
+    { "oper": "+", "kind": "field", "field": "B" },
     { "oper": "-", "kind": "value", "value": 3 }
   ],
   "alias": null
@@ -124,3 +124,73 @@ groups, each carrying its operator in the containing list:
 The reader continues to accept legacy projection objects that contain a
 singular `field` and legacy `math` nodes. Serialization always writes the
 canonical `fields` array and stores operators directly on expression nodes.
+
+## QueryDefinition contexts and CTEs
+
+The top-level JSON accepted by
+[`QueryDefinitionParser.Parse`](./src/Namh.Data.DynamicSql/Contracts/QueryDefinitions/Parsers/QueryDefinitionParser.cs)
+can contain a `contexts` array. A context defines a CTE query and optionally
+the join condition that connects it to the outer source. `contexts` is query
+structure, not a projection-expression node; expressions inside its query and
+condition use the same canonical field/value/group/function node shapes above.
+
+```json
+{
+  "entity": "User",
+  "projection": [
+    {
+      "fields": [{ "kind": "field", "field": "Id" }],
+      "alias": null
+    },
+    {
+      "fields": [{ "kind": "field", "field": "UserContext.Alias Name" }],
+      "alias": "Manager Name"
+    }
+  ],
+  "contexts": [
+    {
+      "name": "UserContext",
+      "joinType": "Left",
+      "query": {
+        "entity": "User",
+        "projection": [
+          {
+            "fields": [{ "kind": "field", "field": "Id" }],
+            "alias": null
+          },
+          {
+            "fields": [{ "kind": "field", "field": "Name" }],
+            "alias": "Alias Name"
+          }
+        ]
+      },
+      "condition": {
+        "logicalOperator": null,
+        "left": { "kind": "field", "field": "ManagerId" },
+        "operation": 0,
+        "right": { "kind": "field", "field": "Id" },
+        "parameterized": false
+      }
+    }
+  ]
+}
+```
+
+Context properties:
+
+- `name` is the CTE identifier; names must be unique within the query.
+- `query` is another query definition, using the same `entity`, `projection`,
+  filter, sort, and paging properties.
+- `joinType` accepts `Inner`, `Left`, `Right`, or `Full`; it defaults to
+  `Left`. Omit `condition` to declare a CTE without joining it.
+- `condition` uses the condition model. `operation` is the numeric
+  `BinaryOperator` value (`0` is `Equals`); a string operation is interpreted
+  as a custom operator ID. A range condition uses operation `8` (`Between`)
+  and a `kind: "group"` right operand containing its two bounds.
+
+For join conditions, unqualified left-side fields resolve against the outer
+source and unqualified right-side fields resolve against the joined context.
+Prefix field paths with a CTE name when another source is intended. The outer
+`entity` may itself name a CTE, enabling a query to use that CTE as its
+`FROM` source. Recursive CTEs and contexts nested inside another context
+query are not supported.

@@ -57,6 +57,8 @@ the complete text can be copied directly into a query window.
   providers, async APIs, and troubleshooting.
 - Read the [technical guide](TECH.md) for the compiler pipeline and important
   classes.
+- See the [expression model reference](EXPRESSION-MODEL-REFERENCE.md) for the
+  canonical backend JSON format for projections and query contexts.
 
 Targets: **.NET 8, .NET 9, and .NET 10**.
 

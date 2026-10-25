@@ -500,6 +500,9 @@ filters use the existing query expression syntax. Projection is a list of
 expressions, and sorts are a comma-separated string with an optional `ASC` or
 `DESC` direction.
 
+For the canonical JSON projection-expression and `Contexts` shapes, see the
+[expression model reference](EXPRESSION-MODEL-REFERENCE.md).
+
 ### Common table expressions
 
 `QueryDefinition.Contexts` defines named CTEs. Each context has a query, an

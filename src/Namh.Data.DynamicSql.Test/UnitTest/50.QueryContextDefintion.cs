@@ -377,8 +377,13 @@ public class _50_QueryContextDefintion : TestBase
 
         var sql = _db.Query(query).ToSql();
 
+        var data = _db.Query(query).ToList();
+        Assert.That(data.Count, Is.GreaterThan(0));
+
         Assert.That(sql.CommandText, Does.Contain("WITH [monthly] AS"));
         Assert.That(sql.CommandText, Does.Contain("CONVERT"));
+        Assert.That(sql.CommandText, Does.Match(@"SELECT\s+CONVERT\s*\(char\s*\(7\)"));
+        Assert.That(sql.CommandText, Does.Not.Match(@"SELECT\s+\(CONVERT"));
         Assert.That(sql.CommandText, Does.Match(@"SUM\s*\("));
         Assert.That(sql.CommandText, Does.Match(@"COUNT\s*\(\s*DISTINCT"));
         Assert.That(sql.CommandText, Does.Contain("GROUP BY"));

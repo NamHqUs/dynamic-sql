@@ -89,7 +89,9 @@ normal query API. It does not create SQL or bypass the visitors. The compiler
 then translates the resulting expression tree to IR before SQL rendering.
 `QueryDefinition.Contexts` follows a dedicated visitor path that builds
 `CommonTableExpression` and CTE-backed table-source IR while retaining the
-same generator and dialect boundary.
+same generator and dialect boundary. See the
+[expression model reference](EXPRESSION-MODEL-REFERENCE.md) for its JSON
+shape and the [manual](MANUAL.md#common-table-expressions) for YAML usage.
 
 ## Projects
 

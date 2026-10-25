@@ -102,8 +102,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             return $"{RenderAggregateSelect(aggregate)} {dialect.QuoteIdentifier(item.Alias)}";
 
         var expression = RenderExpression(item.Item);
-
-        if (item.Item is not FieldExpression)
+        if (item.Item is not FieldExpression and not FunctionSqlExpression)
             expression = $"({expression})";
 
         return $"{expression} {dialect.QuoteIdentifier(item.Alias)}";
