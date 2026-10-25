@@ -148,11 +148,12 @@
   padding: 9px 10px 9px 13px;
   border: 0;
   border-radius: 9px;
-  background:
-    linear-gradient(135deg, #1b242c, #171e27 72%);
-  box-shadow: inset 0 1px 0 #ffffff08, 0 4px 12px #080a0f20;
+  background: transparent;
+  box-shadow: none;
 }
 
+.expression-group-nested.expression-item-controls:hover,
+.expression-group-nested.expression-item-controls:focus-within,
 .expression-group-nested.expression-selected {
   margin-right: 28px;
   padding-right: 36px;
@@ -198,8 +199,90 @@
 }
 
 .expression-debug-field-builder { max-width: 100%; }
+.expression-debug-field-builder { position: relative; }
 
-.expression-debug-field-builder .field-builder-editing { padding-left: 8px; }
+.expression-debug-field-builder .field-builder-editing {
+  --field-box-height: 32px;
+  box-sizing: border-box;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 30px 0 8px;
+  border: 1px solid #51446f;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #29223f, #211d32);
+  box-shadow: inset 0 1px 0 #ffffff09, 0 2px 8px #080a0f30;
+}
+.expression-debug-field-builder .field-builder-editing.field-builder-incomplete {
+  border-color: #d66a78;
+  background: #43252c;
+}
+.expression-debug-field-builder .field-builder-selected { padding-right: 34px; }
+
+.expression-item-controls > .expression-add-next-item,
+.expression-item-controls > .expression-remove,
+.expression-item-controls > .expression-ungroup {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s, visibility .12s;
+}
+
+.expression-item-controls:hover > .expression-add-next-item,
+.expression-item-controls:hover > .expression-remove,
+.expression-item-controls:hover > .expression-ungroup,
+.expression-item-controls:focus-within > .expression-add-next-item,
+.expression-item-controls:focus-within > .expression-remove,
+.expression-item-controls:focus-within > .expression-ungroup,
+.expression-item-controls.expression-selected > .expression-add-next-item,
+.expression-item-controls.expression-selected > .expression-remove,
+.expression-item-controls.expression-selected > .expression-ungroup,
+.expression-field-drop-target.expression-item-controls:hover > .expression-debug-field-builder > .expression-add-next-item,
+.expression-field-drop-target.expression-item-controls:hover > .expression-debug-field-builder > .expression-remove,
+.expression-field-drop-target.expression-item-controls:focus-within > .expression-debug-field-builder > .expression-add-next-item,
+.expression-field-drop-target.expression-item-controls:focus-within > .expression-debug-field-builder > .expression-remove {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.expression-group-list.expression-item-controls:has(.expression-item-controls:hover) > .expression-add-next-item,
+.expression-group-list.expression-item-controls:has(.expression-item-controls:hover) > .expression-remove,
+.expression-group-list.expression-item-controls:has(.expression-item-controls:hover) > .expression-ungroup {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.expression-item-controls > .expression-remove,
+.expression-debug-field-builder.expression-item-controls > .expression-remove {
+  position: absolute;
+  top: calc(50% - 25px);
+  right: -28px;
+  z-index: 3;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+}
+
+.expression-debug-field-builder.expression-item-controls > .expression-remove {
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+}
+
+.expression-group-list > .expression-remove,
+.expression-group-list > .expression-ungroup {
+  left: auto;
+  right: 4px;
+}
+
+.expression-group-list > .expression-remove {
+  top: calc(50% - 31px);
+}
+
+.expression-group-list > .expression-ungroup {
+  top: calc(50% + 9px);
+}
 
 .expression-add-next-item {
   position: absolute;
@@ -256,6 +339,7 @@
 .expression-debug-field-builder .field-box-menu .operator-trigger {
   border: 0;
   border-radius: 0;
+  background: transparent;
 }
 
 .expression-debug-field-builder .field-box-menu .operator-trigger {

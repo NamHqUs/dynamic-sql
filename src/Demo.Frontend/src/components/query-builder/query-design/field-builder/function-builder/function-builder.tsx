@@ -24,6 +24,7 @@ type FunctionBuilderProps = {
     argument: IFieldDefinition,
     index: number,
     onChange: (expression: IFieldDefinition) => void,
+    onRemove: () => void,
   ) => ReactNode;
 };
 
@@ -236,33 +237,34 @@ export default function FunctionBuilder({
 
   return (
     <div
-      className={`expression-node expression-node-function${root ? " expression-node-root" : ""}${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}`}
+      className={`expression-node expression-node-function expression-item-controls${root ? " expression-node-root" : ""}${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}`}
       tabIndex={selectionPath === undefined ? undefined : 0}
-      onClick={selectionPath === undefined ? undefined : (event) => {
-        event.stopPropagation();
-        onSelect?.(selectionPath);
-      }}
       onFocus={(event) => {
-        if (event.target === event.currentTarget && selectionPath !== undefined)
+      if (
+        event.target === event.currentTarget
+        && event.currentTarget.matches(":focus-visible")
+        && selectionPath !== undefined
+      )
           onSelect?.(selectionPath);
       }}
       onPointerDown={startSelectedDrag}
       data-expression-kind={expression.kind}
       data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
     >
-      <div className="expression-node-heading">
-        {onRemove && (
-          <button
-            type="button"
-            className="expression-remove"
-            aria-label="Remove expression item"
-            title="Remove expression item"
-            onClick={onRemove}
-          >
-            <Icon name="close" size={13} />
-          </button>
-        )}
-      </div>
+      {onRemove && (
+        <button
+          type="button"
+          className="expression-remove"
+          aria-label="Delete"
+          title="Delete"
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
+        >
+          <Icon name="delete" size={13} />
+        </button>
+      )}
 
       <div className="expression-function-editor">
         <FunctionSelect
@@ -289,10 +291,20 @@ export default function FunctionBuilder({
                     title={argumentLabel}
                   >
                     {index > 0 && <span className="expression-function-punctuation" aria-hidden="true">,</span>}
-                    {renderArgument(argument, index, (next) => onChange({
-                      ...expression,
-                      arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
-                    }))}
+                    {renderArgument(
+                      argument,
+                      index,
+                      (next) => onChange({
+                        ...expression,
+                        arguments: expression.arguments.map((item, itemIndex) => itemIndex === index ? next : item),
+                      }),
+                      () => onChange({
+                        ...expression,
+                        arguments: expression.arguments.map((item, itemIndex) =>
+                          itemIndex === index ? { kind: "field", field: "" } : item,
+                        ),
+                      }),
+                    )}
                   </div>
                 );
               })}
@@ -301,7 +313,7 @@ export default function FunctionBuilder({
           </>
         )}
       </div>
-      {isSelected && onAddNextItem && (
+      {onAddNextItem && (
         <ExpressionAddNextItem onAddNextItem={onAddNextItem} />
       )}
     </div>

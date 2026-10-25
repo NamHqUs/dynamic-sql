@@ -15,6 +15,7 @@ import {
   isSameExpressionPath,
   mathOperatorLabels,
   mathOperators,
+  removeExpressionNode,
   withOperation,
   type ExpressionPath,
 } from "./expression-model";
@@ -141,6 +142,7 @@ function ExpressionMathElement({
   functionDefinitionsError,
   onChange,
   onCalculationSelect,
+  onRemove,
   path,
   onPointerDragStart,
   dragPreview,
@@ -186,6 +188,7 @@ function ExpressionMathElement({
           functionDefinitionsError={functionDefinitionsError}
           onChange={updateOperand}
           onCalculationSelect={onCalculationSelect}
+          onRemove={onRemove}
           path={path}
           onPointerDragStart={onPointerDragStart}
           dragPreview={dragPreview}
@@ -230,11 +233,6 @@ export default function NodeEditor({
   const isSelected = selectionPath !== undefined
     && selectedPath !== undefined
     && isSameExpressionPath(selectionPath, selectedPath);
-  const selectExpression = (event: ReactMouseEvent<HTMLElement>) => {
-    if (selectionPath === undefined) return;
-    event.stopPropagation();
-    onSelect?.(selectionPath);
-  };
   const startSelectedDrag = (event: ReactPointerEvent<HTMLDivElement>, allowUnselected = false) => {
     if ((!isSelected && !allowUnselected) || !path?.length || !onPointerDragStart) return;
     const target = event.target;
@@ -256,6 +254,7 @@ export default function NodeEditor({
         functionDefinitionsError={functionDefinitionsError}
         onChange={onChange}
         onCalculationSelect={onCalculationSelect}
+        onRemove={onRemove}
         path={path}
         onPointerDragStart={onPointerDragStart}
         dragPreview={dragPreview}
@@ -271,22 +270,21 @@ export default function NodeEditor({
   if (expression.kind === "field") {
     return (
       <div
-        className={`expression-field-drop-target${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}`}
+        className={`expression-field-drop-target expression-item-controls${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}`}
         tabIndex={selectionPath === undefined ? undefined : 0}
-        onClick={selectionPath === undefined ? undefined : selectExpression}
         onFocus={(event) => {
           if (
             selectionPath !== undefined
             && (event.target === event.currentTarget
-              || (event.target instanceof Element
-                && event.target.closest(".field-builder-value, .field-box-menu .operator-trigger")))
+              ? event.currentTarget.matches(":focus-visible")
+              : event.target instanceof HTMLElement && event.target.matches(":focus-visible"))
           )
             onSelect?.(selectionPath);
         }}
         onPointerDown={(event) => startSelectedDrag(event, true)}
         data-expression-path={path === undefined ? undefined : JSON.stringify(path)}
       >
-        <div className="expression-debug-target expression-debug-field-builder">
+        <div className="expression-debug-target expression-debug-field-builder expression-item-controls">
           <div className={`expression-field-box-drop-target${isDropPreview ? " expression-drop-preview" : ""}${isDropPreview && dragPosition ? ` expression-drop-position-${dragPosition}` : ""}`}>
             <FieldBuilder
               entity={entity}
@@ -310,16 +308,28 @@ export default function NodeEditor({
               onExpressionApply={onChange}
             />
           </div>
-          {isSelected && (
-            <ExpressionAddNextItem
-              onAddNextItem={onCalculationSelect ?? (() => onChange({
-                kind: "group",
-                arguments: [
-                  expression,
-                  { kind: "field", field: "" },
-                ],
-              }))}
-            />
+          <ExpressionAddNextItem
+            onAddNextItem={onCalculationSelect ?? (() => onChange({
+              kind: "group",
+              arguments: [
+                expression,
+                { kind: "field", field: "" },
+              ],
+            }))}
+          />
+          {onRemove && (
+            <button
+              type="button"
+              className="expression-remove"
+              aria-label="Delete"
+              title="Delete"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRemove();
+              }}
+            >
+              <Icon name="delete" size={13} />
+            </button>
           )}
           <ExpressionDebugTooltip label="Field builder" model={expression} />
         </div>
@@ -339,19 +349,14 @@ export default function NodeEditor({
     }));
     return (
       <div
-        className={`expression-group-list expression-debug-target expression-debug-group-box${root ? " expression-group-root" : " expression-group-nested"}${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}${isDropPreview ? " expression-drop-preview" : ""}`}
+        className={`expression-group-list expression-debug-target expression-debug-group-box expression-item-controls${root ? " expression-group-root" : " expression-group-nested"}${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}${isDropPreview ? " expression-drop-preview" : ""}`}
         tabIndex={selectionPath === undefined ? undefined : root ? -1 : 0}
-        onClick={selectionPath === undefined ? undefined : (event) => {
-          selectExpression(event);
-          const target = event.target;
-          if (
-            !(target instanceof Element)
-            || !target.closest("button, input, select, textarea, a, [role='button'], [role='option'], [role='tab'], [contenteditable='true']")
-          )
-            event.currentTarget.focus();
-        }}
         onFocus={(event) => {
-          if (event.target === event.currentTarget && selectionPath !== undefined)
+          if (
+            event.target === event.currentTarget
+            && event.currentTarget.matches(":focus-visible")
+            && selectionPath !== undefined
+          )
             onSelect?.(selectionPath);
         }}
         onPointerDown={startSelectedDrag}
@@ -390,6 +395,7 @@ export default function NodeEditor({
               dragPosition={dragPosition}
               onChange={updateArgument}
               onCalculationSelect={appendMath}
+              onRemove={() => onChange(removeExpressionNode(expression, [index]))}
               selectionPath={selectionPath === undefined ? undefined : [...selectionPath, index]}
               selectedPath={selectedPath}
               onSelect={onSelect}
@@ -398,7 +404,7 @@ export default function NodeEditor({
             />
           );
         })}
-        {isSelected && !root && canUngroup && onUngroup && expression.arguments.length > 0 && (
+        {!root && canUngroup && onUngroup && expression.arguments.length > 0 && (
           <button
             type="button"
             className="expression-ungroup"
@@ -412,7 +418,21 @@ export default function NodeEditor({
             <Icon name="ungroup" size={14} />
           </button>
         )}
-        {isSelected && !root && <ExpressionAddNextItem onAddNextItem={addNextItem} />}
+        {!root && <ExpressionAddNextItem onAddNextItem={addNextItem} />}
+        {onRemove && (
+          <button
+            type="button"
+            className="expression-remove"
+            aria-label="Delete"
+            title="Delete"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRemove();
+            }}
+          >
+            <Icon name="delete" size={13} />
+          </button>
+        )}
         <ExpressionDebugTooltip label="Group box" model={groupDebugModel} />
       </div>
     );
@@ -423,11 +443,14 @@ export default function NodeEditor({
       : String(expression.value ?? "");
     return (
       <div
-        className={`expression-debug-target expression-field-drop-target expression-value-node${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}`}
+        className={`expression-debug-target expression-field-drop-target expression-value-node expression-item-controls${selectionPath === undefined ? "" : " expression-selectable"}${isSelected ? " expression-selected" : ""}`}
         tabIndex={selectionPath === undefined ? undefined : 0}
-        onClick={selectionPath === undefined ? undefined : selectExpression}
         onFocus={(event) => {
-          if (event.target === event.currentTarget && selectionPath !== undefined)
+          if (
+            event.target === event.currentTarget
+            && event.currentTarget.matches(":focus-visible")
+            && selectionPath !== undefined
+          )
             onSelect?.(selectionPath);
         }}
         onPointerDown={(event) => startSelectedDrag(event, true)}
@@ -456,26 +479,27 @@ export default function NodeEditor({
             onExpressionApply={onChange}
           />
         </div>
-        {isSelected && (
-          <ExpressionAddNextItem
-            onAddNextItem={onCalculationSelect ?? (() => onChange({
-              kind: "group",
-              arguments: [
-                expression,
-                { kind: "field", field: "" },
-              ],
-            }))}
-          />
-        )}
+        <ExpressionAddNextItem
+          onAddNextItem={onCalculationSelect ?? (() => onChange({
+            kind: "group",
+            arguments: [
+              expression,
+              { kind: "field", field: "" },
+            ],
+          }))}
+        />
         {onRemove && (
           <button
             type="button"
             className="expression-remove"
-            aria-label="Remove expression item"
-            title="Remove expression item"
-            onClick={onRemove}
+            aria-label="Delete"
+            title="Delete"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRemove();
+            }}
           >
-            <Icon name="close" size={13} />
+            <Icon name="delete" size={13} />
           </button>
         )}
         <ExpressionDebugTooltip label="Field box" model={expression} />
@@ -504,7 +528,7 @@ export default function NodeEditor({
       onSelect={onSelect}
       onPointerDragStart={onPointerDragStart}
       onAddNextItem={addNextItem}
-      renderArgument={(argument, index, onArgumentChange) => {
+      renderArgument={(argument, index, onArgumentChange, onArgumentRemove) => {
         const appendMathToArgument = () => {
           const currentArgument = expression.arguments[index];
           if (!currentArgument) return;
@@ -534,6 +558,7 @@ export default function NodeEditor({
             functionDefinitionsStatus={functionDefinitionsStatus}
             functionDefinitionsError={functionDefinitionsError}
             onChange={onArgumentChange}
+            onRemove={onArgumentRemove}
             onCalculationSelect={appendMathToArgument}
             path={path === undefined ? undefined : [...path, index]}
             onPointerDragStart={onPointerDragStart}
