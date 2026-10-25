@@ -1,18 +1,17 @@
 {
   "Name": "HR2 - Manager span and team profile",
-  "Entity": "Employees",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Id"
         }
       ],
-      "alias": "ManagerId"
+      "Alias": "ManagerId"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "CONCAT",
@@ -32,61 +31,61 @@
           ]
         }
       ],
-      "alias": "Manager"
+      "Alias": "Manager"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Department.Name"
         }
       ],
-      "alias": "Department"
+      "Alias": "Department"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "DirectReports.Count()"
         }
       ],
-      "alias": "DirectReports"
+      "Alias": "DirectReports"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "DirectReports.CountDistinct(LocationId)"
         }
       ],
-      "alias": "TeamLocations"
+      "Alias": "TeamLocations"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "DirectReports.Average(Salary)"
         }
       ],
-      "alias": "AverageTeamSalary"
+      "Alias": "AverageTeamSalary"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "DirectReports.PerformanceReviews.AverageIf(ReviewYear = <2025>, Rating)"
         }
       ],
-      "alias": "AverageTeamRating"
+      "Alias": "AverageTeamRating"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "DirectReports.Sum(Salary)"
         }
       ],
-      "alias": "TeamPayroll"
+      "Alias": "TeamPayroll"
     }
   ],
   "Filters": {
@@ -110,23 +109,25 @@
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "DirectReports"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "TeamPayroll"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Employees",
+  "Relations": [],
+  "FilterPlanText": null
 }

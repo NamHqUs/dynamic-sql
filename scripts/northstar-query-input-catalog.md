@@ -102,6 +102,51 @@ final sorting and paging; the query model does not represent that stage
 separately. They remain registered function templates with fixed SQL
 renderings, not typed window nodes.
 
+## Saved QueryRequest JSON
+
+The files in
+[`UserData/123/QueryRequests`](../src/Demo.WebApi/FileStorage/UserData/123/QueryRequests)
+are saved `QueryRequestDto` payloads, not bare `QueryDefinition` objects. Use
+the persisted
+[SA1](../src/Demo.WebApi/FileStorage/UserData/123/QueryRequests/SA1%20-%20Category%20and%20channel%20profitability.json)
+and
+[SA2](../src/Demo.WebApi/FileStorage/UserData/123/QueryRequests/SA2%20-%20Customer%20lifetime%20value%20and%20recency.json)
+files as the serialization references when creating or regenerating the
+twenty report definitions from [northstar-demo-queries.md](./northstar-demo-queries.md).
+Do not use the adjacent `QueryRequests copy` directory as the source of truth;
+its SA2 payload has different aliases, filter serialization, and designer
+layout from the confirmed saved definition.
+
+Preserve the complete request shape and designer state:
+
+- Keep the report ID and title in `Name`, the metadata root in `Entity`, and
+  include `Relations`, `FilterPlanText` (including explicit `null`), `Page`,
+  `PageSize`, and `IsBuiltin`.
+- Keep each projection as `{ "Fields": [...], "Alias": "..." }`. Expression
+  nodes inside `Fields` use the canonical wire shape in
+  [EXPRESSION-MODEL-REFERENCE.md](../EXPRESSION-MODEL-REFERENCE.md).
+- Preserve output aliases exactly, including spaces; sort expressions that
+  refer to an alias must use the same spelling. Keep `NEW_LINE` projection
+  entries, encoded as an empty field with alias `NEW_LINE`, because they
+  preserve designer row breaks even though execution ignores them.
+- Preserve the nested `Sorts` arrays and their `Field`/`Direction` values.
+- Preserve filter enum values, `parameterized` flags, and serialized literal
+  types exactly as in the matching saved request. For example, SA2 stores the
+  count threshold as the string `"1"`; do not silently normalize it to a JSON
+  number while regenerating the payload.
+- Resolve roots, relationship paths, functions, and argument order against
+  [`BuiltinMetadata.cs`](../src/Demo.Share/BuiltinMetadata.cs) and
+  [`CustomFunctionDefintions.cs`](../src/Demo.Share/CustomFunctionDefintions.cs).
+  Do not translate SQL table aliases into metadata relationship names.
+
+The earlier draft of SA2 was wrong because it was composed from the general
+query model instead of following the saved-request examples: it changed
+established aliases, dropped the `NEW_LINE` designer marker, and changed the
+serialized threshold value. These changes can break alias-based sorting,
+designer layout, or request compatibility even when the SQL expression looks
+equivalent. Generate from the SQL result contract, then verify the persisted
+shape against SA1/SA2 rather than simplifying or retyping the saved JSON.
+
 ## Sales
 
 ### SA1 — Category and channel profitability

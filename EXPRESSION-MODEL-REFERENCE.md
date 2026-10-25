@@ -31,7 +31,7 @@ The format is covered by
 {
   "fields": [
     { "kind": "field", "field": "A" },
-    { "kind": "field", "field": "B" },
+    { "oper": "+", "kind": "field", "field": "B",  },
     { "oper": "-", "kind": "value", "value": 3 }
   ],
   "alias": null
@@ -54,7 +54,7 @@ array describe `B - C + D`:
       "fields": [
         { "kind": "field", "field": "B" },
         { "oper": "-", "kind": "field", "field": "C" },
-        { "kind": "field", "field": "D" }
+        { "oper": "+", "kind": "field", "field": "D" }
       ]
     },
     { "oper": "/", "kind": "value", "value": 2 }

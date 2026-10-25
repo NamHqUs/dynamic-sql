@@ -1,72 +1,71 @@
 {
   "Name": "SA4 - Best-selling products and margin",
-  "Entity": "NorthStarProducts",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Id"
         }
       ],
-      "alias": "ProductId"
+      "Alias": "ProductId"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Name"
         }
       ],
-      "alias": "Product"
+      "Alias": "Product"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Category"
         }
       ],
-      "alias": "Category"
+      "Alias": "Category"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity)"
         }
       ],
-      "alias": "UnitsSold"
+      "Alias": "UnitsSold"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "OrderItems.CountDistinctIf(Order.Status = <Completed>, Order.Id)"
         }
       ],
-      "alias": "OrderCount"
+      "Alias": "OrderCount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
         }
       ],
-      "alias": "NetRevenue"
+      "Alias": "NetRevenue"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "OrderItems.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)"
         }
       ],
-      "alias": "GrossProfit"
+      "Alias": "GrossProfit"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "group",
           "fields": [
@@ -97,23 +96,25 @@
           "oper": "/"
         }
       ],
-      "alias": "MarginPercent"
+      "Alias": "MarginPercent"
     }
   ],
   "Filters": null,
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "GrossProfit"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "NorthStarProducts",
+  "Relations": [],
+  "FilterPlanText": null
 }

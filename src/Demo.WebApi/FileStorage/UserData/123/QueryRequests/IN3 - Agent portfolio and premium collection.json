@@ -1,18 +1,17 @@
 {
   "Name": "IN3 - Agent portfolio and premium collection",
-  "Entity": "Employees",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Id"
         }
       ],
-      "alias": "AgentId"
+      "Alias": "AgentId"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "CONCAT",
@@ -32,37 +31,37 @@
           ]
         }
       ],
-      "alias": "Agent"
+      "Alias": "Agent"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Location.City"
         }
       ],
-      "alias": "OfficeCity"
+      "Alias": "OfficeCity"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "AgentPolicies.Count()"
         }
       ],
-      "alias": "PoliciesSold"
+      "Alias": "PoliciesSold"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "AgentPolicies.CountIf(Status = <Active>)"
         }
       ],
-      "alias": "ActivePolicies"
+      "Alias": "ActivePolicies"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COALESCE",
@@ -78,25 +77,25 @@
           ]
         }
       ],
-      "alias": "PaidPremiums"
+      "Alias": "PaidPremiums"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "AgentPolicies.PremiumPayments.CountIf(Status = <Late>)"
         }
       ],
-      "alias": "LatePayments"
+      "Alias": "LatePayments"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "AgentPolicies.PremiumPayments.CountIf(Status = <Missed>)"
         }
       ],
-      "alias": "MissedPayments"
+      "Alias": "MissedPayments"
     }
   ],
   "Filters": {
@@ -133,16 +132,18 @@
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "PaidPremiums"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Employees",
+  "Relations": [],
+  "FilterPlanText": null
 }

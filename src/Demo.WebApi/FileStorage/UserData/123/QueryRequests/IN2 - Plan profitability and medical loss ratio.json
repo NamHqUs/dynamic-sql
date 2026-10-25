@@ -1,36 +1,35 @@
 {
   "Name": "IN2 - Plan profitability and medical loss ratio",
-  "Entity": "InsurancePlans",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Name"
         }
       ],
-      "alias": "Plan"
+      "Alias": "Plan"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Tier"
         }
       ],
-      "alias": "Tier"
+      "Alias": "Tier"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Policies.Count()"
         }
       ],
-      "alias": "PolicyCount"
+      "Alias": "PolicyCount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COALESCE",
@@ -46,19 +45,19 @@
           ]
         }
       ],
-      "alias": "PremiumRevenue"
+      "Alias": "PremiumRevenue"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Policies.Claims.Count()"
         }
       ],
-      "alias": "ClaimCount"
+      "Alias": "ClaimCount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COALESCE",
@@ -74,10 +73,10 @@
           ]
         }
       ],
-      "alias": "ClaimsPaid"
+      "Alias": "ClaimsPaid"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "group",
           "fields": [
@@ -118,32 +117,34 @@
           "oper": "/"
         }
       ],
-      "alias": "MedicalLossRatioPercent"
+      "Alias": "MedicalLossRatioPercent"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Policies.Claims.CountIf(Status = <Denied>)"
         }
       ],
-      "alias": "DeniedClaims"
+      "Alias": "DeniedClaims"
     }
   ],
   "Filters": null,
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "MedicalLossRatioPercent"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "InsurancePlans",
+  "Relations": [],
+  "FilterPlanText": null
 }

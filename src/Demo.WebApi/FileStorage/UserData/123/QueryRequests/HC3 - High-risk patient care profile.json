@@ -1,18 +1,17 @@
 {
   "Name": "HC3 - High-risk patient care profile",
-  "Entity": "Persons",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Id"
         }
       ],
-      "alias": "PatientId"
+      "Alias": "PatientId"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "CONCAT",
@@ -32,10 +31,10 @@
           ]
         }
       ],
-      "alias": "Patient"
+      "Alias": "Patient"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "AgeOn",
@@ -51,52 +50,52 @@
           ]
         }
       ],
-      "alias": "Age"
+      "Alias": "Age"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "PatientVisits.CountIf(Status = <Completed> AND Diagnosis.IsChronic = <true>)"
         }
       ],
-      "alias": "ChronicVisits"
+      "Alias": "ChronicVisits"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "PatientVisits.CountIf(Status = <Completed>)"
         }
       ],
-      "alias": "CompletedVisits"
+      "Alias": "CompletedVisits"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "PatientVisits.LabResults.CountIf(Visit.Status = <Completed> AND IsAbnormal = <true>)"
         }
       ],
-      "alias": "AbnormalResults"
+      "Alias": "AbnormalResults"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "PatientVisits.SumIf(Status = <Completed>, Charge)"
         }
       ],
-      "alias": "TotalCharges"
+      "Alias": "TotalCharges"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "PatientVisits.MaxIf(Status = <Completed>, VisitDate)"
         }
       ],
-      "alias": "LastVisitDate"
+      "Alias": "LastVisitDate"
     }
   ],
   "Filters": {
@@ -133,30 +132,32 @@
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "AbnormalResults"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "ChronicVisits"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "TotalCharges"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Persons",
+  "Relations": [],
+  "FilterPlanText": null
 }

@@ -1,9 +1,8 @@
 {
   "Name": "SA5 - Monthly sales trend and momentum",
-  "Entity": "OrderItems",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "MonthKey",
@@ -15,10 +14,10 @@
           ]
         }
       ],
-      "alias": "SalesMonth"
+      "Alias": "SalesMonth"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "SUM",
@@ -50,10 +49,10 @@
           ]
         }
       ],
-      "alias": "Revenue"
+      "Alias": "Revenue"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT_DISTINCT",
@@ -65,10 +64,10 @@
           ]
         }
       ],
-      "alias": "OrderCount"
+      "Alias": "OrderCount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "LAG",
@@ -120,10 +119,10 @@
           ]
         }
       ],
-      "alias": "PriorMonthRevenue"
+      "Alias": "PriorMonthRevenue"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "Difference",
@@ -211,10 +210,10 @@
           ]
         }
       ],
-      "alias": "RevenueChange"
+      "Alias": "RevenueChange"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "WINDOW_SUM",
@@ -262,7 +261,7 @@
           ]
         }
       ],
-      "alias": "RunningRevenue"
+      "Alias": "RunningRevenue"
     }
   ],
   "Filters": {
@@ -286,16 +285,18 @@
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "SalesMonth"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "OrderItems",
+  "Relations": [],
+  "FilterPlanText": null
 }

@@ -1,110 +1,111 @@
 {
   "Name": "HR3 - Workforce composition by location",
-  "Entity": "Locations",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "City"
         }
       ],
-      "alias": "OfficeCity"
+      "Alias": "OfficeCity"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "State"
         }
       ],
-      "alias": "State"
+      "Alias": "State"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Employees.Count()"
         }
       ],
-      "alias": "Headcount"
+      "Alias": "Headcount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Employees.CountDistinct(DepartmentId)"
         }
       ],
-      "alias": "DepartmentsRepresented"
+      "Alias": "DepartmentsRepresented"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Employees.CountIf(EmploymentType = <Full-time>)"
         }
       ],
-      "alias": "FullTime"
+      "Alias": "FullTime"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Employees.CountIf(EmploymentType = <Part-time>)"
         }
       ],
-      "alias": "PartTime"
+      "Alias": "PartTime"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Employees.CountIf(EmploymentType = <Contract>)"
         }
       ],
-      "alias": "Contractors"
+      "Alias": "Contractors"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Employees.Average(ElapsedYears(HireDate, <2025-10-31>))"
         }
       ],
-      "alias": "AverageTenureYears"
+      "Alias": "AverageTenureYears"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Employees.Sum(Salary)"
         }
       ],
-      "alias": "AnnualPayroll"
+      "Alias": "AnnualPayroll"
     }
   ],
   "Filters": null,
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "Headcount"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "AnnualPayroll"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Locations",
+  "Relations": [],
+  "FilterPlanText": null
 }

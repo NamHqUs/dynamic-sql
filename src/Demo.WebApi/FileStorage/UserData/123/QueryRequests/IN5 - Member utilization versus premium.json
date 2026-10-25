@@ -1,18 +1,17 @@
 {
   "Name": "IN5 - Member utilization versus premium",
-  "Entity": "Policies",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Person.Id"
         }
       ],
-      "alias": "MemberId"
+      "Alias": "MemberId"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "CONCAT",
@@ -32,37 +31,37 @@
           ]
         }
       ],
-      "alias": "Member"
+      "Alias": "Member"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Plan.Name"
         }
       ],
-      "alias": "Plan"
+      "Alias": "Plan"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Status"
         }
       ],
-      "alias": "PolicyStatus"
+      "Alias": "PolicyStatus"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Claims.Count()"
         }
       ],
-      "alias": "Claims"
+      "Alias": "Claims"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COALESCE",
@@ -78,10 +77,10 @@
           ]
         }
       ],
-      "alias": "PremiumsCollected"
+      "Alias": "PremiumsCollected"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COALESCE",
@@ -97,10 +96,10 @@
           ]
         }
       ],
-      "alias": "AllowedAmount"
+      "Alias": "AllowedAmount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COALESCE",
@@ -116,10 +115,10 @@
           ]
         }
       ],
-      "alias": "InsurerPaid"
+      "Alias": "InsurerPaid"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "group",
           "fields": [
@@ -160,30 +159,32 @@
           "oper": "/"
         }
       ],
-      "alias": "MemberLossRatioPercent"
+      "Alias": "MemberLossRatioPercent"
     }
   ],
   "Filters": null,
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "MemberLossRatioPercent"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "Claims"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Policies",
+  "Relations": [],
+  "FilterPlanText": null
 }

@@ -1,37 +1,36 @@
 {
   "Name": "HR5 - Performance and bonus trends",
-  "Entity": "PerformanceReviews",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Employee.Department.Name"
         }
       ],
-      "alias": "Department"
+      "Alias": "Department"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "ReviewYear"
         }
       ],
-      "alias": "ReviewYear"
+      "Alias": "ReviewYear"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT",
           "arguments": []
         }
       ],
-      "alias": "Reviews"
+      "Alias": "Reviews"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "AVG",
@@ -43,10 +42,10 @@
           ]
         }
       ],
-      "alias": "AverageRating"
+      "Alias": "AverageRating"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT_IF",
@@ -58,10 +57,10 @@
           ]
         }
       ],
-      "alias": "HighRatings"
+      "Alias": "HighRatings"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "group",
           "fields": [
@@ -89,10 +88,10 @@
           "oper": "/"
         }
       ],
-      "alias": "HighRatingPercent"
+      "Alias": "HighRatingPercent"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "AVG",
@@ -104,10 +103,10 @@
           ]
         }
       ],
-      "alias": "AverageSalary"
+      "Alias": "AverageSalary"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "SUM",
@@ -119,37 +118,39 @@
           ]
         }
       ],
-      "alias": "TotalBonus"
+      "Alias": "TotalBonus"
     }
   ],
   "Filters": null,
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "ReviewYear"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "AverageRating"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "TotalBonus"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "PerformanceReviews",
+  "Relations": [],
+  "FilterPlanText": null
 }

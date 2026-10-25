@@ -1,37 +1,36 @@
 {
   "Name": "HC4 - Lab abnormality patterns",
-  "Entity": "LabResults",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "TestName"
         }
       ],
-      "alias": "TestName"
+      "Alias": "TestName"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Visit.Diagnosis.Category"
         }
       ],
-      "alias": "DiagnosisCategory"
+      "Alias": "DiagnosisCategory"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT",
           "arguments": []
         }
       ],
-      "alias": "TestCount"
+      "Alias": "TestCount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "SUM",
@@ -43,10 +42,10 @@
           ]
         }
       ],
-      "alias": "AbnormalCount"
+      "Alias": "AbnormalCount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "group",
           "fields": [
@@ -74,10 +73,10 @@
           "oper": "/"
         }
       ],
-      "alias": "AbnormalPercent"
+      "Alias": "AbnormalPercent"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "AVG",
@@ -89,10 +88,10 @@
           ]
         }
       ],
-      "alias": "AverageResult"
+      "Alias": "AverageResult"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "AVG",
@@ -104,7 +103,7 @@
           ]
         }
       ],
-      "alias": "AverageReferenceMaximum"
+      "Alias": "AverageReferenceMaximum"
     }
   ],
   "Filters": {
@@ -142,23 +141,25 @@
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "AbnormalPercent"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "TestCount"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "LabResults",
+  "Relations": [],
+  "FilterPlanText": null
 }

@@ -1,46 +1,45 @@
 {
   "Name": "HR4 - Leave demand and approval status",
-  "Entity": "LeaveRequests",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Employee.Department.Name"
         }
       ],
-      "alias": "Department"
+      "Alias": "Department"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "LeaveType"
         }
       ],
-      "alias": "LeaveType"
+      "Alias": "LeaveType"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Status"
         }
       ],
-      "alias": "Status"
+      "Alias": "Status"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT",
           "arguments": []
         }
       ],
-      "alias": "Requests"
+      "Alias": "Requests"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "SUM",
@@ -52,10 +51,10 @@
           ]
         }
       ],
-      "alias": "DaysRequested"
+      "Alias": "DaysRequested"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "AVG",
@@ -67,10 +66,10 @@
           ]
         }
       ],
-      "alias": "AverageRequestDays"
+      "Alias": "AverageRequestDays"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT_DISTINCT",
@@ -82,30 +81,32 @@
           ]
         }
       ],
-      "alias": "EmployeesRequesting"
+      "Alias": "EmployeesRequesting"
     }
   ],
   "Filters": null,
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "DaysRequested"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "Requests"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "LeaveRequests",
+  "Relations": [],
+  "FilterPlanText": null
 }

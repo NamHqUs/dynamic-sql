@@ -1,9 +1,8 @@
 {
   "Name": "HC5 - Visit-type utilization by month",
-  "Entity": "Visits",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "MonthKey",
@@ -15,29 +14,29 @@
           ]
         }
       ],
-      "alias": "VisitMonth"
+      "Alias": "VisitMonth"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "VisitType"
         }
       ],
-      "alias": "VisitType"
+      "Alias": "VisitType"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT",
           "arguments": []
         }
       ],
-      "alias": "ScheduledVisits"
+      "Alias": "ScheduledVisits"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT_IF",
@@ -49,10 +48,10 @@
           ]
         }
       ],
-      "alias": "NoShows"
+      "Alias": "NoShows"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "group",
           "fields": [
@@ -80,10 +79,10 @@
           "oper": "/"
         }
       ],
-      "alias": "NoShowPercent"
+      "Alias": "NoShowPercent"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "AVG_IF",
@@ -99,10 +98,10 @@
           ]
         }
       ],
-      "alias": "AverageMinutes"
+      "Alias": "AverageMinutes"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "SUM",
@@ -114,23 +113,25 @@
           ]
         }
       ],
-      "alias": "Charges"
+      "Alias": "Charges"
     }
   ],
   "Filters": null,
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "ScheduledVisits"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Visits",
+  "Relations": [],
+  "FilterPlanText": null
 }

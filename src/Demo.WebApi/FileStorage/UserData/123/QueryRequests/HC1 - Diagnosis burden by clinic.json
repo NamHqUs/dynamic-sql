@@ -1,46 +1,45 @@
 {
   "Name": "HC1 - Diagnosis burden by clinic",
-  "Entity": "Visits",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Diagnosis.Name"
         }
       ],
-      "alias": "Diagnosis"
+      "Alias": "Diagnosis"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Diagnosis.Category"
         }
       ],
-      "alias": "DiagnosisCategory"
+      "Alias": "DiagnosisCategory"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Location.City"
         }
       ],
-      "alias": "ClinicCity"
+      "Alias": "ClinicCity"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT",
           "arguments": []
         }
       ],
-      "alias": "VisitCount"
+      "Alias": "VisitCount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT_DISTINCT",
@@ -52,10 +51,10 @@
           ]
         }
       ],
-      "alias": "UniquePatients"
+      "Alias": "UniquePatients"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "AVG",
@@ -67,10 +66,10 @@
           ]
         }
       ],
-      "alias": "AverageCharge"
+      "Alias": "AverageCharge"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "group",
           "fields": [
@@ -113,7 +112,7 @@
           "oper": "/"
         }
       ],
-      "alias": "AbnormalLabPercent"
+      "Alias": "AbnormalLabPercent"
     }
   ],
   "Filters": {
@@ -137,23 +136,25 @@
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "VisitCount"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "AbnormalLabPercent"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Visits",
+  "Relations": [],
+  "FilterPlanText": null
 }

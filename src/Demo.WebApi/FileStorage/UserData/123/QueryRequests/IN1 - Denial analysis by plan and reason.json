@@ -1,46 +1,45 @@
 {
   "Name": "IN1 - Denial analysis by plan and reason",
-  "Entity": "Claims",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Policy.Plan.Tier"
         }
       ],
-      "alias": "Tier"
+      "Alias": "Tier"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Policy.Plan.Name"
         }
       ],
-      "alias": "Plan"
+      "Alias": "Plan"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "DenialReason"
         }
       ],
-      "alias": "DenialReason"
+      "Alias": "DenialReason"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "COUNT",
           "arguments": []
         }
       ],
-      "alias": "DeniedClaims"
+      "Alias": "DeniedClaims"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "SUM",
@@ -52,10 +51,10 @@
           ]
         }
       ],
-      "alias": "BilledAmount"
+      "Alias": "BilledAmount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "SUM",
@@ -67,10 +66,10 @@
           ]
         }
       ],
-      "alias": "AllowedAmount"
+      "Alias": "AllowedAmount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "AVG",
@@ -82,7 +81,7 @@
           ]
         }
       ],
-      "alias": "AverageBilledAmount"
+      "Alias": "AverageBilledAmount"
     }
   ],
   "Filters": {
@@ -106,23 +105,25 @@
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "DeniedClaims"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "BilledAmount"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Claims",
+  "Relations": [],
+  "FilterPlanText": null
 }

@@ -1,18 +1,17 @@
 {
   "Name": "SA3 - Sales representative performance",
-  "Entity": "Employees",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Id"
         }
       ],
-      "alias": "SalesRepId"
+      "Alias": "SalesRepId"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "CONCAT",
@@ -32,61 +31,61 @@
           ]
         }
       ],
-      "alias": "SalesRep"
+      "Alias": "SalesRep"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Location.City"
         }
       ],
-      "alias": "HomeCity"
+      "Alias": "HomeCity"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Department.Name"
         }
       ],
-      "alias": "Department"
+      "Alias": "Department"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "SalesOrders.CountDistinctIf(Status = <Completed>, Id)"
         }
       ],
-      "alias": "CompletedOrders"
+      "Alias": "CompletedOrders"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity)"
         }
       ],
-      "alias": "UnitsSold"
+      "Alias": "UnitsSold"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity * UnitPrice - DiscountAmount)"
         }
       ],
-      "alias": "NetSales"
+      "Alias": "NetSales"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "SalesOrders.Items.SumIf(Order.Status = <Completed>, Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)"
         }
       ],
-      "alias": "GrossProfit"
+      "Alias": "GrossProfit"
     }
   ],
   "Filters": {
@@ -123,16 +122,18 @@
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "NetSales"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Employees",
+  "Relations": [],
+  "FilterPlanText": null
 }

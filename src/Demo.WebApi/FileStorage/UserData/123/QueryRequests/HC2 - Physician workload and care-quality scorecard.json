@@ -1,18 +1,17 @@
 {
   "Name": "HC2 - Physician workload and care-quality scorecard",
-  "Entity": "Employees",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Id"
         }
       ],
-      "alias": "DoctorId"
+      "Alias": "DoctorId"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "function",
           "function": "CONCAT",
@@ -32,64 +31,64 @@
           ]
         }
       ],
-      "alias": "Physician"
+      "Alias": "Physician"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Department.Name"
         }
       ],
-      "alias": "Department"
+      "Alias": "Department"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Location.City"
         }
       ],
-      "alias": "ClinicCity"
+      "Alias": "ClinicCity"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "PhysicianVisits.CountIf(Status = <Completed>)"
         }
       ],
-      "alias": "VisitCount"
+      "Alias": "VisitCount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "PhysicianVisits.CountDistinctIf(Status = <Completed>, PersonId)"
         }
       ],
-      "alias": "PatientCount"
+      "Alias": "PatientCount"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "PhysicianVisits.AverageIf(Status = <Completed>, DurationMinutes)"
         }
       ],
-      "alias": "AverageVisitMinutes"
+      "Alias": "AverageVisitMinutes"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "PhysicianVisits.SumIf(Status = <Completed>, Charge)"
         }
       ],
-      "alias": "Charges"
+      "Alias": "Charges"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "group",
           "fields": [
@@ -120,7 +119,7 @@
           "oper": "/"
         }
       ],
-      "alias": "AbnormalLabPercent"
+      "Alias": "AbnormalLabPercent"
     }
   ],
   "Filters": {
@@ -157,23 +156,25 @@
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "VisitCount"
         },
-        "direction": 1
+        "Direction": 1
       },
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "Charges"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "Employees",
+  "Relations": [],
+  "FilterPlanText": null
 }

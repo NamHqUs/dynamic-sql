@@ -1,54 +1,53 @@
 {
   "Name": "IN4 - Claims adjudication by plan",
-  "Entity": "InsurancePlans",
   "Projection": [
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Name"
         }
       ],
-      "alias": "Plan"
+      "Alias": "Plan"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Tier"
         }
       ],
-      "alias": "Tier"
+      "Alias": "Tier"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Policies.Claims.Count()"
         }
       ],
-      "alias": "ClaimsReceived"
+      "Alias": "ClaimsReceived"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Policies.Claims.CountIf(Status = <Paid>)"
         }
       ],
-      "alias": "PaidClaims"
+      "Alias": "PaidClaims"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Policies.Claims.CountIf(Status = <Denied>)"
         }
       ],
-      "alias": "DeniedClaims"
+      "Alias": "DeniedClaims"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "group",
           "fields": [
@@ -79,41 +78,43 @@
           "oper": "/"
         }
       ],
-      "alias": "DenialPercent"
+      "Alias": "DenialPercent"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Policies.Claims.AverageIf(ProcessedDate IS NOT NULL, DateSub(ClaimDate, ProcessedDate))"
         }
       ],
-      "alias": "AverageProcessingDays"
+      "Alias": "AverageProcessingDays"
     },
     {
-      "fields": [
+      "Fields": [
         {
           "kind": "field",
           "field": "Policies.Claims.Sum(PaidAmount)"
         }
       ],
-      "alias": "TotalPaid"
+      "Alias": "TotalPaid"
     }
   ],
   "Filters": null,
   "Sorts": [
     [
       {
-        "field": {
+        "Field": {
           "kind": "field",
           "field": "ClaimsReceived"
         },
-        "direction": 1
+        "Direction": 1
       }
     ]
   ],
   "Page": 1,
   "PageSize": 10,
   "IsBuiltin": false,
-  "Relations": []
+  "Entity": "InsurancePlans",
+  "Relations": [],
+  "FilterPlanText": null
 }
