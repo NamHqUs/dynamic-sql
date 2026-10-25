@@ -76,9 +76,9 @@ public class _14_QueryRequestTests : TestBase
         {
             Entity = "User",
             Projection = QueryDefinitionParser.ParseProjection("Name"),
-            Filter = new FilterDefinition(
+            Filter = new ConditionDefinition(
                 LogicalOperator.And,
-                new FilterItemDefinition(
+                new ConditionStatementDefinition(
                     LogicalOperator.And,
                     new FieldDefinition("Age"),
                     BinaryOperator.GreaterThan,
@@ -100,9 +100,9 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Filter = new FilterDefinition(
+            Filter = new ConditionDefinition(
                 LogicalOperator.And,
-                new FilterItemDefinition(
+                new ConditionStatementDefinition(
                     null,
                     new FunctionFieldDefinition("Month", [new FieldDefinition("Birthday")]),
                     BinaryOperator.Equals,
@@ -157,9 +157,9 @@ public class _14_QueryRequestTests : TestBase
             {
                 Entity = "User",
                 Projection = QueryDefinitionParser.ParseProjection("Name"),
-                Filter = new FilterDefinition(
+                Filter = new ConditionDefinition(
                     LogicalOperator.And,
-                    new FilterItemDefinition(
+                    new ConditionStatementDefinition(
                         LogicalOperator.And,
                         new FieldDefinition("Name"),
                         operation,
@@ -178,9 +178,9 @@ public class _14_QueryRequestTests : TestBase
         var invalidRange = new QueryDefinition
         {
             Entity = "User",
-            Filter = new FilterDefinition(
+            Filter = new ConditionDefinition(
                 LogicalOperator.And,
-                new FilterItemDefinition(
+                new ConditionStatementDefinition(
                     LogicalOperator.And,
                     new FieldDefinition("Age"),
                     BinaryOperator.Between,
@@ -189,9 +189,9 @@ public class _14_QueryRequestTests : TestBase
         var emptySet = new QueryDefinition
         {
             Entity = "User",
-            Filter = new FilterDefinition(
+            Filter = new ConditionDefinition(
                 LogicalOperator.And,
-                new FilterItemDefinition(
+                new ConditionStatementDefinition(
                     LogicalOperator.And,
                     new FieldDefinition("Name"),
                     BinaryOperator.In,
@@ -208,9 +208,9 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Filter = new FilterDefinition(
+            Filter = new ConditionDefinition(
                 LogicalOperator.And,
-                new FilterItemDefinition(
+                new ConditionStatementDefinition(
                     LogicalOperator.And,
                     new FieldDefinition("Id"),
                     BinaryOperator.Between,
@@ -253,7 +253,7 @@ public class _14_QueryRequestTests : TestBase
 
         var serialized = System.Text.Json.JsonSerializer.Serialize(definition, options);
         var roundTrip = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(serialized, options)!;
-        var filter = (FilterItemDefinition)roundTrip.Filter!.Filters.Single();
+        var filter = (ConditionStatementDefinition)roundTrip.Filter!.Filters.Single();
         var values = ((GroupFieldDefintion)filter.Right!).Fields
             .Cast<ConstFieldDefinition>()
             .Select(value => value.Value);
@@ -403,21 +403,21 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Filter = new FilterDefinition(
+            Filter = new ConditionDefinition(
                 LogicalOperator.And,
-                new FilterDefinition(
+                new ConditionDefinition(
                     LogicalOperator.Or,
-                    new FilterItemDefinition(
+                    new ConditionStatementDefinition(
                         LogicalOperator.Or,
                         new FieldDefinition("Name"),
                         BinaryOperator.Equals,
                         new ConstFieldDefinition("Alice")),
-                    new FilterItemDefinition(
+                    new ConditionStatementDefinition(
                         LogicalOperator.Or,
                         new FieldDefinition("Age"),
                         BinaryOperator.GreaterThan,
                         new ConstFieldDefinition(18))),
-                new FilterItemDefinition(
+                new ConditionStatementDefinition(
                     LogicalOperator.And,
                     new FieldDefinition("Name"),
                     BinaryOperator.Equals,
@@ -451,28 +451,28 @@ public class _14_QueryRequestTests : TestBase
         {
             Entity = "User",
             Projection = QueryDefinitionParser.ParseProjection("Id, Name"),
-            Filter = new FilterDefinition(
+            Filter = new ConditionDefinition(
                 LogicalOperator.And,
-                new FilterDefinition(
+                new ConditionDefinition(
                     LogicalOperator.And,
-                    new FilterItemDefinition(
+                    new ConditionStatementDefinition(
                         LogicalOperator.And,
                         new FieldDefinition("Id"),
                         BinaryOperator.GreaterThan,
                         new ConstFieldDefinition(3)),
-                    new FilterItemDefinition(
+                    new ConditionStatementDefinition(
                         LogicalOperator.And,
                         new FieldDefinition("Invoices.Id"),
                         BinaryOperator.LessThan,
                         new ConstFieldDefinition(3))),
-                new FilterDefinition(
+                new ConditionDefinition(
                     LogicalOperator.Or,
-                    new FilterItemDefinition(
+                    new ConditionStatementDefinition(
                         LogicalOperator.Or,
                         new FieldDefinition("Name"),
                         BinaryOperator.Equals,
                         new ConstFieldDefinition("abc")),
-                    new FilterItemDefinition(
+                    new ConditionStatementDefinition(
                         LogicalOperator.Or,
                         new FieldDefinition("Age"),
                         BinaryOperator.GreaterThan,
@@ -573,8 +573,8 @@ public class _14_QueryRequestTests : TestBase
             json,
             new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
-        Assert.That(definition.Filter, Is.TypeOf<FilterDefinition>());
-        var filter = definition.Filter!.Filters.Single() as FilterItemDefinition;
+        Assert.That(definition.Filter, Is.TypeOf<ConditionDefinition>());
+        var filter = definition.Filter!.Filters.Single() as ConditionStatementDefinition;
         Assert.That(filter, Is.Not.Null);
         Assert.That(filter!.Left, Is.TypeOf<FieldDefinition>());
         Assert.That(((FieldDefinition)filter.Left).FieldName, Is.EqualTo("Name"));
@@ -586,7 +586,7 @@ public class _14_QueryRequestTests : TestBase
         Assert.That(serialized, Does.Contain("\"left\":{\"kind\":\"field\",\"field\":\"Name\"}"));
         Assert.That(serialized, Does.Contain("\"right\":{\"kind\":\"value\",\"value\":\"Alice\"}"));
         var roundTrip = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(serialized, options)!;
-        Assert.That(((FieldDefinition)((FilterItemDefinition)roundTrip.Filter!.Filters.Single()).Left).FieldName, Is.EqualTo("Name"));
+        Assert.That(((FieldDefinition)((ConditionStatementDefinition)roundTrip.Filter!.Filters.Single()).Left).FieldName, Is.EqualTo("Name"));
     }
 
     [Test]
@@ -608,7 +608,7 @@ public class _14_QueryRequestTests : TestBase
             Filter: Name = Alice
             """);
 
-        Assert.That(((FieldDefinition)((FilterItemDefinition)definition.Filter!.Filters.Single()).Left).FieldName, Is.EqualTo("Name"));
+        Assert.That(((FieldDefinition)((ConditionStatementDefinition)definition.Filter!.Filters.Single()).Left).FieldName, Is.EqualTo("Name"));
     }
 
     [Test]
@@ -675,7 +675,7 @@ public class _14_QueryRequestTests : TestBase
             Entity: User
             Filter: "Name == 'O''Neil'"
             """);
-        var filter = (FilterItemDefinition)definition.Filter!.Filters[0];
+        var filter = (ConditionStatementDefinition)definition.Filter!.Filters[0];
 
         Assert.That(((ConstFieldDefinition)filter.Right!).Value, Is.EqualTo("O'Neil"));
     }
@@ -694,12 +694,12 @@ public class _14_QueryRequestTests : TestBase
             Filter: >-
               {text}
             """);
-        var outerFilters = ((FilterDefinition)roundTrip.Filter!).Filters;
-        var fieldReferenceFilter = (FilterItemDefinition)((FilterDefinition)outerFilters[1]).Filters[1];
+        var outerFilters = ((ConditionDefinition)roundTrip.Filter!).Filters;
+        var fieldReferenceFilter = (ConditionStatementDefinition)((ConditionDefinition)outerFilters[1]).Filters[1];
 
         Assert.That(text, Is.EqualTo(
             "Name = <Alice Smith> AND (Age >= <18> OR Name = Manager.Name)"));
-        Assert.That(((ConstFieldDefinition)((FilterItemDefinition)outerFilters[0]).Right!).Value, Is.EqualTo("Alice Smith"));
+        Assert.That(((ConstFieldDefinition)((ConditionStatementDefinition)outerFilters[0]).Right!).Value, Is.EqualTo("Alice Smith"));
         Assert.That(fieldReferenceFilter.Right, Is.TypeOf<FieldDefinition>());
         Assert.That(((FieldDefinition)fieldReferenceFilter.Right!).FieldName, Is.EqualTo("Manager.Name"));
         Assert.That(roundTrip.Filter!.ToText(), Is.EqualTo(text));
@@ -723,7 +723,7 @@ public class _14_QueryRequestTests : TestBase
                     Entity: User
                     Filter: "{text}"
                 """);
-            var filter = (FilterItemDefinition)definition.Filter!.Filters.Single();
+            var filter = (ConditionStatementDefinition)definition.Filter!.Filters.Single();
 
             Assert.That(((ConstFieldDefinition)filter.Right!).Value, Is.EqualTo(value), text);
         }
@@ -733,7 +733,7 @@ public class _14_QueryRequestTests : TestBase
             Filter: Name = <NULL>
             """);
         Assert.That(
-            ((FilterItemDefinition)nullRightDefinition.Filter!.Filters.Single()).Right,
+            ((ConditionStatementDefinition)nullRightDefinition.Filter!.Filters.Single()).Right,
             Is.Null);
     }
 

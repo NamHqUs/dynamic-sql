@@ -63,7 +63,7 @@ internal static class DbQueryFromQueryDto
         return query;
     }
 
-    private static Expression<Func<IRecordParameter, bool>> CreateFilter(FilterDefinition filter)
+    private static Expression<Func<IRecordParameter, bool>> CreateFilter(ConditionDefinition filter)
     {
         var parameter = Expression.Parameter(typeof(IRecordParameter), "record");
         var body = CreateFilterBody(filter, parameter);
@@ -72,17 +72,17 @@ internal static class DbQueryFromQueryDto
     }
 
     private static Expression CreateFilterBody(
-        IFilterDefintion filter,
+        IConditionDefintion filter,
         ParameterExpression parameter)
         => filter switch
         {
-            FilterDefinition group => CreateLogicalFilter(group, parameter),
-            FilterItemDefinition binary => CreateCondition(binary, parameter),
+            ConditionDefinition group => CreateLogicalFilter(group, parameter),
+            ConditionStatementDefinition binary => CreateCondition(binary, parameter),
             _ => throw new ArgumentOutOfRangeException(nameof(filter))
         };
 
     private static Expression CreateLogicalFilter(
-        FilterDefinition group,
+        ConditionDefinition group,
         ParameterExpression parameter)
     {
         if (group.Filters.Count == 0)
@@ -92,7 +92,7 @@ internal static class DbQueryFromQueryDto
         foreach (var filter in group.Filters.Skip(1))
         {
             var next = CreateFilterBody(filter, parameter);
-            var logicalOperation = filter is FilterItemDefinition { LogicalOperator: not null } binary
+            var logicalOperation = filter is ConditionStatementDefinition { LogicalOperator: not null } binary
                 ? binary.LogicalOperator.Value
                 : group.LogicalOperation;
             expression = logicalOperation == LogicalOperator.And
@@ -104,11 +104,11 @@ internal static class DbQueryFromQueryDto
     }
 
     private static Expression CreateCondition(
-        FilterItemDefinition filter,
+        ConditionStatementDefinition filter,
         ParameterExpression parameter)
     {
         var field = CreateFieldAccess(filter.Left, parameter);
-        var value = filter.Operation is BinaryOperator.Between or BinaryOperator.NotBetween or BinaryOperator.In or BinaryOperator.NotIn
+        var value = filter.Operator is BinaryOperator.Between or BinaryOperator.NotBetween or BinaryOperator.In or BinaryOperator.NotIn
             ? null
             : CreateFilterValue(filter, parameter);
 
@@ -123,7 +123,7 @@ internal static class DbQueryFromQueryDto
                 Expression.Constant(filter.CustomSqlTemplate));
         }
 
-        if (filter.Operation == BinaryOperator.Like)
+        if (filter.Operator == BinaryOperator.Like)
         {
             if (field.Type != typeof(DataValue))
                 throw new FormatException("The left side of a LIKE filter must be a field reference.");
@@ -134,7 +134,7 @@ internal static class DbQueryFromQueryDto
                 value!);
         }
 
-        return filter.Operation switch
+        return filter.Operator switch
         {
             BinaryOperator.Equals => Expression.Equal(field, value!),
             BinaryOperator.NotEquals => Expression.NotEqual(field, value!),
@@ -154,12 +154,12 @@ internal static class DbQueryFromQueryDto
                 typeof(DataValue).GetMethod(nameof(DataValue.IsNotNull))!),
             BinaryOperator.Between or BinaryOperator.NotBetween => CreateRangeCondition(filter, field, parameter),
             BinaryOperator.In or BinaryOperator.NotIn => CreateSetCondition(filter, field, parameter),
-            _ => throw new ArgumentOutOfRangeException(nameof(filter.Operation))
+            _ => throw new ArgumentOutOfRangeException(nameof(filter.Operator))
         };
     }
 
     private static Expression CreateRangeCondition(
-        FilterItemDefinition filter,
+        ConditionStatementDefinition filter,
         Expression field,
         ParameterExpression parameter)
     {
@@ -167,7 +167,7 @@ internal static class DbQueryFromQueryDto
         return Expression.Call(
             field,
             typeof(DataValue).GetMethod(
-                filter.Operation == BinaryOperator.Between
+                filter.Operator == BinaryOperator.Between
                     ? nameof(DataValue.Between)
                     : nameof(DataValue.NotBetween))!,
             values[0],
@@ -175,7 +175,7 @@ internal static class DbQueryFromQueryDto
     }
 
     private static Expression CreateSetCondition(
-        FilterItemDefinition filter,
+        ConditionStatementDefinition filter,
         Expression field,
         ParameterExpression parameter)
     {
@@ -184,14 +184,14 @@ internal static class DbQueryFromQueryDto
         return Expression.Call(
             field,
             typeof(DataValue).GetMethod(
-                filter.Operation == BinaryOperator.In
+                filter.Operator == BinaryOperator.In
                     ? nameof(DataValue.In)
                     : nameof(DataValue.NotIn))!,
             array);
     }
 
     private static Expression[] GetMultipleFilterValues(
-        FilterItemDefinition filter,
+        ConditionStatementDefinition filter,
         ParameterExpression parameter,
         int? expectedCount)
     {
@@ -199,7 +199,7 @@ internal static class DbQueryFromQueryDto
         {
             GroupFieldDefintion group => group.Fields,
             ConstFieldDefinition { Value: string value } when
-                filter.Operation is BinaryOperator.Between or BinaryOperator.NotBetween or BinaryOperator.In or BinaryOperator.NotIn
+                filter.Operator is BinaryOperator.Between or BinaryOperator.NotBetween or BinaryOperator.In or BinaryOperator.NotIn
                 => value
                     .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
                     .Select(item => (IFieldDefinition)new ConstFieldDefinition(item))
@@ -211,11 +211,11 @@ internal static class DbQueryFromQueryDto
             throw new FormatException(
                 expectedCount is null
                     ? "Set comparison values cannot be empty."
-                    : $"The {filter.Operation} operator requires exactly {expectedCount} values.");
+                    : $"The {filter.Operator} operator requires exactly {expectedCount} values.");
 
         return fields
             .Select(field => CreateFilterValue(
-                new FilterItemDefinition(null, filter.Left, filter.Operation, field)
+                new ConditionStatementDefinition(null, filter.Left, filter.Operator, field)
                 {
                     Parameterized = filter.Parameterized
                 },
@@ -248,7 +248,7 @@ internal static class DbQueryFromQueryDto
         };
 
     private static Expression CreateFilterValue(
-        FilterItemDefinition filter,
+        ConditionStatementDefinition filter,
         ParameterExpression parameter)
     {
         return filter.Right switch

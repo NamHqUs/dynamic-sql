@@ -5,7 +5,7 @@ namespace Demo.Contracts.Dto;
 public sealed record QueryRequestDto(
     string Name,
     List<ProjectionDefinition> Projection,
-    FilterDefinition? Filters,
+    ConditionDefinition? Filters,
     List<List<SortDefinition>>? Sorts,
     int? Page,
     int? PageSize,

@@ -56,15 +56,15 @@ public sealed class DynamicQueryService(
             .ToDictionary(definition => definition.Id, StringComparer.OrdinalIgnoreCase);
         var provider = SqlDialect.ForConnection(connection).Key;
 
-        FilterDefinition PrepareGroup(FilterDefinition group)
-            => new(group.LogicalOperation, System.Linq.Enumerable.Select<IFilterDefintion, IFilterDefintion>(
+        ConditionDefinition PrepareGroup(ConditionDefinition group)
+            => new(group.LogicalOperation, System.Linq.Enumerable.Select<IConditionDefintion, IConditionDefintion>(
                 group.Filters,
-                (Namh.Data.DynamicSql.IFilterDefintion filter) => filter switch
+                (Namh.Data.DynamicSql.IConditionDefintion filter) => filter switch
             {
-                FilterDefinition nested => PrepareGroup(nested),
-                FilterItemDefinition { OperatorId: { } id } item =>
+                ConditionDefinition nested => PrepareGroup(nested),
+                ConditionStatementDefinition { OperatorId: { } id } item =>
                     PrepareOperator(item, id, customOperators, provider),
-                FilterItemDefinition item => item,
+                ConditionStatementDefinition item => item,
                 _ => throw new NotSupportedException(
                     $"Unsupported filter definition [{filter.GetType().Name}].")
             }).ToArray())
@@ -83,8 +83,8 @@ public sealed class DynamicQueryService(
         };
     }
 
-    private static FilterItemDefinition PrepareOperator(
-        FilterItemDefinition filter,
+    private static ConditionStatementDefinition PrepareOperator(
+        ConditionStatementDefinition filter,
         string operatorId,
         IReadOnlyDictionary<string, Demo.Contracts.Dto.OperatorDefinitionDto> operators,
         string provider)

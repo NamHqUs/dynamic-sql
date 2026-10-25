@@ -56,9 +56,9 @@ public sealed class _36_QueryRequestFileRepositoryTests
 
             Assert.That(queryRequest.Projection, Has.Count.EqualTo(3));
             Assert.That(queryRequest.Projection[1].IsNewLine, Is.True);
-            Assert.That(queryRequest.Filters, Is.TypeOf<FilterDefinition>());
+            Assert.That(queryRequest.Filters, Is.TypeOf<ConditionDefinition>());
             Assert.That(queryRequest.Filters!.Filters, Has.Count.EqualTo(1));
-            Assert.That(queryRequest.Filters.Filters[0], Is.TypeOf<FilterItemDefinition>());
+            Assert.That(queryRequest.Filters.Filters[0], Is.TypeOf<ConditionStatementDefinition>());
             Assert.That(queryRequest.FilterPlanText, Is.EqualTo("Name = <Alice Johnson> AND Id = <1>"));
 
             repository.Save("test-user", queryRequest);
@@ -68,7 +68,7 @@ public sealed class _36_QueryRequestFileRepositoryTests
             Assert.That(savedProjection.GetArrayLength(), Is.EqualTo(3));
             Assert.That(savedProjection[1].GetProperty("Alias").GetString(), Is.EqualTo("NEW_LINE"));
             Assert.That(savedFile.RootElement.GetProperty("Filters").ValueKind, Is.EqualTo(JsonValueKind.Object));
-            Assert.That(savedFile.RootElement.TryGetProperty("Relations", out _), Is.False);
+            Assert.That(savedFile.RootElement.TryGetProperty("Contexts", out _), Is.False);
             Assert.That(savedFile.RootElement.GetProperty("FilterPlanText").GetString(),
                 Is.EqualTo("Name = <Alice Johnson> AND Id = <1>"));
         }

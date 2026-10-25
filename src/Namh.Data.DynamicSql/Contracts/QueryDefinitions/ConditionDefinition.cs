@@ -5,18 +5,22 @@ using System.Text.Json.Serialization;
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
-[JsonConverter(typeof(FilterDefinitionJsonConverter))]
-public interface IFilterDefintion
+[JsonConverter(typeof(ConditionDefinitionJsonConverter))]
+public interface IConditionDefintion
 {
     string ToText();
 }
 
-[JsonConverter(typeof(GroupFilterDtoJsonConverter))]
-public class FilterDefinition(LogicalOperator logicalOperator = LogicalOperator.And, params IFilterDefintion[] filter) : IFilterDefintion
+[JsonConverter(typeof(ConditionDefintionJsonConverter))]
+public class ConditionDefinition(LogicalOperator logicalOperator, params IConditionDefintion[] filter) : IConditionDefintion
 {
+    public ConditionDefinition(IEnumerable<IConditionDefintion> filter)
+        : this(LogicalOperator.And, filter.ToArray())
+    {
+    }
     public LogicalOperator LogicalOperation { get; set; } = logicalOperator;
     public string Note { get; set; } = string.Empty;
-    public List<IFilterDefintion> Filters { get; set; } = filter.ToList();
+    public List<IConditionDefintion> Filters { get; set; } = filter.ToList();
 
     public string ToText()
     {
@@ -26,7 +30,7 @@ public class FilterDefinition(LogicalOperator logicalOperator = LogicalOperator.
             var filter = Filters[index];
             if (index > 0)
             {
-                var logicalOperation = filter is FilterItemDefinition { LogicalOperator: not null } item
+                var logicalOperation = filter is ConditionStatementDefinition { LogicalOperator: not null } item
                     ? item.LogicalOperator.Value
                     : LogicalOperation;
                 text.Append(' ')
@@ -34,7 +38,7 @@ public class FilterDefinition(LogicalOperator logicalOperator = LogicalOperator.
                     .Append(' ');
             }
 
-            if (filter is FilterDefinition)
+            if (filter is ConditionDefinition)
                 text.Append('(').Append(filter.ToText()).Append(')');
             else
                 text.Append(filter.ToText());
@@ -44,19 +48,24 @@ public class FilterDefinition(LogicalOperator logicalOperator = LogicalOperator.
     }
 }
 
-[JsonConverter(typeof(FilterItemDefinitionJsonConverter))]
-public record FilterItemDefinition(
+[JsonConverter(typeof(ConditionStatementDefinitionJsonConverter))]
+public record ConditionStatementDefinition(
     LogicalOperator? LogicalOperator,
     IFieldDefinition Left,
-    BinaryOperator Operation,
-    IFieldDefinition? Right = null) : IFilterDefintion
+    BinaryOperator Operator,
+    IFieldDefinition? Right = null) : IConditionDefintion
 {
+    public ConditionStatementDefinition(IFieldDefinition left, BinaryOperator @operator, IFieldDefinition? right = null)
+        : this(null, left, @operator, right)
+    {
+    }
+
     public bool Parameterized { get; init; }
     public string? OperatorId { get; init; }
     public string? CustomSqlTemplate { get; init; }
 
     public string ToText()
-        => $"{Left.ToText()} {OperatorId ?? FormatOperator(Operation)} {Right?.ToText() ?? "<NULL>"}";
+        => $"{Left.ToText()} {OperatorId ?? FormatOperator(Operator)} {Right?.ToText() ?? "<NULL>"}";
 
     private static string FormatOperator(BinaryOperator operation)
         => operation switch

@@ -2,17 +2,22 @@
 namespace Namh.Data.DynamicSql;
 
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
+using System.Runtime.Serialization.Formatters;
 #pragma warning restore IDE0130
 
+
+
+public record QueryContextDefintion(string Name, QueryDefinition Query, IConditionDefintion? Condition = null);
 
 public sealed class QueryDefinition
 {
     public required string Entity { get; init; }
     public List<ProjectionDefinition> Projection { get; init; } = [];
-    public FilterDefinition? Filter { get; init; }
+    public ConditionDefinition? Filter { get; init; }
     public List<SortDefinition> Sorts { get; init; } = [];
     public int? Page { get; init; }
     public int? PageSize { get; init; }
+    public List<QueryContextDefintion>? Contexts { get; set; }
 
     public static QueryDefinition FromYml(string yml)
         => QueryDefinitionParser.ParseFromYml(yml);

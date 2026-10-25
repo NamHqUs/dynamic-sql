@@ -29,7 +29,7 @@ public static partial class QueryDefinitionParser
                 ? definition.Entity
                 : throw new FormatException("The YAML query definition requires an entity."),
             Projection = ProjectionDefinitionParser.Parse(definition.Projection ?? []),
-            Filter = FilterDefinitionParser.Parse(definition.Filter),
+            Filter = ConditionDefinitionParser.Parse(definition.Filter),
             Sorts = SortDefinitionParser.Parse(definition.Sorts),
             Page = definition.Page,
             PageSize = definition.PageSize
@@ -73,8 +73,8 @@ public static partial class QueryDefinitionParser
             Projection = projections,
             Filter = root.TryGetProperty("filter", out var filter)
                 ? filter.ValueKind == JsonValueKind.String
-                    ? FilterDefinitionParser.Parse(filter.GetString() ?? string.Empty)
-                    : JsonSerializer.Deserialize<FilterDefinition>(
+                    ? ConditionDefinitionParser.Parse(filter.GetString() ?? string.Empty)
+                    : JsonSerializer.Deserialize<ConditionDefinition>(
                         filter,
                         new JsonSerializerOptions(JsonSerializerDefaults.Web))
                 : null,
@@ -89,7 +89,7 @@ public static partial class QueryDefinitionParser
     public static IFieldDefinition ParseField(string plainText) => FieldDefinitionParser.Parse(plainText);
     public static IFieldDefinition[] ParseExpression(string plainText) => FieldDefinitionParser.ParseExpression(plainText);
     public static List<ProjectionDefinition> ParseProjection(string plainText) => ProjectionDefinitionParser.Parse(plainText);
-    public static FilterDefinition? ParseFilter(string plainText) => FilterDefinitionParser.Parse(plainText);
+    public static ConditionDefinition? ParseFilter(string plainText) => ConditionDefinitionParser.Parse(plainText);
     public static List<SortDefinition> ParseSorts(string plainText) => SortDefinitionParser.Parse(plainText);
 
     private static SortDefinition ParseSort(JsonElement element)

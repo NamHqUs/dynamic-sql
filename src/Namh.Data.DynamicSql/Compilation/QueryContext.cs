@@ -194,7 +194,7 @@ class QueryContext(
             expression is FieldDefinition predicate &&
             LooksLikePredicate(predicate.FieldName))
         {
-            var filter = FilterDefinitionParser.Parse(predicate.FieldName)
+            var filter = ConditionDefinitionParser.Parse(predicate.FieldName)
                 ?? throw new FormatException($"Function argument [{definition.Name}] requires a predicate.");
             return new FunctionSqlExpressionArgument(
                 ParsePredicateExpression(tableContext, filter, depth));
@@ -205,10 +205,10 @@ class QueryContext(
 
     private SqlExpression ParsePredicateExpression(
         TableExpression tableContext,
-        IFilterDefintion filter,
+        IConditionDefintion filter,
         int depth)
     {
-        if (filter is FilterDefinition group)
+        if (filter is ConditionDefinition group)
         {
             SqlExpression? result = null;
             foreach (var child in group.Filters)
@@ -220,7 +220,7 @@ class QueryContext(
                     continue;
                 }
 
-                var logicalOperation = child is FilterItemDefinition { LogicalOperator: { } logicalOperator }
+                var logicalOperation = child is ConditionStatementDefinition { LogicalOperator: { } logicalOperator }
                     ? logicalOperator
                     : group.LogicalOperation;
                 result = new BinarySqlExpression(
@@ -234,47 +234,47 @@ class QueryContext(
                 ?? throw new FormatException("A function predicate cannot be empty.");
         }
 
-        if (filter is not FilterItemDefinition item)
+        if (filter is not ConditionStatementDefinition item)
             throw new FormatException($"Unsupported function predicate [{filter.GetType().Name}].");
 
         var left = ParseQueryExpression(tableContext, item.Left, depth + 1);
-        if (item.Operation is BinaryOperator.IsNull or BinaryOperator.IsNotNull)
+        if (item.Operator is BinaryOperator.IsNull or BinaryOperator.IsNotNull)
             return new PredicateExpression(
                 left,
-                item.Operation == BinaryOperator.IsNull ? "IS NULL" : "IS NOT NULL");
+                item.Operator == BinaryOperator.IsNull ? "IS NULL" : "IS NOT NULL");
 
         var right = item.Right
-            ?? throw new FormatException($"Predicate operator [{item.Operation}] requires a right operand.");
-        if (item.Operation is BinaryOperator.In or BinaryOperator.NotIn)
+            ?? throw new FormatException($"Predicate operator [{item.Operator}] requires a right operand.");
+        if (item.Operator is BinaryOperator.In or BinaryOperator.NotIn)
         {
             if (right is not GroupFieldDefintion values || values.Fields.Length == 0)
                 throw new FormatException("A function predicate set comparison requires values.");
 
             return new SetPredicateExpression(
                 left,
-                item.Operation == BinaryOperator.In ? "IN" : "NOT IN",
+                item.Operator == BinaryOperator.In ? "IN" : "NOT IN",
                 values.Fields.Select(value => ParseQueryExpression(tableContext, value, depth + 1)).ToArray());
         }
 
-        if (item.Operation is BinaryOperator.Between or BinaryOperator.NotBetween)
+        if (item.Operator is BinaryOperator.Between or BinaryOperator.NotBetween)
         {
             if (right is not GroupFieldDefintion { Fields.Length: 2 } range)
                 throw new FormatException("A function predicate range comparison requires two values.");
 
             return new RangePredicateExpression(
                 left,
-                item.Operation == BinaryOperator.Between ? "BETWEEN" : "NOT BETWEEN",
+                item.Operator == BinaryOperator.Between ? "BETWEEN" : "NOT BETWEEN",
                 ParseQueryExpression(tableContext, range.Fields[0], depth + 1),
                 ParseQueryExpression(tableContext, range.Fields[1], depth + 1));
         }
 
-        if (item.Operation is BinaryOperator.Like or BinaryOperator.NotLike)
+        if (item.Operator is BinaryOperator.Like or BinaryOperator.NotLike)
             return new PredicateExpression(
                 left,
-                item.Operation == BinaryOperator.Like ? "LIKE" : "NOT LIKE",
+                item.Operator == BinaryOperator.Like ? "LIKE" : "NOT LIKE",
                 ParseQueryExpression(tableContext, right, depth + 1));
 
-        var operation = item.Operation switch
+        var operation = item.Operator switch
         {
             BinaryOperator.Equals => "=",
             BinaryOperator.NotEquals => "<>",
@@ -282,7 +282,7 @@ class QueryContext(
             BinaryOperator.LessThan => "<",
             BinaryOperator.GreaterThanOrEqual => ">=",
             BinaryOperator.LessThanOrEqual => "<=",
-            _ => throw new FormatException($"Unsupported function predicate operator [{item.Operation}].")
+            _ => throw new FormatException($"Unsupported function predicate operator [{item.Operator}].")
         };
 
         return new BinarySqlExpression(

@@ -184,7 +184,7 @@ internal sealed class _41_QueryRequestSqlComparisonTests : TestBase
     {
         public required string Entity { get; init; }
         public List<ProjectionDefinition> Projection { get; init; } = [];
-        public FilterDefinition? Filters { get; init; }
+        public ConditionDefinition? Filters { get; init; }
         public List<List<SortDefinition>>? Sorts { get; init; }
         public int? Page { get; init; }
         public int? PageSize { get; init; }

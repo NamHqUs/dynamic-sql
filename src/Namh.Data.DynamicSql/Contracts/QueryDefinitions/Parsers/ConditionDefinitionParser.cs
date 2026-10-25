@@ -3,45 +3,45 @@ using System.Globalization;
 
 namespace Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
-internal sealed class FilterDefinitionParser
+internal sealed class ConditionDefinitionParser
 {
     private readonly List<Token> _tokens;
     private int _position;
 
-    public static FilterDefinition? Parse(string? text)
-        => string.IsNullOrWhiteSpace(text) ? null : new FilterDefinitionParser(text).Parse();
+    public static ConditionDefinition? Parse(string? text)
+        => string.IsNullOrWhiteSpace(text) ? null : new ConditionDefinitionParser(text).Parse();
 
-    private FilterDefinitionParser(string text)
+    private ConditionDefinitionParser(string text)
         => _tokens = Tokenize(text);
 
-    private FilterDefinition Parse()
+    private ConditionDefinition Parse()
     {
         if (_tokens.Count == 1)
             throw new FormatException("The filter cannot be empty.");
 
         var expression = ParseOr();
         Expect(TokenType.End);
-        return expression as FilterDefinition
-            ?? new FilterDefinition(LogicalOperator.And, expression);
+        return expression as ConditionDefinition
+            ?? new ConditionDefinition(LogicalOperator.And, expression);
     }
 
-    private IFilterDefintion ParseOr()
+    private IConditionDefintion ParseOr()
         => ParseGroup(ParseAnd, "OR", LogicalOperator.Or);
 
-    private IFilterDefintion ParseAnd()
+    private IConditionDefintion ParseAnd()
         => ParseGroup(ParsePrimary, "AND", LogicalOperator.And);
 
-    private IFilterDefintion ParseGroup(
-        Func<IFilterDefintion> operand,
+    private IConditionDefintion ParseGroup(
+        Func<IConditionDefintion> operand,
         string separator,
         LogicalOperator logicalOperator)
     {
-        var expressions = new List<IFilterDefintion> { operand() };
+        var expressions = new List<IConditionDefintion> { operand() };
 
         while (Match(separator))
         {
             var next = operand();
-            if (next is FilterItemDefinition filter)
+            if (next is ConditionStatementDefinition filter)
                 next = filter with { LogicalOperator = logicalOperator };
 
             expressions.Add(next);
@@ -49,10 +49,10 @@ internal sealed class FilterDefinitionParser
 
         return expressions.Count == 1
             ? expressions[0]
-            : new FilterDefinition(logicalOperator, expressions.ToArray());
+            : new ConditionDefinition(logicalOperator, expressions.ToArray());
     }
 
-    private IFilterDefintion ParsePrimary()
+    private IConditionDefintion ParsePrimary()
     {
         if (Match("("))
         {
@@ -99,7 +99,7 @@ internal sealed class FilterDefinitionParser
             _ => throw new FormatException($"Unsupported filter operator [{operation}].")
         };
 
-        return new FilterItemDefinition(LogicalOperator.And, leftField, filterOperator, value)
+        return new ConditionStatementDefinition(LogicalOperator.And, leftField, filterOperator, value)
         {
             Parameterized = true
         };

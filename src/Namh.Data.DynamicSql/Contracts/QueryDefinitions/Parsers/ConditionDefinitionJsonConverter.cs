@@ -3,9 +3,9 @@ using System.Text.Json.Serialization;
 
 namespace Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
-internal sealed class FilterDefinitionJsonConverter : JsonConverter<IFilterDefintion>
+internal sealed class ConditionDefinitionJsonConverter : JsonConverter<IConditionDefintion>
 {
-    public override IFilterDefintion Read(
+    public override IConditionDefintion Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
         JsonSerializerOptions options)
@@ -14,15 +14,15 @@ internal sealed class FilterDefinitionJsonConverter : JsonConverter<IFilterDefin
         var root = document.RootElement;
 
         return TryGetProperty(root, "filters", out _)
-            ? JsonSerializer.Deserialize<FilterDefinition>(root, options)
+            ? JsonSerializer.Deserialize<ConditionDefinition>(root, options)
                 ?? throw new JsonException("The filter group cannot be null.")
-            : JsonSerializer.Deserialize<FilterItemDefinition>(root, options)
+            : JsonSerializer.Deserialize<ConditionStatementDefinition>(root, options)
                 ?? throw new JsonException("The filter cannot be null.");
     }
 
     public override void Write(
         Utf8JsonWriter writer,
-        IFilterDefintion value,
+        IConditionDefintion value,
         JsonSerializerOptions options)
         => JsonSerializer.Serialize(writer, value, value.GetType(), options);
 
@@ -31,9 +31,9 @@ internal sealed class FilterDefinitionJsonConverter : JsonConverter<IFilterDefin
             element.TryGetProperty(char.ToUpperInvariant(name[0]) + name[1..], out value);
 }
 
-internal sealed class GroupFilterDtoJsonConverter : JsonConverter<FilterDefinition>
+internal sealed class ConditionDefintionJsonConverter : JsonConverter<ConditionDefinition>
 {
-    public override FilterDefinition Read(
+    public override ConditionDefinition Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
         JsonSerializerOptions options)
@@ -44,15 +44,15 @@ internal sealed class GroupFilterDtoJsonConverter : JsonConverter<FilterDefiniti
             ? operation.Deserialize<LogicalOperator>(options)
             : LogicalOperator.And;
         var filters = TryGetProperty(root, "filters", out var filterElement)
-            ? filterElement.Deserialize<List<IFilterDefintion>>(options) ?? []
+            ? filterElement.Deserialize<List<IConditionDefintion>>(options) ?? []
             : [];
 
-        return new FilterDefinition(logicalOperation, filters.ToArray());
+        return new ConditionDefinition(logicalOperation, filters.ToArray());
     }
 
     public override void Write(
         Utf8JsonWriter writer,
-        FilterDefinition value,
+        ConditionDefinition value,
         JsonSerializerOptions options)
     {
         writer.WriteStartObject();
@@ -67,9 +67,9 @@ internal sealed class GroupFilterDtoJsonConverter : JsonConverter<FilterDefiniti
             element.TryGetProperty(char.ToUpperInvariant(name[0]) + name[1..], out value);
 }
 
-internal sealed class FilterItemDefinitionJsonConverter : JsonConverter<FilterItemDefinition>
+internal sealed class ConditionStatementDefinitionJsonConverter : JsonConverter<ConditionStatementDefinition>
 {
-    public override FilterItemDefinition Read(
+    public override ConditionStatementDefinition Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
         JsonSerializerOptions options)
@@ -106,7 +106,7 @@ internal sealed class FilterItemDefinitionJsonConverter : JsonConverter<FilterIt
                 ? logicalElement.Deserialize<LogicalOperator>(options)
                 : null;
 
-        return new FilterItemDefinition(logicalOperator, leftField, operation, right)
+        return new ConditionStatementDefinition(logicalOperator, leftField, operation, right)
         {
             Parameterized = TryGetProperty(root, "parameterized", out var parameterized) &&
                 parameterized.ValueKind == JsonValueKind.True,
@@ -116,7 +116,7 @@ internal sealed class FilterItemDefinitionJsonConverter : JsonConverter<FilterIt
 
     public override void Write(
         Utf8JsonWriter writer,
-        FilterItemDefinition value,
+        ConditionStatementDefinition value,
         JsonSerializerOptions options)
     {
         writer.WriteStartObject();
@@ -127,7 +127,7 @@ internal sealed class FilterItemDefinitionJsonConverter : JsonConverter<FilterIt
         writer.WritePropertyName("left");
         JsonSerializer.Serialize<IFieldDefinition>(writer, value.Left, options);
         if (value.OperatorId is null)
-            writer.WriteNumber("operation", (int)value.Operation);
+            writer.WriteNumber("operation", (int)value.Operator);
         else
             writer.WriteString("operation", value.OperatorId);
         writer.WritePropertyName("right");
