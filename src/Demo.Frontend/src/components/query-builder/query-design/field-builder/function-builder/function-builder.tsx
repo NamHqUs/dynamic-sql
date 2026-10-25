@@ -38,12 +38,10 @@ export function FunctionSelect({
   value,
   choices,
   onChange,
-  openOnDoubleClick = false,
 }: {
   value: string;
   choices: FunctionChoice[];
   onChange: (value: string) => void;
-  openOnDoubleClick?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,51 +78,58 @@ export function FunctionSelect({
         aria-expanded={open}
         aria-haspopup="listbox"
         title={selectedChoice?.syntax}
-        onClick={() => {
-          if (!openOnDoubleClick) setOpen((isOpen) => !isOpen);
-        }}
-        onDoubleClick={() => {
-          if (openOnDoubleClick) setOpen(true);
-        }}
+        onClick={() => setOpen((isOpen) => !isOpen)}
         onKeyDown={(event) => {
-          if (!openOnDoubleClick || (event.key !== "Enter" && event.key !== " ")) return;
+          if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault();
-          setOpen(true);
+          setOpen((isOpen) => !isOpen);
         }}
       >
         {selectedChoice?.label ?? "Select a function…"}
       </button>
       {open && (
         <div className="expression-function-menu operator-menu" role="group" aria-label="Function options">
-          <input
-            type="search"
-            className="expression-function-search"
-            aria-label="Search functions"
-            placeholder="Search functions..."
-            value={searchTerm}
-            autoFocus
-            onChange={(event) => setSearchTerm(event.target.value)}
-          />
-          <div className="expression-function-options" role="listbox" aria-label="Functions">
-            {filteredChoices.length > 0 ? filteredChoices.map((choice) => (
-              <button
-                key={choice.name}
-                type="button"
-                className={`operator-option${choice.name === value ? " operator-option-selected" : ""}`}
-                role="option"
-                aria-selected={choice.name === value}
-                title={choice.syntax}
-                onClick={() => {
-                  onChange(choice.name);
-                  setSearchTerm("");
-                  setOpen(false);
-                }}
-              >
-                {choice.label}
-              </button>
-            )) : (
-              <span className="expression-function-no-results" role="status">No functions found.</span>
-            )}
+          <div
+            className="field-box-chooser-tabs"
+            role="tablist"
+            aria-label="Function selection type"
+            style={{ gridTemplateColumns: "minmax(0, 1fr)" }}
+          >
+            <button type="button" role="tab" aria-selected="true" className="field-box-chooser-tab active">
+              Function
+            </button>
+          </div>
+          <div role="tabpanel" aria-label="Function">
+            <input
+              type="search"
+              className="expression-function-search"
+              aria-label="Search functions"
+              placeholder="Search functions..."
+              value={searchTerm}
+              autoFocus
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+            <div className="expression-function-options" role="listbox" aria-label="Functions">
+              {filteredChoices.length > 0 ? filteredChoices.map((choice) => (
+                <button
+                  key={choice.name}
+                  type="button"
+                  className={`operator-option${choice.name === value ? " operator-option-selected" : ""}`}
+                  role="option"
+                  aria-selected={choice.name === value}
+                  title={choice.syntax}
+                  onClick={() => {
+                    onChange(choice.name);
+                    setSearchTerm("");
+                    setOpen(false);
+                  }}
+                >
+                  {choice.label}
+                </button>
+              )) : (
+                <span className="expression-function-no-results" role="status">No functions found.</span>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -256,7 +261,6 @@ export default function FunctionBuilder({
           <FunctionSelect
             value={expression.function}
             choices={choices}
-            openOnDoubleClick
             onChange={(name) => onChange(updateFunction(expression, name, functionDefinitions))}
           />
           {expression.function && (

@@ -526,7 +526,7 @@ export default function NodeEditor({
       expression={expression}
       functionDefinitions={functionDefinitions}
       onChange={onChange}
-      onRemove={onRemove}
+      onRemove={onRemove ?? (root ? () => onChange({ kind: "field", field: "" }) : undefined)}
       root={root}
       path={path}
       selectionPath={selectionPath}
