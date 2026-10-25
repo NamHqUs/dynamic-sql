@@ -48,9 +48,10 @@ internal sealed class DefinedData
         var cn = new SqlConnection("Server=localhost;Database=DynamicSqlTest;User Id=sa;Password=NoPassword123!;TrustServerCertificate=True;");
         cn.Open();
 
-        var isExisted = ExecuteScalar<int>(cn, "SELECT IIF(OBJECT_ID('dbo.[User]', 'U') IS NOT NULL, 1, 0);");
-        if(isExisted != 1)
-            ExecuteNonQuery(cn, LoadScript("unit-test.sqlserver.sql", "sale-demo.sqlserver.sql"));
+        // DB created.
+        //var isExisted = ExecuteScalar<int>(cn, "SELECT IIF(OBJECT_ID('dbo.[User]', 'U') IS NOT NULL, 1, 0);");
+        //if(isExisted != 1)
+        //    ExecuteNonQuery(cn, LoadScript("unit-test.sqlserver.sql", "sale-demo.sqlserver.sql"));
         return cn;
     }
 

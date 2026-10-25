@@ -13,9 +13,10 @@ public class TestBase
     [OneTimeSetUp]
     public void SetupOnce()
     {
-        _connection = DefinedData.GetDbConnection(DbServerType.Sqlite);
+        _connection = DefinedData.GetDbConnection(DbServerType.SqlServer);
 
-        IMetaProvider metaProvider = new MetaProvider(DefinedMetadata.Metadata, CustomFunctionDefintions.Functions);
+        //IMetaProvider metaProvider = new MetaProvider(DefinedMetadata.Metadata, CustomFunctionDefintions.Functions);
+        IMetaProvider metaProvider = new MetaProvider(BuiltinMetadata.NorthStarDemoData, CustomFunctionDefintions.Functions);
         _db = new DynamicSqlContext(_connection, metaProvider);
     }
 
