@@ -87,6 +87,7 @@ type ApiQueryFilterGroup = Omit<QueryFilterGroup, "filters"> & {
 export type QueryDefinition = {
   entity: string;
   columns: QueryColumn[];
+  contexts?: ApiQueryContextDefinition[] | null;
   projectionRows?: string[][];
   filterPlanText?: string | null;
   filters: QueryFilterGroup;
@@ -99,6 +100,7 @@ export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "colum
   filter: ApiQueryFilterGroup | null;
   sorts: { field: string | IFieldDefinition; direction: number }[];
   projection: ApiProjectionDefinition[];
+  contexts?: ApiQueryContextDefinition[] | null;
 };
 
 export type ApiProjectionNode =
@@ -110,6 +112,23 @@ export type ApiProjectionNode =
 export type ApiProjectionDefinition =
   | { fields: ApiProjectionNode[]; alias: string | null }
   | { field: IFieldDefinition; alias: string | null };
+
+export type ApiQueryDefinition = {
+  entity: string;
+  projection?: ApiProjectionDefinition[];
+  filter?: ApiQueryFilterNode | null;
+  sorts?: { field: string | IFieldDefinition; direction: number | string }[];
+  page?: number | null;
+  pageSize?: number | null;
+  contexts?: ApiQueryContextDefinition[] | null;
+};
+
+export type ApiQueryContextDefinition = {
+  name: string;
+  joinType?: number | string;
+  query: ApiQueryDefinition;
+  condition?: ApiQueryFilterNode | string | null;
+};
 
 export type ReportDto = {
   fileName: string;
@@ -138,6 +157,7 @@ type ApiSavedQueryRequestDto = {
   page: number | null;
   pageSize: number | null;
   filterPlanText?: string | null;
+  contexts?: ApiQueryContextDefinition[] | null;
   isBuiltin: boolean;
 };
 
@@ -442,6 +462,7 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
 
   return {
     entity: query.entity,
+    contexts: query.contexts ?? undefined,
     columns: query.projection.map((projection, index) => {
       const expression = normalizeApiProjectionDefinition(projection);
       if (!expression) throw new Error("Query API returned an unsupported projection expression.");
@@ -508,6 +529,7 @@ function fromApiSavedRequest(request: ApiSavedQueryRequestDto): SavedQueryReques
       sorts: request.sorts?.flat() ?? [],
       page: request.page,
       pageSize: request.pageSize,
+      contexts: request.contexts ?? undefined,
     },
     projectionRows,
     filterPlanText: request.filterPlanText ?? null,
@@ -549,6 +571,7 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition 
     page: apiQuery.page,
     pageSize: apiQuery.pageSize,
     filterPlanText: request.definition.filterPlanText ?? null,
+    contexts: apiQuery.contexts,
     isBuiltin: false,
   };
 }
@@ -839,7 +862,16 @@ export const fetchQueryRequests = createAsyncThunk(
         || (item.sorts !== null && (!Array.isArray(item.sorts)
           || item.sorts.some((group: unknown) => !Array.isArray(group))))
         || (item.page !== null && typeof item.page !== "number")
-        || (item.pageSize !== null && typeof item.pageSize !== "number"))) {
+        || (item.pageSize !== null && typeof item.pageSize !== "number")
+        || (item.contexts !== undefined && item.contexts !== null
+          && (!Array.isArray(item.contexts)
+            || item.contexts.some((context: unknown) => !context
+              || typeof context !== "object"
+              || !("name" in context)
+              || typeof context.name !== "string"
+              || !("query" in context)
+              || !context.query
+              || typeof context.query !== "object"))))) {
         return rejectWithValue("Query request API must return saved query requests.");
       }
       return payload.map((item) => fromApiSavedRequest(item as ApiSavedQueryRequestDto));

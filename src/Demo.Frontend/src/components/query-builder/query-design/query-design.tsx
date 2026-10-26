@@ -115,6 +115,9 @@ export default function QueryDesign({
             });
           }}>
             {!metadata.length && <option value="">Select an entity</option>}
+            {definition.contexts?.some((context) => context.name === definition.entity)
+              && !metadata.some((item) => item.name === definition.entity)
+              && <option value={definition.entity}>{definition.entity} (CTE)</option>}
             {metadata.map((item) => <option value={item.name} key={item.name}>{item.name}</option>)}
           </select>
         </label>
@@ -128,6 +131,8 @@ export default function QueryDesign({
 
       {metadataStatus === "loading" && <p className="query-message">Loading metadata…</p>}
       {metadataStatus === "failed" && <p className="query-message error" role="alert">{metadataError}</p>}
+      {!entity && definition.contexts?.length
+        && <p className="query-message">This saved query uses CTE contexts. Context editing will be available later; run the saved query as-is.</p>}
       {entity && <div className="query-builder-body">
         <ProjectionBuilder
           metadata={metadata}

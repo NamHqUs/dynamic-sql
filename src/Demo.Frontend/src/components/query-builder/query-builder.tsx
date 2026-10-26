@@ -261,12 +261,13 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   }, [dispatch, queryRequestsStatus]);
 
   useEffect(() => {
-    if (metadata.length && !metadata.some((item) => item.name === definition.entity)) {
+    if (metadata.length && !metadata.some((item) => item.name === definition.entity)
+      && !definition.contexts?.length) {
       updateDefinition(createDefinition(metadata[0].name, metadata[0].fields));
       return;
     }
     const selectedEntity = entity;
-    if (!selectedEntity) return;
+    if (!selectedEntity || definition.contexts?.length) return;
     const reconciled = reconcileDefinition(definition, selectedEntity, metadata);
     if (!reconciled.columns.length) {
       updateDefinition({
@@ -423,7 +424,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
             <h2>Explore your data</h2>
             <p>Shape a query visually, then inspect its SQL and live results.</p>
             <div className="query-heading-summary" aria-label="Current query summary">
-              <span className="query-heading-source"><Icon name="database" size={13} />{entity?.name || "Choose a data source"}</span>
+              <span className="query-heading-source"><Icon name="database" size={13} />{entity?.name || definition.entity || "Choose a data source"}</span>
               <span><strong>{definition.columns.length}</strong> fields</span>
               <span><strong>{countFilters(definition.filters)}</strong> filters</span>
               <span><strong>{definition.sorts.length}</strong> sorts</span>

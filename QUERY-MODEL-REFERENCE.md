@@ -125,6 +125,20 @@ The reader continues to accept legacy projection objects that contain a
 singular `field` and legacy `math` nodes. Serialization always writes the
 canonical `fields` array and stores operators directly on expression nodes.
 
+## Automatic aggregate grouping
+
+`QueryDefinition` has no `GroupBy` or `Having` properties. Do not add them when
+creating a query definition. The compiler detects aggregate functions such as
+`COUNT`, `SUM`, and `AVG` in projections and automatically groups by the
+projected expressions that do not contain aggregates. For example, projecting
+`Category`, `Channel`, and `SUM(Revenue)` groups the result by `Category` and
+`Channel`. Filters remain row-level filters; they are not a `HAVING` clause.
+
+Use contexts (CTEs) when one aggregation must be performed before another, such
+as calculating per-order category revenue in a context and then averaging those
+per-order values in the outer query. Context query projections use the same
+automatic grouping rule.
+
 ## QueryDefinition contexts and CTEs
 
 The top-level JSON accepted by

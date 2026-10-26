@@ -13,4 +13,5 @@ public sealed record QueryRequestDto(
 {
     public required string Entity { get; init; }
     public string? FilterPlanText { get; init; }
+    public List<QueryContextDefintion>? Contexts { get; init; }
 }

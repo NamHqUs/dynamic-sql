@@ -48,7 +48,7 @@ public sealed class DynamicQueryService(
     private QueryDefinition PrepareQuery(QueryDefinition query, System.Data.IDbConnection connection)
     {
         ArgumentNullException.ThrowIfNull(query);
-        if (query.Filter is null)
+        if (query.Filter is null && query.Contexts is not { Count: > 0 })
             return query;
 
         var customOperators = operatorDefinitionService.GetAll()
@@ -76,10 +76,16 @@ public sealed class DynamicQueryService(
         {
             Entity = query.Entity,
             Projection = query.Projection,
-            Filter = PrepareGroup(query.Filter),
+            Filter = query.Filter is null ? null : PrepareGroup(query.Filter),
             Sorts = query.Sorts,
             Page = query.Page,
-            PageSize = query.PageSize
+            PageSize = query.PageSize,
+            Contexts = query.Contexts?
+                .Select(context => context with
+                {
+                    Query = PrepareQuery(context.Query, connection)
+                })
+                .ToList()
         };
     }
 
