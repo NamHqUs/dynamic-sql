@@ -89,14 +89,13 @@ export type QueryDefinition = {
   columns: QueryColumn[];
   contexts?: ApiQueryContextDefinition[] | null;
   projectionRows?: string[][];
-  filterPlanText?: string | null;
   filters: QueryFilterGroup;
   sorts: { field: string; direction: string; expression?: IFieldDefinition }[];
   page: number | null;
   pageSize: number | null;
 };
 
-export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns" | "projectionRows" | "filterPlanText"> & {
+export type ApiQueryRequest = Omit<QueryDefinition, "filters" | "sorts" | "columns" | "projectionRows"> & {
   filter: ApiQueryFilterGroup | null;
   sorts: { field: string | IFieldDefinition; direction: number }[];
   projection: ApiProjectionDefinition[];
@@ -128,6 +127,30 @@ export type ApiQueryContextDefinition = {
   joinType?: number | string;
   query: ApiQueryDefinition;
   condition?: ApiQueryFilterNode | string | null;
+  id?: string;
+};
+
+type ApiQueryContextDto = {
+  id: string;
+  name: string;
+  entity: string;
+  projection?: ApiProjectionDefinition[];
+  filters?: ApiQueryFilterGroup | null;
+  sorts?: { field: string | IFieldDefinition; direction: number | string }[][] | null;
+  page?: number | null;
+  pageSize?: number | null;
+  joinedContexts?: {
+    refContextId: string;
+    alias: string;
+    condition: ApiQueryFilterNode | string | null;
+    joinType?: number | string;
+  }[] | null;
+};
+
+export type ApiQueryDto = {
+  mainQuery: ApiQueryContextDto;
+  contexts?: ApiQueryContextDto[] | null;
+  isBuiltin: boolean;
 };
 
 export type ReportDto = {
@@ -140,24 +163,11 @@ export type ReportDto = {
   canDelete: boolean;
 };
 
-export type SavedQueryRequestDto = {
-  name: string;
-  query: ApiQueryRequest;
-  projectionRows: string[][];
-  filterPlanText?: string | null;
-  isBuiltin: boolean;
-};
+export type SavedQueryRequestDto = ApiQueryDto;
 
 type ApiSavedQueryRequestDto = {
-  name: string;
-  entity: string;
-  projection: ApiProjectionDefinition[];
-  filters: ApiQueryFilterGroup | null;
-  sorts: { field: IFieldDefinition; direction: number }[][] | null;
-  page: number | null;
-  pageSize: number | null;
-  filterPlanText?: string | null;
-  contexts?: ApiQueryContextDefinition[] | null;
+  mainQuery: ApiQueryContextDto;
+  contexts?: ApiQueryContextDto[] | null;
   isBuiltin: boolean;
 };
 
@@ -224,7 +234,6 @@ async function requestText(url: string, options?: RequestInit) {
 export function createApiQuery(definition: QueryDefinition) {
   const { filters, sorts, columns, ...query } = definition;
   delete query.projectionRows;
-  delete query.filterPlanText;
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   return {
     ...query,
@@ -521,11 +530,53 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
   };
 }
 
-function fromApiSavedRequest(request: ApiSavedQueryRequestDto): SavedQueryRequestDto {
-  const fields: ApiSavedQueryRequestDto["projection"] = [];
+type QueryBuilderSavedView = {
+  query: ApiQueryRequest;
+  projectionRows: string[][];
+};
+
+export function toQueryBuilderSavedView(request: ApiSavedQueryRequest): QueryBuilderSavedView {
+  const fields: ApiProjectionDefinition[] = [];
   const projectionRows: string[][] = [];
   let row: string[] = [];
-  request.projection.forEach((projection, index) => {
+  const mainQuery = request.mainQuery;
+  const contextsById = new Map((request.contexts ?? []).map((context) => [context.id, context]));
+  const toApiDefinition = (context: ApiQueryContextDto, visited = new Set<string>()): ApiQueryDefinition => {
+    if (!visited.add(context.id)) throw new Error(`Query API returned recursive context '${context.id}'.`);
+    const contexts = (context.joinedContexts ?? []).map((joined) => {
+      const referenced = contextsById.get(joined.refContextId);
+      if (!referenced) throw new Error(`Query API returned an unknown context reference '${joined.refContextId}'.`);
+      return {
+        id: referenced.id,
+        name: joined.alias,
+        joinType: joined.joinType,
+        condition: joined.condition,
+        query: toApiDefinition(referenced, new Set(visited)),
+      };
+    });
+    return {
+    entity: context.entity,
+    projection: context.projection ?? [],
+    filter: context.filters,
+    sorts: context.sorts?.flat() ?? [],
+    page: context.page,
+    pageSize: context.pageSize,
+    contexts: contexts.length ? contexts : undefined,
+    };
+  };
+  const joinedContexts: ApiQueryContextDefinition[] = (mainQuery.joinedContexts ?? []).map((joined) => {
+    const context = contextsById.get(joined.refContextId);
+    if (!context) throw new Error(`Query API returned an unknown context reference '${joined.refContextId}'.`);
+    return {
+      id: context.id,
+      name: joined.alias,
+      joinType: joined.joinType,
+      condition: joined.condition,
+      query: toApiDefinition(context),
+    };
+  });
+
+  (mainQuery.projection ?? []).forEach((projection, index) => {
     if (projection.alias?.toUpperCase() === "NEW_LINE") {
       if (row.length) projectionRows.push(row);
       row = [];
@@ -542,19 +593,16 @@ function fromApiSavedRequest(request: ApiSavedQueryRequestDto): SavedQueryReques
   if (row.length) projectionRows.push(row);
 
   return {
-    name: request.name,
     query: {
-      entity: request.entity,
+      entity: mainQuery.entity,
       projection: fields,
-      filter: request.filters,
-      sorts: request.sorts?.flat() ?? [],
-      page: request.page,
-      pageSize: request.pageSize,
-      contexts: request.contexts ?? undefined,
+      filter: mainQuery.filters ?? null,
+      sorts: mainQuery.sorts?.flat() ?? [],
+      page: mainQuery.page ?? null,
+      pageSize: mainQuery.pageSize ?? null,
+      contexts: joinedContexts.length ? joinedContexts : undefined,
     },
     projectionRows,
-    filterPlanText: request.filterPlanText ?? null,
-    isBuiltin: request.isBuiltin,
   };
 }
 
@@ -567,7 +615,7 @@ function getSavedProjectionRows(definition: QueryDefinition): string[][] {
   return rows.filter((row) => row.length).map((row) => [...row]);
 }
 
-function toApiSavedRequest(request: { name: string; definition: QueryDefinition }): Omit<ApiSavedQueryRequestDto, "isBuiltin"> & { isBuiltin: false } {
+function toApiSavedRequest(request: { name: string; definition: QueryDefinition; id?: string }): ApiQueryDto {
   const apiQuery = createApiQuery(request.definition);
   const rows = getSavedProjectionRows(request.definition);
   const projection = rows.flatMap((row, rowIndex) => [
@@ -583,16 +631,58 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition 
     }),
   ]);
 
+  const allContexts: ApiQueryContextDefinition[] = [];
+  const collectedContexts = new Set<ApiQueryContextDefinition>();
+  const collectContexts = (contextDefinitions: ApiQueryContextDefinition[]) => {
+    for (const context of contextDefinitions) {
+      if (collectedContexts.has(context)) continue;
+      collectedContexts.add(context);
+      allContexts.push(context);
+      if (context.query.contexts) collectContexts(context.query.contexts);
+    }
+  };
+  collectContexts(apiQuery.contexts ?? []);
+  const contextIds = new Map<ApiQueryContextDefinition, string>();
+  allContexts.forEach((context, index) => {
+    contextIds.set(context, context.id ?? `${request.id ?? request.name}-context-${index}`);
+  });
+  const toStoredContext = (context: ApiQueryContextDefinition) => ({
+    id: contextIds.get(context)!,
+    name: context.name,
+    entity: context.query.entity,
+    projection: context.query.projection,
+    filters: context.query.filter,
+    sorts: context.query.sorts?.length ? [context.query.sorts] : null,
+    page: context.query.page,
+    pageSize: context.query.pageSize,
+    joinedContexts: context.query.contexts?.map((nested) => ({
+      refContextId: contextIds.get(nested)!,
+      alias: nested.name,
+      condition: nested.condition ?? { logicalOperation: 0, filters: [] },
+      joinType: nested.joinType ?? 1,
+    })) ?? null,
+  });
+  const contexts = allContexts.map(toStoredContext);
+  const joinedContexts = (apiQuery.contexts ?? []).map((context) => ({
+    refContextId: contextIds.get(context)!,
+    alias: context.name,
+    condition: context.condition ?? { logicalOperation: 0, filters: [] },
+    joinType: context.joinType ?? 1,
+  }));
+
   return {
-    name: request.name,
-    entity: apiQuery.entity,
-    projection,
-    filters: apiQuery.filter,
-    sorts: apiQuery.sorts.length ? [apiQuery.sorts] : null,
-    page: apiQuery.page,
-    pageSize: apiQuery.pageSize,
-    filterPlanText: request.definition.filterPlanText ?? null,
-    contexts: apiQuery.contexts,
+    mainQuery: {
+      id: request.id ?? request.name,
+      name: request.name,
+      entity: apiQuery.entity,
+      projection,
+      filters: apiQuery.filter,
+      sorts: apiQuery.sorts.length ? [apiQuery.sorts] : null,
+      page: apiQuery.page,
+      pageSize: apiQuery.pageSize,
+      joinedContexts,
+    },
+    contexts,
     isBuiltin: false,
   };
 }
@@ -760,41 +850,6 @@ export const getSqlStatementFromText = createAsyncThunk(
   },
 );
 
-export const getQueryRequestString = createAsyncThunk(
-  "queryBuilder/getQueryRequestString",
-  async ({ definition }: { definition: QueryDefinition }, { rejectWithValue }) => {
-    try {
-      return await requestText(apiUrls.reports.toString, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(createApiQuery(definition)),
-      });
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : "Unable to format query request.");
-    }
-  },
-);
-
-export const parseQueryRequestString = createAsyncThunk(
-  "queryBuilder/parseQueryRequestString",
-  async ({ text, entity }: { text: string; entity: string }, { rejectWithValue }) => {
-    try {
-      const payload = await requestJson(apiUrls.reports.parse, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, entity }),
-      });
-      const projection = payload?.projection ?? payload?.fields;
-      if (!payload || typeof payload.entity !== "string" || !Array.isArray(projection) || !Array.isArray(payload.sorts)) {
-        return rejectWithValue("Query request API returned an invalid request.");
-      }
-      return { ...payload, projection } as ApiQueryRequest;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : "Unable to apply query request structure.");
-    }
-  },
-);
-
 export const fetchReports = createAsyncThunk(
   "queryBuilder/fetchReports",
   async (_, { rejectWithValue }) => {
@@ -868,34 +923,16 @@ export const fetchQueryRequests = createAsyncThunk(
     try {
       const payload = await requestJson(apiUrls.queryRequests.list);
       if (!Array.isArray(payload) || payload.some((item) => !item
-        || typeof item.name !== "string"
-         || typeof item.entity !== "string"
-         || typeof item.isBuiltin !== "boolean"
-        || !Array.isArray(item.projection)
-        || item.projection.some((projection: unknown) => !projection
-          || typeof projection !== "object"
-          || (!("field" in projection)
-            && (!("fields" in projection) || !Array.isArray(projection.fields)))
-          || !("alias" in projection))
-        || (item.filters !== null && (!item.filters
-          || typeof item.filters !== "object"
-          || Array.isArray(item.filters)))
-        || (item.sorts !== null && (!Array.isArray(item.sorts)
-          || item.sorts.some((group: unknown) => !Array.isArray(group))))
-        || (item.page !== null && typeof item.page !== "number")
-        || (item.pageSize !== null && typeof item.pageSize !== "number")
-        || (item.contexts !== undefined && item.contexts !== null
-          && (!Array.isArray(item.contexts)
-            || item.contexts.some((context: unknown) => !context
-              || typeof context !== "object"
-              || !("name" in context)
-              || typeof context.name !== "string"
-              || !("query" in context)
-              || !context.query
-              || typeof context.query !== "object"))))) {
+        || typeof item.isBuiltin !== "boolean"
+        || !item.mainQuery
+        || typeof item.mainQuery.id !== "string"
+        || typeof item.mainQuery.name !== "string"
+        || typeof item.mainQuery.entity !== "string"
+        || !Array.isArray(item.mainQuery.projection)
+        || (item.contexts !== undefined && item.contexts !== null && !Array.isArray(item.contexts)))) {
         return rejectWithValue("Query request API must return saved query requests.");
       }
-      return payload.map((item) => fromApiSavedRequest(item as ApiSavedQueryRequestDto));
+      return payload.map((item) => item as ApiQueryDto);
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to load saved queries.");
     }
@@ -904,12 +941,12 @@ export const fetchQueryRequests = createAsyncThunk(
 
 export const saveQueryRequest = createAsyncThunk(
   "queryBuilder/saveQueryRequest",
-  async ({ name, definition }: { name: string; definition: QueryDefinition }, { rejectWithValue }) => {
+  async ({ name, definition, id }: { name: string; definition: QueryDefinition; id?: string }, { rejectWithValue }) => {
     try {
       await requestJson(apiUrls.queryRequests.byName(name), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(toApiSavedRequest({ name, definition })),
+        body: JSON.stringify(toApiSavedRequest({ name, definition, id })),
       });
       return name;
     } catch (error) {
@@ -920,9 +957,9 @@ export const saveQueryRequest = createAsyncThunk(
 
 export const deleteQueryRequest = createAsyncThunk(
   "queryBuilder/deleteQueryRequest",
-  async (name: string, { rejectWithValue }) => {
+  async ({ name, id }: { name: string; id: string }, { rejectWithValue }) => {
     try {
-      await requestJson(apiUrls.queryRequests.byName(name), { method: "DELETE" });
+      await requestJson(apiUrls.queryRequests.byName(id), { method: "DELETE" });
       return name;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to delete query.");
@@ -947,11 +984,10 @@ const queryBuilderSlice = createSlice({
     queryRequests: [] as SavedQueryRequestDto[],
     queryRequestsStatus: "idle",
     queryRequestsError: "",
-    debugUiEnabled: false,
+    debugUiEnabled: true,
     functionDefinitions: [] as FunctionDefinition[],
     functionDefinitionsStatus: "idle",
     functionDefinitionsError: "",
-    functionNames: [] as string[],
     filterOperators: [] as FilterOperatorDefinition[],
     filterOperatorsStatus: "idle",
     filterOperatorsError: "",
@@ -992,7 +1028,6 @@ const queryBuilderSlice = createSlice({
       })
       .addCase(fetchFunctionDefinitions.fulfilled, (state, action) => {
         state.functionDefinitions = action.payload;
-        state.functionNames = action.payload.map((definition) => definition.name);
         state.functionDefinitionsStatus = "succeeded";
       })
       .addCase(fetchFunctionDefinitions.rejected, (state, action) => {
@@ -1109,21 +1144,19 @@ const queryBuilderSlice = createSlice({
         state.queryRequestsError = "";
         state.queryRequestsStatus = "succeeded";
         state.queryRequests = state.queryRequests.filter((item) =>
-          item.isBuiltin || item.name.toLowerCase() !== action.payload.toLowerCase());
-        const definition = action.meta.arg.definition;
-        state.queryRequests.unshift({
+          item.isBuiltin || item.mainQuery.name.toLowerCase() !== action.payload.toLowerCase());
+        state.queryRequests.unshift(toApiSavedRequest({
           name: action.payload,
-          query: createApiQuery(definition),
-          projectionRows: getSavedProjectionRows(definition),
-          isBuiltin: false,
-        });
+          definition: action.meta.arg.definition,
+          id: action.meta.arg.id,
+        }));
       })
       .addCase(saveQueryRequest.rejected, (state, action) => {
         state.queryRequestsError = String(action.payload || action.error.message || "Unable to save query.");
       })
       .addCase(deleteQueryRequest.fulfilled, (state, action) => {
         state.queryRequests = state.queryRequests.filter((item) =>
-          item.name.toLowerCase() !== action.payload.toLowerCase());
+          item.mainQuery.name.toLowerCase() !== action.payload.toLowerCase());
       })
       .addCase(deleteQueryRequest.rejected, (state, action) => {
         state.queryRequestsError = String(action.payload || action.error.message || "Unable to delete query.");

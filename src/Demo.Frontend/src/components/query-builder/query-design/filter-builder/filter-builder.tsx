@@ -1,4 +1,4 @@
-import type { CSSProperties, DragEvent, ReactNode } from "react";
+import type { CSSProperties, DragEvent } from "react";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Icon from "../../../icon/icon";
@@ -75,10 +75,7 @@ type FilterBuilderProps = {
   operatorsError: string;
   definition: QueryDefinition;
   entity: MetadataEntity;
-  isPlanTextEditing: boolean;
   onDefinitionChange: (definition: QueryDefinition) => void;
-  planTextControl: ReactNode;
-  planTextEditor: ReactNode;
 };
 
 const isGroup = (filter: QueryFilterNode): filter is QueryFilterGroup => "filters" in filter;
@@ -873,7 +870,7 @@ function FilterRow({ filter, first, path, metadata, functionDefinitions, functio
   );
 }
 
-export default function FilterBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, operatorsStatus, operatorsError, definition, entity, isPlanTextEditing, onDefinitionChange, planTextControl, planTextEditor }: FilterBuilderProps) {
+export default function FilterBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, operatorsStatus, operatorsError, definition, entity, onDefinitionChange }: FilterBuilderProps) {
   const builderRef = useRef<HTMLDivElement>(null);
   const [filterItemWidth, setFilterItemWidth] = useState<number>();
   const [dragPreview, setDragPreview] = useState<DragPreview>();
@@ -1100,7 +1097,7 @@ export default function FilterBuilder({ metadata, functionDefinitions, functionD
           <p className="filter-description">Drag a selected field here to create a filter.</p>
         </div>
         <div className="section-header-actions">
-          {!isPlanTextEditing && <button
+          <button
             type="button"
             className="field-action field-action-icon"
             aria-label="Clear filters"
@@ -1109,15 +1106,12 @@ export default function FilterBuilder({ metadata, functionDefinitions, functionD
             disabled={!definition.filters.filters.length}
           >
             <Icon name="close" size={14} />
-          </button>}
-          {planTextControl}
+          </button>
         </div>
       </div>
-      {planTextEditor}
       {operatorsStatus === "loading" && <p className="filter-description">Loading filter operators…</p>}
       {operatorsStatus === "failed" && <p className="filter-description error" role="alert">{operatorsError}</p>}
-      {!isPlanTextEditing && (
-        <FilterGroupEditor
+      <FilterGroupEditor
             group={definition.filters}
             metadata={metadata}
             functionDefinitions={functionDefinitions}
@@ -1138,7 +1132,6 @@ export default function FilterBuilder({ metadata, functionDefinitions, functionD
             showLogicalOperator={false}
             onChange={(filters) => onDefinitionChange({ ...definition, filters })}
           />
-      )}
     </div>
   );
 }

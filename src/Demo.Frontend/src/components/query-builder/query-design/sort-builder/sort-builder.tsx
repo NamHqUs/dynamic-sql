@@ -1,4 +1,4 @@
-import { type DragEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type DragEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { IFieldDefinition, MetadataEntity, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder, { FieldBuilderExpressionOptions } from "../field-builder/field-builder";
@@ -16,9 +16,6 @@ type SortBuilderProps = {
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
   draggedProjectionField: string | null;
-  isPlanTextEditing: boolean;
-  planTextControl: ReactNode;
-  planTextEditor: ReactNode;
 };
 
 function SortDirectionMenu({
@@ -144,7 +141,7 @@ function SortDirectionMenu({
   );
 }
 
-export default function SortBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, draggedProjectionField, isPlanTextEditing, planTextControl, planTextEditor }: SortBuilderProps) {
+export default function SortBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, draggedProjectionField }: SortBuilderProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [isDropTarget, setIsDropTarget] = useState(false);
 
@@ -207,7 +204,7 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
           <p className="filter-description">Select fields to sort the query results and choose the direction for each field.</p>
         </div>
         <div className="section-header-actions">
-          {!isPlanTextEditing && <button
+          <button
             type="button"
             className="field-action field-action-icon"
             aria-label="Clear sorts"
@@ -216,12 +213,10 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
             disabled={!definition.sorts.length}
           >
             <Icon name="close" size={14} />
-          </button>}
-          {planTextControl}
+          </button>
         </div>
       </div>
-      {planTextEditor}
-      {!isPlanTextEditing && <div
+      <div
         className={`sort-list${isDropTarget ? " sort-list-drop-target" : ""}`}
         onDragOver={(event) => {
           if (draggedProjectionField || isProjectFieldDrag(event)) {
@@ -334,7 +329,7 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
           />
         </div>
        
-      </div>}
+      </div>
     </div>
   );
 }

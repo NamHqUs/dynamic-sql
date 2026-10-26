@@ -1,12 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ApiQueryContextDefinition, FilterOperatorDefinition, MetadataEntity, QueryDefinition } from "./query-builder-slice";
 import { FunctionDefinition } from "../../metadata-builder/function-definition/types";
 import Icon from "../../icon/icon";
 import ProjectionBuilder from "./projection-builder/projection-builder";
 import SortBuilder from "./sort-builder/sort-builder";
 import FilterBuilder from "./filter-builder/filter-builder";
-import { usePlanTextSectionEditor } from "./plan-text-section-editor";
-import type { PlanTextSection } from "./plan-text-section-editor";
 import "./query-design.css";
 
 type QueryDesignProps = {
@@ -16,7 +14,6 @@ type QueryDesignProps = {
   functionDefinitions: FunctionDefinition[];
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
-  functionNames: string[];
   filterOperators: FilterOperatorDefinition[];
   filterOperatorsStatus: string;
   filterOperatorsError: string;
@@ -26,12 +23,8 @@ type QueryDesignProps = {
   onSelectContext: (index: number | null) => void;
   entity?: MetadataEntity;
   requestName: string;
-  isResolvingPlanChanges: boolean;
   onRequestNameChange: (name: string) => void;
   onDefinitionChange: (definition: QueryDefinition) => void;
-  onLoadPlanText: () => Promise<string>;
-  onApplyPlanText: (section: PlanTextSection, value: string, definition?: QueryDefinition) => Promise<QueryDefinition>;
-  onRegisterPlanTextCommit: (commit: ((definition: QueryDefinition) => Promise<QueryDefinition | null>) | null) => void;
 };
 
 export default function QueryDesign({
@@ -41,7 +34,6 @@ export default function QueryDesign({
   functionDefinitions,
   functionDefinitionsStatus,
   functionDefinitionsError,
-  functionNames,
   filterOperators,
   filterOperatorsStatus,
   filterOperatorsError,
@@ -51,55 +43,10 @@ export default function QueryDesign({
   onSelectContext,
   entity,
   requestName,
-  isResolvingPlanChanges,
   onRequestNameChange,
   onDefinitionChange,
-  onLoadPlanText,
-  onApplyPlanText,
-  onRegisterPlanTextCommit,
 }: QueryDesignProps) {
   const [draggedProjectionField, setDraggedProjectionField] = useState<string | null>(null);
-  const handleDefinitionChange = (nextDefinition: QueryDefinition) => {
-    onDefinitionChange(nextDefinition.filters === definition.filters
-      ? nextDefinition
-      : { ...nextDefinition, filterPlanText: null });
-  };
-  const filterPlanText = usePlanTextSectionEditor({
-    section: "Filter",
-    metadata,
-    entityName: definition.entity,
-    functionNames,
-    disabled: isResolvingPlanChanges,
-    onLoadPlanText,
-    onApplyPlanText,
-    onDraftChange: (value) => handleDefinitionChange({ ...definition, filterPlanText: value }),
-    definition,
-  });
-  const sortPlanText = usePlanTextSectionEditor({
-    section: "Sorts",
-    metadata,
-    entityName: definition.entity,
-    functionNames,
-    disabled: isResolvingPlanChanges,
-    onLoadPlanText,
-    onApplyPlanText,
-    definition,
-  });
-
-  useEffect(() => {
-    const commitPlanText = async (currentDefinition: QueryDefinition): Promise<QueryDefinition | null> => {
-      let nextDefinition = currentDefinition;
-      for (const applyPending of [filterPlanText.applyPending, sortPlanText.applyPending]) {
-        const appliedDefinition = await applyPending(nextDefinition, true);
-        if (!appliedDefinition) return null;
-        nextDefinition = appliedDefinition;
-      }
-      return nextDefinition;
-    };
-
-    onRegisterPlanTextCommit(commitPlanText);
-    return () => onRegisterPlanTextCommit(null);
-  }, [filterPlanText.applyPending, onRegisterPlanTextCommit, sortPlanText.applyPending]);
 
   return (
     <section className="query-builder-card">
@@ -155,7 +102,7 @@ export default function QueryDesign({
           functionDefinitionsError={functionDefinitionsError}
           definition={definition}
           entity={entity}
-          onDefinitionChange={handleDefinitionChange}
+          onDefinitionChange={onDefinitionChange}
           onFieldDragStart={setDraggedProjectionField}
         />
         <FilterBuilder
@@ -168,10 +115,7 @@ export default function QueryDesign({
           operatorsError={filterOperatorsError}
           definition={definition}
           entity={entity}
-          isPlanTextEditing={filterPlanText.isEditing}
-          onDefinitionChange={handleDefinitionChange}
-          planTextControl={filterPlanText.control}
-          planTextEditor={filterPlanText.editor}
+          onDefinitionChange={onDefinitionChange}
         />
         <SortBuilder
           metadata={metadata}
@@ -180,11 +124,8 @@ export default function QueryDesign({
           functionDefinitionsError={functionDefinitionsError}
           definition={definition}
           entity={entity}
-          onDefinitionChange={handleDefinitionChange}
+          onDefinitionChange={onDefinitionChange}
           draggedProjectionField={draggedProjectionField}
-          isPlanTextEditing={sortPlanText.isEditing}
-          planTextControl={sortPlanText.control}
-          planTextEditor={sortPlanText.editor}
         />
         <div className="builder-section paging-section">
           <div className="section-header">

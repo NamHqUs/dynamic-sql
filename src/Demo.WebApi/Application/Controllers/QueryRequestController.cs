@@ -9,15 +9,15 @@ namespace Demo.WebApi.Application.Controllers;
 public sealed class QueryRequestController(IQueryRequestService queryRequestService) : ControllerBase
 {
     [HttpGet]
-    public ActionResult<IReadOnlyList<QueryRequestDto>> List()
+    public ActionResult<IReadOnlyList<QueryDto>> List()
         => Ok(queryRequestService.List());
 
     [HttpPut("{name}")]
-    public IActionResult Save(string name, [FromBody] QueryRequestDto queryRequest)
+    public IActionResult Save(string id, [FromBody] QueryDto query)
     {
         try
         {
-            queryRequestService.Save(name, queryRequest);
+            queryRequestService.Save(id, query);
             return NoContent();
         }
         catch (ArgumentException exception)
@@ -31,11 +31,11 @@ public sealed class QueryRequestController(IQueryRequestService queryRequestServ
     }
 
     [HttpDelete("{name}")]
-    public IActionResult Delete(string name)
+    public IActionResult Delete(string id)
     {
-        var deleted = queryRequestService.Delete(name);
+        var deleted = queryRequestService.Delete(id);
         if (deleted) return NoContent();
-        return queryRequestService.IsBuiltin(name)
+        return queryRequestService.IsBuiltin(id)
             ? Conflict("Built-in query requests cannot be deleted.")
             : NotFound();
     }

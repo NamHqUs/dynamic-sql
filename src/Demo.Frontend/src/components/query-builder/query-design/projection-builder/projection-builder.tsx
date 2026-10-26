@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Icon from "../../../icon/icon";
 import { IFieldDefinition, MetadataEntity, QueryColumn, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder, { FieldBuilderExpressionOptions } from "../field-builder/field-builder";
 import { formatExpression } from "../field-builder/expression-builder";
 import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
-import { HighlightedTextArea } from "../plan-text-section-editor";
 
 type ProjectionBuilderProps = {
   metadata: MetadataEntity[];
@@ -17,24 +16,7 @@ type ProjectionBuilderProps = {
   onFieldDragStart: (field: string | null) => void;
 };
 
-function formatProjectionColumn(column: QueryColumn): string {
-  const field = column.expression ? formatExpression(column.expression) : column.field;
-  return column.alias ? `${field} AS ${column.alias}` : field;
-}
-
-function formatProjectionText(columns: QueryColumn[], rows: string[][]): string {
-  const columnsByField = new Map(columns.map((column) => [column.field, column]));
-  return rows
-    .map((row) => row
-      .map((field) => {
-        const column = columnsByField.get(field);
-        return column ? formatProjectionColumn(column) : field;
-      })
-      .join(", "))
-    .join("\n");
-}
-
-function splitProjectionText(text: string): string[][] {
+function splitExpressionArguments(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let start = 0;
@@ -91,7 +73,7 @@ function parseProjectionExpression(text: string, entity: MetadataEntity): IField
   const functionMatch = expressionText.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\(([\s\S]*)\)$/);
   if (!functionMatch) return undefined;
 
-  const arguments_ = splitProjectionText(functionMatch[2]).flat().map((argument): IFieldDefinition => {
+  const arguments_ = splitExpressionArguments(functionMatch[2]).flat().map((argument): IFieldDefinition => {
     const value = argument.trim();
     const nestedExpression = parseProjectionExpression(value, entity);
     if (nestedExpression) return nestedExpression;
@@ -111,18 +93,6 @@ function parseProjectionExpression(text: string, entity: MetadataEntity): IField
   });
 
   return { kind: "function", function: functionMatch[1], arguments: arguments_ };
-}
-
-function parseProjectionColumn(text: string, entity: MetadataEntity): QueryColumn {
-  const aliasMatch = text.match(/^(.+?)\s+AS\s+([A-Za-z_][A-Za-z0-9_]*)$/i)
-    ?? text.match(/^(.+?)\s*\|\s*([A-Za-z_][A-Za-z0-9_]*)$/);
-  const field = (aliasMatch?.[1] ?? text).trim();
-  const expression = parseProjectionExpression(field, entity);
-  return {
-    field,
-    alias: aliasMatch?.[2] ?? null,
-    ...(expression ? { expression } : {}),
-  };
 }
 
 function getProjectionRows(definition: QueryDefinition): string[][] {
@@ -534,17 +504,8 @@ function FieldCards({
 export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
   const [editingAliasField, setEditingAliasField] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
-  const [isEditingProjectionText, setIsEditingProjectionText] = useState(false);
-  const [projectionText, setProjectionText] = useState(() =>
-    formatProjectionText(definition.columns, getProjectionRows(definition)));
   const selectedFields = definition.columns.map((column) => ({ name: column.field }));
   const projectionRows = getProjectionRows(definition);
-
-  useEffect(() => {
-    if (!isEditingProjectionText) {
-      setProjectionText(formatProjectionText(definition.columns, projectionRows));
-    }
-  }, [definition.columns, definition.projectionRows, isEditingProjectionText]);
 
   const changeProjection = (nextDefinition: QueryDefinition, rows = projectionRows) => {
     const fields = new Set(nextDefinition.columns.map((column) => column.field));
@@ -560,17 +521,6 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
       else nextRows.push(missingFields);
     }
     onDefinitionChange({ ...nextDefinition, projectionRows: nextRows });
-  };
-
-  const applyProjectionText = () => {
-    const existingColumns = new Map(definition.columns.map((column) => [formatProjectionColumn(column), column]));
-    const projectionRows = splitProjectionText(projectionText);
-    const columnsByRow = projectionRows.map((row) => row.map((item) =>
-      existingColumns.get(item) ?? parseProjectionColumn(item, entity)));
-    const columns = columnsByRow.flat();
-    changeProjection({ ...definition, columns }, columnsByRow.map((row) =>
-      row.map((column) => column.field)));
-    setIsEditingProjectionText(false);
   };
 
   const addColumn = (field: string) => {
@@ -707,14 +657,11 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
             <span className="section-kicker">PROJECTION</span>
           </div>
           <p className="filter-description">
-            {isEditingProjectionText
-              ? "Edit fields or expressions, then switch back to Design UI to apply changes."
-              : "Select fields to include. Drag a field to another field's left or right edge to reorder, or top or bottom edge to create a row."}
+            Select fields to include. Drag a field to another field's left or right edge to reorder, or top or bottom edge to create a row.
           </p>
         </div>
         <div className="section-header-actions">
           <div className="field-action-buttons">
-          {!isEditingProjectionText && <>
             <button
               type="button"
               className="field-action field-action-icon"
@@ -735,45 +682,10 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
             >
               <Icon name="close" size={14} />
             </button>
-          </>}
-          </div>
-          <div className={`projection-text-control plan-text-mode-control${isEditingProjectionText ? " is-editing" : ""}`}>
-            <button
-              type="button"
-              className="projection-text-action"
-              aria-label={isEditingProjectionText ? "Show projection design" : "Edit projection as plan text"}
-              aria-expanded={isEditingProjectionText}
-              title={isEditingProjectionText ? "Show projection design" : "Edit projection as plan text"}
-              onClick={() => {
-                if (isEditingProjectionText) {
-                  applyProjectionText();
-                } else {
-                  setProjectionText(formatProjectionText(definition.columns, projectionRows));
-                  setIsEditingProjectionText(true);
-                }
-              }}
-            >
-              <Icon name="file-text" size={14} />
-            </button>
           </div>
         </div>
       </div>
-      {isEditingProjectionText ? (
-        <div className="projection-plan-text-editor">
-          {functionDefinitionsStatus === "failed" && (
-            <p className="query-message error" role="alert">Function highlighting unavailable: {functionDefinitionsError}</p>
-          )}
-          <HighlightedTextArea
-            metadata={metadata}
-            entityName={entity.name}
-            functionNames={functionDefinitions.map((definition) => definition.name)}
-            value={projectionText}
-            ariaLabel="Projection fields"
-            placeholder="e.g. Customer.Name, Count(*)"
-            onChange={setProjectionText}
-          />
-        </div>
-      ) : <div className="select-fields-row">
+      <div className="select-fields-row">
         <FieldCards
           fields={selectedFields}
           rows={projectionRows}
@@ -800,7 +712,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
           applyExpression={applyExpression}
           editValue={editValue}
         />
-      </div>}
+      </div>
     </div>
   );
 }

@@ -2,6 +2,6 @@ using Demo.Contracts.Dto;
 
 namespace Demo.Contracts.Repositories;
 
-public interface IQueryRequestRepository : IRepository<QueryRequestDto>
+public interface IQueryRequestRepository : IRepository<QueryDto>
 {
 }

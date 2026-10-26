@@ -24,8 +24,6 @@ export const apiUrls = {
   },
   reports: {
     list: `${backendApiUrl}/report`,
-    toString: `${backendApiUrl}/report/to-string`,
-    parse: `${backendApiUrl}/report/parse`,
     byFileName: (fileName: string) => `${backendApiUrl}/report/${encodeURIComponent(fileName)}`,
   },
   queryRequests: {

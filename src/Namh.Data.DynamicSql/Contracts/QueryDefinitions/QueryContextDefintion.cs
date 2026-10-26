@@ -12,5 +12,5 @@ public enum QueryJoinType
 public record QueryContextDefintion(
     string Name,
     QueryDefinition Query,
-    IConditionDefintion? Condition = null,
+    IConditionDefintion? Condition,
     QueryJoinType JoinType = QueryJoinType.Left);

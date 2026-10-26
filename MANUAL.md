@@ -285,7 +285,11 @@ Supported properties:
 - `entity`: metadata entity name.
 - `projection`: projection expressions; use `|` to specify an output alias.
 - Legacy YAML and JSON definitions using `Fields` remain readable.
-- Saved-query projections on `QueryRequestDto` are stored as a flat list.
+- Saved queries use `QueryDto`: `MainQuery` stores the root query and
+  `Contexts` stores each distinct context once. `MainQuery.JoinedContexts`
+  references context IDs rather than embedding query copies. Saved-query
+  files are named with `MainQuery.Id`.
+- Saved-query projections on `QueryContextDto` are stored as a flat list.
   The reserved alias `NEW_LINE` marks query-designer row boundaries; those
   markers are retained in saved-query files and ignored when creating a
   `QueryDefinition`, so they do not affect query execution.

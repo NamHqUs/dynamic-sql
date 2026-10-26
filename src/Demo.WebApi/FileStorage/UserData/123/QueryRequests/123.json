@@ -1,0 +1,298 @@
+{
+  "MainQuery": {
+    "Id": "123",
+    "Name": "Category and channel profitability",
+    "Projection": [
+      {
+        "fields": [
+          {
+            "kind": "field",
+            "field": "Category"
+          }
+        ],
+        "alias": null
+      },
+      {
+        "fields": [
+          {
+            "kind": "field",
+            "field": "Channel"
+          }
+        ],
+        "alias": null
+      },
+      {
+        "fields": [
+          {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "OrderId"
+              }
+            ]
+          }
+        ],
+        "alias": "OrdersContainingCategory"
+      },
+      {
+        "fields": [
+          {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "UnitsSold"
+              }
+            ]
+          }
+        ],
+        "alias": "UnitsSold"
+      },
+      {
+        "fields": [
+          {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "NetRevenue"
+              }
+            ]
+          }
+        ],
+        "alias": "NetRevenue"
+      },
+      {
+        "fields": [
+          {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Discounts"
+              }
+            ]
+          }
+        ],
+        "alias": "Discounts"
+      },
+      {
+        "fields": [
+          {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "GrossProfit"
+              }
+            ]
+          }
+        ],
+        "alias": "GrossProfit"
+      },
+      {
+        "fields": [
+          {
+            "kind": "function",
+            "function": "AVG",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "NetRevenue"
+              }
+            ]
+          }
+        ],
+        "alias": "AverageCategoryRevenuePerOrder"
+      }
+    ],
+    "Filters": null,
+    "Sorts": [
+      [
+        {
+          "field": {
+            "kind": "field",
+            "field": "GrossProfit"
+          },
+          "direction": "Descending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Entity": "OrderCategory",
+    "JoinedContexts": [
+      {
+        "RefContextId": "legacy-OrderCategory",
+        "Alias": "OrderCategory",
+        "Condition": null,
+        "JoinType": "Left"
+      }
+    ]
+  },
+  "Contexts": [
+    {
+      "Entity": "OrderItems",
+      "Projection": [
+        {
+          "fields": [
+            {
+              "kind": "field",
+              "field": "OrderId"
+            }
+          ],
+          "alias": "OrderId"
+        },
+        {
+          "fields": [
+            {
+              "kind": "field",
+              "field": "Product.Category"
+            }
+          ],
+          "alias": "Category"
+        },
+        {
+          "fields": [
+            {
+              "kind": "field",
+              "field": "Order.Channel"
+            }
+          ],
+          "alias": "Channel"
+        },
+        {
+          "fields": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Quantity"
+                }
+              ]
+            }
+          ],
+          "alias": "UnitsSold"
+        },
+        {
+          "fields": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "Quantity"
+                    },
+                    {
+                      "oper": "*",
+                      "kind": "field",
+                      "field": "UnitPrice"
+                    },
+                    {
+                      "oper": "-",
+                      "kind": "field",
+                      "field": "DiscountAmount"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "alias": "NetRevenue"
+        },
+        {
+          "fields": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "DiscountAmount"
+                }
+              ]
+            }
+          ],
+          "alias": "Discounts"
+        },
+        {
+          "fields": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "Quantity"
+                    },
+                    {
+                      "oper": "*",
+                      "kind": "group",
+                      "fields": [
+                        {
+                          "kind": "field",
+                          "field": "UnitPrice"
+                        },
+                        {
+                          "oper": "-",
+                          "kind": "field",
+                          "field": "Product.CostPrice"
+                        }
+                      ]
+                    },
+                    {
+                      "oper": "-",
+                      "kind": "field",
+                      "field": "DiscountAmount"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "alias": "GrossProfit"
+        }
+      ],
+      "Sorts": [],
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-OrderCategory",
+      "Name": "OrderCategory",
+      "Filters": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": null,
+            "left": {
+              "kind": "field",
+              "field": "Order.Status"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "value",
+              "value": "Completed"
+            },
+            "parameterized": false
+          }
+        ]
+      },
+      "JoinedContexts": null
+    }
+  ],
+  "IsBuiltin": false
+}

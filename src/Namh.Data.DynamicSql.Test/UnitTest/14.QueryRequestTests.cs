@@ -227,7 +227,7 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
-    public void PlanTextRangeFilterAcceptsCommaSeparatedValues()
+    public void RangeFilterAcceptsCommaSeparatedValues()
     {
         var definition = QueryDefinitionParser.ParseFilter("Id between <100,200>");
 
