@@ -242,6 +242,27 @@ export function createApiQuery(definition: QueryDefinition) {
   };
 }
 
+export function fromApiQueryDefinition(query: ApiQueryDefinition): QueryDefinition {
+  const filter = query.filter
+    ? "filters" in query.filter
+      ? query.filter
+      : { logicalOperation: 0, filters: [query.filter] }
+    : null;
+
+  return fromApiQuery({
+    entity: query.entity,
+    projection: query.projection ?? [],
+    filter,
+    sorts: (query.sorts ?? []).map((sort) => ({
+      ...sort,
+      direction: sort.direction === 1 || sort.direction === "desc" ? 1 : 0,
+    })),
+    page: query.page ?? null,
+    pageSize: query.pageSize ?? null,
+    contexts: query.contexts,
+  });
+}
+
 function normalizeMatchOperation(value: unknown): MatchOperation | undefined {
   const operations: Record<string, MatchOperation> = {
     add: "+",

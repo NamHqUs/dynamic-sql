@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
 import PanelSplitter from "../panel-splitter/panel-splitter";
-import { createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, getQueryRequestString, getSqlStatement, IFieldDefinition, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
+import { createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, fromApiQueryDefinition, getQueryRequestString, getSqlStatement, IFieldDefinition, MetadataEntity, MetadataField, parseQueryRequestString, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import SavedQueryList from "./saved-query-list/saved-query-list";
@@ -41,6 +41,31 @@ function createDefinition(entity: string, fields: MetadataField[] = []): QueryDe
     page: 1,
     pageSize: 50,
   };
+}
+
+function createContextEntity(
+  contexts: QueryDefinition["contexts"],
+  entityName: string,
+  fallbackColumns: QueryDefinition["columns"],
+): MetadataEntity | undefined {
+  const context = contexts?.find((item) => item.name === entityName);
+  if (!context) return undefined;
+
+  const projectedFields = context.query.projection?.flatMap((projection) => {
+    const field = "fields" in projection
+      ? projection.fields.length === 1 && projection.fields[0].kind === "field"
+        ? projection.fields[0].field
+        : undefined
+      : projection.field.kind === "field"
+        ? projection.field.field
+        : undefined;
+    const name = projection.alias?.trim() || field?.split(".").pop();
+    return name ? [name] : [];
+  }) ?? [];
+  const fields = [...new Set([...projectedFields, ...fallbackColumns.map((column) => column.field)])]
+    .map((name) => ({ name, dataType: "" }));
+
+  return { name: context.name, fields };
 }
 
 function countFilters(group: QueryFilterGroup): number {
@@ -81,6 +106,7 @@ function normalizeQueryDefinition(value: unknown): QueryDefinition | null {
   return {
     entity: definition.entity,
     columns: definition.columns,
+    contexts: definition.contexts,
     projectionRows: definition.projectionRows,
     filterPlanText: definition.filterPlanText,
     filters: definition.filters,
@@ -111,7 +137,14 @@ function isQueryDefinition(value: unknown): value is QueryDefinition {
     && (definition.pageSize === null || typeof definition.pageSize === "number")
     && (definition.filterPlanText === undefined
       || definition.filterPlanText === null
-      || typeof definition.filterPlanText === "string");
+      || typeof definition.filterPlanText === "string")
+    && (definition.contexts === undefined
+      || definition.contexts === null
+      || Array.isArray(definition.contexts)
+        && definition.contexts.every((context) => isRecord(context)
+          && typeof context.name === "string"
+          && isRecord(context.query)
+          && typeof context.query.entity === "string"));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -223,6 +256,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const savedQueriesPanel = useResizablePanel("query-builder-saved-queries");
   const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, functionNames, filterOperators, filterOperatorsStatus, filterOperatorsError, queryRequests, queryRequestsStatus, queryRequestsError, debugUiEnabled } = useSelector((state: RootState) => state.queryBuilder);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
+  const [selectedContextIndex, setSelectedContextIndex] = useState<number | null>(null);
   const [requestName, setRequestName] = useState("");
   const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
   const [selectedRequestIsBuiltin, setSelectedRequestIsBuiltin] = useState(false);
@@ -234,12 +268,39 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     planTextCommitRef.current = commit ?? (async (currentDefinition) => currentDefinition);
   }, []);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
+  const selectedContext = selectedContextIndex === null ? undefined : definition.contexts?.[selectedContextIndex];
+  const activeContextIndex = selectedContext ? selectedContextIndex : null;
+  const activeDefinition = useMemo(
+    () => selectedContext ? fromApiQueryDefinition(selectedContext.query) : definition,
+    [definition, selectedContext],
+  );
+  const activeEntity = useMemo(
+    () => metadata.find((item) => item.name === activeDefinition.entity)
+      ?? createContextEntity(activeDefinition.contexts ?? definition.contexts, activeDefinition.entity, activeDefinition.columns),
+    [metadata, activeDefinition, definition.contexts],
+  );
   const updateDefinition = (nextDefinition: QueryDefinition) => {
     setQueryBuilderDefinition(nextDefinition);
     setDefinition(nextDefinition);
   };
+  const updateContextDefinition = (contextIndex: number, contextDefinition: QueryDefinition) => {
+    const context = definition.contexts?.[contextIndex];
+    if (!context || !definition.contexts) return definition;
+    const query = createApiQuery({
+      ...contextDefinition,
+      contexts: context.query.contexts ?? undefined,
+    });
+    const contexts = definition.contexts.map((item, index) =>
+      index === contextIndex ? { ...item, query } : item,
+    );
+    return { ...definition, contexts };
+  };
   const updateDefinitionFromDesign = (nextDefinition: QueryDefinition) => {
-    updateDefinition(nextDefinition);
+    if (activeContextIndex === null) {
+      updateDefinition(nextDefinition);
+      return;
+    }
+    updateDefinition(updateContextDefinition(activeContextIndex, nextDefinition));
   };
   const updateRequestName = (name: string) => {
     setRequestName(name);
@@ -280,12 +341,18 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   }, [metadata, definition.entity]);
 
   const runQuery = async () => {
-    const queryDefinition = await planTextCommitRef.current(definition);
-    if (queryDefinition?.entity && queryDefinition.columns.length) {
-      dispatch(executeQuery({
-        ...queryDefinition,
-        filters: queryDefinition.filters,
-      }));
+    const queryDefinition = await planTextCommitRef.current(activeDefinition);
+    if (queryDefinition) {
+      const requestDefinition = activeContextIndex === null
+        ? queryDefinition
+        : updateContextDefinition(activeContextIndex, queryDefinition);
+      if (requestDefinition.entity && requestDefinition.columns.length) {
+        if (activeContextIndex !== null) updateDefinition(requestDefinition);
+        dispatch(executeQuery({
+          ...requestDefinition,
+          filters: requestDefinition.filters,
+        }));
+      }
     }
   };
 
@@ -306,7 +373,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
 
   const loadPlanText = async () => {
-    const resultAction = await dispatch(getQueryRequestString({ definition }));
+    const resultAction = await dispatch(getQueryRequestString({ definition: activeDefinition }));
     if (getQueryRequestString.fulfilled.match(resultAction)) return resultAction.payload;
     throw new Error(String(resultAction.payload || "Unable to format query request."));
   };
@@ -342,6 +409,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const startNewRequest = () => {
     updateRequestRoute(null);
     setSelectedRequestName(null);
+    setSelectedContextIndex(null);
     setSelectedRequestIsBuiltin(false);
     setRequestName("");
     setQueryRequestNotice("");
@@ -355,6 +423,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   ) => {
     if (debugUiEnabled) console.log("Saved Query Request:", savedRequest);
     if (updateRoute) updateRequestRoute(savedRequest.name);
+    setSelectedContextIndex(null);
     updateDefinition({
       ...fromApiQuery(savedRequest.query, savedRequest.projectionRows),
       filterPlanText: savedRequest.filterPlanText ?? null,
@@ -408,6 +477,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     if (deleteQueryRequest.fulfilled.match(resultAction)) {
       updateRequestRoute(null);
       setSelectedRequestName(null);
+      setSelectedContextIndex(null);
       setSelectedRequestIsBuiltin(false);
       setRequestName("");
       setQueryRequestNotice("Query deleted. The current design remains available as a draft.");
@@ -424,10 +494,10 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
             <h2>Explore your data</h2>
             <p>Shape a query visually, then inspect its SQL and live results.</p>
             <div className="query-heading-summary" aria-label="Current query summary">
-              <span className="query-heading-source"><Icon name="database" size={13} />{entity?.name || definition.entity || "Choose a data source"}</span>
-              <span><strong>{definition.columns.length}</strong> fields</span>
-              <span><strong>{countFilters(definition.filters)}</strong> filters</span>
-              <span><strong>{definition.sorts.length}</strong> sorts</span>
+              <span className="query-heading-source"><Icon name="database" size={13} />{activeEntity?.name || activeDefinition.entity || "Choose a data source"}</span>
+              <span><strong>{activeDefinition.columns.length}</strong> fields</span>
+              <span><strong>{countFilters(activeDefinition.filters)}</strong> filters</span>
+              <span><strong>{activeDefinition.sorts.length}</strong> sorts</span>
             </div>
           </div>
         </div>
@@ -465,6 +535,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
           <PanelSplitter panel={savedQueriesPanel} label="saved queries panel" />
           <div className="query-design-area">
             <QueryDesign
+              key={`${selectedRequestName ?? "draft"}-${activeContextIndex ?? "request"}`}
               metadata={metadata}
               metadataStatus={metadataStatus}
               metadataError={metadataError}
@@ -475,8 +546,11 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               filterOperators={filterOperators}
               filterOperatorsStatus={filterOperatorsStatus}
               filterOperatorsError={filterOperatorsError}
-              definition={definition}
-              entity={entity}
+              definition={activeDefinition}
+              entity={activeEntity}
+              contextDefinitions={definition.contexts ?? []}
+              selectedContextIndex={activeContextIndex}
+              onSelectContext={setSelectedContextIndex}
               requestName={requestName}
               isResolvingPlanChanges={isApplyingPlanText}
               onRequestNameChange={updateRequestName}

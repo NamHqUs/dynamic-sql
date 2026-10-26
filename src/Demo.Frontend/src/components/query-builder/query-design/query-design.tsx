@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { FilterOperatorDefinition, MetadataEntity, QueryDefinition } from "./query-builder-slice";
+import { ApiQueryContextDefinition, FilterOperatorDefinition, MetadataEntity, QueryDefinition } from "./query-builder-slice";
 import { FunctionDefinition } from "../../metadata-builder/function-definition/types";
+import Icon from "../../icon/icon";
 import ProjectionBuilder from "./projection-builder/projection-builder";
 import SortBuilder from "./sort-builder/sort-builder";
 import FilterBuilder from "./filter-builder/filter-builder";
@@ -20,6 +21,9 @@ type QueryDesignProps = {
   filterOperatorsStatus: string;
   filterOperatorsError: string;
   definition: QueryDefinition;
+  contextDefinitions: ApiQueryContextDefinition[];
+  selectedContextIndex: number | null;
+  onSelectContext: (index: number | null) => void;
   entity?: MetadataEntity;
   requestName: string;
   isResolvingPlanChanges: boolean;
@@ -42,6 +46,9 @@ export default function QueryDesign({
   filterOperatorsStatus,
   filterOperatorsError,
   definition,
+  contextDefinitions,
+  selectedContextIndex,
+  onSelectContext,
   entity,
   requestName,
   isResolvingPlanChanges,
@@ -103,11 +110,12 @@ export default function QueryDesign({
       </div>
       <div className="query-builder-toolbar">
         <label><span className="section-kicker">ENTITY</span>
-          <select value={definition.entity} onChange={(event) => {
+          <select className="entity-select" value={definition.entity} onChange={(event) => {
             const selectedEntity = metadata.find((item) => item.name === event.target.value);
             onDefinitionChange({
               entity: event.target.value,
               columns: selectedEntity?.fields.map((field) => ({ field: field.name, alias: null })) ?? [],
+              contexts: definition.contexts,
               filters: { logicalOperation: 0, filters: [] },
               sorts: [],
               page: 1,
@@ -117,22 +125,28 @@ export default function QueryDesign({
             {!metadata.length && <option value="">Select an entity</option>}
             {definition.contexts?.some((context) => context.name === definition.entity)
               && !metadata.some((item) => item.name === definition.entity)
-              && <option value={definition.entity}>{definition.entity} (CTE)</option>}
+              && <option value={definition.entity}>{definition.entity}</option>}
             {metadata.map((item) => <option value={item.name} key={item.name}>{item.name}</option>)}
           </select>
         </label>
-        <label>Page number <input className="small-input" type="number" min="1" step="1" value={definition.page ?? 1} disabled={(definition.page === null && definition.pageSize === null) || (definition.pageSize !== null && definition.pageSize < 1)} onChange={(event) => {
-          const value = event.target.value;
-          const page = value ? Number.parseInt(value, 10) : null;
-          onDefinitionChange({ ...definition, page: page === null ? null : Math.max(1, page) });
-        }} /></label>
-        <label>Page size <input className="small-input" type="number" step="1" max="1000" value={definition.pageSize ?? ""} onChange={(event) => onDefinitionChange({ ...definition, pageSize: event.target.value ? Number(event.target.value) : null })} /></label>
+        {contextDefinitions.length > 0 && <div className="query-context-picker" role="group" aria-label="Query context">
+          {contextDefinitions.map((context, index) => <button
+            type="button"
+            className={`query-context-button${selectedContextIndex === index ? " selected" : ""}`}
+            aria-label={`Show ${context.name} context`}
+            aria-pressed={selectedContextIndex === index}
+            title={`Show ${context.name} context`}
+            key={`${context.name}-${index}`}
+            onClick={() => onSelectContext(selectedContextIndex === index ? null : index)}
+          >
+            <Icon name="database" size={14} />
+            <span>{context.name}</span>
+          </button>)}
+        </div>}
       </div>
 
       {metadataStatus === "loading" && <p className="query-message">Loading metadata…</p>}
       {metadataStatus === "failed" && <p className="query-message error" role="alert">{metadataError}</p>}
-      {!entity && definition.contexts?.length
-        && <p className="query-message">This saved query uses CTE contexts. Context editing will be available later; run the saved query as-is.</p>}
       {entity && <div className="query-builder-body">
         <ProjectionBuilder
           metadata={metadata}
@@ -172,6 +186,24 @@ export default function QueryDesign({
           planTextControl={sortPlanText.control}
           planTextEditor={sortPlanText.editor}
         />
+        <div className="builder-section paging-section">
+          <div className="section-header">
+            <div className="section-heading">
+              <div className="projection-title-row">
+                <span className="section-kicker">PAGE</span>
+                <span className="section-kicker">PAGE SIZE</span>
+              </div>
+            </div>
+          </div>
+          <div className="query-builder-toolbar paging-controls">
+            <input className="small-input" type="number" min="1" step="1" value={definition.page ?? 1} disabled={(definition.page === null && definition.pageSize === null) || (definition.pageSize !== null && definition.pageSize < 1)} onChange={(event) => {
+              const value = event.target.value;
+              const page = value ? Number.parseInt(value, 10) : null;
+              onDefinitionChange({ ...definition, page: page === null ? null : Math.max(1, page) });
+            }} />
+            <input className="small-input" type="number" step="1" max="1000" value={definition.pageSize ?? ""} onChange={(event) => onDefinitionChange({ ...definition, pageSize: event.target.value ? Number(event.target.value) : null })} />
+          </div>
+        </div>
       </div>}
     </section>
   );
