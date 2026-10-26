@@ -56,10 +56,15 @@ function createContextEntity(
       : projection.field.kind === "field"
         ? projection.field.field
         : undefined;
-    const name = projection.alias?.trim() || field?.split(".").pop();
+    const name = field ? projection.alias?.trim() || field.split(".").pop() : undefined;
     return name ? [name] : [];
   }) ?? [];
-  const fields = [...new Set([...projectedFields, ...fallbackColumns.map((column) => column.field)])]
+  const fields = [...new Set([
+    ...projectedFields,
+    ...fallbackColumns
+      .filter((column) => !column.expression && !column.field.startsWith("__calculated__"))
+      .map((column) => column.field),
+  ])]
     .map((name) => ({ name, dataType: "" }));
 
   return { name: context.name, fields };
