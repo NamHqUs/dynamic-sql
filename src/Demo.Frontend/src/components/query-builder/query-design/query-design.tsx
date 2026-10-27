@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
-import { ApiQueryContextDefinition, FilterOperatorDefinition, MetadataEntity, QueryDefinition } from "./query-builder-slice";
+import { ApiQueryContextDefinition, FilterOperatorDefinition, hasApiQueryCondition, MetadataEntity, QueryDefinition } from "./query-builder-slice";
 import { FunctionDefinition } from "../../metadata-builder/function-definition/types";
 import Icon from "../../icon/icon";
 import ProjectionBuilder from "./projection-builder/projection-builder";
@@ -200,6 +200,47 @@ export default function QueryDesign({
   const [contextDialogOpen, setContextDialogOpen] = useState(false);
   const [newContextName, setNewContextName] = useState("");
   const [contextNameError, setContextNameError] = useState("");
+  const contextEntities = contextDefinitions.map((context) => {
+    const fields = context.query.projection?.flatMap((projection) => {
+      const alias = projection.alias?.trim();
+      if (alias) return [alias];
+
+      const projectionFields = "fields" in projection
+        ? projection.fields
+        : [projection.field];
+      return projectionFields.length === 1 && projectionFields[0].kind === "field"
+        ? [projectionFields[0].field.split(".").pop() ?? projectionFields[0].field]
+        : [];
+    }) ?? [];
+    return {
+      name: context.name,
+      fields: [...new Set(fields)].map((name) => ({ name, dataType: "" })),
+    };
+  });
+  const metadataWithContexts = [
+    ...metadata,
+    ...contextEntities.filter((context) => !metadata.some((item) => item.name === context.name)),
+  ];
+  const entityOptions = [
+    ...metadata,
+    ...(selectedContextIndex === null
+      ? contextEntities.filter((context) => !metadata.some((item) => item.name === context.name))
+      : []),
+  ];
+  if (entity && !entityOptions.some((item) => item.name === entity.name)) entityOptions.push(entity);
+  const sourceContext = definition.contexts?.find((context) =>
+    context.name === definition.entity && !context.alias?.trim() && !hasApiQueryCondition(context.condition));
+  const relationDefinition = sourceContext
+    ? { ...definition, contexts: definition.contexts?.filter((context) => context !== sourceContext) }
+    : definition;
+  const relationContexts = sourceContext
+    ? contextDefinitions.filter((context) => context.id !== sourceContext.id)
+    : contextDefinitions;
+  const onRelationDefinitionChange = (nextDefinition: QueryDefinition) => {
+    onDefinitionChange(sourceContext
+      ? { ...nextDefinition, contexts: [...(nextDefinition.contexts ?? []), sourceContext] }
+      : nextDefinition);
+  };
   const submitContext = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const name = newContextName.trim();
@@ -225,7 +266,7 @@ export default function QueryDesign({
           aria-pressed={selectedContextIndex === null}
           onClick={() => onSelectContext(null)}
         >
-          <Icon name="database" size={14} /> MainQuery
+          <Icon name="database" size={14} /> Main Query
         </button>
         {contextDefinitions.map((context, index) => <div className="query-context-tab-wrap" key={`${context.id ?? context.name}-${index}`}>
           <button
@@ -268,11 +309,23 @@ export default function QueryDesign({
       </div>
       <div className="query-builder-toolbar">
         <label><span className="section-kicker">ENTITY</span>
-          <EntityMenu entities={metadata} value={definition.entity} disabled={!metadata.length} onChange={(selectedEntity) => {
+          <EntityMenu entities={entityOptions} value={definition.entity} disabled={!entityOptions.length} onChange={(selectedEntity) => {
+            const contexts = (definition.contexts ?? []).filter((context) =>
+              !(context.name === definition.entity && !context.alias?.trim() && !hasApiQueryCondition(context.condition))
+              && !(context.name === selectedEntity.name
+                && !context.alias?.trim()
+                && !hasApiQueryCondition(context.condition)));
+            const selectedContext = contextDefinitions.find((context) => context.name === selectedEntity.name);
+            if (selectedContext && !contexts.some((context) =>
+              selectedContext.id
+                ? context.id === selectedContext.id
+                : context.name === selectedContext.name)) {
+              contexts.push({ ...selectedContext, alias: undefined, condition: null });
+            }
             onDefinitionChange({
               entity: selectedEntity.name,
               columns: selectedEntity.fields.map((field) => ({ field: field.name, alias: null })),
-              contexts: definition.contexts,
+              contexts: contexts.length ? contexts : undefined,
               contextCatalog: definition.contextCatalog,
               filters: { logicalOperation: 0, filters: [] },
               sorts: [],
@@ -329,21 +382,21 @@ export default function QueryDesign({
       {(selectedContextIndex === null && contextDefinitions.length > 0)
         || (selectedContextIndex !== null && contextDefinitions.length > 1)
         ? <JoinsBuilder
-          definition={definition}
-          contexts={contextDefinitions}
-          metadata={metadata}
+          definition={relationDefinition}
+          contexts={relationContexts}
+          metadata={metadataWithContexts}
           operators={filterOperators}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
-          canAddJoin={contextDefinitions.length > 0}
+          canAddJoin={relationContexts.length > 0}
           excludeContextId={selectedContextIndex === null ? undefined : contextDefinitions[selectedContextIndex]?.id}
-          onDefinitionChange={onDefinitionChange}
+          onDefinitionChange={onRelationDefinitionChange}
         />
         : null}
       {entity && <div className="query-builder-body">
         <ProjectionBuilder
-          metadata={metadata}
+          metadata={metadataWithContexts}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
@@ -354,7 +407,7 @@ export default function QueryDesign({
           onFieldDragStart={setDraggedProjectionField}
         />
         <FilterBuilder
-          metadata={metadata}
+          metadata={metadataWithContexts}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
@@ -367,7 +420,7 @@ export default function QueryDesign({
           onDefinitionChange={onDefinitionChange}
         />
         <SortBuilder
-          metadata={metadata}
+          metadata={metadataWithContexts}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}

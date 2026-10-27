@@ -1,174 +1,132 @@
 {
   "MainQuery": {
-    "Id": "123",
     "Name": "Category and channel profitability",
+    "Entity": "OrderCategory",
     "Projection": [
       {
-        "fields": [
+        "Fields": [
           {
             "kind": "field",
             "field": "Category"
           }
         ],
-        "alias": null
+        "Alias": null
       },
       {
-        "fields": [
+        "Fields": [
           {
             "kind": "field",
             "field": "Channel"
           }
         ],
-        "alias": null
+        "Alias": null
       },
       {
-        "fields": [
+        "Fields": [
           {
-            "kind": "function",
-            "function": "COUNT",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "OrderId"
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__OrdersContainingCategory"
           }
         ],
-        "alias": "OrdersContainingCategory"
+        "Alias": null
       },
       {
-        "fields": [
+        "Fields": [
           {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "UnitsSold"
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__UnitsSold"
           }
         ],
-        "alias": "UnitsSold"
+        "Alias": null
       },
       {
-        "fields": [
+        "Fields": [
           {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "NetRevenue"
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__NetRevenue"
           }
         ],
-        "alias": "NetRevenue"
+        "Alias": null
       },
       {
-        "fields": [
+        "Fields": [
           {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Discounts"
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__Discounts"
           }
         ],
-        "alias": "Discounts"
+        "Alias": null
       },
       {
-        "fields": [
+        "Fields": [
           {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "GrossProfit"
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__GrossProfit"
           }
         ],
-        "alias": "GrossProfit"
+        "Alias": null
       },
       {
-        "fields": [
+        "Fields": [
           {
-            "kind": "function",
-            "function": "AVG",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "NetRevenue"
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__AverageCategoryRevenuePerOrder"
           }
         ],
-        "alias": "AverageCategoryRevenuePerOrder"
+        "Alias": null
       }
     ],
     "Filters": null,
     "Sorts": [
       [
         {
-          "field": {
+          "Field": {
             "kind": "field",
             "field": "GrossProfit"
           },
-          "direction": "Descending"
+          "Direction": "Descending"
         }
       ]
     ],
     "Page": 1,
     "PageSize": 10,
-    "Entity": "OrderCategory",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-OrderCategory",
-        "Alias": "OrderCategory",
-        "Condition": null,
-        "JoinType": "Left"
-      }
-    ]
+    "Id": "Category and channel profitability",
+    "ExtraRelations": []
   },
   "Contexts": [
     {
+      "Name": "OrderCategory",
       "Entity": "OrderItems",
       "Projection": [
         {
-          "fields": [
+          "Fields": [
             {
               "kind": "field",
               "field": "OrderId"
             }
           ],
-          "alias": "OrderId"
+          "Alias": "OrderId"
         },
         {
-          "fields": [
+          "Fields": [
             {
               "kind": "field",
               "field": "Product.Category"
             }
           ],
-          "alias": "Category"
+          "Alias": "Category"
         },
         {
-          "fields": [
+          "Fields": [
             {
               "kind": "field",
               "field": "Order.Channel"
             }
           ],
-          "alias": "Channel"
+          "Alias": "Channel"
         },
         {
-          "fields": [
+          "Fields": [
             {
               "kind": "function",
               "function": "SUM",
@@ -180,10 +138,10 @@
               ]
             }
           ],
-          "alias": "UnitsSold"
+          "Alias": "UnitsSold"
         },
         {
-          "fields": [
+          "Fields": [
             {
               "kind": "function",
               "function": "SUM",
@@ -210,10 +168,10 @@
               ]
             }
           ],
-          "alias": "NetRevenue"
+          "Alias": "NetRevenue"
         },
         {
-          "fields": [
+          "Fields": [
             {
               "kind": "function",
               "function": "SUM",
@@ -225,10 +183,10 @@
               ]
             }
           ],
-          "alias": "Discounts"
+          "Alias": "Discounts"
         },
         {
-          "fields": [
+          "Fields": [
             {
               "kind": "function",
               "function": "SUM",
@@ -265,19 +223,14 @@
               ]
             }
           ],
-          "alias": "GrossProfit"
+          "Alias": "GrossProfit"
         }
       ],
-      "Sorts": [],
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-OrderCategory",
-      "Name": "OrderCategory",
       "Filters": {
         "logicalOperation": 0,
         "filters": [
           {
-            "logicalOperator": null,
+            "logicalOperator": 0,
             "left": {
               "kind": "field",
               "field": "Order.Status"
@@ -291,6 +244,10 @@
           }
         ]
       },
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-OrderCategory",
       "ExtraRelations": null
     }
   ],

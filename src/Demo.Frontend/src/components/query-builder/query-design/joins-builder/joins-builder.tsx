@@ -296,7 +296,9 @@ export default function JoinsBuilder({
         const leftText = expressionText(left ?? (typeof condition.left === "string" ? condition.left : undefined));
         const rightText = expressionText(right ?? (typeof condition.right === "string" ? condition.right : undefined));
         const operation = condition.operation ?? 0;
-        const entityFor = (context: ApiQueryContextDefinition) => metadata.find((item) => item.name === context.query.entity);
+        const entityFor = (context: ApiQueryContextDefinition) =>
+          metadata.find((item) => item.name === context.name)
+          ?? metadata.find((item) => item.name === context.query.entity);
         const leftEntity = metadata.find((item) => item.name === definition.entity)
           ?? { name: definition.entity || "MainQuery", fields: [] };
         const rightEntity = entityFor(join)

@@ -49,6 +49,9 @@ function createContextEntity(
   if (!context) return undefined;
 
   const projectedFields = context.query.projection?.flatMap((projection) => {
+    const alias = projection.alias?.trim();
+    if (alias) return [alias];
+
     const field = "fields" in projection
       ? projection.fields.length === 1 && projection.fields[0].kind === "field"
         ? projection.fields[0].field
@@ -56,8 +59,7 @@ function createContextEntity(
       : projection.field.kind === "field"
         ? projection.field.field
         : undefined;
-    const name = field ? projection.alias?.trim() || field.split(".").pop() : undefined;
-    return name ? [name] : [];
+    return field ? [field.split(".").pop() ?? field] : [];
   }) ?? [];
   const fields = [...new Set([
     ...projectedFields,
@@ -278,7 +280,11 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   );
   const activeEntity = useMemo(
     () => metadata.find((item) => item.name === activeDefinition.entity)
-      ?? createContextEntity(activeDefinition.contexts ?? definition.contextCatalog, activeDefinition.entity, activeDefinition.columns),
+      ?? createContextEntity(
+        [...(definition.contextCatalog ?? []), ...(activeDefinition.contexts ?? [])],
+        activeDefinition.entity,
+        activeDefinition.columns,
+      ),
     [metadata, activeDefinition, definition.contextCatalog],
   );
   const updateDefinition = (nextDefinition: QueryDefinition) => {
@@ -414,7 +420,9 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   }, [dispatch, queryRequestsStatus]);
 
   useEffect(() => {
+    const isContextEntity = definition.contextCatalog?.some((context) => context.name === definition.entity);
     if (!isNewBlankQuery && metadata.length && !metadata.some((item) => item.name === definition.entity)
+      && !isContextEntity
       && !definition.contexts?.length) {
       updateDefinition(createDefinition(metadata[0].name, metadata[0].fields));
       return;
@@ -430,33 +438,35 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     } else if (reconciled !== definition) {
       updateDefinition(reconciled);
     }
-  }, [metadata, definition.entity, isNewBlankQuery]);
+  }, [metadata, definition.entity, definition.contextCatalog, definition.contexts, isNewBlankQuery]);
 
   const runQuery = async () => {
-    const requestDefinition = activeContextIndex === null
-      ? activeDefinition
-      : updateContextDefinition(activeContextIndex, activeDefinition);
-    if (requestDefinition.entity && requestDefinition.columns.length) {
-      if (activeContextIndex !== null) updateDefinition(requestDefinition);
+    if (activeDefinition.entity && activeDefinition.columns.length) {
+      if (activeContextIndex !== null) {
+        updateDefinition(updateContextDefinition(activeContextIndex, activeDefinition));
+      }
       dispatch(executeQuery({
-        ...requestDefinition,
-        filters: requestDefinition.filters,
+        ...activeDefinition,
+        filters: activeDefinition.filters,
       }));
     }
   };
 
   const changePage = (page: number) => {
-    if (!definition.entity || !definition.columns.length) return;
-    const nextDefinition = { ...definition, page };
+    if (!activeDefinition.entity || !activeDefinition.columns.length) return;
+    const nextActiveDefinition = { ...activeDefinition, page };
+    const nextDefinition = activeContextIndex === null
+      ? nextActiveDefinition
+      : updateContextDefinition(activeContextIndex, nextActiveDefinition);
     updateDefinition(nextDefinition);
-    dispatch(executeQuery(nextDefinition));
+    dispatch(executeQuery(nextActiveDefinition));
   };
 
   const getSql = () => {
-    if (definition.entity && definition.columns.length) {
+    if (activeDefinition.entity && activeDefinition.columns.length) {
       dispatch(getSqlStatement({
-        ...definition,
-        filters: definition.filters,
+        ...activeDefinition,
+        filters: activeDefinition.filters,
       }));
     }
   };
@@ -635,12 +645,12 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
           resultView={resultView}
           onRunQuery={runQuery}
           onGetSql={getSql}
-          pageNumber={definition.page ?? 1}
-          pageSize={definition.pageSize}
+          pageNumber={activeDefinition.page ?? 1}
+          pageSize={activeDefinition.pageSize}
           onPageChange={changePage}
           pageNavigationEnabled
           queryLoading={queryStatus === "loading"}
-          queryDisabled={!definition.columns.length}
+          queryDisabled={!activeDefinition.entity || !activeDefinition.columns.length}
         />
       </section>
     </>

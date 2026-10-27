@@ -133,6 +133,13 @@ export type ApiQueryContextDefinition = {
   id?: string;
 };
 
+export function hasApiQueryCondition(condition: ApiQueryContextDefinition["condition"]): boolean {
+  if (condition == null) return false;
+  if (typeof condition === "string") return Boolean(condition.trim());
+  if ("filters" in condition) return condition.filters.some((filter) => hasApiQueryCondition(filter));
+  return true;
+}
+
 type ApiQueryContextDto = {
   id: string;
   name: string;
@@ -238,8 +245,15 @@ export function createApiQuery(definition: QueryDefinition) {
   const { filters, sorts, columns, contextCatalog: _contextCatalog, ...query } = definition;
   delete query.projectionRows;
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
+  const contexts = query.contexts?.map((context) =>
+    context.name === query.entity
+      && !context.alias?.trim()
+      && !hasApiQueryCondition(context.condition)
+      ? { ...context, condition: null }
+      : context);
   return {
     ...query,
+    contexts,
     projection: columns.map(({ field, alias, expression }) => ({
       fields: toApiProjectionFields(expression ?? { kind: "field", field }),
       alias,
@@ -503,7 +517,7 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
       return {
       field: expression.kind === "field"
         ? expression.field
-        : `__calculated__${projection.alias || index}`,
+        : `__calculated__${index}`,
       alias: projection.alias,
       ...(expression.kind === "field" ? {} : { expression }),
     };
@@ -516,7 +530,7 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
         if (!expression) throw new Error("Query API returned an unsupported projection expression.");
         return expression.kind === "field"
           ? expression.field
-          : `__calculated__${projection.alias || index}`;
+          : `__calculated__${index}`;
       })]
       : [[]],
     filters: query.filter ? restoreGroup(query.filter) : { logicalOperation: 0, filters: [] },
