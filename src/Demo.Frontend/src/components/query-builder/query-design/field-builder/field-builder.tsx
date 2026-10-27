@@ -29,6 +29,7 @@ type FieldBuilderProps = {
   showPath?: boolean;
   showDataType?: boolean;
   placeholder?: string;
+  dataTypeFilter?: string;
   placeholderIcon?: boolean;
   ariaLabel?: string;
   popupAnchor?: HTMLElement | null;
@@ -66,6 +67,7 @@ export default function FieldBuilder({
   showPath = false,
   showDataType = false,
   placeholder = "Select field…",
+  dataTypeFilter,
   placeholderIcon = false,
   ariaLabel = "Field",
   popupAnchor,
@@ -140,6 +142,7 @@ export default function FieldBuilder({
       autoFocus={autoFocus ?? (Boolean(value) || initialConstantValue !== undefined)}
       showPath={showPath}
       placeholder={initialConstantValue === undefined ? placeholder : String(initialConstantValue)}
+      dataTypeFilter={dataTypeFilter}
       placeholderIcon={placeholderIcon}
       ariaLabel={ariaLabel}
       popupAnchor={popupAnchor}

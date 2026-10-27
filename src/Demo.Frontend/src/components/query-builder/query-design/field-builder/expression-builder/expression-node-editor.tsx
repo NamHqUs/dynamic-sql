@@ -40,6 +40,8 @@ type NodeEditorProps = {
   functionDefinitions: FunctionDefinition[];
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
+  fieldPlaceholder?: string;
+  fieldDataType?: string;
   onChange: (expression: IFieldDefinition) => void;
   onCalculationSelect?: () => void;
   onRemove?: () => void;
@@ -143,6 +145,8 @@ function ExpressionMathElement({
   functionDefinitions,
   functionDefinitionsStatus,
   functionDefinitionsError,
+  fieldPlaceholder,
+  fieldDataType,
   onChange,
   onCalculationSelect,
   onRemove,
@@ -190,6 +194,8 @@ function ExpressionMathElement({
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
+          fieldPlaceholder={fieldPlaceholder}
+          fieldDataType={fieldDataType}
           onChange={updateOperand}
           onCalculationSelect={onCalculationSelect}
           onRemove={onRemove}
@@ -218,6 +224,8 @@ export default function NodeEditor({
   functionDefinitions,
   functionDefinitionsStatus,
   functionDefinitionsError,
+  fieldPlaceholder,
+  fieldDataType,
   onChange,
   onCalculationSelect,
   onRemove,
@@ -300,7 +308,8 @@ export default function NodeEditor({
               onChange={(field) => onChange({ kind: "field", field })}
               showPath
               ariaLabel="Expression field"
-              placeholder="Select field..."
+              placeholder={fieldPlaceholder ?? "Select field..."}
+              dataTypeFilter={fieldDataType}
               allowValueSelection
               allowFunctionSelection
               initialSection="fields"
@@ -398,6 +407,8 @@ export default function NodeEditor({
               functionDefinitions={functionDefinitions}
               functionDefinitionsStatus={functionDefinitionsStatus}
               functionDefinitionsError={functionDefinitionsError}
+              fieldPlaceholder={fieldPlaceholder}
+              fieldDataType={fieldDataType}
               path={argumentPath}
               onPointerDragStart={onPointerDragStart}
               dragPreview={dragPreview}
@@ -546,7 +557,7 @@ export default function NodeEditor({
       onSelect={onSelect}
       onPointerDragStart={onPointerDragStart}
       onAddNextItem={addNextItem}
-      renderArgument={(argument, index, onArgumentChange, onArgumentRemove) => {
+      renderArgument={(argument, index, onArgumentChange, onArgumentRemove, argumentDefinition) => {
         const appendMathToArgument = () => {
           const currentArgument = expression.arguments[index];
           if (!currentArgument) return;
@@ -588,6 +599,8 @@ export default function NodeEditor({
               functionDefinitions={functionDefinitions}
               functionDefinitionsStatus={functionDefinitionsStatus}
               functionDefinitionsError={functionDefinitionsError}
+              fieldPlaceholder={fieldPlaceholder}
+              fieldDataType={fieldDataType}
               onChange={onArgumentChange}
               onCalculationSelect={appendMathToArgument}
               onRemove={onArgumentRemove}
@@ -612,6 +625,8 @@ export default function NodeEditor({
             functionDefinitions={functionDefinitions}
             functionDefinitionsStatus={functionDefinitionsStatus}
             functionDefinitionsError={functionDefinitionsError}
+            fieldPlaceholder={argumentDefinition?.name}
+            fieldDataType={argumentDefinition?.dataType}
             onChange={onArgumentChange}
             onRemove={onArgumentRemove}
             onCalculationSelect={appendMathToArgument}

@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type { IFieldDefinition } from "../../query-builder-slice";
-import type { FunctionDefinition } from "../../../../metadata-builder/function-definition/types";
+import type {
+  FunctionArgumentDefinition,
+  FunctionDefinition,
+} from "../../../../metadata-builder/function-definition/types";
 import Icon from "../../../../icon/icon";
 import ExpressionAddNextItem from "../expression-builder/expression-add-next-item";
 import { updateFunction } from "../expression-builder/expression-model";
@@ -25,6 +28,7 @@ type FunctionBuilderProps = {
     index: number,
     onChange: (expression: IFieldDefinition) => void,
     onRemove: () => void,
+    argumentDefinition?: FunctionArgumentDefinition,
   ) => ReactNode;
 };
 
@@ -150,54 +154,78 @@ export function FunctionTemplateBuilder({
   functionDefinitionsError,
   onApply,
 }: FunctionTemplateBuilderProps) {
-  const [functionName, setFunctionName] = useState("");
-  const definition = functionDefinitions.find((item) => item.name === functionName);
-  const choices = functionDefinitions.map((item) => ({
-    name: item.name,
-    label: item.name,
-    syntax: `${item.name}(${item.arguments.map((argument) => argument.name).join(", ")})`,
-  }));
+  const [searchTerm, setSearchTerm] = useState("");
+  const filteredDefinitions = functionDefinitions.filter((definition) =>
+    definition.name.toLowerCase().includes(searchTerm.trim().toLowerCase()),
+  );
 
   return (
     <div className="expression-function-template">
-      <div className="expression-function-template-signature">
-        <FunctionSelect value={functionName} choices={choices} onChange={setFunctionName} />
-        {definition && (
-          <div className="expression-function-template-preview" role="group" aria-label="Function template">
-            <span aria-hidden="true">(</span>
-            {definition.arguments.map((argument, index) => (
-              <span className="expression-function-template-placeholder" key={`${definition.name}-${index}`}>
-                {index > 0 && <span aria-hidden="true">, </span>}
-                <span>{argument.name}</span>
-              </span>
-            ))}
-            <span aria-hidden="true">)</span>
-          </div>
-        )}
-      </div>
-      {choices.length === 0 && functionDefinitionsError && (
+      <input
+        type="search"
+        className="expression-function-template-search"
+        aria-label="Search functions"
+        placeholder="Search functions..."
+        value={searchTerm}
+        autoFocus
+        onChange={(event) => setSearchTerm(event.target.value)}
+      />
+      {functionDefinitions.length === 0 && functionDefinitionsError && (
         <span className="expression-function-template-status" role="alert">{functionDefinitionsError}</span>
       )}
-      {choices.length === 0 && !functionDefinitionsError && (
+      {functionDefinitions.length === 0 && !functionDefinitionsError && (
         <span className="expression-function-template-status" role="status">
           {functionDefinitionsStatus === "loading" || functionDefinitionsStatus === "pending"
             ? "Loading functions..."
             : "No functions available."}
         </span>
       )}
-      <button
-        type="button"
-        className="expression-apply-button"
-        disabled={!definition}
-        onClick={() => definition && onApply({
-          kind: "function",
-          function: definition.name,
-          arguments: definition.arguments.map(() => ({ kind: "field", field: "" })),
-        })}
-      >
-        <Icon name="check" size={14} />
-        Apply
-      </button>
+      {functionDefinitions.length > 0 && (
+        <div className="expression-function-template-table">
+          <table aria-label="Available functions">
+            <thead>
+              <tr>
+                <th scope="col">Function</th>
+                <th scope="col">Parameters</th>
+              </tr>
+            </thead>
+            <tbody>
+            {filteredDefinitions.length > 0 ? filteredDefinitions.map((definition) => (
+              <tr
+                key={definition.name}
+                aria-label={`${definition.name} (${definition.arguments.map((argument) => argument.name).join(", ")})`}
+                tabIndex={0}
+                onClick={() => onApply({
+                  kind: "function",
+                  function: definition.name,
+                  arguments: definition.arguments.map(() => ({ kind: "field", field: "" })),
+                })}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  onApply({
+                    kind: "function",
+                    function: definition.name,
+                    arguments: definition.arguments.map(() => ({ kind: "field", field: "" })),
+                  });
+                }}
+              >
+                <td>{definition.name}</td>
+                <td>
+                  {definition.arguments.length > 0
+                    ? definition.arguments.map((argument) => argument.name).join(", ")
+                    : "No parameters"}
+                </td>
+              </tr>
+            )) : (
+              <tr>
+                <td className="expression-function-template-status" role="status" colSpan={2}>No functions found.</td>
+              </tr>
+            )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -315,6 +343,7 @@ export default function FunctionBuilder({
                         itemIndex === index ? { kind: "field", field: "" } : item,
                       ),
                     }),
+                    argumentDefinition,
                   )}
                 </div>
               );

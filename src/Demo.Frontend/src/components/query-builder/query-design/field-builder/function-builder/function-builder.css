@@ -280,35 +280,21 @@
   font: 12px/1.5 "Manrope", sans-serif;
 }
 
-.expression-function-template-signature {
-  display: flex;
+.expression-function-template-search {
+  width: 100%;
   min-width: 0;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  border: 1px solid #4a4163;
+  border-radius: 6px;
+  outline: 0;
+  color: #dce1eb;
+  background: #191e28;
+  font: 13px "Manrope", sans-serif;
 }
 
-.expression-function-template-preview {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  color: #a5ebd2;
-  font: 12px/1.5 "Manrope", sans-serif;
-}
-
-.expression-function-template-placeholder {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.expression-function-template-placeholder > span:last-child {
-  padding: 3px 7px;
-  border: 1px solid #3d655b;
-  border-radius: 5px;
-  color: #c6f0dd;
-  background: linear-gradient(135deg, #1d3934, #1b2c30);
+.expression-function-template-search:focus {
+  border-color: #8069cb;
 }
 
 .expression-function-template-status {
@@ -316,6 +302,59 @@
   font: 11px "Manrope", sans-serif;
 }
 
-.expression-function-template > .expression-apply-button {
-  justify-self: end;
+.expression-function-template-table {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid #37384e;
+  border-radius: 6px;
+}
+
+.expression-function-template-table table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.expression-function-template-table th,
+.expression-function-template-table td {
+  padding: 8px 10px;
+}
+
+.expression-function-template-table th {
+  position: sticky;
+  top: 0;
+  color: #aeb8c8;
+  background: #202432;
+  font-weight: 600;
+  text-align: left;
+}
+
+.expression-function-template-table th:first-child,
+.expression-function-template-table td:first-child {
+  width: 34%;
+}
+
+.expression-function-template-table tbody tr {
+  border-top: 1px solid #303747;
+  color: #dce1eb;
+  cursor: pointer;
+  outline: 0;
+}
+
+.expression-function-template-table tbody tr:hover,
+.expression-function-template-table tbody tr:focus-visible {
+  background: #302841;
+}
+
+.expression-function-template-table tbody tr:focus-visible {
+  box-shadow: inset 0 0 0 1px #9078c9;
+}
+
+.expression-function-template-table tbody tr td:first-child {
+  color: #c4b5fd;
+  font-weight: 700;
+}
+
+.expression-function-template-table tbody tr td:last-child {
+  color: #a5ebd2;
 }

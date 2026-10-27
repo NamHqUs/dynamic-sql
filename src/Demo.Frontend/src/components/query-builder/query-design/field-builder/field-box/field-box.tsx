@@ -17,6 +17,7 @@ type FieldBoxProps = {
   showPath?: boolean;
   showDataType?: boolean;
   placeholder?: string;
+  dataTypeFilter?: string;
   placeholderIcon?: boolean;
   ariaLabel?: string;
   popupAnchor?: HTMLElement | null;
@@ -79,6 +80,7 @@ export default function FieldBox({
   showPath = false,
   showDataType = false,
   placeholder = "Select field…",
+  dataTypeFilter,
   placeholderIcon = false,
   ariaLabel = "Field",
   popupAnchor,
@@ -274,7 +276,9 @@ export default function FieldBox({
   const relations = (current.relations || []).filter((relation) => metadata.some((item) => item.name === relation.relatedEntity));
   const filteredJoinedContextFields = joinedContextFields.filter((field) =>
     field.toLowerCase().includes(fieldSearch.trim().toLowerCase()));
-  const fields = current.fields.filter((field) => !excludedPaths.includes([...path, field.name].join(".")));
+  const fields = current.fields.filter((field) =>
+    !excludedPaths.includes([...path, field.name].join("."))
+    && (!dataTypeFilter || field.dataType.toLowerCase() === dataTypeFilter.toLowerCase()));
   const filteredFields = fields.filter((field) => field.name.toLowerCase().includes(fieldSearch.trim().toLowerCase()));
   const fieldColumns = useMemo(() => {
     if (filteredFields.length === 0) return [];
