@@ -35,7 +35,7 @@ export default function DataSources() {
             <h2>Explore your database</h2>
             <p>Browse available tables, inspect their columns, and explore your records.</p>
             <div className="database-heading-summary" aria-label="Database summary">
-              <span className="database-heading-current"><Icon name="database" size={13} />{selectedTable || "No table selected"}</span>
+              <span className="database-heading-current"><Icon name="table" size={13} />{selectedTable || "No table selected"}</span>
               <span><strong>{tableStatus === "succeeded" ? tables.length : "—"}</strong> tables</span>
               <span><strong>{selectedStatus === "succeeded" && selectedData ? selectedData.columns.length : "—"}</strong> columns</span>
               <span><strong>{selectedStatus === "succeeded" && selectedData ? selectedData.rows.length : "—"}</strong> records</span>

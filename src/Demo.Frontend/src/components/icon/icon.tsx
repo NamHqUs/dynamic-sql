@@ -2,6 +2,15 @@ import "./icon.css";
 
 const paths = {
   grid: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
+  table: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18M9 10v10m6-10v10" /></>,
+  query: <><circle cx="12" cy="5" r="2" /><circle cx="6" cy="18" r="2" /><circle cx="18" cy="18" r="2" /><path d="M12 7v4m0 0-6 5m6-5 6 5" /></>,
+  schema: <><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 12 9 5 9-5M3 16l9 5 9-5" /></>,
+  "function": <><path d="M8 20 11 7a3 3 0 0 1 3-2h2M6 11h8m1-1 5 8m0-8-5 8" /></>,
+  operator: <><path d="M5 6h6m-3-3v6m5 1h6m-3 3v6m-11 0h6m3 0h6" /></>,
+  folder: <><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></>,
+  group: <><rect x="3" y="4" width="11" height="11" rx="2" /><rect x="10" y="9" width="11" height="11" rx="2" /></>,
+  "arrow-left": <><path d="m14 18-6-6 6-6M8 12h12" /></>,
+  remove: <><circle cx="12" cy="12" r="9" /><path d="M8 12h8" /></>,
   database: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5" /><path d="M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></>,
   sliders: <><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></>,
   play: <path d="m8 5 11 7-11 7V5Z" fill="currentColor" stroke="none" />,

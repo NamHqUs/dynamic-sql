@@ -266,7 +266,7 @@ export default function QueryDesign({
           aria-pressed={selectedContextIndex === null}
           onClick={() => onSelectContext(null)}
         >
-          <Icon name="database" size={14} /> Main Query
+          <Icon name="table" size={14} /> Main Query
         </button>
         {contextDefinitions.map((context, index) => <div className="query-context-tab-wrap" key={`${context.id ?? context.name}-${index}`}>
           <button
@@ -275,7 +275,7 @@ export default function QueryDesign({
             aria-pressed={selectedContextIndex === index}
             onClick={() => onSelectContext(index)}
           >
-            <Icon name="database" size={14} /> {context.name}
+            <Icon name="table" size={14} /> {context.name}
           </button>
           <button type="button" className="query-context-delete" aria-label={`Delete ${context.name} context`} title={`Delete ${context.name} context`} onClick={() => onDeleteContext(index)}>
             <Icon name="close" size={12} />

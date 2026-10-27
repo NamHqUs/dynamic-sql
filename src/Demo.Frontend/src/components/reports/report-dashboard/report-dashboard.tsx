@@ -157,12 +157,12 @@ export default function ReportDashboard({
           <li>Plan text</li>
         </ul>
         <div className="reports-hero-actions">
-          <button className="button primary" type="button" onClick={onCreateReport}><Icon name="code" size={15} /> Build a query</button>
+          <button className="button primary" type="button" onClick={onCreateReport}><Icon name="query" size={15} /> Build a query</button>
         </div>
       </div>
       <aside className="query-flow-card" aria-label="Query builder workflow">
         <div className="query-flow-heading">
-          <span className="query-flow-mark"><Icon name="code" size={16} /></span>
+          <span className="query-flow-mark"><Icon name="query" size={16} /></span>
           <div><strong>FROM SCHEMA TO ANSWERS</strong><small>A query, shaped around your data</small></div>
           <span className="query-flow-live"><i /> LIVE</span>
         </div>
@@ -173,12 +173,12 @@ export default function ReportDashboard({
           </button>
           <span className="query-flow-connector" aria-hidden="true" />
           <button className="query-flow-step" type="button" onClick={() => onNavigateToPage("metadata")}>
-            <span className="query-flow-icon"><Icon name="sliders" size={16} /></span>
+            <span className="query-flow-icon"><Icon name="schema" size={16} /></span>
             <span className="query-flow-copy"><strong>Describe your data</strong><small>Entities · fields · relationships</small></span>
           </button>
           <span className="query-flow-connector" aria-hidden="true" />
           <button className="query-flow-step" type="button" onClick={() => onNavigateToPage("builder")}>
-            <span className="query-flow-icon"><Icon name="grid" size={16} /></span>
+            <span className="query-flow-icon"><Icon name="chart-bar" size={16} /></span>
             <span className="query-flow-copy"><strong>Shape your query</strong><small>Projections · filters · sorting</small></span>
           </button>
           <span className="query-flow-connector" aria-hidden="true" />
@@ -203,7 +203,7 @@ export default function ReportDashboard({
           <span className="report-group-filter-count">{group.reports.length}</span>
         </button>)}
         <button className={`report-group-filter all${category === "All reports" ? " active" : ""}`} type="button" aria-pressed={category === "All reports"} onClick={() => onSelectCategory("All reports")}>
-          <span className="report-group-filter-mark"><Icon name="grid" size={13} /></span><strong>All reports</strong><span className="report-group-filter-count">{sortedReports.length}</span>
+          <span className="report-group-filter-mark"><Icon name="folder" size={13} /></span><strong>All reports</strong><span className="report-group-filter-count">{sortedReports.length}</span>
         </button>
       </div>
       <div className="report-group-dashboard" id="report-group-dashboard">

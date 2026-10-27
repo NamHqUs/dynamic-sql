@@ -327,7 +327,7 @@ export default function NodeEditor({
                   onRemove();
                 }}
               >
-                <Icon name="delete" size={13} />
+                <Icon name="remove" size={13} />
               </button>
             )}
             <ExpressionAddNextItem
@@ -441,7 +441,7 @@ export default function NodeEditor({
                   onRemove();
                 }}
               >
-                <Icon name="delete" size={13} />
+                <Icon name="remove" size={13} />
               </button>
             )}
             {!root && <ExpressionAddNextItem onAddNextItem={addNextItem} />}
@@ -506,7 +506,7 @@ export default function NodeEditor({
                   onRemove();
                 }}
               >
-                <Icon name="delete" size={13} />
+                <Icon name="remove" size={13} />
               </button>
             )}
             <ExpressionAddNextItem

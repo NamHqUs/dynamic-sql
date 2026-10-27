@@ -564,13 +564,13 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     <>
       <section className="page-heading query-page-heading">
         <div className="query-heading-main">
-          <span className="query-heading-mark"><Icon name="grid" size={21} /></span>
+          <span className="query-heading-mark"><Icon name="query" size={21} /></span>
           <div className="query-heading-copy">
             <span className="query-heading-eyebrow">QUERY WORKSPACE <i /> DESIGN · RUN · REFINE</span>
             <h2>Explore your data</h2>
             <p>Shape a query visually, then inspect its SQL and live results.</p>
             <div className="query-heading-summary" aria-label="Current query summary">
-              <span className="query-heading-source"><Icon name="database" size={13} />{activeEntity?.name || activeDefinition.entity || "Choose a data source"}</span>
+              <span className="query-heading-source"><Icon name="table" size={13} />{activeEntity?.name || activeDefinition.entity || "Choose a data source"}</span>
               <span><strong>{activeDefinition.columns.length}</strong> fields</span>
               <span><strong>{countFilters(activeDefinition.filters)}</strong> filters</span>
               <span><strong>{activeDefinition.sorts.length}</strong> sorts</span>
@@ -578,7 +578,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
           </div>
         </div>
         <div className="heading-actions">
-          {onBackToReports && <button className="button secondary" onClick={onBackToReports}><Icon name="chart" size={14} /> Back to reports</button>}
+          {onBackToReports && <button className="button secondary" onClick={onBackToReports}><Icon name="arrow-left" size={14} /> Back to reports</button>}
           <button className="button secondary" onClick={startNewRequest}>
             <Icon name="plus" size={14} /> New Query
           </button>

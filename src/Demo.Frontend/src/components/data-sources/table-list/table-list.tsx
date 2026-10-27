@@ -22,7 +22,7 @@ export default function TableList() {
           onClick={() => dispatch(selectDbTable(table))}
           aria-current={table === selectedTable ? "page" : undefined}
         >
-          <Icon name="database" size={15} />
+          <Icon name="table" size={15} />
           <span>{table}</span>
           <Icon name="chevron" size={14} />
         </button>

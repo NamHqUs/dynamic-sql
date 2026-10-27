@@ -268,7 +268,7 @@ export default function OperatorDefinition({ onNavigationGuardChange }: Operator
       type="button"
       onClick={() => void selectOperator(definition)}
     >
-      <span className="entity-icon"><Icon name="code" size={14} /></span>
+      <span className="entity-icon"><Icon name="operator" size={14} /></span>
       <span>
         <b>{definition.name}</b>
         <small>{definition.symbol} · {definition.supportedDataTypes.join(", ")}</small>
@@ -322,7 +322,7 @@ export default function OperatorDefinition({ onNavigationGuardChange }: Operator
         <p className="operator-notice">Use {"{left}"} for the selected field and {"{value}"} for the single filter value. Values are passed as query parameters.</p>
         {!draft
           ? <div className="metadata-empty">
-              <Icon name="code" size={32} />
+              <Icon name="operator" size={32} />
               <p>{message || "Select an operator or create a new custom definition."}</p>
             </div>
           : <>

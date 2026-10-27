@@ -31,7 +31,7 @@ export default function EntityList({
       key={entity.name}
       onClick={() => onSelectEntity(entity)}
     >
-      <span className="entity-icon"><Icon name="grid" size={14} /></span>
+      <span className="entity-icon"><Icon name="table" size={14} /></span>
       <span>
         <b>{entity.name}</b>
         <small>{entity.fields.length} fields · {(entity.relations || []).length} relations</small>

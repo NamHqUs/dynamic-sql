@@ -34,7 +34,7 @@ export default function FunctionList({
       type="button"
       onClick={() => onSelect(definition)}
     >
-      <span className="entity-icon"><Icon name="code" size={14} /></span>
+      <span className="entity-icon"><Icon name="function" size={14} /></span>
       <span>
         <b>{definition.name}</b>
         <small>

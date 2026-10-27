@@ -230,13 +230,13 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
     <>
       <section className="page-heading metadata-page-heading">
         <div className="metadata-heading-main">
-          <span className="metadata-heading-mark" aria-hidden="true"><Icon name="sliders" size={21} /></span>
+          <span className="metadata-heading-mark" aria-hidden="true"><Icon name="schema" size={21} /></span>
           <div className="metadata-heading-copy">
             <span className="metadata-heading-eyebrow">DATA MODEL <i /> ENTITIES · FIELDS · RELATIONSHIPS</span>
             <h2>Define your data model</h2>
             <p>Describe your entities and relationships to make your data ready for querying.</p>
             <div className="metadata-heading-summary" aria-label="Metadata summary">
-              <span className="metadata-heading-current"><Icon name="database" size={13} />{selectedName || "No entity selected"}</span>
+              <span className="metadata-heading-current"><Icon name="table" size={13} />{selectedName || "No entity selected"}</span>
               <span><strong>{status === "succeeded" ? entities.length : "—"}</strong> entities</span>
               <span><strong>{status === "succeeded" ? fieldCount : "—"}</strong> fields</span>
               <span><strong>{status === "succeeded" ? relationCount : "—"}</strong> relations</span>
@@ -245,13 +245,13 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
         </div>
         <nav className="metadata-section-tabs" role="tablist" aria-label="Metadata definition types">
           <button type="button" role="tab" aria-selected={activeSection === "entities"} className={activeSection === "entities" ? "active" : ""} onClick={() => selectSection("entities")}>
-            <Icon name="database" size={14} /> Entity definitions
+            <Icon name="table" size={14} /> Entity definitions
           </button>
           <button type="button" role="tab" aria-selected={activeSection === "functions"} className={activeSection === "functions" ? "active" : ""} onClick={() => selectSection("functions")}>
-            <Icon name="code" size={14} /> Function definitions
+            <Icon name="function" size={14} /> Function definitions
           </button>
           {/* <button type="button" role="tab" aria-selected={activeSection === "operators"} className={activeSection === "operators" ? "active" : ""} onClick={() => selectSection("operators")}>
-            <Icon name="sliders" size={14} /> Operator definitions
+            <Icon name="operator" size={14} /> Operator definitions
           </button> */}
         </nav>
       </section>

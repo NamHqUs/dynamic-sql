@@ -75,7 +75,7 @@ export default function FunctionDetail({
       </div>
       {!draft
         ? <div className="metadata-empty">
-            <Icon name="code" size={32} />
+            <Icon name="function" size={32} />
             <p>{message || "Select a function to view its definition."}</p>
           </div>
         : <>
