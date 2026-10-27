@@ -267,6 +267,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
   const [selectedRequestIsBuiltin, setSelectedRequestIsBuiltin] = useState(false);
   const [queryRequestNotice, setQueryRequestNotice] = useState("");
+  const [requestNameError, setRequestNameError] = useState("");
   const [isSavingQuery, setIsSavingQuery] = useState(false);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
   const selectedContext = selectedContextIndex === null ? undefined : definition.contextCatalog?.[selectedContextIndex];
@@ -287,11 +288,29 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const updateContextDefinition = (contextIndex: number, contextDefinition: QueryDefinition) => {
     const context = definition.contextCatalog?.[contextIndex];
     if (!context || !definition.contextCatalog) return definition;
-    const query = createApiQuery(contextDefinition);
-    const contexts = definition.contextCatalog.map((item, index) =>
-      index === contextIndex ? { ...item, query } : item,
-    );
-    return { ...definition, contextCatalog: contexts };
+    const updatedContext = { ...context, query: createApiQuery(contextDefinition) };
+    const updateContextReferences = (
+      contexts: ApiQueryContextDefinition[] | null | undefined,
+    ): ApiQueryContextDefinition[] | null | undefined => contexts?.map((item) => {
+      const isUpdatedContext = updatedContext.id
+        ? item.id === updatedContext.id
+        : item.name === updatedContext.name;
+      const refreshed = isUpdatedContext
+        ? { ...item, query: updatedContext.query }
+        : item;
+      return {
+        ...refreshed,
+        query: {
+          ...refreshed.query,
+          contexts: updateContextReferences(refreshed.query.contexts),
+        },
+      };
+    });
+    return {
+      ...definition,
+      contexts: updateContextReferences(definition.contexts),
+      contextCatalog: updateContextReferences(definition.contextCatalog),
+    };
   };
   const updateDefinitionFromDesign = (nextDefinition: QueryDefinition) => {
     if (activeContextIndex === null) {
@@ -303,6 +322,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
   const updateRequestName = (name: string) => {
     setRequestName(name);
+    if (name.trim()) setRequestNameError("");
   };
   const createContext = (rawName: string) => {
     const name = rawName.trim();
@@ -448,6 +468,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     setIsNewBlankQuery(true);
     setSelectedRequestIsBuiltin(false);
     setRequestName("");
+    setRequestNameError("");
     setQueryRequestNotice("");
     const nextDefinition = createDefinition("");
     updateDefinition(nextDefinition);
@@ -469,6 +490,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
       ),
     });
     setRequestName(savedRequest.mainQuery.name);
+    setRequestNameError("");
     setSelectedRequestName(savedRequest.mainQuery.name);
     setSelectedRequestIsBuiltin(savedRequest.isBuiltin);
     setQueryRequestNotice("");
@@ -483,9 +505,10 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const persistCurrentRequest = async (currentDefinition: QueryDefinition) => {
     const name = requestName.trim();
     if (!name) {
-      setQueryRequestNotice("Enter a query name before saving.");
+      setRequestNameError("Enter a query name before saving.");
       return;
     }
+    setRequestNameError("");
     setQueryRequestNotice("");
     setIsSavingQuery(true);
     try {
@@ -597,6 +620,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               onDeleteContext={(index) => void deleteContext(index)}
               onContextNameChange={updateContextName}
               requestName={requestName}
+              requestNameError={requestNameError}
               onRequestNameChange={updateRequestName}
               onDefinitionChange={updateDefinitionFromDesign}
             />

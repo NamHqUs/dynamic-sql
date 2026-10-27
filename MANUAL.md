@@ -304,7 +304,8 @@ Supported properties:
 - `sorts`: comma-separated field expressions with an optional `ASC` or `DESC`
   direction (for example, `Manager.Name DESC`).
 - `page`: one-based page number.
-- `pageSize`: number of rows per page.
+- `pageSize`: positive number of rows per page. If omitted or set to `0`, paging
+  is disabled; when enabled, an omitted `page` defaults to `1`.
 
 Bare words on the right side of a filter comparison are accepted as string
 values (for example, `Status == Paid`). Filter values remain parameterized by

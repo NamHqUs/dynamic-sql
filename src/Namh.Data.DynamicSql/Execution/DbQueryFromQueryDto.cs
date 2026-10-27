@@ -53,16 +53,16 @@ internal static class DbQueryFromQueryDto
                     : query.ThenByDescendingField(sortGroup.sort.Field);
         }
 
-        if (definition.Page is not null || definition.PageSize is not null)
+        if (definition.PageSize is < 0)
+            throw new ArgumentOutOfRangeException(nameof(definition.PageSize), "Page size cannot be negative.");
+
+        if (definition.PageSize is > 0)
         {
             var page = definition.Page ?? 1;
-            var pageSize = definition.PageSize ?? 50;
+            var pageSize = definition.PageSize.Value;
 
             if (page < 1)
                 throw new ArgumentOutOfRangeException(nameof(definition.Page), "Page must be at least 1.");
-
-            if (pageSize < 1)
-                throw new ArgumentOutOfRangeException(nameof(definition.PageSize), "Page size must be at least 1.");
 
             query = query.Skip((page - 1) * pageSize);
             query = query.TakeQuery(pageSize);

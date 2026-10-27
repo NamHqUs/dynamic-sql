@@ -64,6 +64,42 @@ public class _50_QueryContextDefintion : TestBase
         Assert.That(sql.Parameters, Is.Empty);
     }
 
+    [TestCase(null)]
+    [TestCase(0)]
+    public void ContextDoesNotPageWhenPageSizeIsUnsetOrZero(int? pageSize)
+    {
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity("User", [new("Id", DataType.Number), new("ManagerId", DataType.Number)]));
+        var query = new QueryDefinition
+        {
+            Entity = "User",
+            Contexts =
+            [
+                new QueryContextDefintion(
+                    "Manager",
+                    new QueryDefinition
+                    {
+                        Entity = "User",
+                        Projection = [new("Id")],
+                        Page = 1,
+                        PageSize = pageSize
+                    },
+                    new ConditionStatementDefinition(
+                        new FieldDefinition("ManagerId"),
+                        BinaryOperator.Equals,
+                        new FieldDefinition("Id")))
+            ],
+            Projection = [new("Manager.Id")]
+        };
+
+        var sql = db.Query(query).ToSql().CommandText;
+
+        Assert.That(sql, Does.Not.Contain("OFFSET"));
+        Assert.That(sql, Does.Not.Contain("FETCH NEXT"));
+        Assert.That(sql, Does.Not.Contain("ORDER BY ("));
+    }
+
 
     [TestCase("SqlServer")]
     [TestCase("Sqlite")]

@@ -168,6 +168,7 @@ type QueryDesignProps = {
   onContextNameChange: (name: string) => void;
   entity?: MetadataEntity;
   requestName: string;
+  requestNameError: string;
   onRequestNameChange: (name: string) => void;
   onDefinitionChange: (definition: QueryDefinition) => void;
 };
@@ -191,6 +192,7 @@ export default function QueryDesign({
   onContextNameChange,
   entity,
   requestName,
+  requestNameError,
   onRequestNameChange,
   onDefinitionChange,
 }: QueryDesignProps) {
@@ -258,7 +260,10 @@ export default function QueryDesign({
               : onContextNameChange(event.target.value)}
             placeholder={selectedContextIndex === null ? "e.g. recent-invoices" : "Context name"}
             aria-label={selectedContextIndex === null ? "Query name" : "Context name"}
+            aria-invalid={selectedContextIndex === null && Boolean(requestNameError)}
+            aria-describedby={selectedContextIndex === null && requestNameError ? "query-name-error" : undefined}
           />
+          {selectedContextIndex === null && requestNameError && <p className="query-name-warning" id="query-name-error" role="alert">{requestNameError}</p>}
         </div>
       </div>
       <div className="query-builder-toolbar">

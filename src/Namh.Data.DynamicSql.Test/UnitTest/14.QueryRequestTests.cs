@@ -30,6 +30,24 @@ public class _14_QueryRequestTests : TestBase
         Assert.That(sql.Parameters.Select(parameter => parameter.Value), Is.EqualTo(new object?[] { 18 }));
     }
 
+    [TestCase(null)]
+    [TestCase(0)]
+    public void DefinitionDoesNotPageWhenPageSizeIsUnsetOrZero(int? pageSize)
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Projection = QueryDefinitionParser.ParseProjection("Name"),
+            Page = 1,
+            PageSize = pageSize
+        };
+
+        var sql = _db.Query(definition).ToSql().CommandText;
+
+        Assert.That(sql, Does.Not.Contain("OFFSET"));
+        Assert.That(sql, Does.Not.Contain("FETCH NEXT"));
+    }
+
     [Test]
     public void AggregateFilterUsesHavingInsteadOfScalarSubquery()
     {

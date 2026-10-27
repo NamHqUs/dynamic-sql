@@ -13,7 +13,7 @@ public sealed class QueryRequestController(IQueryRequestService queryRequestServ
         => Ok(queryRequestService.List());
 
     [HttpPut("{name}")]
-    public IActionResult Save(string id, [FromBody] QueryDto query)
+    public IActionResult Save([FromRoute(Name = "name")] string id, [FromBody] QueryDto query)
     {
         try
         {
@@ -31,7 +31,7 @@ public sealed class QueryRequestController(IQueryRequestService queryRequestServ
     }
 
     [HttpDelete("{name}")]
-    public IActionResult Delete(string id)
+    public IActionResult Delete([FromRoute(Name = "name")] string id)
     {
         var deleted = queryRequestService.Delete(id);
         if (deleted) return NoContent();

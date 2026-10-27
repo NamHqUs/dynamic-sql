@@ -317,8 +317,8 @@ public class BuiltinMetadata
                 new("Age", DataType.Number),
                 new("Birthday", DataType.Datetime),
                 new("IsMale", DataType.Boolean),
-                new("TotalMembers", DataType.Number, FieldType.Aggregate) { RawSql ="COUNT(*)" },
-                new("TotalAges", DataType.Number, FieldType.Aggregate) { RawSql ="SUM(@Age)" },
+                //new("TotalMembers", DataType.Number, FieldType.Aggregate) { RawSql ="COUNT(*)" },
+                //new("TotalAges", DataType.Number, FieldType.Aggregate) { RawSql ="SUM(@Age)" },
             ],
 
             Relations : [

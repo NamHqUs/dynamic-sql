@@ -26,7 +26,9 @@
 .query-create-context { width: 25px; height: 25px; }
 .query-name-row input { width: 100%; height: var(--field-box-height); box-sizing: border-box; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 9px; font-size: 13px; outline: 0; }
 .query-name-row input:focus { border-color: #7054d4; }
+.query-name-row input[aria-invalid="true"] { border-color: #d5a74e; }
 .query-name-row input::placeholder { color: #687284; }
+.query-name-warning { margin: 0; color: #e8bb67; font-size: 12px; }
 .context-name-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: 20px; background: #080b10b8; }
 .context-name-dialog { display: grid; gap: 10px; width: min(420px, 100%); box-sizing: border-box; padding: 24px; border: 1px solid #343b4a; border-radius: 9px; background: #151923; box-shadow: 0 22px 70px #0009; }
 .context-name-dialog h3 { margin: 0; color: #f0eef8; font: 600 18px "Manrope", sans-serif; }
