@@ -53,11 +53,11 @@ the complete text can be copied directly into a query window.
 
 ## Start here
 
-- Read the [user manual](MANUAL.md) for installation, metadata, queries, YAML,
+- Read the [user manual](https://github.com/NamHqUs/dynamic-sql/blob/main/MANUAL.md) for installation, metadata, queries, YAML,
   providers, async APIs, and troubleshooting.
-- Read the [technical guide](TECH.md) for the compiler pipeline and important
+- Read the [technical guide](https://github.com/NamHqUs/dynamic-sql/blob/main/TECH.md) for the compiler pipeline and important
   classes.
-- See the [query model reference](QUERY-MODEL-REFERENCE.md) for the
+- See the [query model reference](https://github.com/NamHqUs/dynamic-sql/blob/main/QUERY-MODEL-REFERENCE.md) for the
   canonical backend JSON format for projections and query contexts.
 
 Targets: **.NET 8, .NET 9, and .NET 10**.
@@ -97,4 +97,4 @@ files use the flat `QueryDefinition` YAML shape (for example, `Entity` and
 
 ## License
 
-MIT License. See [MANUAL.md](MANUAL.md#license) for the full license text.
+MIT License. See [the manual](https://github.com/NamHqUs/dynamic-sql/blob/main/MANUAL.md#license) for the full license text.
