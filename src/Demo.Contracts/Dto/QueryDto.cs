@@ -12,10 +12,10 @@ public sealed record QueryContextDto(
     int? PageSize)
 {
     public string Id { get; init; } = $"{DateTime.Now:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid().ToString("N")[..8]}";
-    public List<ExtraRelationDto>? ExtraRelations { get; init; }
+    public List<RelationDto>? ExtraRelations { get; init; }
 }
 
-public sealed record ExtraRelationDto(
+public sealed record RelationDto(
     string RefContextId,
     string Alias,
     IConditionDefintion? Condition,

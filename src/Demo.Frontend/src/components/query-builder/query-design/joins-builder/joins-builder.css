@@ -33,7 +33,7 @@
   .join-row .join-control:nth-child(2)::before { content: "REF CONTEXT"; display: block; margin-bottom: 5px; color: #788395; font: 600 9px "Manrope", sans-serif; letter-spacing: .7px; }
   .join-row .join-control:nth-child(3)::before { content: "ALIAS"; display: block; margin-bottom: 5px; color: #788395; font: 600 9px "Manrope", sans-serif; letter-spacing: .7px; }
   .join-row .join-condition-field::before { display: block; margin-bottom: 5px; color: #788395; font: 600 9px "Manrope", sans-serif; letter-spacing: .7px; }
-  .join-row .join-condition-field:nth-of-type(4)::before { content: "LEFT FIELD"; }
-  .join-row .join-condition-field:nth-of-type(6)::before { content: "RIGHT FIELD"; }
+  .join-row .join-condition-field:nth-of-type(4)::before { content: "FROM FIELD"; }
+  .join-row .join-condition-field:nth-of-type(6)::before { content: "TO CONTEXT FIELD"; }
   .join-remove { justify-self: end; }
 }

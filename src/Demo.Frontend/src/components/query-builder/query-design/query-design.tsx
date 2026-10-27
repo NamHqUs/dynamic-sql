@@ -290,7 +290,7 @@ export default function QueryDesign({
         <form className="context-name-dialog" onSubmit={submitContext}>
           <span className="section-kicker">NEW CONTEXT</span>
           <h3>Create a context</h3>
-          <p>Give this context a name. You can choose its entity and add joins afterward.</p>
+          <p>Give this context a name. You can choose its entity and relations afterward.</p>
           <label htmlFor="new-context-name">Context name</label>
           <input
             id="new-context-name"
@@ -311,7 +311,7 @@ export default function QueryDesign({
               setNewContextName("");
               setContextNameError("");
             }}>Cancel</button>
-            <button type="submit" className="button primary">Create Context</button>
+            <button type="submit" className="button primary">Create context</button>
           </div>
         </form>
       </div>}

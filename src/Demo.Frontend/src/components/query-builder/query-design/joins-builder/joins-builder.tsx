@@ -270,15 +270,15 @@ export default function JoinsBuilder({
     <section className="builder-section joins-section">
       <div className="section-header">
         <div className="section-heading">
-          <span className="section-kicker">JOINS</span>
-          {canAddJoin && <button className="field-action field-action-icon" type="button" aria-label="Add join" title="Add join" onClick={addJoin} disabled={!availableContexts.length}>
+          <span className="section-kicker">RELATIONS</span>
+          {canAddJoin && <button className="field-action field-action-icon" type="button" aria-label="Add relation" title="Add relation" onClick={addJoin} disabled={!availableContexts.length}>
             <Icon name="plus" size={14} />
           </button>}
         </div>
       </div>
       {!!joins.length && <div className="joins-table">
         <div className="joins-table-header" aria-hidden="true">
-          <span>TYPE</span><span>REF CONTEXT</span><span>ALIAS</span><span>LEFT FIELD</span><span /><span>RIGHT FIELD</span><span />
+          <span>TYPE</span><span>REF CONTEXT</span><span>ALIAS</span><span>FROM FIELD</span><span /><span>TO CONTEXT FIELD</span><span />
         </div>
         {joins.map((join, index) => {
         const condition = joinCondition(join);
@@ -371,7 +371,7 @@ export default function JoinsBuilder({
                 onValueSelect={(value) => updateJoin(index, { condition: createCondition(left, operation, { kind: "value", value }) as ApiQueryContextDefinition["condition"] })}
               />
             </div>
-            <button type="button" className="field-action field-action-clear join-remove" aria-label={`Remove join to ${join.name}`} title={`Remove join to ${join.name}`} onClick={() => onDefinitionChange({
+            <button type="button" className="field-action field-action-clear join-remove" aria-label={`Remove relation to ${join.name}`} title={`Remove relation to ${join.name}`} onClick={() => onDefinitionChange({
               ...definition,
               contexts: joins.filter((_, joinIndex) => joinIndex !== index),
             })}>
