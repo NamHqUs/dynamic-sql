@@ -1,6 +1,6 @@
 import { useState } from "react";
 import FieldBox, { resolveEntity } from "./field-box/field-box";
-import { IFieldDefinition, MatchOperation, MetadataEntity } from "../query-builder-slice";
+import { ApiQueryContextDefinition, IFieldDefinition, MatchOperation, MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../icon/icon";
 import ExpressionBuilder from "./expression-builder";
 import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
@@ -14,6 +14,7 @@ export type FieldBuilderExpressionOptions = {
   functionDefinitions: FunctionDefinition[];
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
+  joinedContexts?: ApiQueryContextDefinition[];
   initialKind?: "group" | "function";
   initialExpression?: IFieldDefinition;
 };
@@ -21,6 +22,7 @@ export type FieldBuilderExpressionOptions = {
 type FieldBuilderProps = {
   entity: MetadataEntity;
   metadata: MetadataEntity[];
+  joinedContexts?: ApiQueryContextDefinition[];
   value: string;
   onChange: (path: string) => void;
   onRemove?: () => void;
@@ -62,6 +64,7 @@ function getFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], va
 export default function FieldBuilder({
   entity,
   metadata,
+  joinedContexts,
   value,
   onChange,
   onRemove,
@@ -136,6 +139,7 @@ export default function FieldBuilder({
     <FieldBox
       entity={entity}
       metadata={metadata}
+      joinedContexts={joinedContexts ?? expressionBuilder?.joinedContexts}
       value={value}
       onIncompleteChange={setHasIncompleteSelection}
       clearOnSelect

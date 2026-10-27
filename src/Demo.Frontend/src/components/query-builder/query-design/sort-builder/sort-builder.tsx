@@ -1,6 +1,6 @@
 import { type DragEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { IFieldDefinition, MetadataEntity, QueryDefinition } from "../query-builder-slice";
+import { ApiQueryContextDefinition, IFieldDefinition, MetadataEntity, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder, { FieldBuilderExpressionOptions } from "../field-builder/field-builder";
 import Icon from "../../../icon/icon";
 import { formatExpression } from "../field-builder/expression-builder";
@@ -13,6 +13,7 @@ type SortBuilderProps = {
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
   definition: QueryDefinition;
+  joinedContexts: ApiQueryContextDefinition[];
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
   draggedProjectionField: string | null;
@@ -141,7 +142,7 @@ function SortDirectionMenu({
   );
 }
 
-export default function SortBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, draggedProjectionField }: SortBuilderProps) {
+export default function SortBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, joinedContexts, entity, onDefinitionChange, draggedProjectionField }: SortBuilderProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [isDropTarget, setIsDropTarget] = useState(false);
   const [addingSortField, setAddingSortField] = useState(false);
@@ -263,6 +264,7 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
                   ? <FieldBuilder
                     entity={entity}
                     metadata={metadata}
+                    joinedContexts={joinedContexts}
                     value={calculatedProjection ? "" : sort.field}
                     autoFocus
                     editMode
@@ -274,6 +276,7 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
                       functionDefinitions,
                       functionDefinitionsStatus,
                       functionDefinitionsError,
+                      joinedContexts,
                       initialExpression: calculationExpression,
                     }}
                     onExpressionApply={(expression) => {
@@ -317,6 +320,7 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
           <FieldBuilder
             entity={entity}
             metadata={metadata}
+            joinedContexts={joinedContexts}
             value=""
             autoFocus
             popupAnchor={addSortButtonRef.current}
@@ -324,7 +328,7 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
             ariaLabel="Add sort field"
             allowCalculationSelection
             excludedPaths={definition.sorts.map((sort) => sort.field)}
-            expressionBuilder={{ functionDefinitions, functionDefinitionsStatus, functionDefinitionsError }}
+            expressionBuilder={{ functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, joinedContexts }}
             onChange={(field) => {
               addSort(field);
               setAddingSortField(false);

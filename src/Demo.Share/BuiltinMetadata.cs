@@ -312,7 +312,7 @@ public class BuiltinMetadata
             Fields : [
                 new("Id", DataType.Number),
                 new("Name"),
-                //new("ManagerId"),
+                new("ManagerId"),
                 //new("SchoolId"),
                 new("Age", DataType.Number),
                 new("Birthday", DataType.Datetime),

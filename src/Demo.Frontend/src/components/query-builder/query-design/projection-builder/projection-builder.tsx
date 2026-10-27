@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import Icon from "../../../icon/icon";
-import { IFieldDefinition, MetadataEntity, QueryColumn, QueryDefinition } from "../query-builder-slice";
+import { ApiQueryContextDefinition, IFieldDefinition, MetadataEntity, QueryColumn, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder, { FieldBuilderExpressionOptions } from "../field-builder/field-builder";
 import { formatExpression } from "../field-builder/expression-builder";
 import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
@@ -11,6 +11,7 @@ type ProjectionBuilderProps = {
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
   definition: QueryDefinition;
+  joinedContexts: ApiQueryContextDefinition[];
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
   onFieldDragStart: (field: string | null) => void;
@@ -159,6 +160,7 @@ function FieldCards({
   functionDefinitionsStatus,
   functionDefinitionsError,
   definition,
+  joinedContexts,
   editingAliasField,
   setEditingAliasField,
   removeColumn,
@@ -182,6 +184,7 @@ function FieldCards({
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
   definition: QueryDefinition;
+  joinedContexts: ApiQueryContextDefinition[];
   editingAliasField: string | null;
   setEditingAliasField: (field: string | null) => void;
   removeColumn: (field: string) => void;
@@ -379,6 +382,7 @@ function FieldCards({
                   <FieldBuilder
                     entity={entity}
                     metadata={metadata}
+                    joinedContexts={joinedContexts}
                     value={columnExpression ? "" : field.name}
                     autoFocus
                     placeholder={columnExpression && columnExpression.kind !== "value" ? formatExpression(columnExpression) : undefined}
@@ -391,6 +395,7 @@ function FieldCards({
                       functionDefinitions,
                       functionDefinitionsStatus,
                       functionDefinitionsError,
+                      joinedContexts,
                       initialExpression: columnExpression,
                     }}
                     onExpressionApply={(expression) => {
@@ -473,7 +478,7 @@ function FieldCards({
   </div>;
 }
 
-export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
+export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, joinedContexts, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
   const [editingAliasField, setEditingAliasField] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [addingField, setAddingField] = useState(false);
@@ -673,6 +678,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
           definition={definition}
+          joinedContexts={joinedContexts}
           editingAliasField={editingAliasField}
           setEditingAliasField={setEditingAliasField}
           removeColumn={removeColumn}
@@ -694,6 +700,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
           key={`${entity.name}-${definition.columns.length}-new`}
           entity={entity}
           metadata={metadata}
+          joinedContexts={joinedContexts}
           value=""
           autoFocus
           popupAnchor={addFieldButtonRef.current}
@@ -702,7 +709,7 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
           ariaLabel="Add projection field"
           allowValueSelection
           allowCalculationSelection
-          expressionBuilder={{ functionDefinitions, functionDefinitionsStatus, functionDefinitionsError }}
+          expressionBuilder={{ functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, joinedContexts }}
           onValueSelect={(value) => { addValue(value); setAddingField(false); }}
           onExpressionApply={(expression) => { applyExpression(undefined, expression); setAddingField(false); }}
           onChange={(field) => { addColumn(field); setAddingField(false); }}

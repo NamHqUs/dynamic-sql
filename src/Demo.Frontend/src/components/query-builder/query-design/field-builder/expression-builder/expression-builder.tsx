@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type {
+  ApiQueryContextDefinition,
   IFieldDefinition,
   MetadataEntity,
 } from "../../query-builder-slice";
@@ -38,6 +39,7 @@ export { formatExpression } from "./expression-model";
 type ExpressionBuilderProps = {
   entity: MetadataEntity;
   metadata: MetadataEntity[];
+  joinedContexts?: ApiQueryContextDefinition[];
   functionDefinitions: FunctionDefinition[];
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
@@ -50,6 +52,7 @@ type ExpressionBuilderProps = {
 export default function ExpressionBuilder({
   entity,
   metadata,
+  joinedContexts,
   functionDefinitions,
   functionDefinitionsStatus,
   functionDefinitionsError,
@@ -444,6 +447,7 @@ export default function ExpressionBuilder({
           expression={expression}
           entity={entity}
           metadata={metadata}
+          joinedContexts={joinedContexts}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}

@@ -242,8 +242,17 @@ export default function JoinsBuilder({
   onDefinitionChange,
 }: JoinsBuilderProps) {
   const joins = definition.contexts ?? [];
-  const availableContexts = contexts.filter((context) => context.id !== excludeContextId
-    && !joins.some((join) => join.id && join.id === context.id));
+  const availableContexts = contexts.filter((context) => context.id !== excludeContextId);
+  const createUniqueAlias = (name: string) => {
+    const aliases = new Set(joins.map((join) => (join.alias ?? join.name).trim().toLowerCase()));
+    let alias = name;
+    let suffix = 2;
+    while (aliases.has(alias.toLowerCase())) {
+      alias = `${name}${suffix}`;
+      suffix += 1;
+    }
+    return alias;
+  };
   const updateJoin = (index: number, update: Partial<ApiQueryContextDefinition>) => {
     onDefinitionChange({
       ...definition,
@@ -257,7 +266,7 @@ export default function JoinsBuilder({
       ...definition,
       contexts: [...joins, {
         ...available,
-        alias: available.name,
+        alias: createUniqueAlias(available.name),
         joinType: 1,
         condition: createCondition(undefined, 0, undefined),
       }],
@@ -278,7 +287,7 @@ export default function JoinsBuilder({
       </div>
       {!!joins.length && <div className="joins-table">
         <div className="joins-table-header" aria-hidden="true">
-          <span>TYPE</span><span>REF CONTEXT</span><span>ALIAS</span><span>FROM FIELD</span><span /><span>TO CONTEXT FIELD</span><span />
+          <span>JOIN</span><span>REF CONTEXT</span><span>ALIAS</span><span>FROM FIELD</span><span /><span>TO CONTEXT FIELD</span><span />
         </div>
         {joins.map((join, index) => {
         const condition = joinCondition(join);
@@ -302,6 +311,7 @@ export default function JoinsBuilder({
               <JoinDropdown
                 ariaLabel="Join type"
                 value={String(join.joinType ?? 1)}
+                showChevron={false}
                 options={joinTypes.map(([value, label]) => ({ value: String(value), label }))}
                 onChange={(value) => updateJoin(index, { joinType: Number(value) })}
               />
@@ -310,6 +320,7 @@ export default function JoinsBuilder({
               <JoinDropdown
                 ariaLabel="Reference context"
                 value={join.id ?? join.name}
+                showChevron={false}
                 options={contexts.filter((context) => context.id !== excludeContextId).map((context) => ({
                   value: context.id ?? context.name,
                   label: context.name,

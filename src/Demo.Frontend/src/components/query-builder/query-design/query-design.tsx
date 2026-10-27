@@ -9,14 +9,14 @@ import FilterBuilder from "./filter-builder/filter-builder";
 import JoinsBuilder from "./joins-builder/joins-builder";
 import "./query-design.css";
 
-type EntityDropdownProps = {
+type EntityMenuProps = {
   entities: MetadataEntity[];
   value: string;
   disabled: boolean;
   onChange: (entity: MetadataEntity) => void;
 };
 
-function EntityDropdown({ entities, value, disabled, onChange }: EntityDropdownProps) {
+function EntityMenu({ entities, value, disabled, onChange }: EntityMenuProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -26,6 +26,10 @@ function EntityDropdown({ entities, value, disabled, onChange }: EntityDropdownP
   const searchRef = useRef<HTMLInputElement>(null);
   const selectedEntity = entities.find((item) => item.name === value);
   const filteredEntities = entities.filter((item) => item.name.toLowerCase().includes(search.trim().toLowerCase()));
+
+  useLayoutEffect(() => {
+    if (open) searchRef.current?.focus();
+  }, [open]);
 
   useLayoutEffect(() => {
     if (!open) {
@@ -80,14 +84,14 @@ function EntityDropdown({ entities, value, disabled, onChange }: EntityDropdownP
   }, [open]);
 
   return (
-    <div className="entity-dropdown" ref={containerRef}>
+    <div className="entity-menu" ref={containerRef}>
       <button
         type="button"
-        className={`entity-dropdown-trigger${selectedEntity ? "" : " empty"}`}
+        className={`entity-menu-trigger${selectedEntity ? "" : " empty"}`}
         ref={triggerRef}
         aria-label="Entity"
         aria-expanded={open}
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
         disabled={disabled}
         onClick={() => {
           setSearch("");
@@ -98,9 +102,9 @@ function EntityDropdown({ entities, value, disabled, onChange }: EntityDropdownP
       </button>
       {open && createPortal(
         <div
-          className="entity-dropdown-menu"
+          className="entity-menu-popup"
           ref={menuRef}
-          role="listbox"
+          role="menu"
           aria-label="Entities"
           style={{
             position: "fixed",
@@ -112,11 +116,10 @@ function EntityDropdown({ entities, value, disabled, onChange }: EntityDropdownP
         >
           <input
             ref={searchRef}
-            className="entity-dropdown-search"
+            className="entity-menu-search"
             type="search"
             aria-label="Search entities"
             placeholder="Search entities..."
-            autoFocus
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -124,9 +127,9 @@ function EntityDropdown({ entities, value, disabled, onChange }: EntityDropdownP
             ? filteredEntities.map((item) => (
               <button
                 type="button"
-                className={`entity-dropdown-option${item.name === value ? " selected" : ""}`}
-                role="option"
-                aria-selected={item.name === value}
+                className={`entity-menu-option${item.name === value ? " selected" : ""}`}
+                role="menuitemradio"
+                aria-checked={item.name === value}
                 key={item.name}
                 onClick={() => {
                   onChange(item);
@@ -138,7 +141,7 @@ function EntityDropdown({ entities, value, disabled, onChange }: EntityDropdownP
                 {item.name}
               </button>
             ))
-            : <span className="entity-dropdown-empty" role="status">No entities found.</span>}
+            : <span className="entity-menu-empty" role="status">No entities found.</span>}
         </div>,
         document.body,
       )}
@@ -260,7 +263,7 @@ export default function QueryDesign({
       </div>
       <div className="query-builder-toolbar">
         <label><span className="section-kicker">ENTITY</span>
-          <EntityDropdown entities={metadata} value={definition.entity} disabled={!metadata.length} onChange={(selectedEntity) => {
+          <EntityMenu entities={metadata} value={definition.entity} disabled={!metadata.length} onChange={(selectedEntity) => {
             onDefinitionChange({
               entity: selectedEntity.name,
               columns: selectedEntity.fields.map((field) => ({ field: field.name, alias: null })),
@@ -340,6 +343,7 @@ export default function QueryDesign({
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
           definition={definition}
+          joinedContexts={definition.contexts ?? []}
           entity={entity}
           onDefinitionChange={onDefinitionChange}
           onFieldDragStart={setDraggedProjectionField}
@@ -353,6 +357,7 @@ export default function QueryDesign({
           operatorsStatus={filterOperatorsStatus}
           operatorsError={filterOperatorsError}
           definition={definition}
+          joinedContexts={definition.contexts ?? []}
           entity={entity}
           onDefinitionChange={onDefinitionChange}
         />
@@ -362,6 +367,7 @@ export default function QueryDesign({
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
           definition={definition}
+          joinedContexts={definition.contexts ?? []}
           entity={entity}
           onDefinitionChange={onDefinitionChange}
           draggedProjectionField={draggedProjectionField}

@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { MetadataEntity } from "../query-builder-slice";
+import type { ApiQueryContextDefinition, MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../../icon/icon";
 import { FieldBoxPopupContext } from "./field-box-popup-context";
 import "./field-box.css";
@@ -8,6 +8,7 @@ import "./field-box.css";
 type FieldBoxProps = {
   entity: MetadataEntity;
   metadata: MetadataEntity[];
+  joinedContexts?: ApiQueryContextDefinition[];
   value: string;
   onChange: (path: string) => void;
   onIncompleteChange?: (incomplete: boolean) => void;
@@ -45,6 +46,23 @@ const NUMERIC_DATA_TYPES = new Set(["number", "byte", "short", "int", "integer",
 const aggregateSegment = (segment: string) =>
   AGGREGATES.find((aggregate) => segment === aggregate || segment.startsWith(`${aggregate}(`));
 
+function getJoinedContextFields(context: ApiQueryContextDefinition, metadata: MetadataEntity[]) {
+  const projections = context.query.projection ?? [];
+  if (!projections.length) {
+    return metadata.find((item) => item.name === context.query.entity)?.fields.map((field) => field.name) ?? [];
+  }
+
+  const fields = projections.flatMap((projection) => {
+    const firstNode = "fields" in projection ? projection.fields[0] : undefined;
+    const projectedField = "field" in projection
+      ? projection.field.kind === "field" ? projection.field.field : undefined
+      : firstNode?.kind === "field" ? firstNode.field : undefined;
+    const name = projection.alias?.trim() || projectedField;
+    return name ? [name] : [];
+  });
+  return [...new Set(fields)];
+}
+
 // Follows relation names from the root entity; returns undefined when a segment cannot be resolved.
 export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], segments: string[]) {
   let current: MetadataEntity | undefined = root;
@@ -59,6 +77,7 @@ export function resolveEntity(root: MetadataEntity, metadata: MetadataEntity[], 
 export default function FieldBox({
   entity,
   metadata,
+  joinedContexts = [],
   value,
   onChange,
   onIncompleteChange,
@@ -85,6 +104,7 @@ export default function FieldBox({
 }: FieldBoxProps) {
   const valueSegments = value ? value.split(".") : [];
   const [pendingPath, setPendingPath] = useState<string[] | null>(null);
+  const [pendingJoinedContext, setPendingJoinedContext] = useState<ApiQueryContextDefinition | null>(null);
   const [pendingAggregate, setPendingAggregate] = useState<string | null>(null);
   const [pendingAggregateWrapsPath, setPendingAggregateWrapsPath] = useState<boolean | null>(null);
   const [pendingAggregateField, setPendingAggregateField] = useState("");
@@ -227,7 +247,9 @@ export default function FieldBox({
   const aggregateFieldPath = rootAggregateMatch
     ? rootAggregateMatch[2].split(".")
     : valueSegments.slice(-1)[0]?.match(/^(?:COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i)?.[1]?.split(".");
-  const rawPath = pendingPath ?? (
+  const valueJoinedContext = joinedContexts.find((context) => value.startsWith(`${context.alias ?? context.name}.`));
+  const activeJoinedContext = pendingJoinedContext ?? valueJoinedContext;
+  const rawPath = activeJoinedContext ? [] : pendingPath ?? (
     rootAggregateMatch
       ? aggregateFieldPath?.slice(0, -1) ?? []
       : valueSegments.slice(0, -1)
@@ -235,24 +257,32 @@ export default function FieldBox({
   const aggregatePathIndex = rawPath.findIndex((segment) => aggregateSegment(segment));
   const path = aggregatePathIndex < 0 ? rawPath : rawPath.slice(0, aggregatePathIndex);
   const current = resolveEntity(entity, metadata, path) ?? entity;
-  const selectedField = aggregateMatch
+  const joinedContextFields = activeJoinedContext ? getJoinedContextFields(activeJoinedContext, metadata) : [];
+  const selectedField = activeJoinedContext
+    ? valueJoinedContext === activeJoinedContext
+      ? value.slice((activeJoinedContext.alias ?? activeJoinedContext.name).length + 1)
+      : ""
+    : aggregateMatch
     ? aggregateFieldPath?.[aggregateFieldPath.length - 1] ?? ""
     : path.join(".") === valueSegments.slice(0, -1).join(".")
       ? valueSegments[valueSegments.length - 1] ?? ""
       : "";
   const selectedAggregate = aggregateMatch?.[1] ?? pendingAggregate;
   useEffect(() => {
-    onIncompleteChange?.(pendingPath !== null || (pendingAggregate !== null && !pendingAggregateField));
-  }, [onIncompleteChange, pendingAggregate, pendingAggregateField, pendingPath]);
+    onIncompleteChange?.(pendingPath !== null || pendingJoinedContext !== null || (pendingAggregate !== null && !pendingAggregateField));
+  }, [onIncompleteChange, pendingAggregate, pendingAggregateField, pendingJoinedContext, pendingPath]);
   const selectValue = selectedAggregate
       ? `${AGGREGATE_PREFIX}${selectedAggregate}`
-      : selectedField && current.fields.some((field) => field.name === selectedField)
+      : selectedField && (activeJoinedContext
+        ? joinedContextFields.includes(selectedField)
+        : current.fields.some((field) => field.name === selectedField))
         ? `${FIELD_PREFIX}${selectedField}`
       : "";
 
   const handleSelect = (selected: string) => {
     setFieldSearch("");
     if (selected.startsWith(RELATION_PREFIX)) {
+      setPendingJoinedContext(null);
       setPendingPath([...path, selected.slice(RELATION_PREFIX.length)]);
       return;
     }
@@ -273,6 +303,13 @@ export default function FieldBox({
     }
     if (!selected.startsWith(FIELD_PREFIX)) return;
     const field = selected.slice(FIELD_PREFIX.length);
+    if (activeJoinedContext) {
+      onChange(`${activeJoinedContext.alias ?? activeJoinedContext.name}.${field}`);
+      setPendingJoinedContext(null);
+      setPendingPath(null);
+      closeMenu();
+      return;
+    }
     const activeAggregate = pendingAggregate ?? selectedAggregate;
     if (activeAggregate && activeAggregate !== COUNT_AGGREGATE) {
       selectAggregateField(field);
@@ -285,6 +322,8 @@ export default function FieldBox({
   };
 
   const relations = (current.relations || []).filter((relation) => metadata.some((item) => item.name === relation.relatedEntity));
+  const filteredJoinedContextFields = joinedContextFields.filter((field) =>
+    field.toLowerCase().includes(fieldSearch.trim().toLowerCase()));
   const activeAggregate = pendingAggregate ?? selectedAggregate;
   const fields = current.fields.filter((field) =>
     (!activeAggregate || activeAggregate === COUNT_AGGREGATE || NUMERIC_DATA_TYPES.has(field.dataType.toLowerCase())) &&
@@ -365,8 +404,10 @@ export default function FieldBox({
         }}
       >
         {(() => {
-          const label = showPath && (pendingPath?.length ? pendingPath.join(".") : value)
-            ? (pendingPath?.length ? pendingPath.join(".") : value)
+          const label = showPath && activeJoinedContext && pendingJoinedContext
+            ? activeJoinedContext.alias ?? activeJoinedContext.name
+            : showPath && (pendingPath?.length ? pendingPath.join(".") : value)
+              ? (pendingPath?.length ? pendingPath.join(".") : value)
             : selectedField || (activeAggregate && activeAggregate !== COUNT_AGGREGATE ? placeholder : selectedAggregate) || placeholder;
           return placeholderIcon && label === placeholder
             ? <><Icon name="plus" size={12} /><span className="action-link-text field-box-trigger-label">{label}</span></>
@@ -474,8 +515,30 @@ export default function FieldBox({
                 onChange={(event) => setFieldSearch(event.target.value)}
               />
               <div role="listbox" aria-label="Available fields">
-                {relations.length > 0 && <>
+                {activeJoinedContext ? <>
+                  <span className="field-box-menu-label">{activeJoinedContext.alias ?? activeJoinedContext.name} fields</span>
+                  {filteredJoinedContextFields.map((field) => (
+                    <button type="button" className={`operator-option${selectValue === `${FIELD_PREFIX}${field}` ? " operator-option-selected" : ""}`} role="option" aria-selected={selectValue === `${FIELD_PREFIX}${field}`} key={field} onClick={() => handleSelect(`${FIELD_PREFIX}${field}`)}>
+                      {field}
+                    </button>
+                  ))}
+                  {filteredJoinedContextFields.length === 0 && <span className="field-box-no-results">No matching fields</span>}
+                  <button type="button" className="operator-option" onClick={() => {
+                    setPendingJoinedContext(null);
+                    setPendingPath([]);
+                  }}>Back to fields and relations</button>
+                </> : <>
+                {(joinedContexts.length > 0 || relations.length > 0) && <>
                   <span className="field-box-menu-label">Relations</span>
+                  {joinedContexts.map((context) => (
+                    <button type="button" className="operator-option" role="option" key={context.id ?? context.name} onClick={() => {
+                      setPendingPath(null);
+                      setPendingJoinedContext(context);
+                      setFieldSearch("");
+                    }}>
+                      {context.alias ?? context.name}
+                    </button>
+                  ))}
                   {relations.map((relation) => (
                     <button type="button" className="operator-option" role="option" key={relation.name} onClick={() => handleSelect(`${RELATION_PREFIX}${relation.name}`)}>
                       {relation.name}
@@ -503,6 +566,7 @@ export default function FieldBox({
                       {aggregate === COUNT_AGGREGATE ? aggregate : `${aggregate}(…)`}
                     </button>
                   ))}
+                </>}
                 </>}
               </div>
             </div>}

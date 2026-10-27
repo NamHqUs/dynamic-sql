@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type {
+  ApiQueryContextDefinition,
   IFieldDefinition,
   MatchOperation,
   MetadataEntity,
@@ -35,6 +36,7 @@ type NodeEditorProps = {
   expression: IFieldDefinition;
   entity: MetadataEntity;
   metadata: MetadataEntity[];
+  joinedContexts?: ApiQueryContextDefinition[];
   functionDefinitions: FunctionDefinition[];
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
@@ -183,6 +185,7 @@ function ExpressionMathElement({
           expression={expression}
           entity={entity}
           metadata={metadata}
+          joinedContexts={joinedContexts}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
@@ -249,6 +252,7 @@ export default function NodeEditor({
         operator={expression.oper}
         entity={entity}
         metadata={metadata}
+        joinedContexts={joinedContexts}
         functionDefinitions={functionDefinitions}
         functionDefinitionsStatus={functionDefinitionsStatus}
         functionDefinitionsError={functionDefinitionsError}
@@ -289,6 +293,7 @@ export default function NodeEditor({
             <FieldBuilder
               entity={entity}
               metadata={metadata}
+              joinedContexts={joinedContexts}
               value={expression.field}
               onChange={(field) => onChange({ kind: "field", field })}
               showPath

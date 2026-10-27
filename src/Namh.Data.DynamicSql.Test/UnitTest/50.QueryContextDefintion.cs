@@ -197,6 +197,50 @@ public class _50_QueryContextDefintion : TestBase
     }
 
     [Test]
+    public void QueryDefinitionJson_UsesContextAliasesForRepeatedReferences()
+    {
+        const string json = """
+            {
+              "entity": "User",
+              "projection": [
+                { "fields": ["Manager.Id"] },
+                { "fields": ["Reviewer.Id"] }
+              ],
+              "contexts": [
+                {
+                  "name": "UserContext",
+                  "alias": "Manager",
+                  "query": { "entity": "User", "projection": [{ "fields": ["Id"] }] },
+                  "condition": { "left": "ManagerId", "operation": 0, "right": "Id" }
+                },
+                {
+                  "name": "UserContext",
+                  "alias": "Reviewer",
+                  "query": { "entity": "User", "projection": [{ "fields": ["Id"] }] },
+                  "condition": { "left": "ReviewerId", "operation": 0, "right": "Id" }
+                }
+              ]
+            }
+            """;
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity("User", [
+                new("Id", DataType.Number),
+                new("ManagerId", DataType.Number),
+                new("ReviewerId", DataType.Number),
+            ]));
+
+        var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("WITH [Manager] AS"));
+        Assert.That(sql, Does.Contain("[Reviewer] AS"));
+        Assert.That(sql, Does.Contain("LEFT JOIN [Manager]"));
+        Assert.That(sql, Does.Contain("LEFT JOIN [Reviewer]"));
+        Assert.That(sql, Does.Contain("t1.[Id] [Manager.Id]"));
+        Assert.That(sql, Does.Contain("t2.[Id] [Reviewer.Id]"));
+    }
+
+    [Test]
     public void QueryDefinitionWithContexts_CanStillBeComposed()
     {
         using var db = CreateContext(

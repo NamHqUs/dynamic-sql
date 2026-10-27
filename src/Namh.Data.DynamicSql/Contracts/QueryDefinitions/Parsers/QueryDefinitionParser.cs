@@ -67,7 +67,12 @@ public static partial class QueryDefinitionParser
             ? contextsElement.ValueKind == JsonValueKind.Array
                 ? contextsElement.EnumerateArray().Select(context =>
                 {
-                    var name = TryGetProperty(context, "name", out var nameElement)
+                    var name = TryGetProperty(context, "alias", out var aliasElement)
+                        ? aliasElement.GetString()
+                        : null;
+                    name = !string.IsNullOrWhiteSpace(name)
+                        ? name
+                        : TryGetProperty(context, "name", out var nameElement)
                         ? nameElement.GetString()
                         : null;
                     if (string.IsNullOrWhiteSpace(name))

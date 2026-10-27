@@ -2,7 +2,7 @@ import type { CSSProperties, DragEvent } from "react";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Icon from "../../../icon/icon";
-import { FilterOperatorDefinition, IFieldDefinition, MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
+import { ApiQueryContextDefinition, FilterOperatorDefinition, IFieldDefinition, MetadataEntity, QueryDefinition, QueryFilterGroup, QueryFilterItem, QueryFilterNode } from "../query-builder-slice";
 import FieldBuilder from "../field-builder/field-builder";
 import { resolveEntity } from "../field-builder/field-box/field-box";
 import { formatExpression } from "../field-builder/expression-builder";
@@ -74,6 +74,7 @@ type FilterBuilderProps = {
   operatorsStatus: string;
   operatorsError: string;
   definition: QueryDefinition;
+  joinedContexts: ApiQueryContextDefinition[];
   entity: MetadataEntity;
   onDefinitionChange: (definition: QueryDefinition) => void;
 };
@@ -434,6 +435,7 @@ function replaceNode(group: QueryFilterGroup, path: FilterPath, node: QueryFilte
 type FilterGroupEditorProps = {
   group: QueryFilterGroup;
   metadata: MetadataEntity[];
+  joinedContexts: ApiQueryContextDefinition[];
   functionDefinitions: FunctionDefinition[];
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
@@ -454,7 +456,7 @@ type FilterGroupEditorProps = {
   depth: number;
 };
 
-function FilterGroupEditor({ group, metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, entity, onChange, onRemove, onMoveFilter, onDragPreview, onDragPreviewClear, dragPreview, onGroupFilter, onAddFilter, onAddField, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
+function FilterGroupEditor({ group, metadata, joinedContexts, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, entity, onChange, onRemove, onMoveFilter, onDragPreview, onDragPreviewClear, dragPreview, onGroupFilter, onAddFilter, onAddField, onUngroupFilter, path, showLogicalOperator, depth }: FilterGroupEditorProps) {
   const [collapsed, setCollapsed] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
 
@@ -606,6 +608,7 @@ function FilterGroupEditor({ group, metadata, functionDefinitions, functionDefin
           <FilterGroupEditor
             group={filter}
             metadata={metadata}
+            joinedContexts={joinedContexts}
             functionDefinitions={functionDefinitions}
             functionDefinitionsStatus={functionDefinitionsStatus}
             functionDefinitionsError={functionDefinitionsError}
@@ -641,6 +644,7 @@ function FilterGroupEditor({ group, metadata, functionDefinitions, functionDefin
           first={index === 0}
           path={[...path, index]}
           metadata={metadata}
+          joinedContexts={joinedContexts}
           functionDefinitions={functionDefinitions}
           functionDefinitionsStatus={functionDefinitionsStatus}
           functionDefinitionsError={functionDefinitionsError}
@@ -692,6 +696,7 @@ type FilterRowProps = {
   first: boolean;
   path: FilterPath;
   metadata: MetadataEntity[];
+  joinedContexts: ApiQueryContextDefinition[];
   functionDefinitions: FunctionDefinition[];
   functionDefinitionsStatus: string;
   functionDefinitionsError: string;
@@ -708,7 +713,7 @@ type FilterRowProps = {
   dragPreview?: DragPreview;
 };
 
-function FilterRow({ filter, first, path, metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, entity, onChange, onRemove, onGroup, onAdd, onAddField, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
+function FilterRow({ filter, first, path, metadata, joinedContexts, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, entity, onChange, onRemove, onGroup, onAdd, onAddField, onMove, onDragPreview, onDragPreviewClear, dragPreview }: FilterRowProps) {
   const update = (changes: Partial<QueryFilterItem>) => onChange({ ...filter, ...changes });
   const fieldDataType = filter.fieldExpression?.kind === "group"
     ? "Number"
@@ -788,6 +793,7 @@ function FilterRow({ filter, first, path, metadata, functionDefinitions, functio
         <FieldBuilder
           entity={entity}
           metadata={metadata}
+          joinedContexts={joinedContexts}
           value={filter.field}
           showPath
           showDataType
@@ -799,6 +805,7 @@ function FilterRow({ filter, first, path, metadata, functionDefinitions, functio
             functionDefinitions,
             functionDefinitionsStatus,
             functionDefinitionsError,
+            joinedContexts,
             initialExpression,
           }}
           onExpressionApply={(expression) => {
@@ -861,7 +868,7 @@ function FilterRow({ filter, first, path, metadata, functionDefinitions, functio
   );
 }
 
-export default function FilterBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, operatorsStatus, operatorsError, definition, entity, onDefinitionChange }: FilterBuilderProps) {
+export default function FilterBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, operators, operatorsStatus, operatorsError, definition, joinedContexts, entity, onDefinitionChange }: FilterBuilderProps) {
   const builderRef = useRef<HTMLDivElement>(null);
   const [filterItemWidth, setFilterItemWidth] = useState<number>();
   const [dragPreview, setDragPreview] = useState<DragPreview>();
@@ -1116,6 +1123,7 @@ export default function FilterBuilder({ metadata, functionDefinitions, functionD
       <FilterGroupEditor
             group={definition.filters}
             metadata={metadata}
+            joinedContexts={joinedContexts}
             functionDefinitions={functionDefinitions}
             functionDefinitionsStatus={functionDefinitionsStatus}
             functionDefinitionsError={functionDefinitionsError}

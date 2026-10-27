@@ -40,17 +40,17 @@
 .query-builder-toolbar label { display: flex; flex-direction: column; gap: 7px; color: #aab3c2; font: 11px "Manrope", sans-serif; letter-spacing: .7px; text-transform: uppercase; }
 .query-builder-toolbar select, .query-builder-toolbar input, .filter-row select, .filter-row input { color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 9px; font-size: 13px; outline: 0; }
 .query-builder-toolbar select, .query-builder-toolbar input:not([type="checkbox"]), .filter-row select, .filter-row input { height: var(--field-box-height); box-sizing: border-box; }
-.entity-dropdown { position: relative; }
-.entity-dropdown-trigger { display: flex; align-items: center; justify-content: center; gap: 12px; min-width: 220px; height: var(--field-box-height); box-sizing: border-box; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 0 9px; font: 13px "Manrope", sans-serif; text-align: center; cursor: pointer; }
-.entity-dropdown-trigger:hover, .entity-dropdown-trigger:focus-visible { border-color: #7054d4; outline: 0; }
-.entity-dropdown-trigger.empty { color: #697486; }
-.entity-dropdown-trigger:disabled { opacity: .65; cursor: default; }
-.entity-dropdown-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.entity-dropdown-menu { z-index: 1400; display: flex; flex-direction: column; max-height: min(360px, calc(100vh - 16px)); overflow-y: auto; box-sizing: border-box; padding: 6px; border: 1px solid #3b4153; border-radius: 8px; background: linear-gradient(145deg, #1b202b, #141922); box-shadow: 0 16px 42px #05070ccc, inset 0 1px 0 #ffffff0a; }
-.entity-dropdown-search { flex: 0 0 auto; height: 32px !important; margin: 0 0 5px; padding: 6px 8px !important; font: 12px "Manrope", sans-serif !important; }
-.entity-dropdown-option { flex: 0 0 auto; color: #dce1eb; border: 0; border-radius: 4px; background: transparent; padding: 7px 9px; font: 12px "Manrope", sans-serif; text-align: left; cursor: pointer; }
-.entity-dropdown-option:hover, .entity-dropdown-option:focus-visible, .entity-dropdown-option.selected { color: #f0eaff; background: #40335f; outline: 0; }
-.entity-dropdown-empty { padding: 8px 9px; color: #8993a5; font: 12px "Manrope", sans-serif; }
+.entity-menu { position: relative; }
+.entity-menu-trigger { display: flex; align-items: center; justify-content: flex-start; gap: 12px; min-width: 220px; height: var(--field-box-height); box-sizing: border-box; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 0 9px; font: 13px "Manrope", sans-serif; text-align: left; cursor: pointer; }
+.entity-menu-trigger:hover, .entity-menu-trigger:focus-visible { border-color: #7054d4; outline: 0; }
+.entity-menu-trigger.empty { color: #697486; }
+.entity-menu-trigger:disabled { opacity: .65; cursor: default; }
+.entity-menu-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entity-menu-popup { z-index: 1400; display: flex; flex-direction: column; max-height: min(360px, calc(100vh - 16px)); overflow-y: auto; box-sizing: border-box; padding: 6px; border: 1px solid #3b4153; border-radius: 8px; background: linear-gradient(145deg, #1b202b, #141922); box-shadow: 0 16px 42px #05070ccc, inset 0 1px 0 #ffffff0a; }
+.entity-menu-search { flex: 0 0 auto; height: 32px !important; margin: 0 0 5px; padding: 6px 8px !important; font: 12px "Manrope", sans-serif !important; }
+.entity-menu-option { flex: 0 0 auto; color: #dce1eb; border: 0; border-radius: 4px; background: transparent; padding: 7px 9px; font: 12px "Manrope", sans-serif; text-align: left; cursor: pointer; }
+.entity-menu-option:hover, .entity-menu-option:focus-visible, .entity-menu-option.selected { color: #f0eaff; background: #40335f; outline: 0; }
+.entity-menu-empty { padding: 8px 9px; color: #8993a5; font: 12px "Manrope", sans-serif; }
 .query-builder-toolbar input.small-input { height: calc(var(--field-box-height) - 1px); }
 .query-builder-toolbar input[type="checkbox"] { width: auto; height: auto; padding: 0; }
 .small-input { width: 75px; }
