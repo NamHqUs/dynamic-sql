@@ -1,14 +1,26 @@
-﻿{
-  "$schema": "https://json.schemastore.org/launchsettings.json",
+{
   "profiles": {
-    "http": {
+    "Local": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": false,
-      "applicationUrl": "http://localhost:21210",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:21210"
+    },
+    "Dockerfile": {
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "environmentVariables": {
+        "DbProvider__Default": "Sqlite",
+        "DbProvider__DbScriptsPath": "../scripts",
+        "FileStoragePath": "../var/data"
+      },
+      "containerRunArguments": "-v \"D:\\SourceCode\\Github\\public\\dynamic-sql\\src\\Demo.WebApi\\FileStorage:/var/data\"",
+      "httpPort": 21210, /* Fixed VS port for HTTP */
+      "publishAllPorts": false,
+      "useSSL": false
     }
-  }
+  },
+  "$schema": "https://json.schemastore.org/launchsettings.json"
 }
