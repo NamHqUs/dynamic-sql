@@ -52,10 +52,7 @@ export function createExpression(kind: ExpressionNodeKind, functions: FunctionDe
     case "group":
       return {
         kind: "group",
-        arguments: [
-          { kind: "field", field: "" },
-          { kind: "field", field: "" },
-        ],
+        arguments: [{ kind: "field", field: "" }],
       };
   }
 }
