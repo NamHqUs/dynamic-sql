@@ -473,10 +473,6 @@ function FilterGroupEditor({ group, metadata, functionDefinitions, functionDefin
     onChange({ ...group, filters: group.filters.filter((_, filterIndex) => filterIndex !== index) });
   };
 
-  const addFilter = () => {
-    onChange({ ...group, filters: [...group.filters, createFilter(group.filters.length ? group.logicalOperation : 0)] });
-  };
-
   const handleDrop = (event: DragEvent<HTMLDivElement>, position: DragPosition = "inside", targetPath = path) => {
     event.preventDefault();
     event.stopPropagation();
@@ -663,19 +659,14 @@ function FilterGroupEditor({ group, metadata, functionDefinitions, functionDefin
           ))}
         </>
       )}
-      {depth === 0 && (
-        <>
-          <button className="text-button filter-add-condition" type="button" onClick={addFilter}><Icon name="plus" size={12} /><span className="action-link-text">Condition</span></button>
-          <div
-              className={`filter-drop-zone filter-drop-zone-last${isPreview("after") ? " filter-drop-preview" : ""}`}
-              onDragOver={(event) => {
-                event.preventDefault();
-                onDragPreview(path, "after");
-              }}
-            onDrop={(event) => handleDrop(event, "after")}
-          />
-        </>
-      )}
+      {depth === 0 && <div
+        className={`filter-drop-zone filter-drop-zone-last${isPreview("after") ? " filter-drop-preview" : ""}`}
+        onDragOver={(event) => {
+          event.preventDefault();
+          onDragPreview(path, "after");
+        }}
+        onDrop={(event) => handleDrop(event, "after")}
+      />}
       {depth > 0 && (
         <div
           className={`filter-group-edge-drop filter-group-edge-drop-after${isPreview("after") ? " filter-drop-preview" : ""}`}
@@ -1077,6 +1068,16 @@ export default function FilterBuilder({ metadata, functionDefinitions, functionD
       });
     }
   };
+  const addRootFilter = () => {
+    const filters = definition.filters.filters;
+    onDefinitionChange({
+      ...definition,
+      filters: {
+        ...definition.filters,
+        filters: [...filters, createFilter(filters.length ? definition.filters.logicalOperation : 0)],
+      },
+    });
+  };
 
   return (
     <div
@@ -1093,20 +1094,21 @@ export default function FilterBuilder({ metadata, functionDefinitions, functionD
         <div className="section-heading">
           <div className="projection-title-row">
             <span className="section-kicker">FILTERS</span>
+            <button className="field-action field-action-icon" type="button" aria-label="Add condition" title="Add condition" onClick={addRootFilter}>
+              <Icon name="plus" size={14} />
+            </button>
+            <button
+              type="button"
+              className="field-action field-action-icon"
+              aria-label="Clear filters"
+              title="Clear filters"
+              onClick={clearFilters}
+              disabled={!definition.filters.filters.length}
+            >
+              <Icon name="close" size={14} />
+            </button>
           </div>
           <p className="filter-description">Drag a selected field here to create a filter.</p>
-        </div>
-        <div className="section-header-actions">
-          <button
-            type="button"
-            className="field-action field-action-icon"
-            aria-label="Clear filters"
-            title="Clear filters"
-            onClick={clearFilters}
-            disabled={!definition.filters.filters.length}
-          >
-            <Icon name="close" size={14} />
-          </button>
         </div>
       </div>
       {operatorsStatus === "loading" && <p className="filter-description">Loading filter operators…</p>}

@@ -2,8 +2,8 @@ import { type DragEvent, useEffect, useLayoutEffect, useRef, useState } from "re
 import { createPortal } from "react-dom";
 import { IFieldDefinition, MetadataEntity, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder, { FieldBuilderExpressionOptions } from "../field-builder/field-builder";
-import { formatExpression } from "../field-builder/expression-builder";
 import Icon from "../../../icon/icon";
+import { formatExpression } from "../field-builder/expression-builder";
 
 const QUERY_FIELD_DRAG_TYPE = "application/x-query-field";
 
@@ -144,6 +144,8 @@ function SortDirectionMenu({
 export default function SortBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, draggedProjectionField }: SortBuilderProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [isDropTarget, setIsDropTarget] = useState(false);
+  const [addingSortField, setAddingSortField] = useState(false);
+  const addSortButtonRef = useRef<HTMLButtonElement>(null);
 
   const addSort = (field: string) => {
     const projection = definition.columns.find((column) => column.field === field);
@@ -152,6 +154,14 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
     onDefinitionChange({
       ...definition,
       sorts: [...definition.sorts, { field: sortField, direction: "asc" }],
+    });
+  };
+  const addSortExpression = (expression: IFieldDefinition) => {
+    const field = formatExpression(expression);
+    if (definition.sorts.some((sort) => sort.field === field)) return;
+    onDefinitionChange({
+      ...definition,
+      sorts: [...definition.sorts, { field, expression, direction: "asc" }],
     });
   };
 
@@ -200,20 +210,21 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
         <div className="section-heading">
           <div className="projection-title-row">
             <span className="section-kicker">SORTS</span>
+            <button ref={addSortButtonRef} type="button" className="field-action field-action-icon" aria-label="Add sort" title="Add sort" onClick={() => setAddingSortField(true)}>
+              <Icon name="plus" size={14} />
+            </button>
+            <button
+              type="button"
+              className="field-action field-action-icon"
+              aria-label="Clear sorts"
+              title="Clear sorts"
+              onClick={clearSorts}
+              disabled={!definition.sorts.length}
+            >
+              <Icon name="close" size={14} />
+            </button>
           </div>
           <p className="filter-description">Select fields to sort the query results and choose the direction for each field.</p>
-        </div>
-        <div className="section-header-actions">
-          <button
-            type="button"
-            className="field-action field-action-icon"
-            aria-label="Clear sorts"
-            title="Clear sorts"
-            onClick={clearSorts}
-            disabled={!definition.sorts.length}
-          >
-            <Icon name="close" size={14} />
-          </button>
         </div>
       </div>
       <div
@@ -301,35 +312,30 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
           </div>
           );
         })}
-        <div className="sort-row-add">
+      </div>
+      {addingSortField && <div className="sort-add-picker" aria-hidden="true">
           <FieldBuilder
-            key={`add-sort-${definition.sorts.length}`}
             entity={entity}
             metadata={metadata}
             value=""
-            placeholder="Field"
-            placeholderIcon
-            ariaLabel="Field"
-            excludedPaths={definition.sorts.map((sort) => sort.field)}
+            autoFocus
+            popupAnchor={addSortButtonRef.current}
+            placeholder="Select field..."
+            ariaLabel="Add sort field"
             allowCalculationSelection
-            expressionBuilder={{
-              functionDefinitions,
-              functionDefinitionsStatus,
-              functionDefinitionsError,
+            excludedPaths={definition.sorts.map((sort) => sort.field)}
+            expressionBuilder={{ functionDefinitions, functionDefinitionsStatus, functionDefinitionsError }}
+            onChange={(field) => {
+              addSort(field);
+              setAddingSortField(false);
             }}
             onExpressionApply={(expression) => {
-              const field = formatExpression(expression);
-              if (definition.sorts.some((sort) => sort.field === field)) return;
-              onDefinitionChange({
-                ...definition,
-                sorts: [...definition.sorts, { field, direction: "asc", expression }],
-              });
+              addSortExpression(expression);
+              setAddingSortField(false);
             }}
-            onChange={addSort}
+            onCancel={() => setAddingSortField(false)}
           />
-        </div>
-       
-      </div>
+      </div>}
     </div>
   );
 }

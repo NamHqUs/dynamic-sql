@@ -173,8 +173,6 @@ function FieldCards({
   onFieldDragStart,
   editValue,
   applyExpression,
-  addField,
-  addValue,
 }: {
   fields: { name: string }[];
   rows: string[][];
@@ -198,8 +196,6 @@ function FieldCards({
   onFieldDragStart: (field: string | null) => void;
   editValue: (field: string, value: string | number) => void;
   applyExpression: (field: string | undefined, expression: IFieldDefinition) => void;
-  addField: (field: string) => void;
-  addValue: (value: string | number) => void;
 }) {
   const [draggedField, setDraggedField] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ field: string; position: ProjectionDropPosition } | null>(null);
@@ -474,36 +470,14 @@ function FieldCards({
       </div>
     </div>
   ))}
-    <div className="projection-row projection-row-builder">
-      <div className="field-cards projection-row-fields">
-        <FieldBuilder
-          key={`${entity.name}-${definition.columns.length}`}
-          entity={entity}
-          metadata={metadata}
-          value=""
-          excludedPaths={definition.columns.map((column) => column.field)}
-          placeholder="Field"
-          placeholderIcon
-          ariaLabel="Field"
-          allowValueSelection
-          allowCalculationSelection
-          expressionBuilder={{
-            functionDefinitions,
-            functionDefinitionsStatus,
-            functionDefinitionsError,
-          }}
-          onValueSelect={addValue}
-          onExpressionApply={(expression) => applyExpression(undefined, expression)}
-          onChange={addField}
-        />
-      </div>
-    </div>
   </div>;
 }
 
 export default function ProjectionBuilder({ metadata, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, definition, entity, onDefinitionChange, onFieldDragStart }: ProjectionBuilderProps) {
   const [editingAliasField, setEditingAliasField] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [addingField, setAddingField] = useState(false);
+  const addFieldButtonRef = useRef<HTMLButtonElement>(null);
   const selectedFields = definition.columns.map((column) => ({ name: column.field }));
   const projectionRows = getProjectionRows(definition);
 
@@ -537,14 +511,17 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
     changeProjection({
       ...definition,
       columns: [...definition.columns, { field, alias: null, expression }],
-    });
+    }, [...getProjectionRows(definition), [field]]);
   };
 
   const editValue = (field: string, value: string | number) => {
     const columns = definition.columns.map((column) => column.field === field
       ? { ...column, expression: { kind: "value" as const, value } }
       : column);
-    changeProjection({ ...definition, columns });
+    changeProjection(
+      { ...definition, columns },
+      field ? projectionRows : [...projectionRows, [outputField]],
+    );
   };
 
   const applyExpression = (field: string | undefined, expression: IFieldDefinition) => {
@@ -655,34 +632,35 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
         <div className="section-heading">
           <div className="projection-title-row">
             <span className="section-kicker">PROJECTION</span>
+            <button ref={addFieldButtonRef} type="button" className="field-action field-action-icon" aria-label="Add projection field" title="Add projection field" onClick={() => setAddingField(true)}>
+              <Icon name="plus" size={14} />
+            </button>
+            <div className="field-action-buttons">
+              <button
+                type="button"
+                className="field-action field-action-icon"
+                aria-label="Select all fields"
+                title="Select all fields"
+                onClick={selectAllFields}
+                disabled={entity.fields.every((field) => definition.columns.some((column) => column.field === field.name))}
+              >
+                <Icon name="check" size={14} />
+              </button>
+              <button
+                type="button"
+                className="field-action field-action-icon"
+                aria-label="Clear projection"
+                title="Clear projection"
+                onClick={clearProjection}
+                disabled={!definition.columns.length}
+              >
+                <Icon name="close" size={14} />
+              </button>
+            </div>
           </div>
           <p className="filter-description">
             Select fields to include. Drag a field to another field's left or right edge to reorder, or top or bottom edge to create a row.
           </p>
-        </div>
-        <div className="section-header-actions">
-          <div className="field-action-buttons">
-            <button
-              type="button"
-              className="field-action field-action-icon"
-              aria-label="Select all fields"
-              title="Select all fields"
-              onClick={selectAllFields}
-              disabled={entity.fields.every((field) => definition.columns.some((column) => column.field === field.name))}
-            >
-              <Icon name="check" size={14} />
-            </button>
-            <button
-              type="button"
-              className="field-action field-action-icon"
-              aria-label="Clear projection"
-              title="Clear projection"
-              onClick={clearProjection}
-              disabled={!definition.columns.length}
-            >
-              <Icon name="close" size={14} />
-            </button>
-          </div>
         </div>
       </div>
       <div className="select-fields-row">
@@ -707,12 +685,30 @@ export default function ProjectionBuilder({ metadata, functionDefinitions, funct
           restoreColumn={restoreColumn}
           moveField={moveField}
           onFieldDragStart={onFieldDragStart}
-          addField={addColumn}
-          addValue={addValue}
           applyExpression={applyExpression}
           editValue={editValue}
         />
       </div>
+      {addingField && <div className="projection-add-picker" aria-hidden="true">
+        <FieldBuilder
+          key={`${entity.name}-${definition.columns.length}-new`}
+          entity={entity}
+          metadata={metadata}
+          value=""
+          autoFocus
+          popupAnchor={addFieldButtonRef.current}
+          excludedPaths={definition.columns.map((column) => column.field)}
+          placeholder="select field..."
+          ariaLabel="Add projection field"
+          allowValueSelection
+          allowCalculationSelection
+          expressionBuilder={{ functionDefinitions, functionDefinitionsStatus, functionDefinitionsError }}
+          onValueSelect={(value) => { addValue(value); setAddingField(false); }}
+          onExpressionApply={(expression) => { applyExpression(undefined, expression); setAddingField(false); }}
+          onChange={(field) => { addColumn(field); setAddingField(false); }}
+          onCancel={() => setAddingField(false)}
+        />
+      </div>}
     </div>
   );
 }

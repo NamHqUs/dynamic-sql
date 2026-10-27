@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
 import PanelSplitter from "../panel-splitter/panel-splitter";
-import { createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, fromApiQueryDefinition, getSqlStatement, IFieldDefinition, MetadataEntity, MetadataField, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest, toQueryBuilderSavedView } from "./query-design/query-builder-slice";
+import { ApiQueryContextDefinition, createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, fromApiQueryDefinition, getSqlStatement, IFieldDefinition, MetadataEntity, MetadataField, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest, toQueryBuilderSavedView } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
 import SavedQueryList from "./saved-query-list/saved-query-list";
@@ -109,6 +109,7 @@ function normalizeQueryDefinition(value: unknown): QueryDefinition | null {
     entity: definition.entity,
     columns: definition.columns,
     contexts: definition.contexts,
+    contextCatalog: definition.contextCatalog,
     projectionRows: definition.projectionRows,
     filters: definition.filters,
     sorts: definition.sorts,
@@ -140,6 +141,13 @@ function isQueryDefinition(value: unknown): value is QueryDefinition {
       || definition.contexts === null
       || Array.isArray(definition.contexts)
         && definition.contexts.every((context) => isRecord(context)
+          && typeof context.name === "string"
+          && isRecord(context.query)
+          && typeof context.query.entity === "string"))
+    && (definition.contextCatalog === undefined
+      || definition.contextCatalog === null
+      || Array.isArray(definition.contextCatalog)
+        && definition.contextCatalog.every((context) => isRecord(context)
           && typeof context.name === "string"
           && isRecord(context.query)
           && typeof context.query.entity === "string"));
@@ -254,13 +262,14 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, filterOperators, filterOperatorsStatus, filterOperatorsError, queryRequests, queryRequestsStatus, queryRequestsError, debugUiEnabled } = useSelector((state: RootState) => state.queryBuilder);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
   const [selectedContextIndex, setSelectedContextIndex] = useState<number | null>(null);
+  const [isNewBlankQuery, setIsNewBlankQuery] = useState(false);
   const [requestName, setRequestName] = useState("");
   const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
   const [selectedRequestIsBuiltin, setSelectedRequestIsBuiltin] = useState(false);
   const [queryRequestNotice, setQueryRequestNotice] = useState("");
   const [isSavingQuery, setIsSavingQuery] = useState(false);
   const entity = useMemo(() => metadata.find((item) => item.name === definition.entity), [metadata, definition.entity]);
-  const selectedContext = selectedContextIndex === null ? undefined : definition.contexts?.[selectedContextIndex];
+  const selectedContext = selectedContextIndex === null ? undefined : definition.contextCatalog?.[selectedContextIndex];
   const activeContextIndex = selectedContext ? selectedContextIndex : null;
   const activeDefinition = useMemo(
     () => selectedContext ? fromApiQueryDefinition(selectedContext.query) : definition,
@@ -268,27 +277,25 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   );
   const activeEntity = useMemo(
     () => metadata.find((item) => item.name === activeDefinition.entity)
-      ?? createContextEntity(activeDefinition.contexts ?? definition.contexts, activeDefinition.entity, activeDefinition.columns),
-    [metadata, activeDefinition, definition.contexts],
+      ?? createContextEntity(activeDefinition.contexts ?? definition.contextCatalog, activeDefinition.entity, activeDefinition.columns),
+    [metadata, activeDefinition, definition.contextCatalog],
   );
   const updateDefinition = (nextDefinition: QueryDefinition) => {
     setQueryBuilderDefinition(nextDefinition);
     setDefinition(nextDefinition);
   };
   const updateContextDefinition = (contextIndex: number, contextDefinition: QueryDefinition) => {
-    const context = definition.contexts?.[contextIndex];
-    if (!context || !definition.contexts) return definition;
-    const query = createApiQuery({
-      ...contextDefinition,
-      contexts: context.query.contexts ?? undefined,
-    });
-    const contexts = definition.contexts.map((item, index) =>
+    const context = definition.contextCatalog?.[contextIndex];
+    if (!context || !definition.contextCatalog) return definition;
+    const query = createApiQuery(contextDefinition);
+    const contexts = definition.contextCatalog.map((item, index) =>
       index === contextIndex ? { ...item, query } : item,
     );
-    return { ...definition, contexts };
+    return { ...definition, contextCatalog: contexts };
   };
   const updateDefinitionFromDesign = (nextDefinition: QueryDefinition) => {
     if (activeContextIndex === null) {
+      if (nextDefinition.entity) setIsNewBlankQuery(false);
       updateDefinition(nextDefinition);
       return;
     }
@@ -296,6 +303,79 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
   const updateRequestName = (name: string) => {
     setRequestName(name);
+  };
+  const createContext = (rawName: string) => {
+    const name = rawName.trim();
+    const contexts = definition.contextCatalog ?? [];
+    if (contexts.some((context) => context.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+      return false;
+    }
+    const context: ApiQueryContextDefinition = {
+      name,
+      id: `context-${crypto.randomUUID()}`,
+      query: {
+        entity: "",
+        projection: [],
+        filter: null,
+        sorts: [],
+        page: null,
+        pageSize: null,
+      },
+    };
+    updateDefinition({ ...definition, contextCatalog: [...contexts, context] });
+    setSelectedContextIndex(contexts.length);
+    return true;
+  };
+  const updateContextName = (name: string) => {
+    if (activeContextIndex === null || !definition.contextCatalog) return;
+    const contexts = definition.contextCatalog.map((context, index) =>
+      index === activeContextIndex ? { ...context, name } : context,
+    );
+    updateDefinition({ ...definition, contextCatalog: contexts });
+  };
+  const deleteContext = async (contextIndex: number) => {
+    const context = definition.contextCatalog?.[contextIndex];
+    if (!context || !definition.contextCatalog) return;
+    const action = await showMessageBox({
+      eyebrow: "DELETE CONTEXT",
+      title: `Delete "${context.name}"?`,
+      message: "This context and joins that reference it will be removed from the current query design.",
+      actions: [
+        { value: "cancel", label: "Keep context", variant: "secondary" },
+        { value: "delete", label: "Delete context", variant: "danger" },
+      ],
+    });
+    if (action !== "delete") return;
+    const removeReferencedContext = (contexts: ApiQueryContextDefinition[] | null | undefined): ApiQueryContextDefinition[] | undefined => contexts
+      ?.filter((item) => item.id !== context.id)
+      .map((item) => ({
+        ...item,
+        query: {
+          ...item.query,
+          contexts: removeReferencedContext(item.query.contexts),
+        },
+      }));
+    const remaining = definition.contextCatalog
+      .filter((_, index) => index !== contextIndex)
+      .map((item) => ({
+        ...item,
+        query: {
+          ...item.query,
+          contexts: removeReferencedContext(item.query.contexts),
+        },
+      }));
+    updateDefinition({
+      ...definition,
+      contexts: removeReferencedContext(definition.contexts),
+      contextCatalog: remaining.length ? remaining : undefined,
+    });
+    setSelectedContextIndex((selected) => selected === null
+      ? null
+      : selected === contextIndex
+        ? null
+        : selected > contextIndex
+          ? selected - 1
+          : selected);
   };
   const updateRequestRoute = (name: string | null) => {
     const nextSearchParams = new URLSearchParams(searchParams);
@@ -314,7 +394,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   }, [dispatch, queryRequestsStatus]);
 
   useEffect(() => {
-    if (metadata.length && !metadata.some((item) => item.name === definition.entity)
+    if (!isNewBlankQuery && metadata.length && !metadata.some((item) => item.name === definition.entity)
       && !definition.contexts?.length) {
       updateDefinition(createDefinition(metadata[0].name, metadata[0].fields));
       return;
@@ -330,7 +410,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     } else if (reconciled !== definition) {
       updateDefinition(reconciled);
     }
-  }, [metadata, definition.entity]);
+  }, [metadata, definition.entity, isNewBlankQuery]);
 
   const runQuery = async () => {
     const requestDefinition = activeContextIndex === null
@@ -365,10 +445,11 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     updateRequestRoute(null);
     setSelectedRequestName(null);
     setSelectedContextIndex(null);
+    setIsNewBlankQuery(true);
     setSelectedRequestIsBuiltin(false);
     setRequestName("");
     setQueryRequestNotice("");
-    const nextDefinition = createDefinition(metadata[0]?.name || "", metadata[0]?.fields || []);
+    const nextDefinition = createDefinition("");
     updateDefinition(nextDefinition);
   };
 
@@ -380,6 +461,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     const savedView = toQueryBuilderSavedView(savedRequest);
     if (updateRoute) updateRequestRoute(savedRequest.mainQuery.name);
     setSelectedContextIndex(null);
+    setIsNewBlankQuery(false);
     updateDefinition({
       ...fromApiQuery(
         savedView.query,
@@ -508,9 +590,12 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
               filterOperatorsError={filterOperatorsError}
               definition={activeDefinition}
               entity={activeEntity}
-              contextDefinitions={definition.contexts ?? []}
+              contextDefinitions={definition.contextCatalog ?? []}
               selectedContextIndex={activeContextIndex}
               onSelectContext={setSelectedContextIndex}
+              onCreateContext={createContext}
+              onDeleteContext={(index) => void deleteContext(index)}
+              onContextNameChange={updateContextName}
               requestName={requestName}
               onRequestNameChange={updateRequestName}
               onDefinitionChange={updateDefinitionFromDesign}

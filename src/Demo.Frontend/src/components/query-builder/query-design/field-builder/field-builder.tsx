@@ -29,6 +29,7 @@ type FieldBuilderProps = {
   placeholder?: string;
   placeholderIcon?: boolean;
   ariaLabel?: string;
+  popupAnchor?: HTMLElement | null;
   excludedPaths?: string[];
   autoFocus?: boolean;
   editMode?: boolean;
@@ -37,6 +38,7 @@ type FieldBuilderProps = {
   allowValueSelection?: boolean;
   allowCalculationSelection?: boolean;
   allowFunctionSelection?: boolean;
+  showFunctionTab?: boolean;
   initialSection?: "fields" | "value" | "calculation";
   initialConstantValue?: string | number;
   onValueSelect?: (value: string | number) => void;
@@ -68,6 +70,7 @@ export default function FieldBuilder({
   placeholder = "Select field…",
   placeholderIcon = false,
   ariaLabel = "Field",
+  popupAnchor,
   excludedPaths = [],
   autoFocus,
   editMode = false,
@@ -76,6 +79,7 @@ export default function FieldBuilder({
   allowValueSelection = false,
   allowCalculationSelection = false,
   allowFunctionSelection = false,
+  showFunctionTab = true,
   initialConstantValue,
   initialSection = initialConstantValue !== undefined ? "value" : "fields",
   onValueSelect,
@@ -140,11 +144,12 @@ export default function FieldBuilder({
       placeholder={initialConstantValue === undefined ? placeholder : String(initialConstantValue)}
       placeholderIcon={placeholderIcon}
       ariaLabel={ariaLabel}
+      popupAnchor={popupAnchor}
       excludedPaths={excludedPaths}
       allowAggregates={allowAggregates}
       allowValueSelection={allowValueSelection}
       allowCalculationSelection={allowCalculationSelection}
-      allowFunctionSelection={allowFunctionSelection && Boolean(renderFunction)}
+      allowFunctionSelection={allowFunctionSelection && showFunctionTab && Boolean(renderFunction)}
       initialSection={initialSection}
       initialConstantValue={initialConstantValue}
       onEscape={cancelEdit}

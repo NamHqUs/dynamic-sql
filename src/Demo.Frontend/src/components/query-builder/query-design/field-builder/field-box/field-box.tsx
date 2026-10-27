@@ -18,6 +18,7 @@ type FieldBoxProps = {
   placeholder?: string;
   placeholderIcon?: boolean;
   ariaLabel?: string;
+  popupAnchor?: HTMLElement | null;
   excludedPaths?: string[];
   autoFocus?: boolean;
   allowAggregates?: boolean;
@@ -68,6 +69,7 @@ export default function FieldBox({
   placeholder = "Select field…",
   placeholderIcon = false,
   ariaLabel = "Field",
+  popupAnchor,
   excludedPaths = [],
   autoFocus = false,
   allowAggregates = true,
@@ -135,7 +137,9 @@ export default function FieldBox({
     if (!isMenuOpen || !triggerRef.current) return;
     const updateMenuPosition = () => {
       if (!triggerRef.current) return;
-      const anchor = triggerRef.current.closest(".field-builder-editing") ?? triggerRef.current;
+      const anchor = popupAnchor
+        ?? triggerRef.current.closest(".field-builder-editing")
+        ?? triggerRef.current;
       const bounds = anchor.getBoundingClientRect();
       const menu = menuPopupRef.current;
       const menuHeight = menu
@@ -177,7 +181,7 @@ export default function FieldBox({
       window.removeEventListener("resize", updateMenuPosition);
       window.removeEventListener("scroll", updateMenuPosition, true);
     };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, popupAnchor]);
 
   useEffect(() => {
     if (!isMenuOpen) return;

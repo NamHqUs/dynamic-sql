@@ -88,6 +88,7 @@ export type QueryDefinition = {
   entity: string;
   columns: QueryColumn[];
   contexts?: ApiQueryContextDefinition[] | null;
+  contextCatalog?: ApiQueryContextDefinition[] | null;
   projectionRows?: string[][];
   filters: QueryFilterGroup;
   sorts: { field: string; direction: string; expression?: IFieldDefinition }[];
@@ -113,6 +114,7 @@ export type ApiProjectionDefinition =
   | { field: IFieldDefinition; alias: string | null };
 
 export type ApiQueryDefinition = {
+  name?: string;
   entity: string;
   projection?: ApiProjectionDefinition[];
   filter?: ApiQueryFilterNode | null;
@@ -124,6 +126,7 @@ export type ApiQueryDefinition = {
 
 export type ApiQueryContextDefinition = {
   name: string;
+  alias?: string;
   joinType?: number | string;
   query: ApiQueryDefinition;
   condition?: ApiQueryFilterNode | string | null;
@@ -232,7 +235,7 @@ async function requestText(url: string, options?: RequestInit) {
 }
 
 export function createApiQuery(definition: QueryDefinition) {
-  const { filters, sorts, columns, ...query } = definition;
+  const { filters, sorts, columns, contextCatalog: _contextCatalog, ...query } = definition;
   delete query.projectionRows;
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   return {
@@ -493,6 +496,7 @@ function fromApiQuery(query: ApiQueryRequest, projectionRows?: string[][]): Quer
   return {
     entity: query.entity,
     contexts: query.contexts ?? undefined,
+    contextCatalog: query.contextCatalog ?? undefined,
     columns: query.projection.map((projection, index) => {
       const expression = normalizeApiProjectionDefinition(projection);
       if (!expression) throw new Error("Query API returned an unsupported projection expression.");
@@ -548,13 +552,15 @@ export function toQueryBuilderSavedView(request: ApiSavedQueryRequest): QueryBui
       if (!referenced) throw new Error(`Query API returned an unknown context reference '${joined.refContextId}'.`);
       return {
         id: referenced.id,
-        name: joined.alias,
+        name: referenced.name,
+        alias: joined.alias,
         joinType: joined.joinType,
         condition: joined.condition,
         query: toApiDefinition(referenced, new Set(visited)),
       };
     });
     return {
+    name: context.name,
     entity: context.entity,
     projection: context.projection ?? [],
     filter: context.filters,
@@ -569,12 +575,18 @@ export function toQueryBuilderSavedView(request: ApiSavedQueryRequest): QueryBui
     if (!context) throw new Error(`Query API returned an unknown context reference '${joined.refContextId}'.`);
     return {
       id: context.id,
-      name: joined.alias,
+      name: context.name,
+      alias: joined.alias,
       joinType: joined.joinType,
       condition: joined.condition,
       query: toApiDefinition(context),
     };
   });
+  const contextCatalog: ApiQueryContextDefinition[] = (request.contexts ?? []).map((context) => ({
+    id: context.id,
+    name: context.name,
+    query: toApiDefinition(context),
+  }));
 
   (mainQuery.projection ?? []).forEach((projection, index) => {
     if (projection.alias?.toUpperCase() === "NEW_LINE") {
@@ -601,6 +613,7 @@ export function toQueryBuilderSavedView(request: ApiSavedQueryRequest): QueryBui
       page: mainQuery.page ?? null,
       pageSize: mainQuery.pageSize ?? null,
       contexts: joinedContexts.length ? joinedContexts : undefined,
+      contextCatalog,
     },
     projectionRows,
   };
@@ -632,22 +645,26 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition;
   ]);
 
   const allContexts: ApiQueryContextDefinition[] = [];
-  const collectedContexts = new Set<ApiQueryContextDefinition>();
+  const collectedContexts = new Set<string>();
   const collectContexts = (contextDefinitions: ApiQueryContextDefinition[]) => {
     for (const context of contextDefinitions) {
-      if (collectedContexts.has(context)) continue;
-      collectedContexts.add(context);
+      const identity = context.id ?? `reference-${allContexts.length}`;
+      if (collectedContexts.has(identity)) continue;
+      collectedContexts.add(identity);
       allContexts.push(context);
       if (context.query.contexts) collectContexts(context.query.contexts);
     }
   };
+  collectContexts(request.definition.contextCatalog ?? []);
   collectContexts(apiQuery.contexts ?? []);
-  const contextIds = new Map<ApiQueryContextDefinition, string>();
+  const contextIds = new Map<string, string>();
   allContexts.forEach((context, index) => {
-    contextIds.set(context, context.id ?? `${request.id ?? request.name}-context-${index}`);
+    contextIds.set(context.id ?? `reference-${index}`, context.id ?? `${request.id ?? request.name}-context-${index}`);
   });
+  const getContextId = (context: ApiQueryContextDefinition) => contextIds.get(context.id ?? "")
+    ?? `${request.id ?? request.name}-context-${allContexts.indexOf(context)}`;
   const toStoredContext = (context: ApiQueryContextDefinition) => ({
-    id: contextIds.get(context)!,
+    id: getContextId(context),
     name: context.name,
     entity: context.query.entity,
     projection: context.query.projection,
@@ -656,16 +673,16 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition;
     page: context.query.page,
     pageSize: context.query.pageSize,
     joinedContexts: context.query.contexts?.map((nested) => ({
-      refContextId: contextIds.get(nested)!,
-      alias: nested.name,
+      refContextId: getContextId(nested),
+      alias: nested.alias ?? nested.name,
       condition: nested.condition ?? { logicalOperation: 0, filters: [] },
       joinType: nested.joinType ?? 1,
     })) ?? null,
   });
   const contexts = allContexts.map(toStoredContext);
   const joinedContexts = (apiQuery.contexts ?? []).map((context) => ({
-    refContextId: contextIds.get(context)!,
-    alias: context.name,
+    refContextId: getContextId(context),
+    alias: context.alias ?? context.name,
     condition: context.condition ?? { logicalOperation: 0, filters: [] },
     joinType: context.joinType ?? 1,
   }));
