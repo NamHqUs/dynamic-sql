@@ -1,6 +1,5 @@
 .field-builder-editing { display: inline-flex; align-items: center; gap: 6px; height: var(--field-box-height, 34px); min-height: var(--field-box-height, 34px); }
 .field-builder-editing.field-builder-incomplete .field-box-segment,
-.field-builder-editing.field-builder-incomplete .field-box-aggregate-label,
 .field-builder-editing.field-builder-incomplete .operator-trigger,
 .field-builder-editing.field-builder-incomplete .field-box select { color: #ffb0b0; border-color: #d66a78; }
 .field-builder-editing.field-builder-incomplete .operator-trigger { background: #43252c; }

@@ -36,7 +36,6 @@ type FieldBuilderProps = {
   autoFocus?: boolean;
   editMode?: boolean;
   onCancel?: () => void;
-  allowAggregates?: boolean;
   allowValueSelection?: boolean;
   allowCalculationSelection?: boolean;
   allowFunctionSelection?: boolean;
@@ -53,10 +52,6 @@ type FieldBuilderProps = {
 function getFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {
   const segments = value.split(".");
   const lastSegment = segments[segments.length - 1] ?? "";
-  const aggregateField = value.match(/^(COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i)?.[2]
-    ?? lastSegment.match(/^(COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i)?.[2];
-  if (value.toUpperCase().startsWith("COUNT()") || aggregateField) return "Number";
-
   const owner = resolveEntity(entity, metadata, segments.slice(0, -1));
   return owner?.fields.find((field) => field.name === lastSegment)?.dataType;
 }
@@ -78,7 +73,6 @@ export default function FieldBuilder({
   autoFocus,
   editMode = false,
   onCancel,
-  allowAggregates = true,
   allowValueSelection = false,
   allowCalculationSelection = false,
   allowFunctionSelection = false,
@@ -150,7 +144,6 @@ export default function FieldBuilder({
       ariaLabel={ariaLabel}
       popupAnchor={popupAnchor}
       excludedPaths={excludedPaths}
-      allowAggregates={allowAggregates}
       allowValueSelection={allowValueSelection}
       allowCalculationSelection={allowCalculationSelection}
       allowFunctionSelection={allowFunctionSelection && showFunctionTab && Boolean(renderFunction)}
