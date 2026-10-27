@@ -238,21 +238,8 @@ export function createApiQuery(definition: QueryDefinition) {
   const { filters, sorts, columns, contextCatalog: _contextCatalog, ...query } = definition;
   delete query.projectionRows;
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
-  const applyContextAliases = (queryDefinition: ApiQueryDefinition): ApiQueryDefinition => ({
-    ...queryDefinition,
-    contexts: queryDefinition.contexts?.map((context) => ({
-      ...context,
-      name: context.alias?.trim() || context.name,
-      query: applyContextAliases(context.query),
-    })),
-  });
   return {
     ...query,
-    contexts: query.contexts?.map((context) => ({
-      ...context,
-      name: context.alias?.trim() || context.name,
-      query: applyContextAliases(context.query),
-    })),
     projection: columns.map(({ field, alias, expression }) => ({
       fields: toApiProjectionFields(expression ?? { kind: "field", field }),
       alias,

@@ -18,6 +18,7 @@ public record YamlQueryDefinition()
 public record YamlQueryContextDefinition
 {
     public string? Name { get; set; }
+    public string? Alias { get; set; }
     public YamlQueryDefinition? Query { get; set; }
     public string? Condition { get; set; }
     public QueryJoinType? JoinType { get; set; }

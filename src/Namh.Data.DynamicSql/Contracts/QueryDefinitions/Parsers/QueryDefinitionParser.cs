@@ -44,7 +44,10 @@ public static partial class QueryDefinitionParser
                     context.Name,
                     Parse(context.Query),
                     ConditionDefinitionParser.ParseJoinCondition(context.Condition),
-                    context.JoinType ?? QueryJoinType.Left);
+                    context.JoinType ?? QueryJoinType.Left)
+                {
+                    Alias = context.Alias
+                };
             }).ToList()
         };
     }
@@ -67,14 +70,13 @@ public static partial class QueryDefinitionParser
             ? contextsElement.ValueKind == JsonValueKind.Array
                 ? contextsElement.EnumerateArray().Select(context =>
                 {
-                    var name = TryGetProperty(context, "alias", out var aliasElement)
+                    var alias = TryGetProperty(context, "alias", out var aliasElement)
                         ? aliasElement.GetString()
                         : null;
-                    name = !string.IsNullOrWhiteSpace(name)
-                        ? name
-                        : TryGetProperty(context, "name", out var nameElement)
+                    var name = TryGetProperty(context, "name", out var nameElement)
                         ? nameElement.GetString()
                         : null;
+                    name = !string.IsNullOrWhiteSpace(name) ? name : alias;
                     if (string.IsNullOrWhiteSpace(name))
                         throw new JsonException("A query context requires a name.");
                     if (!TryGetProperty(context, "query", out var queryElement) ||
@@ -100,7 +102,10 @@ public static partial class QueryDefinitionParser
                         name,
                         ParseJsonDefinition(queryElement),
                         condition,
-                        joinType);
+                        joinType)
+                    {
+                        Alias = alias
+                    };
                 }).ToList()
                 : throw new JsonException("The contexts value must be an array.")
             : null;

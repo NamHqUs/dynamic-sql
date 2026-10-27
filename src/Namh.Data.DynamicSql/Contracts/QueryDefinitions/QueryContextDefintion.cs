@@ -13,4 +13,7 @@ public record QueryContextDefintion(
     string Name,
     QueryDefinition Query,
     IConditionDefintion? Condition,
-    QueryJoinType JoinType = QueryJoinType.Left);
+    QueryJoinType JoinType = QueryJoinType.Left)
+{
+    public string? Alias { get; init; }
+}

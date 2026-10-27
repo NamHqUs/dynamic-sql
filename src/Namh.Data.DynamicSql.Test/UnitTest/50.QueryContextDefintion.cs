@@ -147,6 +147,7 @@ public class _50_QueryContextDefintion : TestBase
               - UserContext.Id | Manager Id
             Contexts:
               - Name: UserContext
+                Alias: Manager
                 JoinType: Left
                 Query:
                   Entity: User
@@ -160,6 +161,7 @@ public class _50_QueryContextDefintion : TestBase
 
         Assert.That(parsedAgain.Contexts, Has.Count.EqualTo(1));
         Assert.That(parsedAgain.Contexts![0].Name, Is.EqualTo("UserContext"));
+        Assert.That(parsedAgain.Contexts[0].Alias, Is.EqualTo("Manager"));
         Assert.That(parsedAgain.Contexts[0].JoinType, Is.EqualTo(QueryJoinType.Left));
         Assert.That(parsedAgain.Contexts[0].Condition?.ToText(), Is.EqualTo("ManagerId = Id"));
         Assert.That(parsedAgain.Projection[0].Alias, Is.EqualTo("Manager Id"));
@@ -239,20 +241,34 @@ public class _50_QueryContextDefintion : TestBase
             {
               "entity": "User",
               "projection": [
-                { "fields": ["Manager.Id"] },
-                { "fields": ["Reviewer.Id"] }
+                { "fields": ["Manager.Name"] },
+                { "fields": ["Reviewer.Age"] }
               ],
               "contexts": [
                 {
                   "name": "UserContext",
                   "alias": "Manager",
-                  "query": { "entity": "User", "projection": [{ "fields": ["Id"] }] },
+                  "query": {
+                    "entity": "User",
+                    "projection": [
+                      { "fields": ["Id"] },
+                      { "fields": ["Name"] },
+                      { "fields": ["Age"] }
+                    ]
+                  },
                   "condition": { "left": "ManagerId", "operation": 0, "right": "Id" }
                 },
                 {
                   "name": "UserContext",
                   "alias": "Reviewer",
-                  "query": { "entity": "User", "projection": [{ "fields": ["Id"] }] },
+                  "query": {
+                    "entity": "User",
+                    "projection": [
+                      { "fields": ["Id"] },
+                      { "fields": ["Name"] },
+                      { "fields": ["Age"] }
+                    ]
+                  },
                   "condition": { "left": "ReviewerId", "operation": 0, "right": "Id" }
                 }
               ]
@@ -262,18 +278,20 @@ public class _50_QueryContextDefintion : TestBase
             new SqlServerDialect(),
             new Entity("User", [
                 new("Id", DataType.Number),
+                new("Name"),
+                new("Age", DataType.Number),
                 new("ManagerId", DataType.Number),
                 new("ReviewerId", DataType.Number),
             ]));
 
         var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql().CommandText;
 
-        Assert.That(sql, Does.Contain("WITH [Manager] AS"));
-        Assert.That(sql, Does.Contain("[Reviewer] AS"));
-        Assert.That(sql, Does.Contain("LEFT JOIN [Manager]"));
-        Assert.That(sql, Does.Contain("LEFT JOIN [Reviewer]"));
-        Assert.That(sql, Does.Contain("t1.[Id] [Manager.Id]"));
-        Assert.That(sql, Does.Contain("t2.[Id] [Reviewer.Id]"));
+        Assert.That(sql, Does.Contain("WITH [UserContext] AS"));
+        Assert.That(System.Text.RegularExpressions.Regex.Matches(sql, @"\[UserContext\] AS").Count, Is.EqualTo(1));
+        Assert.That(sql, Does.Contain("LEFT JOIN [UserContext] t1"));
+        Assert.That(sql, Does.Contain("LEFT JOIN [UserContext] t2"));
+        Assert.That(sql, Does.Contain("t1.[Name] [Manager.Name]"));
+        Assert.That(sql, Does.Contain("t2.[Age] [Reviewer.Age]"));
     }
 
     [Test]

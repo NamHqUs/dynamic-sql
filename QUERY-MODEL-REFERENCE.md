@@ -157,13 +157,14 @@ condition use the same canonical field/value/group/function node shapes above.
       "alias": null
     },
     {
-      "fields": [{ "kind": "field", "field": "UserContext.Alias Name" }],
+      "fields": [{ "kind": "field", "field": "Manager.Alias Name" }],
       "alias": "Manager Name"
     }
   ],
   "contexts": [
     {
       "name": "UserContext",
+      "alias": "Manager",
       "joinType": "Left",
       "query": {
         "entity": "User",
@@ -192,7 +193,10 @@ condition use the same canonical field/value/group/function node shapes above.
 
 Context properties:
 
-- `name` is the CTE identifier; names must be unique within the query.
+- `name` is the CTE identifier. Relations with the same name share one CTE;
+  they must use the same query definition.
+- `alias` is an optional relation alias used to address the joined context in
+  projection and condition field paths. If omitted, `name` is used.
 - `query` is another query definition, using the same `entity`, `projection`,
   filter, sort, and paging properties.
 - `joinType` accepts `Inner`, `Left`, `Right`, or `Full`; it defaults to

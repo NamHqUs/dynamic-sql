@@ -51,6 +51,8 @@ public sealed class QueryDefinition
             foreach (var context in Contexts)
             {
                 lines.Add($"  - Name: {context.Name}");
+                if (!string.IsNullOrWhiteSpace(context.Alias))
+                    lines.Add($"    Alias: {context.Alias}");
                 lines.Add($"    JoinType: {context.JoinType}");
                 lines.Add("    Query:");
                 lines.AddRange(context.Query.ToYml()

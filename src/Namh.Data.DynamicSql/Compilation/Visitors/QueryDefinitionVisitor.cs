@@ -15,20 +15,32 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             throw new NotSupportedException("Nested query contexts are not supported.");
 
         var definitions = new Dictionary<string, QueryContextDefintion>(StringComparer.OrdinalIgnoreCase);
+        List<QueryContextDefintion> cteDefinitions = [];
+        HashSet<string> aliases = new(StringComparer.OrdinalIgnoreCase);
         foreach (var context in definition.Contexts)
         {
             if (string.IsNullOrWhiteSpace(context.Name))
                 throw new FormatException("A query context requires a name.");
-            if (!definitions.TryAdd(context.Name, context))
-                throw new FormatException($"Duplicate query context [{context.Name}].");
+            if (!aliases.Add(GetContextAlias(context)))
+                throw new FormatException($"Duplicate query context alias [{GetContextAlias(context)}].");
+            if (definitions.TryGetValue(context.Name, out var existing))
+            {
+                if (!string.Equals(existing.Query.ToYml(), context.Query.ToYml(), StringComparison.Ordinal))
+                    throw new FormatException(
+                        $"Query context [{context.Name}] has conflicting query definitions.");
+                continue;
+            }
+
+            definitions.Add(context.Name, context);
+            cteDefinitions.Add(context);
         }
 
-        var definitionIndexes = definition.Contexts
+        var definitionIndexes = cteDefinitions
             .Select((context, index) => (context.Name, index))
             .ToDictionary(entry => entry.Name, entry => entry.index, StringComparer.OrdinalIgnoreCase);
-        for (var index = 0; index < definition.Contexts.Count; index++)
+        for (var index = 0; index < cteDefinitions.Count; index++)
         {
-            var context = definition.Contexts[index];
+            var context = cteDefinitions[index];
             if (!definitionIndexes.TryGetValue(context.Query.Entity, out var dependencyIndex))
                 continue;
             if (dependencyIndex == index)
@@ -42,34 +54,39 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         var cteTables = new Dictionary<string, TableExpression>(StringComparer.OrdinalIgnoreCase);
         foreach (var context in definition.Contexts)
         {
+            var alias = GetContextAlias(context);
             var cteTable = table is CteTableExpression rootCte &&
                 string.Equals(rootCte.Name, context.Name, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(alias, context.Name, StringComparison.OrdinalIgnoreCase)
                     ? table
                     : new CteTableExpression(
                         context.Name,
-                        CreateCteEntity(context, definitions),
+                        CreateCteEntity(definitions[context.Name], definitions),
                         queryContext.GetNextAlias());
-            cteTables.Add(context.Name, cteTable);
-            if (!table.JoinedTables.ContainsKey(context.Name))
-                table.JoinedTables.Add(context.Name, cteTable);
+            cteTables.Add(alias, cteTable);
+            table.JoinedTables.Add(alias, cteTable);
         }
 
         foreach (var context in definition.Contexts.Where(context => context.Condition is not null))
         {
-            var joinedTable = cteTables[context.Name];
+            var joinedTable = cteTables[GetContextAlias(context)];
             table.Joins.Add(new JoinExpression(
                 joinedTable,
                 RenderJoinType(context.JoinType),
                 [new JoinConditionVisitor(queryContext, table, joinedTable, cteTables).Parse(context.Condition!)]));
         }
 
-        foreach (var context in definition.Contexts)
+        foreach (var context in cteDefinitions)
         {
-            var cteTable = cteTables[context.Name];
             var cteQuery = BuildQuery(context.Query, definitions);
             table.CommonTableExpressions.Add(new CommonTableExpression(context.Name, cteQuery));
-            cteTable.Entity.Fields.Clear();
-            cteTable.Entity.Fields.AddRange(cteQuery.ProjectionItems.Select(item => new Field(item.Alias)));
+            foreach (var reference in definition.Contexts.Where(reference =>
+                string.Equals(reference.Name, context.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                var cteTable = cteTables[GetContextAlias(reference)];
+                cteTable.Entity.Fields.Clear();
+                cteTable.Entity.Fields.AddRange(cteQuery.ProjectionItems.Select(item => new Field(item.Alias)));
+            }
         }
 
         return BuildQueryBody(definition, table, definitions);
@@ -173,6 +190,9 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         => string.IsNullOrWhiteSpace(projection.Alias)
             ? string.Join(" ", projection.Fields.Select(field => field.ToText()))
             : projection.Alias;
+
+    private static string GetContextAlias(QueryContextDefintion context)
+        => string.IsNullOrWhiteSpace(context.Alias) ? context.Name : context.Alias;
 
     private static string RenderJoinType(QueryJoinType joinType)
         => joinType switch
