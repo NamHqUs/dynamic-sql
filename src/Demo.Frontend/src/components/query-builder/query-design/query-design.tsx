@@ -28,10 +28,6 @@ function EntityMenu({ entities, value, disabled, onChange }: EntityMenuProps) {
   const filteredEntities = entities.filter((item) => item.name.toLowerCase().includes(search.trim().toLowerCase()));
 
   useLayoutEffect(() => {
-    if (open) searchRef.current?.focus();
-  }, [open]);
-
-  useLayoutEffect(() => {
     if (!open) {
       setMenuPosition(null);
       return;
@@ -59,6 +55,10 @@ function EntityMenu({ entities, value, disabled, onChange }: EntityMenuProps) {
       window.removeEventListener("scroll", updatePosition, true);
     };
   }, [open, search, filteredEntities.length]);
+
+  useLayoutEffect(() => {
+    if (open && menuPosition) searchRef.current?.focus();
+  }, [open, menuPosition]);
 
   useEffect(() => {
     if (!open) return;
