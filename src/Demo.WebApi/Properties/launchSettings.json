@@ -14,6 +14,18 @@
       "environmentVariables": {
         "DbProvider__Default": "Sqlite",
         "DbProvider__DbScriptsPath": "../scripts",
+        "FileStoragePath": "/tmp/file-storage"
+      },
+      "httpPort": 21210, /* Fixed VS port for HTTP */
+      "publishAllPorts": false,
+      "useSSL": false
+    },
+    "Dockerfile-Volume": {
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "environmentVariables": {
+        "DbProvider__Default": "Sqlite",
+        "DbProvider__DbScriptsPath": "../scripts",
         "FileStoragePath": "../var/data"
       },
       "containerRunArguments": "-v \"D:\\SourceCode\\Github\\public\\dynamic-sql\\src\\Demo.WebApi\\FileStorage:/var/data\"",
@@ -21,6 +33,7 @@
       "publishAllPorts": false,
       "useSSL": false
     }
+
   },
   "$schema": "https://json.schemastore.org/launchsettings.json"
 }
