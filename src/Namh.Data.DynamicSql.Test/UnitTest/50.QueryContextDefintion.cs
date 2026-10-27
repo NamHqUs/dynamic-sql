@@ -7,6 +7,35 @@ namespace Namh.Data.DynamicSql.Test.UnitTest;
 public class _50_QueryContextDefintion : TestBase
 {
     [Test]
+    public void MultipleContexts_StartEachCteOnANewLine()
+    {
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity("User", [new("Id", DataType.Number)]));
+        var query = new QueryDefinition
+        {
+            Entity = "User",
+            Contexts =
+            [
+                new QueryContextDefintion(
+                    "UserContext",
+                    new QueryDefinition { Entity = "User", Projection = [new("Id")] },
+                    Condition: null),
+                new QueryContextDefintion(
+                    "UserContext1",
+                    new QueryDefinition { Entity = "User", Projection = [new("Id")] },
+                    Condition: null)
+            ],
+            Projection = [new("Id")]
+        };
+
+        var sql = db.Query(query).ToSql().CommandText;
+
+        Assert.That(sql, Does.StartWith($"WITH{Environment.NewLine}[UserContext] AS ("));
+        Assert.That(sql, Does.Contain($"),{Environment.NewLine}[UserContext1] AS ("));
+    }
+
+    [Test]
     public void Sample_RendersCteProjectionAndLeftJoin()
     {
         using var db = CreateContext(
@@ -55,7 +84,8 @@ public class _50_QueryContextDefintion : TestBase
             Is.EqualTo(
                 string.Join(
                     Environment.NewLine,
-                    "WITH [UserContext] AS (",
+                    "WITH",
+                    "[UserContext] AS (",
                     "    SELECT t2.[Id] [Id], t2.[Name] [Alias Name]",
                     "    FROM dbo.[User] t2)",
                     "SELECT t0.[Id] [Id], t0.[Name] [User Name], t1.[Alias Name] [Manager Name]",
@@ -286,7 +316,7 @@ public class _50_QueryContextDefintion : TestBase
 
         var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql().CommandText;
 
-        Assert.That(sql, Does.Contain("WITH [UserContext] AS"));
+        Assert.That(sql, Does.Contain($"WITH{Environment.NewLine}[UserContext] AS"));
         Assert.That(System.Text.RegularExpressions.Regex.Matches(sql, @"\[UserContext\] AS").Count, Is.EqualTo(1));
         Assert.That(sql, Does.Contain("LEFT JOIN [UserContext] t1"));
         Assert.That(sql, Does.Contain("LEFT JOIN [UserContext] t2"));

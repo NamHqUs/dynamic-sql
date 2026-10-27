@@ -38,6 +38,8 @@ internal static class SqlFormatter
         var inBracketQuote = false;
         var lineHasContent = false;
         var inJoin = false;
+        var inCteList = false;
+        var afterWith = false;
 
         void NewLine()
         {
@@ -57,6 +59,18 @@ internal static class SqlFormatter
                 return;
 
             var keyword = value.ToUpperInvariant();
+            if (keyword == "WITH")
+            {
+                NewLine();
+                result.Append(value);
+                lineHasContent = true;
+                afterWith = true;
+                return;
+            }
+
+            if (inCteList && indent == 0 && keyword == "SELECT")
+                inCteList = false;
+
             if (JoinKeywords.Contains(keyword))
             {
                 NewLine();
@@ -128,6 +142,16 @@ internal static class SqlFormatter
                 continue;
             }
 
+            if (afterWith && !char.IsWhiteSpace(character))
+            {
+                afterWith = false;
+                if (character != '(')
+                {
+                    inCteList = true;
+                    NewLine();
+                }
+            }
+
             if (character == '\'')
             {
                 FlushToken();
@@ -162,6 +186,7 @@ internal static class SqlFormatter
             else if (character == '(')
             {
                 FlushToken();
+                afterWith = false;
                 if (lineHasContent && result[^1] != ' ')
                     result.Append(' ');
                 result.Append('(');
@@ -179,8 +204,13 @@ internal static class SqlFormatter
             {
                 FlushToken();
                 result.Append(',');
-                result.Append(' ');
-                lineHasContent = true;
+                if (inCteList && indent == 0)
+                    NewLine();
+                else
+                {
+                    result.Append(' ');
+                    lineHasContent = true;
+                }
             }
             else
             {

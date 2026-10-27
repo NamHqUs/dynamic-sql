@@ -116,7 +116,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     private string RenderCommonTableExpressions(TableExpression query)
         => query.CommonTableExpressions.Count == 0
             ? string.Empty
-            : "WITH " + string.Join(",\n", query.CommonTableExpressions.Select(cte =>
+            : "WITH \n" + string.Join(",\n", query.CommonTableExpressions.Select(cte =>
                 $"{dialect.QuoteIdentifier(cte.Name)} AS (\n{Indent(RenderQuery(cte.Query))}\n)")) + "\n";
 
     private static string Indent(string text)
