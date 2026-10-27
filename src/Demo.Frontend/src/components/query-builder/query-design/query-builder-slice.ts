@@ -140,6 +140,12 @@ export function hasApiQueryCondition(condition: ApiQueryContextDefinition["condi
   return true;
 }
 
+function isSourceContext(context: ApiQueryContextDefinition, entity: string): boolean {
+  return context.name === entity
+    && !context.alias?.trim()
+    && !hasApiQueryCondition(context.condition);
+}
+
 type ApiQueryContextDto = {
   id: string;
   name: string;
@@ -246,9 +252,7 @@ export function createApiQuery(definition: QueryDefinition) {
   delete query.projectionRows;
   const noPaging = definition.pageSize !== null && definition.pageSize < 1;
   const contexts = query.contexts?.map((context) =>
-    context.name === query.entity
-      && !context.alias?.trim()
-      && !hasApiQueryCondition(context.condition)
+    isSourceContext(context, query.entity)
       ? { ...context, condition: null }
       : context);
   return {
@@ -596,6 +600,25 @@ export function toQueryBuilderSavedView(request: ApiSavedQueryRequest): QueryBui
       query: toApiDefinition(context),
     };
   });
+  const sourceContextDto = (request.contexts ?? []).find((context) =>
+    context.name === mainQuery.entity);
+  const sourceContext: ApiQueryContextDefinition | undefined = sourceContextDto
+    ? {
+      id: sourceContextDto.id,
+      name: sourceContextDto.name,
+      joinType: 1,
+      condition: null,
+      query: toApiDefinition(sourceContextDto),
+    }
+    : undefined;
+  const queryContexts = [
+    ...(sourceContext ? [sourceContext] : []),
+    ...extraRelations.filter((context) =>
+      !(sourceContextDto
+        && context.id === sourceContextDto.id
+        && (context.alias === sourceContextDto.name || !context.alias?.trim())
+        && !hasApiQueryCondition(context.condition))),
+  ];
   const contextCatalog: ApiQueryContextDefinition[] = (request.contexts ?? []).map((context) => ({
     id: context.id,
     name: context.name,
@@ -626,7 +649,7 @@ export function toQueryBuilderSavedView(request: ApiSavedQueryRequest): QueryBui
       sorts: mainQuery.sorts?.flat() ?? [],
       page: mainQuery.page ?? null,
       pageSize: mainQuery.pageSize ?? null,
-      contexts: extraRelations.length ? extraRelations : undefined,
+      contexts: queryContexts.length ? queryContexts : undefined,
       contextCatalog,
     },
     projectionRows,
@@ -694,12 +717,14 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition;
     })) ?? null,
   });
   const contexts = allContexts.map(toStoredContext);
-  const extraRelations = (apiQuery.contexts ?? []).map((context) => ({
-    refContextId: getContextId(context),
-    alias: context.alias ?? context.name,
-    condition: context.condition ?? { logicalOperation: 0, filters: [] },
-    joinType: context.joinType ?? 1,
-  }));
+  const extraRelations = (apiQuery.contexts ?? [])
+    .filter((context) => !isSourceContext(context, apiQuery.entity))
+    .map((context) => ({
+      refContextId: getContextId(context),
+      alias: context.alias ?? context.name,
+      condition: context.condition ?? { logicalOperation: 0, filters: [] },
+      joinType: context.joinType ?? 1,
+    }));
 
   return {
     mainQuery: {

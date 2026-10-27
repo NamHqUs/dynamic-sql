@@ -538,6 +538,14 @@ Contexts:
     Condition: A.Salary BETWEEN <B.MinSalary, B.MinSalary + 10000>
 ```
 
+For saved `QueryDto` requests, `MainQuery.Entity` may match a reference
+context's `Name`. That context is the root source, not an extra join: keep its
+definition in `Contexts` and leave `MainQuery.ExtraRelations` empty unless
+there is a separate join. When converting the request to a `QueryDefinition`,
+include the source context in `QueryDefinition.Contexts` with no alias or join
+condition. The compiler then uses the context CTE as `FROM` without emitting a
+`JOIN`.
+
 For a condition, unqualified left-side fields resolve against the outer source
 and unqualified right-side fields resolve against the joined context. Prefix a
 field with a CTE name (for example, `A.Salary`) to select a specific source.
