@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Globalization;
 
 namespace Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
@@ -82,18 +83,24 @@ internal sealed class ConditionStatementDefinitionJsonConverter : JsonConverter<
                 ? left
                 : throw new JsonException("A filter item requires a left field expression.");
         var leftField = ReadField(leftElement, options, "left");
-        var operationElement = TryGetProperty(root, "operation", out var parsedOperation)
-            ? parsedOperation
-            : throw new JsonException("A filter item requires an operation.");
-        var operatorId = operationElement.ValueKind == JsonValueKind.String
+        var hasOperation = TryGetProperty(root, "operation", out var operationElement);
+        var operatorId = hasOperation && operationElement.ValueKind == JsonValueKind.String
             ? operationElement.GetString()
             : null;
-        if (operationElement.ValueKind is not (JsonValueKind.Number or JsonValueKind.String) ||
+        if (hasOperation &&
+            (operationElement.ValueKind is not (JsonValueKind.Number or JsonValueKind.String) ||
             (operationElement.ValueKind == JsonValueKind.String && string.IsNullOrWhiteSpace(operatorId)))
+           )
             throw new JsonException("A filter operation must be a numeric built-in operation or a custom operator ID.");
-        var operation = operationElement.ValueKind == JsonValueKind.Number
-            ? operationElement.Deserialize<BinaryOperator>(options)
-            : BinaryOperator.Equals;
+        var operation = !hasOperation
+            ? BinaryOperator.Equals
+            : operationElement.ValueKind == JsonValueKind.Number
+                ? operationElement.Deserialize<BinaryOperator>(options)
+                : TryParseBuiltinOperator(operatorId!, out var builtinOperation)
+                    ? builtinOperation
+                    : BinaryOperator.Equals;
+        if (operatorId?.StartsWith("builtin:", StringComparison.OrdinalIgnoreCase) == true)
+            operatorId = null;
         var right = TryGetProperty(root, "right", out var rightElement)
             ? rightElement.ValueKind == JsonValueKind.Null
                 ? null
@@ -156,6 +163,27 @@ internal sealed class ConditionStatementDefinitionJsonConverter : JsonConverter<
             JsonValueKind.Number => element.GetDecimal(),
             _ => throw new JsonException($"Unsupported legacy filter value [{element.ValueKind}].")
         });
+
+    private static bool TryParseBuiltinOperator(string operatorId, out BinaryOperator operation)
+    {
+        const string prefix = "builtin:";
+        if (!operatorId.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            operation = default;
+            return false;
+        }
+
+        if (!int.TryParse(
+                operatorId.AsSpan(prefix.Length),
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out var value) ||
+            !Enum.IsDefined(typeof(BinaryOperator), value))
+            throw new JsonException($"Built-in filter operation [{operatorId}] is invalid.");
+
+        operation = (BinaryOperator)value;
+        return true;
+    }
 
     private static bool TryGetProperty(JsonElement element, string name, out JsonElement value)
         => element.TryGetProperty(name, out value) ||

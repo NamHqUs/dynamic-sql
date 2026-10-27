@@ -46,6 +46,8 @@ const joinTypes = [
   [3, "Full"],
 ] as const;
 
+const defaultJoinOperator = 0;
+
 const defaultOperators = [
   [0, "="], [1, "<>"], [4, ">"], [5, "<"], [6, ">="], [7, "<="],
 ] as const;
@@ -203,6 +205,12 @@ function expressionText(expression: IFieldDefinition | string | undefined): stri
       : "";
 }
 
+function normalizeJoinOperator(operator: number | string): number | string {
+  if (typeof operator !== "string" || !operator.startsWith("builtin:")) return operator;
+  const value = Number(operator.slice("builtin:".length));
+  return Number.isInteger(value) ? value : operator;
+}
+
 function joinCondition(context: ApiQueryContextDefinition): JoinConditionItem {
   if (!isRecord(context.condition) || !Array.isArray(context.condition.filters)) return {};
   const first = context.condition.filters[0];
@@ -211,7 +219,7 @@ function joinCondition(context: ApiQueryContextDefinition): JoinConditionItem {
     ...(asFieldExpression(first.left) ? { left: asFieldExpression(first.left) } : {}),
     ...(asFieldExpression(first.right) ? { right: asFieldExpression(first.right) } : {}),
     ...(typeof first.operation === "number" || typeof first.operation === "string"
-      ? { operation: first.operation }
+      ? { operation: normalizeJoinOperator(first.operation) }
       : {}),
   };
 }
@@ -268,7 +276,7 @@ export default function JoinsBuilder({
         ...available,
         alias: createUniqueAlias(available.name),
         joinType: 1,
-        condition: createCondition(undefined, 0, undefined),
+        condition: createCondition(undefined, defaultJoinOperator, undefined),
       }],
     });
   };
@@ -295,7 +303,7 @@ export default function JoinsBuilder({
         const right = asFieldExpression(condition.right);
         const leftText = expressionText(left ?? (typeof condition.left === "string" ? condition.left : undefined));
         const rightText = expressionText(right ?? (typeof condition.right === "string" ? condition.right : undefined));
-        const operation = condition.operation ?? 0;
+        const operation = condition.operation ?? defaultJoinOperator;
         const entityFor = (context: ApiQueryContextDefinition) =>
           metadata.find((item) => item.name === context.name)
           ?? metadata.find((item) => item.name === context.query.entity);
@@ -304,7 +312,10 @@ export default function JoinsBuilder({
         const rightEntity = entityFor(join)
           ?? { name: join.query.entity || join.name, fields: [] };
         const availableOperators = operators.length
-          ? operators.map((item) => [item.id, item.symbol] as const)
+          ? operators.map((item) => [
+            item.isBuiltin ? normalizeJoinOperator(item.id) : item.id,
+            item.symbol,
+          ] as const)
           : defaultOperators;
 
         return (

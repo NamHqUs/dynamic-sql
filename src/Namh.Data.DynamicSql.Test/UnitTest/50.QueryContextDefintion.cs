@@ -265,6 +265,65 @@ public class _50_QueryContextDefintion : TestBase
     }
 
     [Test]
+    public void QueryDefinitionJson_ParsesBuiltinOperatorIdsInJoinConditions()
+    {
+        const string json = """
+            {
+              "entity": "User",
+              "projection": [{ "fields": ["UserContext.Id"] }],
+              "contexts": [{
+                "name": "UserContext",
+                "query": {
+                  "entity": "User",
+                  "projection": [{ "fields": ["Id"] }]
+                },
+                "condition": {
+                  "left": "ManagerId",
+                  "operation": "builtin:4",
+                  "right": "Id"
+                }
+              }]
+            }
+            """;
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity("User", [new("Id", DataType.Number), new("ManagerId", DataType.Number)]));
+
+        var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql();
+
+        Assert.That(sql.CommandText, Does.Contain("t0.[ManagerId] > t1.[Id]"));
+    }
+
+    [Test]
+    public void QueryDefinitionJson_DefaultsOmittedJoinOperatorToEquals()
+    {
+        const string json = """
+            {
+              "entity": "User",
+              "projection": [{ "fields": ["UserContext.Id"] }],
+              "contexts": [{
+                "name": "UserContext",
+                "query": {
+                  "entity": "User",
+                  "projection": [{ "fields": ["Id"] }]
+                },
+                "condition": {
+                  "left": "ManagerId",
+                  "right": "Id"
+                }
+              }]
+            }
+            """;
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity("User", [new("Id", DataType.Number), new("ManagerId", DataType.Number)]));
+
+        var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql();
+
+        Assert.That(sql.CommandText, Does.Contain("t0.[ManagerId] = t1.[Id]"));
+    }
+
+    [Test]
     public void QueryDefinitionJson_UsesContextAliasesForRepeatedReferences()
     {
         const string json = """

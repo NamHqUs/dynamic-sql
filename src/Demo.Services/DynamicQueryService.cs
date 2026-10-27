@@ -59,17 +59,20 @@ public sealed class DynamicQueryService(
         ConditionDefinition PrepareGroup(ConditionDefinition group)
             => new(group.LogicalOperation, System.Linq.Enumerable.Select<IConditionDefintion, IConditionDefintion>(
                 group.Filters,
-                (Namh.Data.DynamicSql.IConditionDefintion filter) => filter switch
+                PrepareCondition).ToArray())
+            {
+                Note = group.Note
+            };
+
+        IConditionDefintion PrepareCondition(IConditionDefintion condition)
+            => condition switch
             {
                 ConditionDefinition nested => PrepareGroup(nested),
                 ConditionStatementDefinition { OperatorId: { } id } item =>
                     PrepareOperator(item, id, customOperators, provider),
                 ConditionStatementDefinition item => item,
                 _ => throw new NotSupportedException(
-                    $"Unsupported filter definition [{filter.GetType().Name}].")
-            }).ToArray())
-            {
-                Note = group.Note
+                    $"Unsupported filter definition [{condition.GetType().Name}].")
             };
 
         return new QueryDefinition
@@ -83,7 +86,8 @@ public sealed class DynamicQueryService(
             Contexts = query.Contexts?
                 .Select(context => context with
                 {
-                    Query = PrepareQuery(context.Query, connection)
+                    Query = PrepareQuery(context.Query, connection),
+                    Condition = context.Condition is null ? null : PrepareCondition(context.Condition)
                 })
                 .ToList()
         };

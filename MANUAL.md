@@ -550,7 +550,8 @@ For a condition, unqualified left-side fields resolve against the outer source
 and unqualified right-side fields resolve against the joined context. Prefix a
 field with a CTE name (for example, `A.Salary`) to select a specific source.
 Arithmetic expressions and range/set conditions are supported; literal values
-remain SQL parameters. CTE names must be unique within the query, and a CTE
+remain SQL parameters. In JSON context conditions, an omitted `operation`
+defaults to the built-in Equals (`=`) operator. CTE names must be unique within the query, and a CTE
 must appear before any context query that uses it as its source. Recursive CTEs
 and contexts nested inside another context query are not supported.
 
