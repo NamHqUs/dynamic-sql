@@ -286,7 +286,7 @@ Supported properties:
 - `projection`: projection expressions; use `|` to specify an output alias.
 - Legacy YAML and JSON definitions using `Fields` remain readable.
 - Saved queries use `QueryDto`: `MainQuery` stores the root query and
-  `Contexts` stores each distinct context once. `MainQuery.JoinedContexts`
+  `Contexts` stores each distinct context once. `MainQuery.ExtraRelations`
   references context IDs rather than embedding query copies. Saved-query
   files are named with `MainQuery.Id`.
 - Saved-query projections on `QueryContextDto` are stored as a flat list.

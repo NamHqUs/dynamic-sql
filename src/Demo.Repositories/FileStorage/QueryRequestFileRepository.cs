@@ -110,7 +110,7 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
             string.Equals(property.Key, "MainQuery", StringComparison.OrdinalIgnoreCase)))
         {
             var contexts = new JsonArray();
-            var joinedContexts = new JsonArray();
+            var extraRelations = new JsonArray();
             var legacyContexts = GetProperty(queryRequest, "Contexts") as JsonArray;
             if (legacyContexts is not null)
             {
@@ -130,9 +130,9 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
                     context["Filters"] = GetProperty(query, "Filters")?.DeepClone()
                         ?? GetProperty(query, "Filter")?.DeepClone();
                     context.Remove("Filter");
-                    context["JoinedContexts"] = null;
+                    context["ExtraRelations"] = null;
                     contexts.Add(context);
-                    joinedContexts.Add(new JsonObject
+                    extraRelations.Add(new JsonObject
                     {
                         ["RefContextId"] = id,
                         ["Alias"] = alias,
@@ -147,7 +147,7 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
             mainQuery.Remove("IsBuiltin");
             mainQuery["Id"] = GetProperty(queryRequest, "Id")?.DeepClone()
                 ?? GetProperty(queryRequest, "Name")?.DeepClone();
-            mainQuery["JoinedContexts"] = joinedContexts.Count > 0 ? joinedContexts : null;
+            mainQuery["ExtraRelations"] = extraRelations.Count > 0 ? extraRelations : null;
             queryRequest = new JsonObject
             {
                 ["MainQuery"] = mainQuery,

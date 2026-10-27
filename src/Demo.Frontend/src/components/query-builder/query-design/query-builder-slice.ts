@@ -142,7 +142,7 @@ type ApiQueryContextDto = {
   sorts?: { field: string | IFieldDefinition; direction: number | string }[][] | null;
   page?: number | null;
   pageSize?: number | null;
-  joinedContexts?: {
+  extraRelations?: {
     refContextId: string;
     alias: string;
     condition: ApiQueryFilterNode | string | null;
@@ -547,7 +547,7 @@ export function toQueryBuilderSavedView(request: ApiSavedQueryRequest): QueryBui
   const contextsById = new Map((request.contexts ?? []).map((context) => [context.id, context]));
   const toApiDefinition = (context: ApiQueryContextDto, visited = new Set<string>()): ApiQueryDefinition => {
     if (!visited.add(context.id)) throw new Error(`Query API returned recursive context '${context.id}'.`);
-    const contexts = (context.joinedContexts ?? []).map((joined) => {
+    const contexts = (context.extraRelations ?? []).map((joined) => {
       const referenced = contextsById.get(joined.refContextId);
       if (!referenced) throw new Error(`Query API returned an unknown context reference '${joined.refContextId}'.`);
       return {
@@ -570,7 +570,7 @@ export function toQueryBuilderSavedView(request: ApiSavedQueryRequest): QueryBui
     contexts: contexts.length ? contexts : undefined,
     };
   };
-  const joinedContexts: ApiQueryContextDefinition[] = (mainQuery.joinedContexts ?? []).map((joined) => {
+  const extraRelations: ApiQueryContextDefinition[] = (mainQuery.extraRelations ?? []).map((joined) => {
     const context = contextsById.get(joined.refContextId);
     if (!context) throw new Error(`Query API returned an unknown context reference '${joined.refContextId}'.`);
     return {
@@ -612,7 +612,7 @@ export function toQueryBuilderSavedView(request: ApiSavedQueryRequest): QueryBui
       sorts: mainQuery.sorts?.flat() ?? [],
       page: mainQuery.page ?? null,
       pageSize: mainQuery.pageSize ?? null,
-      contexts: joinedContexts.length ? joinedContexts : undefined,
+      contexts: extraRelations.length ? extraRelations : undefined,
       contextCatalog,
     },
     projectionRows,
@@ -672,7 +672,7 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition;
     sorts: context.query.sorts?.length ? [context.query.sorts] : null,
     page: context.query.page,
     pageSize: context.query.pageSize,
-    joinedContexts: context.query.contexts?.map((nested) => ({
+    extraRelations: context.query.contexts?.map((nested) => ({
       refContextId: getContextId(nested),
       alias: nested.alias ?? nested.name,
       condition: nested.condition ?? { logicalOperation: 0, filters: [] },
@@ -680,7 +680,7 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition;
     })) ?? null,
   });
   const contexts = allContexts.map(toStoredContext);
-  const joinedContexts = (apiQuery.contexts ?? []).map((context) => ({
+  const extraRelations = (apiQuery.contexts ?? []).map((context) => ({
     refContextId: getContextId(context),
     alias: context.alias ?? context.name,
     condition: context.condition ?? { logicalOperation: 0, filters: [] },
@@ -697,7 +697,7 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition;
       sorts: apiQuery.sorts.length ? [apiQuery.sorts] : null,
       page: apiQuery.page,
       pageSize: apiQuery.pageSize,
-      joinedContexts,
+      extraRelations,
     },
     contexts,
     isBuiltin: false,

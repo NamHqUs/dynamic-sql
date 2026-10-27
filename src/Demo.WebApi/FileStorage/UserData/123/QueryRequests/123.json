@@ -127,7 +127,7 @@
     "Page": 1,
     "PageSize": 10,
     "Entity": "OrderCategory",
-    "JoinedContexts": [
+    "ExtraRelations": [
       {
         "RefContextId": "legacy-OrderCategory",
         "Alias": "OrderCategory",
@@ -291,7 +291,7 @@
           }
         ]
       },
-      "JoinedContexts": null
+      "ExtraRelations": null
     }
   ],
   "IsBuiltin": false
