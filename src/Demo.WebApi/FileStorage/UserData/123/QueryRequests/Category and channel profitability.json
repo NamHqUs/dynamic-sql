@@ -24,127 +24,56 @@
       {
         "Fields": [
           {
-            "kind": "function",
-            "function": "COUNT",
-            "arguments": []
+            "kind": "field",
+            "field": "__calculated__OrdersContainingCategory"
           }
         ],
-        "Alias": "OrdersContainingCategory"
+        "Alias": null
       },
       {
         "Fields": [
           {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "UnitsSold"
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__UnitsSold"
           }
         ],
-        "Alias": "UnitsSold"
+        "Alias": null
       },
       {
         "Fields": [
           {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "NetRevenue"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__NetRevenue"
           }
         ],
-        "Alias": "NetRevenue"
+        "Alias": null
       },
       {
         "Fields": [
           {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Discounts"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__Discounts"
           }
         ],
-        "Alias": "Discounts"
+        "Alias": null
       },
       {
         "Fields": [
           {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "GrossProfit"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__GrossProfit"
           }
         ],
-        "Alias": "GrossProfit"
+        "Alias": null
       },
       {
         "Fields": [
           {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "AVG",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "NetRevenue"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
+            "kind": "field",
+            "field": "__calculated__AverageCategoryRevenuePerOrder"
           }
         ],
-        "Alias": "AverageCategoryRevenuePerOrder"
+        "Alias": null
       }
     ],
     "Filters": null,

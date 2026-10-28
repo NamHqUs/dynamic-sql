@@ -266,7 +266,9 @@ export default function DiagramView() {
   const [expandedTables, setExpandedTables] = useState({});
   const [selectedGroup, setSelectedGroup] = useState("");
   const [boardSize, setBoardSize] = useState({ width: 720, height: 360 });
+  const [layoutSize, setLayoutSize] = useState({ width: 720, height: 360 });
   const drag = useRef(null);
+  const hasInitialLayoutSize = useRef(false);
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -274,6 +276,10 @@ export default function DiagramView() {
     const updateSize = (width, height) => {
       const nextWidth = Math.max(320, Math.floor(width));
       const nextHeight = Math.max(220, Math.floor(height));
+      if (!hasInitialLayoutSize.current) {
+        setLayoutSize({ width: nextWidth, height: nextHeight });
+        hasInitialLayoutSize.current = true;
+      }
       setBoardSize((current) => current.width === nextWidth && current.height === nextHeight
         ? current
         : { width: nextWidth, height: nextHeight });
@@ -352,13 +358,13 @@ export default function DiagramView() {
   }, [activeGroup, schema.relationships]);
 
   const layout = useMemo(() => {
-    const next = createLayout(activeGroup?.tables || [], relationships, boardSize.width, boardSize.height);
+    const next = createLayout(activeGroup?.tables || [], relationships, layoutSize.width, layoutSize.height);
     return {
       cardWidth: next.cardWidth,
       cardHeight: next.cardHeight,
       positions: Object.fromEntries(next.positions),
     };
-  }, [activeGroup, boardSize, relationships]);
+  }, [activeGroup, layoutSize, relationships]);
   const tablePositions = { ...layout.positions, ...positions };
 
   function startDrag(event, key) {
@@ -424,6 +430,7 @@ export default function DiagramView() {
             key={group.name}
             onClick={() => {
               setSelectedGroup(group.name);
+              setLayoutSize(boardSize);
               setPositions({});
             }}
           >
@@ -436,14 +443,21 @@ export default function DiagramView() {
       <div className="diagram-scroll" ref={setScrollElement}>
         <div className="diagram-board" style={boardSize}>
           <div className="diagram-board-tools">
-            <button type="button" className="diagram-arrange-button" onClick={() => setPositions({})}>
+            <button
+              type="button"
+              className="diagram-arrange-button"
+              onClick={() => {
+                setLayoutSize(boardSize);
+                setPositions({});
+              }}
+            >
               <Icon name="reset" size={14} /> Auto arrange
             </button>
             <div className="diagram-legend" aria-label="Diagram legend">
-              <span><i className="diagram-legend-key" /> Primary key</span>
-              <span><b>1:1</b> One-to-one</span>
-              <span><b>1:N</b> One-to-many</span>
-              <span><b>N:N</b> Many-to-many</span>
+              <span><span className="diagram-column-key primary"><Icon name="key" size={13} /></span><span>Primary key</span></span>
+              <span><b>1:1</b><span>One-to-one</span></span>
+              <span><b>1:N</b><span>One-to-many</span></span>
+              <span><b>N:N</b><span>Many-to-many</span></span>
             </div>
           </div>
           <svg className="diagram-relations" width={boardSize.width} height={boardSize.height} aria-label="Table relationships">
