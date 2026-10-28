@@ -412,7 +412,7 @@ export default function DiagramView() {
       <div className="diagram-toolbar">
         <div>
           <span className="section-kicker">DATABASE SCHEMA</span>
-          <p>Choose a domain to explore its relationships. Drag tables to adjust the layout; expand a table to inspect its columns.</p>
+          <p>Choose a domain to explore its relationships. Drag tables to adjust the layout; expand a table to inspect its columns. Double-click a table header to preview its first 10 rows.</p>
         </div>
       </div>
       <nav className="diagram-group-switch" aria-label="Diagram table groups">
