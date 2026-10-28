@@ -259,9 +259,57 @@ function createLayout(tables, relationships, boardWidth, boardHeight) {
   };
 }
 
+function getDiagramRelationships(activeGroup, schemaRelationships) {
+  const tableByKey = new Map((activeGroup?.tables || []).map((table) => [tableKey(table.schema, table.name), table]));
+  const sourceRelations = schemaRelationships.filter((relation) =>
+    tableByKey.has(tableKey(relation.sourceSchema, relation.sourceTable))
+    && tableByKey.has(tableKey(relation.targetSchema, relation.targetTable)));
+  const junctionKeys = new Set(sourceRelations
+    .reduce((byTable, relation) => {
+      const key = tableKey(relation.sourceSchema, relation.sourceTable);
+      byTable.set(key, [...(byTable.get(key) || []), relation]);
+      return byTable;
+    }, new Map())
+    .entries()
+    .filter(([key, relations]) => {
+      const table = tableByKey.get(key);
+      const primaryKeys = table.columns.filter((column) => column.isPrimaryKey).map((column) => column.name);
+      const foreignKeyColumns = new Set(relations.flatMap((relation) => relation.sourceColumns));
+      return relations.length >= 2 && primaryKeys.length > 0 && primaryKeys.every((column) => foreignKeyColumns.has(column));
+    })
+    .map(([key]) => key));
+
+  const edges = sourceRelations
+    .filter((relation) => !junctionKeys.has(tableKey(relation.sourceSchema, relation.sourceTable)))
+    .map((relation) => ({
+      ...relation,
+      from: tableKey(relation.sourceSchema, relation.sourceTable),
+      to: tableKey(relation.targetSchema, relation.targetTable),
+      isManyToMany: false,
+    }));
+
+  for (const junctionKey of junctionKeys) {
+    const joinedRelations = sourceRelations.filter((relation) =>
+      tableKey(relation.sourceSchema, relation.sourceTable) === junctionKey);
+    for (let index = 1; index < joinedRelations.length; index += 1) {
+      const first = joinedRelations[0];
+      const second = joinedRelations[index];
+      edges.push({
+        ...first,
+        name: tableByKey.get(junctionKey).name,
+        from: tableKey(first.targetSchema, first.targetTable),
+        to: tableKey(second.targetSchema, second.targetTable),
+        isUnique: false,
+        isManyToMany: true,
+      });
+    }
+  }
+  return edges;
+}
+
 export default function DiagramView() {
   const dispatch = useDispatch();
-  const { schema, schemaStatus, schemaError } = useSelector((state) => state.database);
+  const { schema, schemaStatus, schemaError, debugUiEnabled } = useSelector((state) => state.database);
   const [positions, setPositions] = useState({});
   const [expandedTables, setExpandedTables] = useState({});
   const [selectedGroup, setSelectedGroup] = useState("");
@@ -309,53 +357,10 @@ export default function DiagramView() {
 
   const activeGroup = groups.find((group) => group.name === selectedGroup) || groups[0];
 
-  const relationships = useMemo(() => {
-    const tableByKey = new Map((activeGroup?.tables || []).map((table) => [tableKey(table.schema, table.name), table]));
-    const sourceRelations = schema.relationships.filter((relation) =>
-      tableByKey.has(tableKey(relation.sourceSchema, relation.sourceTable))
-      && tableByKey.has(tableKey(relation.targetSchema, relation.targetTable)));
-    const junctionKeys = new Set(sourceRelations
-      .reduce((byTable, relation) => {
-        const key = tableKey(relation.sourceSchema, relation.sourceTable);
-        byTable.set(key, [...(byTable.get(key) || []), relation]);
-        return byTable;
-      }, new Map())
-      .entries()
-      .filter(([key, relations]) => {
-        const table = tableByKey.get(key);
-        const primaryKeys = table.columns.filter((column) => column.isPrimaryKey).map((column) => column.name);
-        const foreignKeyColumns = new Set(relations.flatMap((relation) => relation.sourceColumns));
-        return relations.length >= 2 && primaryKeys.length > 0 && primaryKeys.every((column) => foreignKeyColumns.has(column));
-      })
-      .map(([key]) => key));
-
-    const edges = sourceRelations
-      .filter((relation) => !junctionKeys.has(tableKey(relation.sourceSchema, relation.sourceTable)))
-      .map((relation) => ({
-        ...relation,
-        from: tableKey(relation.sourceSchema, relation.sourceTable),
-        to: tableKey(relation.targetSchema, relation.targetTable),
-        isManyToMany: false,
-      }));
-
-    for (const junctionKey of junctionKeys) {
-      const joinedRelations = sourceRelations.filter((relation) =>
-        tableKey(relation.sourceSchema, relation.sourceTable) === junctionKey);
-      for (let index = 1; index < joinedRelations.length; index += 1) {
-        const first = joinedRelations[0];
-        const second = joinedRelations[index];
-        edges.push({
-          ...first,
-          name: tableByKey.get(junctionKey).name,
-          from: tableKey(first.targetSchema, first.targetTable),
-          to: tableKey(second.targetSchema, second.targetTable),
-          isUnique: false,
-          isManyToMany: true,
-        });
-      }
-    }
-    return edges;
-  }, [activeGroup, schema.relationships]);
+  const relationships = useMemo(
+    () => getDiagramRelationships(activeGroup, schema.relationships),
+    [activeGroup, schema.relationships],
+  );
 
   const layout = useMemo(() => {
     const next = createLayout(activeGroup?.tables || [], relationships, layoutSize.width, layoutSize.height);
@@ -429,6 +434,27 @@ export default function DiagramView() {
             aria-pressed={activeGroup?.name === group.name}
             key={group.name}
             onClick={() => {
+              if (debugUiEnabled) {
+                const nextRelationships = getDiagramRelationships(group, schema.relationships);
+                const nextLayoutData = createLayout(group.tables, nextRelationships, boardSize.width, boardSize.height);
+                const nextLayout = {
+                  cardWidth: nextLayoutData.cardWidth,
+                  cardHeight: nextLayoutData.cardHeight,
+                  positions: Object.fromEntries(nextLayoutData.positions),
+                };
+                console.log("Database diagram render model:", {
+                  schema,
+                  groups,
+                  selectedGroup: group.name,
+                  activeGroup: group,
+                  relationships: nextRelationships,
+                  layout: nextLayout,
+                  tablePositions: nextLayout.positions,
+                  expandedTables,
+                  boardSize,
+                  layoutSize: boardSize,
+                });
+              }
               setSelectedGroup(group.name);
               setLayoutSize(boardSize);
               setPositions({});

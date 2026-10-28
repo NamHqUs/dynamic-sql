@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { apiUrls } from "../../const/api-urls";
 
 const MAX_TABLE_DATA_ROWS = 10;
@@ -130,8 +130,12 @@ const databaseSlice = createSlice({
     schemaError: "",
     schema: { tables: [], relationships: [] },
     dataByTable: {},
+    debugUiEnabled: true,
   },
   reducers: {
+    setDatabaseDebugUiEnabled(state, action: PayloadAction<boolean>) {
+      state.debugUiEnabled = action.payload;
+    },
     selectDbTable(state, action) {
       if (typeof action.payload === "string") {
         state.selectedTable = action.payload;
@@ -225,5 +229,12 @@ const databaseSlice = createSlice({
   },
 });
 
-export const { selectDbTable, setPreviewDbTable, setDatabaseViewMode, setColumnFilter, setTableSort } = databaseSlice.actions;
+export const {
+  setDatabaseDebugUiEnabled,
+  selectDbTable,
+  setPreviewDbTable,
+  setDatabaseViewMode,
+  setColumnFilter,
+  setTableSort,
+} = databaseSlice.actions;
 export default databaseSlice.reducer;
