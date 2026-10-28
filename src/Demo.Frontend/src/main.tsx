@@ -107,7 +107,7 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         <button className="brand" type="button" aria-label="DynamicSQL Studio home" onClick={() => navigateToPage("reports")}><img className="brand-logo" src="/brand-concepts/dynamicsql-studio.svg" alt="" /></button>
-        <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="query" /> Query builder</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="schema" /> Metadata</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button></nav>
+        <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="query" /> Query builder</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="schema" /> Metadata</button></nav>
         <div className="top-actions"><span className="live-dot" /> Local demo <button className="avatar">N</button></div>
       </header>
 

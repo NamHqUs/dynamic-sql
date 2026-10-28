@@ -166,7 +166,7 @@ public class BuiltinMetadata
                 ],
                 Relations:
                 [
-                    new("Person", "Users", RelationType.Lookup, [new("UserId", "Id")]),
+                    new("User", "Users", RelationType.Lookup, [new("UserId", "Id")]),
                     new("SalesRep", "Employees", RelationType.Lookup, [new("SalesRepId", "Id")]),
                     new("Items", "OrderItems", RelationType.Collection, [new("Id", "OrderId")])
                 ]),
@@ -246,7 +246,7 @@ public class BuiltinMetadata
                 ],
                 Relations:
                 [
-                    new("Person", "Users", RelationType.Lookup, [new("UserId", "Id")]),
+                    new("User", "Users", RelationType.Lookup, [new("UserId", "Id")]),
                     new("Plan", "InsurancePlans", RelationType.Lookup, [new("PlanId", "Id")]),
                     new("Agent", "Employees", RelationType.Lookup, [new("AgentId", "Id")]),
                     new("PremiumPayments", "PremiumPayments", RelationType.Collection, [new("Id", "PolicyId")]),
