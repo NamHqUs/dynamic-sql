@@ -1,5 +1,6 @@
 using Demo.Repositories.FileStorage;
 using Demo.Contracts.Repositories;
+using Demo.Contracts.Dto;
 using Microsoft.Extensions.Configuration;
 using System.Data;
 
@@ -42,4 +43,5 @@ public sealed class DbConnectionFactory : IDbConnectionFactory
     public IDbConnection CreateConnection() => _dbProvider.GetDbConnection();
     public string[] GetTableNames() => _dbProvider.GetTableNames();
     public string QuoteIdentifier(string identifier) => _dbProvider.QuoteIdentifier(identifier);
+    public DatabaseSchemaDto GetDatabaseSchema() => _dbProvider.GetDatabaseSchema();
 }

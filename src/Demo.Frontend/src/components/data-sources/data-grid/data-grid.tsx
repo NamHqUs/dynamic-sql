@@ -12,10 +12,17 @@ const columnClassName = (type, column, filters, sort) => [
   (filters[column] || "").trim() && "is-filtered",
 ].filter(Boolean).join(" ");
 
-export default function DataGrid() {
+type DataGridProps = {
+  table?: { name: string; schema?: string };
+};
+
+export default function DataGrid({ table: previewTable }: DataGridProps = {}) {
   const dispatch = useDispatch();
-  const { selectedTable, dataByTable } = useSelector((state) => state.database);
-  const tableData = dataByTable[selectedTable];
+  const { selectedTable, selectedSchema, viewMode, dataByTable } = useSelector((state) => state.database);
+  const tableName = previewTable ? previewTable.name : selectedTable;
+  const tableSchema = previewTable ? previewTable.schema || "" : selectedSchema;
+  const tableDataKey = tableSchema ? `${tableSchema}.${tableName}` : tableName;
+  const tableData = dataByTable[tableDataKey];
   const columns = tableData?.columns || [];
   const rows = tableData?.rows || [];
   const filters = tableData?.filters || {};
@@ -52,19 +59,18 @@ export default function DataGrid() {
       return comparison * direction;
     });
   }, [rows, columns, filters, sort]);
-
-  if (!selectedTable) return null;
+  if (!tableName) return null;
 
   return (
     <>
       <div className="database-content-heading">
         <div>
           <span className="section-kicker">TABLE DATA</span>
-          <h2>{selectedTable}</h2>
+          <h2>{tableName}</h2>
         </div>
-        {tableData?.status === "succeeded" && <span className="database-record-count">{visibleRows.length} of {rows.length} records</span>}
+        {tableData?.status === "succeeded" && <span className="database-record-count">{viewMode === "diagram" ? "Top 10 row preview" : `${visibleRows.length} of ${rows.length} records`}</span>}
       </div>
-      {tableData?.status === "loading" && <p className="database-message">Loading {selectedTable}…</p>}
+      {tableData?.status === "loading" && <p className="database-message">Loading {tableName}…</p>}
       {tableData?.status === "failed" && <p className="database-message error" role="alert">{tableData.error}</p>}
       {tableData?.status === "succeeded" && (
         <div className="database-grid-wrap">
@@ -77,7 +83,7 @@ export default function DataGrid() {
                     key={`${column}-${index}`}
                     aria-sort={sort?.column === column ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
                   >
-                    <button className="database-sort-button" onClick={() => dispatch(setTableSort({ tableName: selectedTable, column }))}>
+                    <button className="database-sort-button" onClick={() => dispatch(setTableSort({ tableName, schema: tableSchema, column }))}>
                       {column}
                       <span className="database-sort-indicator">{sort?.column === column ? (sort.direction === "asc" ? "▲" : "▼") : "↕"}</span>
                     </button>
@@ -86,14 +92,14 @@ export default function DataGrid() {
                         className="database-column-filter"
                         type="text"
                         value={filters[column] || ""}
-                        onChange={(event) => dispatch(setColumnFilter({ tableName: selectedTable, column, value: event.target.value }))}
+                        onChange={(event) => dispatch(setColumnFilter({ tableName, schema: tableSchema, column, value: event.target.value }))}
                         placeholder={`Filter ${column}`}
                         aria-label={`Filter ${column}`}
                       />
                       {filters[column] && (
                         <button
                           className="database-filter-clear"
-                          onClick={() => dispatch(setColumnFilter({ tableName: selectedTable, column, value: "" }))}
+                          onClick={() => dispatch(setColumnFilter({ tableName, schema: tableSchema, column, value: "" }))}
                           aria-label={`Clear ${column} filter`}
                           title="Clear filter"
                         >
@@ -106,7 +112,7 @@ export default function DataGrid() {
               </thead>
               <tbody>
                 {visibleRows.map((row, rowIndex) => (
-                  <tr key={`${selectedTable}-${rowIndex}`}>
+                  <tr key={`${tableName}-${rowIndex}`}>
                     {row.map((value, columnIndex) => {
                       const type = columnTypes[columnIndex];
                       return (

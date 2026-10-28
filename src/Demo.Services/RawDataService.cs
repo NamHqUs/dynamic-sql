@@ -1,5 +1,6 @@
 using Demo.Contracts.Repositories;
 using Demo.Contracts.Services;
+using Demo.Contracts.Dto;
 
 namespace Demo.Services;
 
@@ -7,5 +8,8 @@ public sealed class RawDataService(IRawDataRepository repository) : IRawDataServ
 {
     public string[] GetExposedTables() => repository.GetExposedTables();
 
-    public TableDataDto GetTableData(string tableName) => repository.GetTableData(tableName);
+    public DatabaseSchemaDto GetDatabaseSchema() => repository.GetDatabaseSchema();
+
+    public TableDataDto GetTableData(string tableName, string? schema = null, int? limit = null)
+        => repository.GetTableData(tableName, schema, limit);
 }

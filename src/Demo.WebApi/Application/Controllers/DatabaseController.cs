@@ -1,4 +1,5 @@
 using Demo.Contracts.Services;
+using Demo.Contracts.Dto;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Demo.WebApi.Application.Controllers;
@@ -10,7 +11,13 @@ public sealed class DatabaseController(IRawDataService rawDataService) : Control
     [HttpGet("tables")]
     public ActionResult<string[]> GetTables() => Ok(rawDataService.GetExposedTables());
 
+    [HttpGet("schema")]
+    public ActionResult<DatabaseSchemaDto> GetSchema() => Ok(rawDataService.GetDatabaseSchema());
+
     [HttpGet("data/{tableName}")]
-    public ActionResult<TableDataDto> GetTableData(string tableName)
-        => Ok(rawDataService.GetTableData(tableName));
+    public ActionResult<TableDataDto> GetTableData(
+        string tableName,
+        [FromQuery] string? schema = null,
+        [FromQuery] int? limit = null)
+        => Ok(rawDataService.GetTableData(tableName, schema, limit));
 }

@@ -5,7 +5,14 @@ export const apiUrls = {
   dataSource: import.meta.env.VITE_DATA_SOURCE_URL || "",
   database: {
     tables: `${backendApiUrl}/db/tables`,
-    tableData: (tableName: string) => `${backendApiUrl}/db/data/${encodeURIComponent(tableName)}`,
+    schema: `${backendApiUrl}/db/schema`,
+    tableData: (tableName: string, schema?: string, limit?: number) => {
+      const query = new URLSearchParams();
+      if (schema) query.set("schema", schema);
+      if (limit) query.set("limit", String(limit));
+      const queryString = query.toString();
+      return `${backendApiUrl}/db/data/${encodeURIComponent(tableName)}${queryString ? `?${queryString}` : ""}`;
+    },
   },
   metadata: {
     list: `${backendApiUrl}/metadata`,
