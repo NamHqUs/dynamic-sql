@@ -8,7 +8,7 @@ loads its demo data. The seed is realistic **synthetic data**, not a dump of
 actual patient, employee, or customer records. Every report below returns 10
 rows against the included seed and uses `LIMIT 10` for a compact demo.
 
-The four domains deliberately share `Persons`, `Employees`, `Locations`, and
+The four domains deliberately share `Users`, `Employees`, `Locations`, and
 their relationships. This lets a demo show dynamic projections and aliases,
 expression filters, nested joins, aggregates, `HAVING`, subqueries, and window
 functions against one realistic scenario rather than four unrelated schemas.
@@ -144,13 +144,13 @@ frequency, most recent order, and mix of sales channels.
 === "SQLite"
 
     ```sql
-    SELECT pe.Id AS PersonId, pe.FirstName || ' ' || pe.LastName AS Customer,
+    SELECT pe.Id AS UserId, pe.FirstName || ' ' || pe.LastName AS Customer,
            COUNT(DISTINCT o.Id) AS OrderCount,
            ROUND(SUM(oi.Quantity * oi.UnitPrice - oi.DiscountAmount), 2) AS LifetimeValue,
            MAX(o.OrderDate) AS LastOrderDate,
            COUNT(DISTINCT o.Channel) AS ChannelsUsed
-    FROM Persons pe
-    JOIN Orders o ON o.PersonId = pe.Id
+    FROM Users pe
+    JOIN Orders o ON o.UserId = pe.Id
     JOIN OrderItems oi ON oi.OrderId = o.Id
     WHERE o.Status = 'Completed'
     GROUP BY pe.Id, pe.FirstName, pe.LastName
@@ -162,13 +162,13 @@ frequency, most recent order, and mix of sales channels.
 === "SQL Server"
 
     ```sql
-    SELECT TOP (10) pe.Id AS PersonId, CONCAT(pe.FirstName, ' ', pe.LastName) AS Customer,
+    SELECT TOP (10) pe.Id AS UserId, CONCAT(pe.FirstName, ' ', pe.LastName) AS Customer,
            COUNT(DISTINCT o.Id) AS OrderCount,
            ROUND(SUM(oi.Quantity * oi.UnitPrice - oi.DiscountAmount), 2) AS LifetimeValue,
            MAX(o.OrderDate) AS LastOrderDate,
            COUNT(DISTINCT o.Channel) AS ChannelsUsed
-    FROM Persons pe
-    JOIN Orders o ON o.PersonId = pe.Id
+    FROM Users pe
+    JOIN Orders o ON o.UserId = pe.Id
     JOIN OrderItems oi ON oi.OrderId = o.Id
     WHERE o.Status = 'Completed'
     GROUP BY pe.Id, pe.FirstName, pe.LastName
@@ -179,13 +179,13 @@ frequency, most recent order, and mix of sales channels.
 === "PostgreSQL"
 
     ```sql
-    SELECT pe.Id AS PersonId, pe.FirstName || ' ' || pe.LastName AS Customer,
+    SELECT pe.Id AS UserId, pe.FirstName || ' ' || pe.LastName AS Customer,
            COUNT(DISTINCT o.Id) AS OrderCount,
            ROUND(SUM(oi.Quantity * oi.UnitPrice - oi.DiscountAmount), 2) AS LifetimeValue,
            MAX(o.OrderDate) AS LastOrderDate,
            COUNT(DISTINCT o.Channel) AS ChannelsUsed
-    FROM Persons pe
-    JOIN Orders o ON o.PersonId = pe.Id
+    FROM Users pe
+    JOIN Orders o ON o.UserId = pe.Id
     JOIN OrderItems oi ON oi.OrderId = o.Id
     WHERE o.Status = 'Completed'
     GROUP BY pe.Id, pe.FirstName, pe.LastName
@@ -407,7 +407,7 @@ laboratory results by diagnosis and clinic.
     SELECT d.Name AS Diagnosis, d.Category AS DiagnosisCategory,
            l.City AS ClinicCity,
            COUNT(DISTINCT v.Id) AS VisitCount,
-           COUNT(DISTINCT v.PersonId) AS UniquePatients,
+           COUNT(DISTINCT v.UserId) AS UniquePatients,
            ROUND(AVG(v.Charge), 2) AS AverageCharge,
            ROUND(100.0 * SUM(COALESCE(vl.AbnormalCount, 0))
                  / NULLIF(SUM(COALESCE(vl.LabCount, 0)), 0), 2) AS AbnormalLabPercent
@@ -432,7 +432,7 @@ laboratory results by diagnosis and clinic.
     SELECT TOP (10) d.Name AS Diagnosis, d.Category AS DiagnosisCategory,
            l.City AS ClinicCity,
            COUNT(DISTINCT v.Id) AS VisitCount,
-           COUNT(DISTINCT v.PersonId) AS UniquePatients,
+           COUNT(DISTINCT v.UserId) AS UniquePatients,
            ROUND(AVG(v.Charge), 2) AS AverageCharge,
            ROUND(100.0 * SUM(COALESCE(vl.AbnormalCount, 0))
                  / NULLIF(SUM(COALESCE(vl.LabCount, 0)), 0), 2) AS AbnormalLabPercent
@@ -456,7 +456,7 @@ laboratory results by diagnosis and clinic.
     SELECT d.Name AS Diagnosis, d.Category AS DiagnosisCategory,
            l.City AS ClinicCity,
            COUNT(DISTINCT v.Id) AS VisitCount,
-           COUNT(DISTINCT v.PersonId) AS UniquePatients,
+           COUNT(DISTINCT v.UserId) AS UniquePatients,
            ROUND(AVG(v.Charge), 2) AS AverageCharge,
            ROUND(100.0 * SUM(COALESCE(vl.AbnormalCount, 0))
                  / NULLIF(SUM(COALESCE(vl.LabCount, 0)), 0), 2) AS AbnormalLabPercent
@@ -486,7 +486,7 @@ abnormal lab percentage without losing doctors who have no sampled visits.
     SELECT e.Id AS DoctorId, e.FirstName || ' ' || e.LastName AS Physician,
            d.Name AS Department, l.City AS ClinicCity,
            COUNT(DISTINCT v.Id) AS VisitCount,
-           COUNT(DISTINCT v.PersonId) AS PatientCount,
+           COUNT(DISTINCT v.UserId) AS PatientCount,
            ROUND(AVG(v.DurationMinutes), 1) AS AverageVisitMinutes,
            ROUND(SUM(v.Charge), 2) AS Charges,
            ROUND(100.0 * SUM(COALESCE(vl.AbnormalCount, 0))
@@ -513,7 +513,7 @@ abnormal lab percentage without losing doctors who have no sampled visits.
     SELECT TOP (10) e.Id AS DoctorId, CONCAT(e.FirstName, ' ', e.LastName) AS Physician,
            d.Name AS Department, l.City AS ClinicCity,
            COUNT(DISTINCT v.Id) AS VisitCount,
-           COUNT(DISTINCT v.PersonId) AS PatientCount,
+           COUNT(DISTINCT v.UserId) AS PatientCount,
            ROUND(AVG(v.DurationMinutes), 1) AS AverageVisitMinutes,
            ROUND(SUM(v.Charge), 2) AS Charges,
            ROUND(100.0 * SUM(COALESCE(vl.AbnormalCount, 0))
@@ -539,7 +539,7 @@ abnormal lab percentage without losing doctors who have no sampled visits.
     SELECT e.Id AS DoctorId, e.FirstName || ' ' || e.LastName AS Physician,
            d.Name AS Department, l.City AS ClinicCity,
            COUNT(DISTINCT v.Id) AS VisitCount,
-           COUNT(DISTINCT v.PersonId) AS PatientCount,
+           COUNT(DISTINCT v.UserId) AS PatientCount,
            ROUND(AVG(v.DurationMinutes), 1) AS AverageVisitMinutes,
            ROUND(SUM(v.Charge), 2) AS Charges,
            ROUND(100.0 * SUM(COALESCE(vl.AbnormalCount, 0))
@@ -575,8 +575,8 @@ utilization, total charges, and most recent care date.
            SUM(COALESCE(vl.AbnormalCount, 0)) AS AbnormalResults,
            ROUND(SUM(v.Charge), 2) AS TotalCharges,
            MAX(v.VisitDate) AS LastVisitDate
-    FROM Persons pe
-    JOIN Visits v ON v.PersonId = pe.Id AND v.Status = 'Completed'
+    FROM Users pe
+    JOIN Visits v ON v.UserId = pe.Id AND v.Status = 'Completed'
     JOIN Diagnoses d ON d.Id = v.DiagnosisId
     LEFT JOIN visit_labs vl ON vl.VisitId = v.Id
     GROUP BY pe.Id, pe.FirstName, pe.LastName, pe.BirthDate
@@ -600,8 +600,8 @@ utilization, total charges, and most recent care date.
            SUM(COALESCE(vl.AbnormalCount, 0)) AS AbnormalResults,
            ROUND(SUM(v.Charge), 2) AS TotalCharges,
            MAX(v.VisitDate) AS LastVisitDate
-    FROM Persons pe
-    JOIN Visits v ON v.PersonId = pe.Id AND v.Status = 'Completed'
+    FROM Users pe
+    JOIN Visits v ON v.UserId = pe.Id AND v.Status = 'Completed'
     JOIN Diagnoses d ON d.Id = v.DiagnosisId
     LEFT JOIN visit_labs vl ON vl.VisitId = v.Id
     GROUP BY pe.Id, pe.FirstName, pe.LastName, pe.BirthDate
@@ -625,8 +625,8 @@ utilization, total charges, and most recent care date.
            SUM(COALESCE(vl.AbnormalCount, 0)) AS AbnormalResults,
            ROUND(SUM(v.Charge), 2) AS TotalCharges,
            MAX(v.VisitDate) AS LastVisitDate
-    FROM Persons pe
-    JOIN Visits v ON v.PersonId = pe.Id AND v.Status = 'Completed'
+    FROM Users pe
+    JOIN Visits v ON v.UserId = pe.Id AND v.Status = 'Completed'
     JOIN Diagnoses d ON d.Id = v.DiagnosisId
     LEFT JOIN visit_labs vl ON vl.VisitId = v.Id
     GROUP BY pe.Id, pe.FirstName, pe.LastName, pe.BirthDate
@@ -1083,19 +1083,19 @@ each other.
 
     ```sql
     WITH member_premiums AS (
-        SELECT po.PersonId, SUM(pp.Amount) AS PremiumsCollected
+        SELECT po.UserId, SUM(pp.Amount) AS PremiumsCollected
         FROM Policies po
         JOIN PremiumPayments pp ON pp.PolicyId = po.Id
         WHERE pp.Status = 'Paid'
-        GROUP BY po.PersonId
+        GROUP BY po.UserId
     ),
     member_claims AS (
-        SELECT po.PersonId, COUNT(c.Id) AS Claims,
+        SELECT po.UserId, COUNT(c.Id) AS Claims,
                SUM(c.AllowedAmount) AS AllowedAmount,
                SUM(c.PaidAmount) AS InsurerPaid
         FROM Policies po
         JOIN Claims c ON c.PolicyId = po.Id
-        GROUP BY po.PersonId
+        GROUP BY po.UserId
     )
     SELECT pe.Id AS MemberId, pe.FirstName || ' ' || pe.LastName AS Member,
            ip.Name AS Plan, po.Status AS PolicyStatus,
@@ -1106,10 +1106,10 @@ each other.
            ROUND(100.0 * COALESCE(mc.InsurerPaid, 0)
                  / NULLIF(mp.PremiumsCollected, 0), 2) AS MemberLossRatioPercent
     FROM Policies po
-    JOIN Persons pe ON pe.Id = po.PersonId
+    JOIN Users pe ON pe.Id = po.UserId
     JOIN InsurancePlans ip ON ip.Id = po.PlanId
-    LEFT JOIN member_premiums mp ON mp.PersonId = pe.Id
-    LEFT JOIN member_claims mc ON mc.PersonId = pe.Id
+    LEFT JOIN member_premiums mp ON mp.UserId = pe.Id
+    LEFT JOIN member_claims mc ON mc.UserId = pe.Id
     ORDER BY MemberLossRatioPercent DESC, Claims DESC
     LIMIT 10;
     ```
@@ -1118,19 +1118,19 @@ each other.
 
     ```sql
     WITH member_premiums AS (
-        SELECT po.PersonId, SUM(pp.Amount) AS PremiumsCollected
+        SELECT po.UserId, SUM(pp.Amount) AS PremiumsCollected
         FROM Policies po
         JOIN PremiumPayments pp ON pp.PolicyId = po.Id
         WHERE pp.Status = 'Paid'
-        GROUP BY po.PersonId
+        GROUP BY po.UserId
     ),
     member_claims AS (
-        SELECT po.PersonId, COUNT(c.Id) AS Claims,
+        SELECT po.UserId, COUNT(c.Id) AS Claims,
                SUM(c.AllowedAmount) AS AllowedAmount,
                SUM(c.PaidAmount) AS InsurerPaid
         FROM Policies po
         JOIN Claims c ON c.PolicyId = po.Id
-        GROUP BY po.PersonId
+        GROUP BY po.UserId
     )
     SELECT TOP (10) pe.Id AS MemberId, CONCAT(pe.FirstName, ' ', pe.LastName) AS Member,
            ip.Name AS Plan, po.Status AS PolicyStatus,
@@ -1141,10 +1141,10 @@ each other.
            ROUND(100.0 * COALESCE(mc.InsurerPaid, 0)
                  / NULLIF(mp.PremiumsCollected, 0), 2) AS MemberLossRatioPercent
     FROM Policies po
-    JOIN Persons pe ON pe.Id = po.PersonId
+    JOIN Users pe ON pe.Id = po.UserId
     JOIN InsurancePlans ip ON ip.Id = po.PlanId
-    LEFT JOIN member_premiums mp ON mp.PersonId = pe.Id
-    LEFT JOIN member_claims mc ON mc.PersonId = pe.Id
+    LEFT JOIN member_premiums mp ON mp.UserId = pe.Id
+    LEFT JOIN member_claims mc ON mc.UserId = pe.Id
     ORDER BY MemberLossRatioPercent DESC, Claims DESC;
     ```
 
@@ -1152,19 +1152,19 @@ each other.
 
     ```sql
     WITH member_premiums AS (
-        SELECT po.PersonId, SUM(pp.Amount) AS PremiumsCollected
+        SELECT po.UserId, SUM(pp.Amount) AS PremiumsCollected
         FROM Policies po
         JOIN PremiumPayments pp ON pp.PolicyId = po.Id
         WHERE pp.Status = 'Paid'
-        GROUP BY po.PersonId
+        GROUP BY po.UserId
     ),
     member_claims AS (
-        SELECT po.PersonId, COUNT(c.Id) AS Claims,
+        SELECT po.UserId, COUNT(c.Id) AS Claims,
                SUM(c.AllowedAmount) AS AllowedAmount,
                SUM(c.PaidAmount) AS InsurerPaid
         FROM Policies po
         JOIN Claims c ON c.PolicyId = po.Id
-        GROUP BY po.PersonId
+        GROUP BY po.UserId
     )
     SELECT pe.Id AS MemberId, pe.FirstName || ' ' || pe.LastName AS Member,
            ip.Name AS Plan, po.Status AS PolicyStatus,
@@ -1175,10 +1175,10 @@ each other.
            ROUND(100.0 * COALESCE(mc.InsurerPaid, 0)
                  / NULLIF(mp.PremiumsCollected, 0), 2) AS MemberLossRatioPercent
     FROM Policies po
-    JOIN Persons pe ON pe.Id = po.PersonId
+    JOIN Users pe ON pe.Id = po.UserId
     JOIN InsurancePlans ip ON ip.Id = po.PlanId
-    LEFT JOIN member_premiums mp ON mp.PersonId = pe.Id
-    LEFT JOIN member_claims mc ON mc.PersonId = pe.Id
+    LEFT JOIN member_premiums mp ON mp.UserId = pe.Id
+    LEFT JOIN member_claims mc ON mc.UserId = pe.Id
     ORDER BY MemberLossRatioPercent DESC, Claims DESC
     LIMIT 10;
     ```

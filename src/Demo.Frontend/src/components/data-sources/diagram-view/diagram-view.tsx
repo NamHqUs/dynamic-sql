@@ -11,7 +11,7 @@ const RELATION_LABEL_WIDTH = 48;
 const RELATION_LABEL_HEIGHT = 22;
 const TABLE_DOMAINS = {
   Locations: ["HR", "Healthcare"],
-  Persons: ["Insurance", "Sales", "Healthcare"],
+  Users: ["Insurance", "Sales", "Healthcare"],
   Departments: ["HR"],
   Employees: ["HR", "Insurance", "Sales", "Healthcare"],
   PerformanceReviews: ["HR"],

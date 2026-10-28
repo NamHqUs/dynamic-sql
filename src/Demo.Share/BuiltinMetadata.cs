@@ -77,7 +77,7 @@ public class BuiltinMetadata
                     new("Visits", "Visits", RelationType.Collection, [new("Id", "LocationId")])
                 ]),
             new(
-                Name: "Persons",
+                Name: "Users",
                 Fields:
                 [
                     new("Id", DataType.Number), new("FirstName"), new("LastName"),
@@ -85,9 +85,9 @@ public class BuiltinMetadata
                 ],
                 Relations:
                 [
-                    new("Orders", "Orders", RelationType.Collection, [new("Id", "PersonId")]),
-                    new("PatientVisits", "Visits", RelationType.Collection, [new("Id", "PersonId")]),
-                    new("MemberPolicies", "Policies", RelationType.Collection, [new("Id", "PersonId")])
+                    new("Orders", "Orders", RelationType.Collection, [new("Id", "UserId")]),
+                    new("PatientVisits", "Visits", RelationType.Collection, [new("Id", "UserId")]),
+                    new("MemberPolicies", "Policies", RelationType.Collection, [new("Id", "UserId")])
                 ]),
             new(
                 Name: "Departments",
@@ -160,13 +160,13 @@ public class BuiltinMetadata
                 Name: "Orders",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("PersonId", DataType.Number),
+                    new("Id", DataType.Number), new("UserId", DataType.Number),
                     new("SalesRepId", DataType.Number), new("OrderDate", DataType.Datetime),
                     new("Channel"), new("Status")
                 ],
                 Relations:
                 [
-                    new("Person", "Persons", RelationType.Lookup, [new("PersonId", "Id")]),
+                    new("Person", "Users", RelationType.Lookup, [new("UserId", "Id")]),
                     new("SalesRep", "Employees", RelationType.Lookup, [new("SalesRepId", "Id")]),
                     new("Items", "OrderItems", RelationType.Collection, [new("Id", "OrderId")])
                 ]),
@@ -198,14 +198,14 @@ public class BuiltinMetadata
                 Name: "Visits",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("PersonId", DataType.Number),
+                    new("Id", DataType.Number), new("UserId", DataType.Number),
                     new("DoctorId", DataType.Number), new("LocationId", DataType.Number),
                     new("VisitDate", DataType.Datetime), new("VisitType"), new("DiagnosisId", DataType.Number),
                     new("DurationMinutes", DataType.Number), new("Charge", DataType.Number), new("Status")
                 ],
                 Relations:
                 [
-                    new("Patient", "Persons", RelationType.Lookup, [new("PersonId", "Id")]),
+                    new("Patient", "Users", RelationType.Lookup, [new("UserId", "Id")]),
                     new("Doctor", "Employees", RelationType.Lookup, [new("DoctorId", "Id")]),
                     new("Location", "Locations", RelationType.Lookup, [new("LocationId", "Id")]),
                     new("Diagnosis", "Diagnoses", RelationType.Lookup, [new("DiagnosisId", "Id")]),
@@ -240,13 +240,13 @@ public class BuiltinMetadata
                 Name: "Policies",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("PersonId", DataType.Number),
+                    new("Id", DataType.Number), new("UserId", DataType.Number),
                     new("PlanId", DataType.Number), new("AgentId", DataType.Number),
                     new("StartDate", DataType.Datetime), new("EndDate", DataType.Datetime), new("Status")
                 ],
                 Relations:
                 [
-                    new("Person", "Persons", RelationType.Lookup, [new("PersonId", "Id")]),
+                    new("Person", "Users", RelationType.Lookup, [new("UserId", "Id")]),
                     new("Plan", "InsurancePlans", RelationType.Lookup, [new("PlanId", "Id")]),
                     new("Agent", "Employees", RelationType.Lookup, [new("AgentId", "Id")]),
                     new("PremiumPayments", "PremiumPayments", RelationType.Collection, [new("Id", "PolicyId")]),

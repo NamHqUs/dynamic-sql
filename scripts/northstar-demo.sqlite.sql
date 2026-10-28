@@ -14,13 +14,13 @@ DROP TABLE IF EXISTS Products;
 DROP TABLE IF EXISTS LeaveRequests;
 DROP TABLE IF EXISTS PerformanceReviews;
 DROP TABLE IF EXISTS Employees;
-DROP TABLE IF EXISTS Persons;
+DROP TABLE IF EXISTS Users;
 DROP TABLE IF EXISTS Departments;
 DROP TABLE IF EXISTS Locations;
 
 -- Shared
 CREATE TABLE Locations (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL, City TEXT NOT NULL, State TEXT NOT NULL);
-CREATE TABLE Persons (
+CREATE TABLE Users (
     Id INTEGER PRIMARY KEY, FirstName TEXT NOT NULL, LastName TEXT NOT NULL, BirthDate TEXT NOT NULL,
     Gender TEXT NOT NULL, City TEXT NOT NULL, State TEXT NOT NULL);
 
@@ -47,9 +47,9 @@ CREATE TABLE Products (
     Id INTEGER PRIMARY KEY, Name TEXT NOT NULL, Category TEXT NOT NULL,
     UnitPrice NUMERIC NOT NULL, CostPrice NUMERIC NOT NULL);
 CREATE TABLE Orders (
-    Id INTEGER PRIMARY KEY, PersonId INTEGER NOT NULL, SalesRepId INTEGER NOT NULL, OrderDate TEXT NOT NULL,
+    Id INTEGER PRIMARY KEY, UserId INTEGER NOT NULL, SalesRepId INTEGER NOT NULL, OrderDate TEXT NOT NULL,
     Channel TEXT NOT NULL, Status TEXT NOT NULL,
-    FOREIGN KEY (PersonId) REFERENCES Persons (Id),
+    FOREIGN KEY (UserId) REFERENCES Users (Id),
     FOREIGN KEY (SalesRepId) REFERENCES Employees (Id));
 CREATE TABLE OrderItems (
     Id INTEGER PRIMARY KEY, OrderId INTEGER NOT NULL, ProductId INTEGER NOT NULL,
@@ -61,10 +61,10 @@ CREATE TABLE OrderItems (
 CREATE TABLE Diagnoses (
     Id INTEGER PRIMARY KEY, Code TEXT NOT NULL, Name TEXT NOT NULL, Category TEXT NOT NULL, IsChronic INTEGER NOT NULL);
 CREATE TABLE Visits (
-    Id INTEGER PRIMARY KEY, PersonId INTEGER NOT NULL, DoctorId INTEGER NOT NULL, LocationId INTEGER NOT NULL,
+    Id INTEGER PRIMARY KEY, UserId INTEGER NOT NULL, DoctorId INTEGER NOT NULL, LocationId INTEGER NOT NULL,
     VisitDate TEXT NOT NULL, VisitType TEXT NOT NULL, DiagnosisId INTEGER NOT NULL,
     DurationMinutes INTEGER NOT NULL, Charge NUMERIC NOT NULL, Status TEXT NOT NULL,
-    FOREIGN KEY (PersonId) REFERENCES Persons (Id),
+    FOREIGN KEY (UserId) REFERENCES Users (Id),
     FOREIGN KEY (DoctorId) REFERENCES Employees (Id),
     FOREIGN KEY (LocationId) REFERENCES Locations (Id),
     FOREIGN KEY (DiagnosisId) REFERENCES Diagnoses (Id));
@@ -78,9 +78,9 @@ CREATE TABLE InsurancePlans (
     Id INTEGER PRIMARY KEY, Name TEXT NOT NULL, Tier TEXT NOT NULL, MonthlyPremium NUMERIC NOT NULL,
     Deductible NUMERIC NOT NULL, OutOfPocketMax NUMERIC NOT NULL, CoinsuranceRate NUMERIC NOT NULL);
 CREATE TABLE Policies (
-    Id INTEGER PRIMARY KEY, PersonId INTEGER NOT NULL, PlanId INTEGER NOT NULL, AgentId INTEGER NOT NULL,
+    Id INTEGER PRIMARY KEY, UserId INTEGER NOT NULL, PlanId INTEGER NOT NULL, AgentId INTEGER NOT NULL,
     StartDate TEXT NOT NULL, EndDate TEXT NULL, Status TEXT NOT NULL,
-    FOREIGN KEY (PersonId) REFERENCES Persons (Id),
+    FOREIGN KEY (UserId) REFERENCES Users (Id),
     FOREIGN KEY (PlanId) REFERENCES InsurancePlans (Id),
     FOREIGN KEY (AgentId) REFERENCES Employees (Id));
 CREATE TABLE PremiumPayments (
@@ -93,10 +93,10 @@ CREATE TABLE Claims (
     FOREIGN KEY (PolicyId) REFERENCES Policies (Id),
     FOREIGN KEY (VisitId) REFERENCES Visits (Id));
 
-CREATE INDEX IX_Visits_PersonId ON Visits (PersonId);
+CREATE INDEX IX_Visits_UserId ON Visits (UserId);
 CREATE INDEX IX_Claims_PolicyId ON Claims (PolicyId);
 CREATE INDEX IX_OrderItems_OrderId ON OrderItems (OrderId);
-CREATE INDEX IX_Orders_PersonId ON Orders (PersonId);
+CREATE INDEX IX_Orders_UserId ON Orders (UserId);
 
 INSERT INTO Locations (Id, Name, City, State) VALUES
     (1, 'NorthStar Boston Center', 'Boston', 'MA'),
@@ -215,7 +215,7 @@ INSERT INTO Employees (Id, FirstName, LastName, DepartmentId, LocationId, Manage
     (90, 'Katherine', 'Peterson', 10, 3, 10, 'Financial Analyst', '2017-02-24', 126700.0, 'Full-time'),
     (91, 'Sophia', 'Myers', 10, 3, 10, 'Financial Analyst', '2021-11-26', 97300.0, 'Full-time');
 
-INSERT INTO Persons (Id, FirstName, LastName, BirthDate, Gender, City, State) VALUES
+INSERT INTO Users (Id, FirstName, LastName, BirthDate, Gender, City, State) VALUES
     (1, 'Patricia', 'Ramirez', '2015-09-03', 'M', 'New York', 'NY'),
     (2, 'Philip', 'Cox', '1960-07-22', 'M', 'Atlanta', 'GA'),
     (3, 'Sara', 'Adams', '1980-11-28', 'F', 'Seattle', 'WA'),
@@ -839,7 +839,7 @@ INSERT INTO Products (Id, Name, Category, UnitPrice, CostPrice) VALUES
     (39, 'Stress Relief Kit', 'Mental Wellness', 49, 19),
     (40, 'Meditation Light Therapy', 'Mental Wellness', 119, 53);
 
-INSERT INTO Orders (Id, PersonId, SalesRepId, OrderDate, Channel, Status) VALUES
+INSERT INTO Orders (Id, UserId, SalesRepId, OrderDate, Channel, Status) VALUES
     (1, 135, 18, '2025-10-07', 'Phone', 'Completed'),
     (2, 105, 11, '2025-07-13', 'Retail Store', 'Completed'),
     (3, 135, 15, '2025-10-19', 'Retail Store', 'Completed'),
@@ -3315,7 +3315,7 @@ INSERT INTO Diagnoses (Id, Code, Name, Category, IsChronic) VALUES
     (11, 'L20', 'Atopic Dermatitis', 'Dermatology', 1),
     (12, 'N39', 'Urinary Tract Infection', 'Urology', 0);
 
-INSERT INTO Visits (Id, PersonId, DoctorId, LocationId, VisitDate, VisitType, DiagnosisId, DurationMinutes, Charge, Status) VALUES
+INSERT INTO Visits (Id, UserId, DoctorId, LocationId, VisitDate, VisitType, DiagnosisId, DurationMinutes, Charge, Status) VALUES
     (1, 164, 5, 8, '2025-01-12', 'Telehealth', 2, 24, 80.45, 'Completed'),
     (2, 154, 30, 7, '2025-01-29', 'Specialist', 7, 57, 323.4, 'Completed'),
     (3, 68, 23, 3, '2025-05-05', 'Telehealth', 3, 31, 94.09, 'Completed'),
@@ -5486,7 +5486,7 @@ INSERT INTO InsurancePlans (Id, Name, Tier, MonthlyPremium, Deductible, OutOfPoc
     (9, 'Young Adult Flex', 'Bronze', 180, 6000, 8000, 0.4),
     (10, 'Small Business Group', 'Silver', 390, 3000, 8000, 0.25);
 
-INSERT INTO Policies (Id, PersonId, PlanId, AgentId, StartDate, EndDate, Status) VALUES
+INSERT INTO Policies (Id, UserId, PlanId, AgentId, StartDate, EndDate, Status) VALUES
     (1, 161, 9, 74, '2024-12-18', NULL, 'Active'),
     (2, 154, 8, 79, '2024-07-05', NULL, 'Active'),
     (3, 121, 8, 79, '2023-07-23', NULL, 'Active'),
