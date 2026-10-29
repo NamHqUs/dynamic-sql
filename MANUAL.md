@@ -106,6 +106,22 @@ Fields can be:
 - `FieldType.DbColumn`: a normal database column.
 - `FieldType.RawSql`: a trusted provider-specific SQL expression.
 
+For a raw SQL field, set `Field.RawSql` to the expression. Use `@` before
+column names to have the current table alias inserted. For example, this
+defines a calculated `LineTotal` field without requiring a physical column:
+
+```csharp
+new Field("LineTotal", DataType.Number, FieldType.RawSql)
+{
+    RawSql = "@Quantity * @UnitPrice"
+}
+```
+
+The generated SQL expression will be similar to
+`(t0.Quantity * t0.UnitPrice)`, where `t0` is the generated table alias.
+Raw SQL is inserted into the query, so only use trusted metadata; never build
+it from user-supplied input.
+
 Supported metadata data types include `String`, `Number`, `Datetime`, and
 `Boolean`.
 
