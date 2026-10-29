@@ -12,18 +12,18 @@ internal sealed class _22_DateDifferenceQueryTests
             Name: "Customers",
             Fields:
             [
-                new("Id", DataType.Number),
-                new("Name")
+                new DbField("Id", "Id"),
+                new DbField("Name", "Name")
             ]),
         new(
             Name: "Invoices",
             Fields:
             [
-                new("Id", DataType.Number),
-                new("CustomerId", DataType.Number),
-                new("InvoiceNumber"),
-                new("InvoiceDate", DataType.Datetime),
-                new("DueDate", DataType.Datetime)
+                new DbField("Id", "Id"),
+                new DbField("CustomerId", "CustomerId"),
+                new DbField("InvoiceNumber", "InvoiceNumber"),
+                new DbField("InvoiceDate", "InvoiceDate"),
+                new DbField("DueDate", "DueDate")
             ],
             Relations:
             [

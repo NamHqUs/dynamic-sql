@@ -10,7 +10,7 @@ public class _12_SqlDiagnosticsTests
     {
         var metadata = new MetaProvider(
         [
-            new Entity("User", [new("Id"), new("Birthday")])
+            new Entity("User", [new DbField("Id", "Id"), new DbField("Birthday", "Birthday")])
         ]);
 
         using var connection = new SqlConnection();

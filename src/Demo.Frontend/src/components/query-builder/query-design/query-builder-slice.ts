@@ -3,10 +3,9 @@ import { apiUrls } from "../../../const/api-urls";
 import { databaseConnectionRequired } from "../../data-sources/database-slice";
 import type { FunctionDefinition } from "../../metadata-builder/function-definition/types";
 
-export type MetadataField = {
-  name: string;
-  dataType: string;
-};
+export type MetadataField =
+  | { kind: "dbField"; name: string; dbColumn: string }
+  | { kind: "rawSqlField"; name: string; expression: string };
 
 export type FilterOperatorDefinition = {
   id: string;

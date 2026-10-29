@@ -1,5 +1,5 @@
 import { useState } from "react";
-import FieldBox, { resolveEntity } from "./field-box/field-box";
+import FieldBox from "./field-box/field-box";
 import { ApiQueryContextDefinition, IFieldDefinition, MatchOperation, MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../icon/icon";
 import ExpressionBuilder from "./expression-builder";
@@ -27,9 +27,7 @@ type FieldBuilderProps = {
   onChange: (path: string) => void;
   onRemove?: () => void;
   showPath?: boolean;
-  showDataType?: boolean;
   placeholder?: string;
-  dataTypeFilter?: string;
   placeholderIcon?: boolean;
   ariaLabel?: string;
   popupAnchor?: HTMLElement | null;
@@ -50,13 +48,6 @@ type FieldBuilderProps = {
   onExpressionApply?: (expression: IFieldDefinition) => void;
 };
 
-function getFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {
-  const segments = value.split(".");
-  const lastSegment = segments[segments.length - 1] ?? "";
-  const owner = resolveEntity(entity, metadata, segments.slice(0, -1));
-  return owner?.fields.find((field) => field.name === lastSegment)?.dataType;
-}
-
 export default function FieldBuilder({
   entity,
   metadata,
@@ -65,9 +56,7 @@ export default function FieldBuilder({
   onChange,
   onRemove,
   showPath = false,
-  showDataType = false,
   placeholder = "Select field…",
-  dataTypeFilter,
   placeholderIcon = false,
   ariaLabel = "Field",
   popupAnchor,
@@ -119,7 +108,6 @@ export default function FieldBuilder({
       }}
     />
     : undefined;
-  const dataType = showDataType ? getFieldDataType(entity, metadata, value) : undefined;
   const removeButton = onRemove && (
     <button
       type="button"
@@ -142,7 +130,6 @@ export default function FieldBuilder({
       autoFocus={autoFocus ?? (Boolean(value) || initialConstantValue !== undefined)}
       showPath={showPath}
       placeholder={initialConstantValue === undefined ? placeholder : String(initialConstantValue)}
-      dataTypeFilter={dataTypeFilter}
       placeholderIcon={placeholderIcon}
       ariaLabel={ariaLabel}
       popupAnchor={popupAnchor}
@@ -196,7 +183,6 @@ export default function FieldBuilder({
             <ExpressionDebugTooltip label="Field box" model={fieldBoxDebugModel} />
           </div>
           : fieldBox}
-        {dataType && <span className="field-builder-type">{dataType}</span>}
         {removeButton}
       </div>
     );
@@ -218,7 +204,6 @@ export default function FieldBuilder({
       >
         {displayValue}
       </span>
-      {dataType && <span className="field-builder-type">{dataType}</span>}
       {removeButton}
     </div>
   );

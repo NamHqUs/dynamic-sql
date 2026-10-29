@@ -4,7 +4,7 @@ namespace Demo.Contracts.Dto;
 
 public sealed record MetadataEntityDto(
     string Name,
-    List<Field> Fields,
+    List<IField> Fields,
     string RawSql,
     List<Relation>? Relations,
     bool CanDelete)
@@ -12,3 +12,5 @@ public sealed record MetadataEntityDto(
     public static MetadataEntityDto FromEntity(Entity entity, bool canDelete)
         => new(entity.Name, entity.Fields, entity.RawSql, entity.Relations, canDelete);
 }
+
+

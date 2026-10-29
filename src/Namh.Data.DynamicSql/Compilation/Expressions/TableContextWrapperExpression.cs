@@ -9,5 +9,5 @@ class TableContextWrapperExpression(TableExpression tableContext, string alias)
         => new(
             Name: $"Wrap_{tableContext.Entity.Name}",
             RawSql: $"({tableContext})",
-            Fields: tableContext.ProjectionItems.Select(e => new Field(e.Alias)).ToList());
+            Fields: tableContext.ProjectionItems.Select(e => (IField)new DbField(e.Alias, e.Alias)).ToList());
 }

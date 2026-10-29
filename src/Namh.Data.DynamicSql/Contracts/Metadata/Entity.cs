@@ -6,7 +6,7 @@ public record Entity
 {
     public Entity(
         string? Name,
-        List<Field> Fields,
+        List<IField> Fields,
         string? RawSql = null,
         List<Relation>? Relations = null)
     {
@@ -20,11 +20,11 @@ public record Entity
     }
 
     public string Name { get; init; }
-    public List<Field> Fields { get; init; }
+    public List<IField> Fields { get; init; }
     public string RawSql { get; init; }
     public List<Relation>? Relations { get; init; }
 
-    public Field GetField(string fieldName)
+    public IField GetField(string fieldName)
         => Fields?.FirstOrDefault(e => string.Equals(e.Name, fieldName, StringComparison.OrdinalIgnoreCase))
             ?? throw new FieldNotFoundException(Name, fieldName);
 

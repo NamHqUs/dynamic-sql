@@ -179,13 +179,18 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     private string RenderField(FieldExpression field)
     {
         if (field.TableAlias.Length == 0)
-            return $"({field.MetaField.RawSql})";
+            return field.MetaField switch
+            {
+                DbField dbField => $"({dbField.DbColumn ?? dbField.Name})",
+                RawSqlField rawSqlField => $"({rawSqlField.Expression})",
+                _ => throw new NotSupportedException($"Unsupported field type [{field.MetaField.GetType().Name}].")
+            };
 
-        return field.MetaField.FieldType switch
+        return field.MetaField switch
         {
-            FieldType.DbColumn => $"{field.TableAlias}.{dialect.QuoteIdentifier(field.MetaField.RawSql)}",
-            FieldType.RawSql => $"({field.MetaField.RawSql.Replace("@", field.TableAlias + ".")})",
-            _ => throw new NotSupportedException($"Unsupported field type [{field.MetaField.FieldType}].")
+            DbField dbField => $"{field.TableAlias}.{dialect.QuoteIdentifier(dbField.DbColumn ?? dbField.Name)}",
+            RawSqlField rawSqlField => $"({rawSqlField.Expression.Replace("@", field.TableAlias + ".")})",
+            _ => throw new NotSupportedException($"Unsupported field type [{field.MetaField.GetType().Name}].")
         };
     }
 

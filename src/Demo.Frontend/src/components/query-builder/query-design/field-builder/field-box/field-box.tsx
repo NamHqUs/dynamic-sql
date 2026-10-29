@@ -15,9 +15,7 @@ type FieldBoxProps = {
   clearOnSelect?: boolean;
   completeOnSelect?: boolean;
   showPath?: boolean;
-  showDataType?: boolean;
   placeholder?: string;
-  dataTypeFilter?: string;
   placeholderIcon?: boolean;
   ariaLabel?: string;
   popupAnchor?: HTMLElement | null;
@@ -78,9 +76,7 @@ export default function FieldBox({
   clearOnSelect = false,
   completeOnSelect = false,
   showPath = false,
-  showDataType = false,
   placeholder = "Select field…",
-  dataTypeFilter,
   placeholderIcon = false,
   ariaLabel = "Field",
   popupAnchor,
@@ -277,8 +273,7 @@ export default function FieldBox({
   const filteredJoinedContextFields = joinedContextFields.filter((field) =>
     field.toLowerCase().includes(fieldSearch.trim().toLowerCase()));
   const fields = current.fields.filter((field) =>
-    !excludedPaths.includes([...path, field.name].join("."))
-    && (!dataTypeFilter || field.dataType.toLowerCase() === dataTypeFilter.toLowerCase()));
+    !excludedPaths.includes([...path, field.name].join(".")));
   const filteredFields = fields.filter((field) => field.name.toLowerCase().includes(fieldSearch.trim().toLowerCase()));
   const fieldColumns = useMemo(() => {
     if (filteredFields.length === 0) return [];
@@ -302,7 +297,6 @@ export default function FieldBox({
         .map(({ field }) => field));
   }, [filteredFields]);
   const isComplete = completeOnSelect && Boolean(value);
-  const selectedDataType = current.fields.find((field) => field.name === selectedField)?.dataType;
   const selectConstantValue = () => {
     const numberValue = Number(constantValue);
     const selectedValue = initialConstantValue !== undefined
@@ -504,7 +498,6 @@ export default function FieldBox({
     </div>}
     {completeOnSelect && value && <span className="field-box-completed" aria-label={`Selected ${ariaLabel.toLowerCase()}: ${value}`}>
       <span>{value}</span>
-      {showDataType && selectedDataType && <span className="field-box-completed-type">{selectedDataType}</span>}
     </span>}
   </div>;
 }

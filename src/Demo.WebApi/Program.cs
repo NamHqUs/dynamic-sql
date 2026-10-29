@@ -20,13 +20,11 @@ builder.Services
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter<DataType>());
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter<FieldType>());
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter<RelationType>());
     });
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<DataType>());
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<FieldType>());
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<RelationType>());
 });
 builder.Services.AddProblemDetails();

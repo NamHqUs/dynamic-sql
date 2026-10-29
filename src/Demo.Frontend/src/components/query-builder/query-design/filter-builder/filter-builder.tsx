@@ -278,15 +278,14 @@ function getDraggedField(event: DragEvent<HTMLElement>): string | undefined {
   return field || undefined;
 }
 
-function getFilterFieldDataType(entity: MetadataEntity, metadata: MetadataEntity[], value: string) {
+function getFilterFieldDataType(value: string) {
   const fieldPath = value.replace(/^\[|\]$/g, "");
   const segments = fieldPath.split(".");
   const lastSegment = segments[segments.length - 1] ?? "";
   const aggregateField = fieldPath.match(/^(COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i)?.[2]
     ?? lastSegment.match(/^(COUNT\(\)|SUM|MAX|MIN|AVG)\(([^)]*)\)$/i)?.[2];
   if (fieldPath.toUpperCase().startsWith("COUNT()") || aggregateField) return "Number";
-  const owner = resolveEntity(entity, metadata, segments.slice(0, -1));
-  return owner?.fields.find((field) => field.name === lastSegment)?.dataType;
+  return undefined;
 }
 
 function getOperatorOptions(
@@ -717,7 +716,7 @@ function FilterRow({ filter, first, path, metadata, joinedContexts, functionDefi
   const update = (changes: Partial<QueryFilterItem>) => onChange({ ...filter, ...changes });
   const fieldDataType = filter.fieldExpression?.kind === "group"
     ? "Number"
-    : getFilterFieldDataType(entity, metadata, filter.field);
+    : getFilterFieldDataType(filter.field);
   const operatorOptions = getOperatorOptions(operators, fieldDataType);
   const initialExpression: IFieldDefinition | undefined = filter.fieldExpression
     ?? (filter.field ? { kind: "field", field: filter.field } : undefined);
@@ -796,7 +795,6 @@ function FilterRow({ filter, first, path, metadata, joinedContexts, functionDefi
           joinedContexts={joinedContexts}
           value={filter.field}
           showPath
-          showDataType
           ariaLabel="Filter field"
           allowValueSelection
           allowCalculationSelection
@@ -817,7 +815,7 @@ function FilterRow({ filter, first, path, metadata, joinedContexts, functionDefi
             : undefined}
           onValueSelect={(value) => update({ field: `<${value}>`, fieldExpression: { kind: "value", value } })}
           onChange={(field) => {
-            const dataType = getFilterFieldDataType(entity, metadata, field);
+            const dataType = getFilterFieldDataType(field);
             const options = getOperatorOptions(operators, dataType);
             update({
               field,

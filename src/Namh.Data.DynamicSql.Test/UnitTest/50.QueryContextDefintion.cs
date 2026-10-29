@@ -11,7 +11,7 @@ public class _50_QueryContextDefintion : TestBase
     {
         using var db = CreateContext(
             new SqlServerDialect(),
-            new Entity("User", [new("Id", DataType.Number)]));
+            new Entity("User", [new DbField("Id", "Id")]));
         var query = new QueryDefinition
         {
             Entity = "User",
@@ -43,9 +43,9 @@ public class _50_QueryContextDefintion : TestBase
             new Entity(
                 "User",
                 [
-                    new("Id", DataType.Number),
-                    new("Name"),
-                    new("ManagerId", DataType.Number),
+                    new DbField("Id", "Id"),
+                    new DbField("Name", "Name"),
+                    new DbField("ManagerId", "ManagerId"),
                 ]));
 
         var query = new QueryDefinition
@@ -100,7 +100,7 @@ public class _50_QueryContextDefintion : TestBase
     {
         using var db = CreateContext(
             new SqlServerDialect(),
-            new Entity("User", [new("Id", DataType.Number), new("ManagerId", DataType.Number)]));
+            new Entity("User", [new DbField("Id", "Id"), new DbField("ManagerId", "ManagerId")]));
         var query = new QueryDefinition
         {
             Entity = "User",
@@ -145,7 +145,7 @@ public class _50_QueryContextDefintion : TestBase
         };
         using var db = CreateContext(
             dialect,
-            new Entity("User", [new("Id", DataType.Number), new("ManagerId", DataType.Number)]));
+            new Entity("User", [new DbField("Id", "Id"), new DbField("ManagerId", "ManagerId")]));
         var query = new QueryDefinition
         {
             Entity = "User",
@@ -220,8 +220,8 @@ public class _50_QueryContextDefintion : TestBase
             """;
         using var db = CreateContext(
             new SqlServerDialect(),
-            new Entity("Employees", [new("Salary", DataType.Number)]),
-            new Entity("SalaryRules", [new("MinSalary", DataType.Number)]));
+            new Entity("Employees", [new DbField("Salary", "Salary")]),
+            new Entity("SalaryRules", [new DbField("MinSalary", "MinSalary")]));
 
         var definition = QueryDefinition.FromYml(yaml);
         var roundTripped = QueryDefinition.FromYml(definition.ToYml());
@@ -256,7 +256,7 @@ public class _50_QueryContextDefintion : TestBase
             """;
         using var db = CreateContext(
             new SqlServerDialect(),
-            new Entity("User", [new("Id", DataType.Number), new("ManagerId", DataType.Number)]));
+            new Entity("User", [new DbField("Id", "Id"), new DbField("ManagerId", "ManagerId")]));
 
         var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql();
 
@@ -287,7 +287,7 @@ public class _50_QueryContextDefintion : TestBase
             """;
         using var db = CreateContext(
             new SqlServerDialect(),
-            new Entity("User", [new("Id", DataType.Number), new("ManagerId", DataType.Number)]));
+            new Entity("User", [new DbField("Id", "Id"), new DbField("ManagerId", "ManagerId")]));
 
         var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql();
 
@@ -316,7 +316,7 @@ public class _50_QueryContextDefintion : TestBase
             """;
         using var db = CreateContext(
             new SqlServerDialect(),
-            new Entity("User", [new("Id", DataType.Number), new("ManagerId", DataType.Number)]));
+            new Entity("User", [new DbField("Id", "Id"), new DbField("ManagerId", "ManagerId")]));
 
         var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql();
 
@@ -366,11 +366,11 @@ public class _50_QueryContextDefintion : TestBase
         using var db = CreateContext(
             new SqlServerDialect(),
             new Entity("User", [
-                new("Id", DataType.Number),
-                new("Name"),
-                new("Age", DataType.Number),
-                new("ManagerId", DataType.Number),
-                new("ReviewerId", DataType.Number),
+                new DbField("Id", "Id"),
+                new DbField("Name", "Name"),
+                new DbField("Age", "Age"),
+                new DbField("ManagerId", "ManagerId"),
+                new DbField("ReviewerId", "ReviewerId"),
             ]));
 
         var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql().CommandText;
@@ -388,7 +388,7 @@ public class _50_QueryContextDefintion : TestBase
     {
         using var db = CreateContext(
             new SqlServerDialect(),
-            new Entity("User", [new("Id", DataType.Number), new("ManagerId", DataType.Number)]));
+            new Entity("User", [new DbField("Id", "Id"), new DbField("ManagerId", "ManagerId")]));
         var definition = new QueryDefinition
         {
             Entity = "User",

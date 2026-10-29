@@ -85,7 +85,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             {
                 var cteTable = cteTables[GetContextAlias(reference)];
                 cteTable.Entity.Fields.Clear();
-                cteTable.Entity.Fields.AddRange(cteQuery.ProjectionItems.Select(item => new Field(item.Alias)));
+                cteTable.Entity.Fields.AddRange(cteQuery.ProjectionItems.Select(item => new DbField(item.Alias, item.Alias)));
             }
         }
 
@@ -114,7 +114,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         return new Entity(context.Name, fields, context.Name);
     }
 
-    private List<Field> GetCteFields(
+    private List<IField> GetCteFields(
         QueryContextDefintion context,
         IReadOnlyDictionary<string, QueryContextDefintion> definitions,
         HashSet<string> visited)
@@ -123,12 +123,16 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             throw new FormatException($"Recursive query context [{context.Name}] is not supported.");
         var projections = context.Query.Projection.Where(projection => !projection.IsNewLine).ToArray();
         if (projections.Length > 0)
-            return projections.Select(projection => new Field(GetProjectionAlias(projection))).ToList();
+            return projections.Select(projection =>
+            {
+                var name = GetProjectionAlias(projection);
+                return (IField)new DbField(name, name);
+            }).ToList();
         if (definitions.TryGetValue(context.Query.Entity, out var sourceContext))
             return GetCteFields(sourceContext, definitions, visited);
 
         return queryContext.GetEntity(context.Query.Entity).Fields
-            .Select(field => new Field(field.Name, field.DataType))
+            .Select(field => (IField)new DbField(field.Name, field.Name))
             .ToList();
     }
 

@@ -470,9 +470,9 @@ class QueryContext(
         var predicates = new List<SqlExpression>();
         foreach (var e in relation.RelatedKeys)
             predicates.Add(new BinarySqlExpression(
-                new FieldExpression(joinedTable.Alias, new Field(e.ToDbColumn)),
+                new FieldExpression(joinedTable.Alias, new DbField(e.ToDbColumn, e.ToDbColumn)),
                 "=",
-                new FieldExpression(table.Alias, new Field(e.FromDbColumn)),
+                new FieldExpression(table.Alias, new DbField(e.FromDbColumn, e.FromDbColumn)),
                 typeof(bool)));
 
         return predicates;

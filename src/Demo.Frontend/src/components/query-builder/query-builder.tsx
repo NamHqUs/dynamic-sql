@@ -68,7 +68,7 @@ function createContextEntity(
       .filter((column) => !column.expression && !column.field.startsWith("__calculated__"))
       .map((column) => column.field),
   ])]
-    .map((name) => ({ name, dataType: "" }));
+    .map((name) => ({ kind: "dbField" as const, name, dbColumn: name }));
 
   return { name: context.name, fields };
 }

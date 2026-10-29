@@ -10,9 +10,9 @@ public class BuiltinMetadata
             Name: "Customers",
             Fields:
             [
-                new("Id", DataType.Number), new("Name"), new("Email"), new("Phone"), new("Address"),
-                new("Segment"), new("Region"), new("CustomerSince", DataType.Datetime),
-                new("CreatedOn", DataType.Datetime), new("UpdatedOn", DataType.Datetime)
+                new DbField("Id", "Id"), new DbField("Name", "Name"), new DbField("Email", "Email"), new DbField("Phone", "Phone"), new DbField("Address", "Address"),
+                new DbField("Segment", "Segment"), new DbField("Region", "Region"), new DbField("CustomerSince", "CustomerSince"),
+                new DbField("CreatedOn", "CreatedOn"), new DbField("UpdatedOn", "UpdatedOn")
             ],
             Relations:
             [
@@ -22,10 +22,10 @@ public class BuiltinMetadata
             Name: "Products",
             Fields:
             [
-                new("Id", DataType.Number), new("Name"), new("Description"), new("Category"),
-                new("UnitPrice", DataType.Number), new("CostPrice", DataType.Number),
-                new("StockQuantity", DataType.Number), new("ReorderLevel", DataType.Number),
-                new("CreatedOn", DataType.Datetime), new("UpdatedOn", DataType.Datetime)
+                new DbField("Id", "Id"), new DbField("Name", "Name"), new DbField("Description", "Description"), new DbField("Category", "Category"),
+                new DbField("UnitPrice", "UnitPrice"), new DbField("CostPrice", "CostPrice"),
+                new DbField("StockQuantity", "StockQuantity"), new DbField("ReorderLevel", "ReorderLevel"),
+                new DbField("CreatedOn", "CreatedOn"), new DbField("UpdatedOn", "UpdatedOn")
             ],
             Relations:
             [
@@ -35,12 +35,12 @@ public class BuiltinMetadata
             Name: "Invoices",
             Fields:
             [
-                new("Id", DataType.Number), new("CustomerId", DataType.Number), new("InvoiceNumber"),
-                new("InvoiceDate", DataType.Datetime), new("DueDate", DataType.Datetime), new("Status"),
-                new("SalesChannel"), new("PaymentMethod"), new("PaidOn", DataType.Datetime),
-                new("DiscountAmount", DataType.Number), new("TaxAmount", DataType.Number),
-                new("TotalAmount", DataType.Number), new("CreatedOn", DataType.Datetime),
-                new("UpdatedOn", DataType.Datetime)
+                new DbField("Id", "Id"), new DbField("CustomerId", "CustomerId"), new DbField("InvoiceNumber", "InvoiceNumber"),
+                new DbField("InvoiceDate", "InvoiceDate"), new DbField("DueDate", "DueDate"), new DbField("Status", "Status"),
+                new DbField("SalesChannel", "SalesChannel"), new DbField("PaymentMethod", "PaymentMethod"), new DbField("PaidOn", "PaidOn"),
+                new DbField("DiscountAmount", "DiscountAmount"), new DbField("TaxAmount", "TaxAmount"),
+                new DbField("TotalAmount", "TotalAmount"), new DbField("CreatedOn", "CreatedOn"),
+                new DbField("UpdatedOn", "UpdatedOn")
             ],
             Relations:
             [
@@ -51,10 +51,10 @@ public class BuiltinMetadata
             Name: "InvoiceItems",
             Fields:
             [
-                new("Id", DataType.Number), new("InvoiceId", DataType.Number), new("ProductId", DataType.Number),
-                new("Quantity", DataType.Number), new("UnitPrice", DataType.Number),
-                new("DiscountAmount", DataType.Number), new("LineTotal", DataType.Number),
-                new("CreatedOn", DataType.Datetime), new("UpdatedOn", DataType.Datetime)
+                new DbField("Id", "Id"), new DbField("InvoiceId", "InvoiceId"), new DbField("ProductId", "ProductId"),
+                new DbField("Quantity", "Quantity"), new DbField("UnitPrice", "UnitPrice"),
+                new DbField("DiscountAmount", "DiscountAmount"), new DbField("LineTotal", "LineTotal"),
+                new DbField("CreatedOn", "CreatedOn"), new DbField("UpdatedOn", "UpdatedOn")
             ],
             Relations:
             [
@@ -69,7 +69,7 @@ public class BuiltinMetadata
                 Name: "Locations",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("Name"), new("City"), new("State")
+                    new DbField("Id", "Id"), new DbField("Name", "Name"), new DbField("City", "City"), new DbField("State", "State")
                 ],
                 Relations:
                 [
@@ -80,8 +80,8 @@ public class BuiltinMetadata
                 Name: "Users",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("FirstName"), new("LastName"),
-                    new("BirthDate", DataType.Datetime), new("Gender"), new("City"), new("State")
+                    new DbField("Id", "Id"), new DbField("FirstName", "FirstName"), new DbField("LastName", "LastName"),
+                    new DbField("BirthDate", "BirthDate"), new DbField("Gender", "Gender"), new DbField("City", "City"), new DbField("State", "State")
                 ],
                 Relations:
                 [
@@ -93,7 +93,7 @@ public class BuiltinMetadata
                 Name: "Departments",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("Name")
+                    new DbField("Id", "Id"), new DbField("Name", "Name")
                 ],
                 Relations:
                 [
@@ -103,10 +103,10 @@ public class BuiltinMetadata
                 Name: "Employees",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("FirstName"), new("LastName"),
-                    new("DepartmentId", DataType.Number), new("LocationId", DataType.Number),
-                    new("ManagerId", DataType.Number), new("JobTitle"), new("HireDate", DataType.Datetime),
-                    new("Salary", DataType.Number), new("EmploymentType")
+                    new DbField("Id", "Id"), new DbField("FirstName", "FirstName"), new DbField("LastName", "LastName"),
+                    new DbField("DepartmentId", "DepartmentId"), new DbField("LocationId", "LocationId"),
+                    new DbField("ManagerId", "ManagerId"), new DbField("JobTitle", "JobTitle"), new DbField("HireDate", "HireDate"),
+                    new DbField("Salary", "Salary"), new DbField("EmploymentType", "EmploymentType")
                 ],
                 Relations:
                 [
@@ -124,9 +124,9 @@ public class BuiltinMetadata
                 Name: "PerformanceReviews",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("EmployeeId", DataType.Number),
-                    new("ReviewYear", DataType.Number), new("Rating", DataType.Number),
-                    new("BonusAmount", DataType.Number)
+                    new DbField("Id", "Id"), new DbField("EmployeeId", "EmployeeId"),
+                    new DbField("ReviewYear", "ReviewYear"), new DbField("Rating", "Rating"),
+                    new DbField("BonusAmount", "BonusAmount")
                 ],
                 Relations:
                 [
@@ -136,8 +136,8 @@ public class BuiltinMetadata
                 Name: "LeaveRequests",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("EmployeeId", DataType.Number), new("LeaveType"),
-                    new("StartDate", DataType.Datetime), new("Days", DataType.Number), new("Status")
+                    new DbField("Id", "Id"), new DbField("EmployeeId", "EmployeeId"), new DbField("LeaveType", "LeaveType"),
+                    new DbField("StartDate", "StartDate"), new DbField("Days", "Days"), new DbField("Status", "Status")
                 ],
                 Relations:
                 [
@@ -148,8 +148,8 @@ public class BuiltinMetadata
                 Name: "NorthStarProducts",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("Name"), new("Category"),
-                    new("UnitPrice", DataType.Number), new("CostPrice", DataType.Number)
+                    new DbField("Id", "Id"), new DbField("Name", "Name"), new DbField("Category", "Category"),
+                    new DbField("UnitPrice", "UnitPrice"), new DbField("CostPrice", "CostPrice")
                 ],
                 RawSql: "Products",
                 Relations:
@@ -160,9 +160,9 @@ public class BuiltinMetadata
                 Name: "Orders",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("UserId", DataType.Number),
-                    new("SalesRepId", DataType.Number), new("OrderDate", DataType.Datetime),
-                    new("Channel"), new("Status")
+                    new DbField("Id", "Id"), new DbField("UserId", "UserId"),
+                    new DbField("SalesRepId", "SalesRepId"), new DbField("OrderDate", "OrderDate"),
+                    new DbField("Channel", "Channel"), new DbField("Status", "Status")
                 ],
                 Relations:
                 [
@@ -174,9 +174,9 @@ public class BuiltinMetadata
                 Name: "OrderItems",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("OrderId", DataType.Number),
-                    new("ProductId", DataType.Number), new("Quantity", DataType.Number),
-                    new("UnitPrice", DataType.Number), new("DiscountAmount", DataType.Number)
+                    new DbField("Id", "Id"), new DbField("OrderId", "OrderId"),
+                    new DbField("ProductId", "ProductId"), new DbField("Quantity", "Quantity"),
+                    new DbField("UnitPrice", "UnitPrice"), new DbField("DiscountAmount", "DiscountAmount")
                 ],
                 Relations:
                 [
@@ -187,8 +187,8 @@ public class BuiltinMetadata
                 Name: "Diagnoses",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("Code"), new("Name"), new("Category"),
-                    new("IsChronic", DataType.Boolean)
+                    new DbField("Id", "Id"), new DbField("Code", "Code"), new DbField("Name", "Name"), new DbField("Category", "Category"),
+                    new DbField("IsChronic", "IsChronic")
                 ],
                 Relations:
                 [
@@ -198,10 +198,10 @@ public class BuiltinMetadata
                 Name: "Visits",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("UserId", DataType.Number),
-                    new("DoctorId", DataType.Number), new("LocationId", DataType.Number),
-                    new("VisitDate", DataType.Datetime), new("VisitType"), new("DiagnosisId", DataType.Number),
-                    new("DurationMinutes", DataType.Number), new("Charge", DataType.Number), new("Status")
+                    new DbField("Id", "Id"), new DbField("UserId", "UserId"),
+                    new DbField("DoctorId", "DoctorId"), new DbField("LocationId", "LocationId"),
+                    new DbField("VisitDate", "VisitDate"), new DbField("VisitType", "VisitType"), new DbField("DiagnosisId", "DiagnosisId"),
+                    new DbField("DurationMinutes", "DurationMinutes"), new DbField("Charge", "Charge"), new DbField("Status", "Status")
                 ],
                 Relations:
                 [
@@ -216,9 +216,9 @@ public class BuiltinMetadata
                 Name: "LabResults",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("VisitId", DataType.Number), new("TestName"),
-                    new("ResultValue", DataType.Number), new("ReferenceMax", DataType.Number),
-                    new("IsAbnormal", DataType.Boolean)
+                    new DbField("Id", "Id"), new DbField("VisitId", "VisitId"), new DbField("TestName", "TestName"),
+                    new DbField("ResultValue", "ResultValue"), new DbField("ReferenceMax", "ReferenceMax"),
+                    new DbField("IsAbnormal", "IsAbnormal")
                 ],
                 Relations:
                 [
@@ -228,9 +228,9 @@ public class BuiltinMetadata
                 Name: "InsurancePlans",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("Name"), new("Tier"),
-                    new("MonthlyPremium", DataType.Number), new("Deductible", DataType.Number),
-                    new("OutOfPocketMax", DataType.Number), new("CoinsuranceRate", DataType.Number)
+                    new DbField("Id", "Id"), new DbField("Name", "Name"), new DbField("Tier", "Tier"),
+                    new DbField("MonthlyPremium", "MonthlyPremium"), new DbField("Deductible", "Deductible"),
+                    new DbField("OutOfPocketMax", "OutOfPocketMax"), new DbField("CoinsuranceRate", "CoinsuranceRate")
                 ],
                 Relations:
                 [
@@ -240,9 +240,9 @@ public class BuiltinMetadata
                 Name: "Policies",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("UserId", DataType.Number),
-                    new("PlanId", DataType.Number), new("AgentId", DataType.Number),
-                    new("StartDate", DataType.Datetime), new("EndDate", DataType.Datetime), new("Status")
+                    new DbField("Id", "Id"), new DbField("UserId", "UserId"),
+                    new DbField("PlanId", "PlanId"), new DbField("AgentId", "AgentId"),
+                    new DbField("StartDate", "StartDate"), new DbField("EndDate", "EndDate"), new DbField("Status", "Status")
                 ],
                 Relations:
                 [
@@ -256,8 +256,8 @@ public class BuiltinMetadata
                 Name: "PremiumPayments",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("PolicyId", DataType.Number),
-                    new("PaymentDate", DataType.Datetime), new("Amount", DataType.Number), new("Status")
+                    new DbField("Id", "Id"), new DbField("PolicyId", "PolicyId"),
+                    new DbField("PaymentDate", "PaymentDate"), new DbField("Amount", "Amount"), new DbField("Status", "Status")
                 ],
                 Relations:
                 [
@@ -267,11 +267,11 @@ public class BuiltinMetadata
                 Name: "Claims",
                 Fields:
                 [
-                    new("Id", DataType.Number), new("PolicyId", DataType.Number),
-                    new("VisitId", DataType.Number), new("ClaimDate", DataType.Datetime),
-                    new("BilledAmount", DataType.Number), new("AllowedAmount", DataType.Number),
-                    new("PaidAmount", DataType.Number), new("Status"), new("DenialReason"),
-                    new("ProcessedDate", DataType.Datetime)
+                    new DbField("Id", "Id"), new DbField("PolicyId", "PolicyId"),
+                    new DbField("VisitId", "VisitId"), new DbField("ClaimDate", "ClaimDate"),
+                    new DbField("BilledAmount", "BilledAmount"), new DbField("AllowedAmount", "AllowedAmount"),
+                    new DbField("PaidAmount", "PaidAmount"), new DbField("Status", "Status"), new DbField("DenialReason", "DenialReason"),
+                    new DbField("ProcessedDate", "ProcessedDate")
                 ],
                 Relations:
                 [
@@ -286,7 +286,7 @@ public class BuiltinMetadata
             Name: "School",
             Fields:
             [
-                new("Name"),
+                new DbField("Name", "Name"),
             ],
             Relations: [
                 new(
@@ -310,13 +310,13 @@ public class BuiltinMetadata
         new(
             Name : "User",
             Fields : [
-                new("Id", DataType.Number),
-                new("Name"),
-                new("ManagerId"),
-                //new("SchoolId"),
-                new("Age", DataType.Number),
-                new("Birthday", DataType.Datetime),
-                new("IsMale", DataType.Boolean),
+                new DbField("Id", "Id"),
+                new DbField("Name", "Name"),
+                new DbField("ManagerId", "ManagerId"),
+                //new DbField("SchoolId", "SchoolId"),
+                new DbField("Age", "Age"),
+                new DbField("Birthday", "Birthday"),
+                new DbField("IsMale", "IsMale"),
             ],
 
             Relations : [

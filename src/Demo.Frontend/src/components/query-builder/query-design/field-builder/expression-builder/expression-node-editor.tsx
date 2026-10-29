@@ -309,7 +309,6 @@ export default function NodeEditor({
               showPath
               ariaLabel="Expression field"
               placeholder={fieldPlaceholder ?? "Select field..."}
-              dataTypeFilter={fieldDataType}
               allowValueSelection
               allowFunctionSelection
               initialSection="fields"

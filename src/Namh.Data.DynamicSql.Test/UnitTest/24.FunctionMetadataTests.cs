@@ -12,9 +12,9 @@ public sealed class _24_FunctionMetadataTests
     [
         new("Items",
         [
-            new("Id", DataType.Number),
-            new("Amount", DataType.Number),
-            new("InvoiceDate", DataType.Datetime)
+            new DbField("Id", "Id"),
+            new DbField("Amount", "Amount"),
+            new DbField("InvoiceDate", "InvoiceDate")
         ])
     ];
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Icon from "../../../../icon/icon";
-import { EditableEntity, dataTypes, emptyField } from "../../../types";
+import { EditableEntity, emptyField } from "../../../types";
 import "./fields-builder.css";
 
 type FieldsBuilderProps = {
@@ -24,14 +24,10 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
     });
   }
 
-  function updateField<Key extends keyof EditableEntity["fields"][number]>(
-    index: number,
-    key: Key,
-    value: EditableEntity["fields"][number][Key],
-  ) {
+  function updateField(index: number, update: (field: EditableEntity["fields"][number]) => EditableEntity["fields"][number]) {
     onChange((prevFields) =>
       prevFields.map((field, fieldIndex) =>
-        fieldIndex === index ? { ...field, [key]: value } : field,
+        fieldIndex === index ? update(field) : field,
       ),
     );
   }
@@ -56,9 +52,8 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
         <div className="field-editor-head">
           <span className="drag-handle-col" />
           <span>Name</span>
-          <span>Data type</span>
-          <span>Field type</span>
-          <span>Raw SQL (optional)</span>
+          <span>Kind</span>
+          <span>Column or expression</span>
           <span />
         </div>
         {fields.map((field, index) => (
@@ -122,28 +117,34 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
             </span>
             <input
               value={field.name}
-              onChange={(event) => updateField(index, "name", event.target.value)}
+              onChange={(event) => updateField(index, (current) => ({ ...current, name: event.target.value }))}
               placeholder="Field name"
             />
             <select
-              value={field.dataType}
-              onChange={(event) => updateField(index, "dataType", event.target.value)}
+              value={field.kind}
+              onChange={(event) => updateField(index, (current) => event.target.value === "rawSqlField"
+                ? {
+                    id: current.id,
+                    kind: "rawSqlField",
+                    name: current.name,
+                    expression: current.kind === "rawSqlField" ? current.expression : "",
+                  }
+                : {
+                    id: current.id,
+                    kind: "dbField",
+                    name: current.name,
+                    dbColumn: current.kind === "dbField" ? current.dbColumn : current.name,
+                  })}
             >
-              {dataTypes.map((type) => (
-                <option key={type}>{type}</option>
-              ))}
-            </select>
-            <select
-              value={field.fieldType}
-              onChange={(event) => updateField(index, "fieldType", event.target.value)}
-            >
-              <option>DbColumn</option>
-              <option>RawSql</option>
+              <option value="dbField">DbField</option>
+              <option value="rawSqlField">RawSqlField</option>
             </select>
             <input
-              value={field.rawSql}
-              onChange={(event) => updateField(index, "rawSql", event.target.value)}
-              placeholder={field.name || "Expression"}
+              value={field.kind === "dbField" ? field.dbColumn : field.expression}
+              onChange={(event) => updateField(index, (current) => current.kind === "dbField"
+                ? { ...current, dbColumn: event.target.value }
+                : { ...current, expression: event.target.value })}
+              placeholder={field.kind === "dbField" ? field.name || "Column name" : "@Column expression"}
             />
             <button
               className="icon-button subtle"

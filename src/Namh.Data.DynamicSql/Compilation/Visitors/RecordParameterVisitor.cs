@@ -41,6 +41,6 @@ class RecordParameterVisitor(QueryContext queryContext) : QueryVisitor(queryCont
 
         var expression = Visit(node.Arguments[0]);
         var dbColumn = (string) Expression.Lambda(expression).Compile().DynamicInvoke()!;
-        return new FieldExpression(tableContext.Alias, new Field(dbColumn));
+        return new FieldExpression(tableContext.Alias, new DbField(dbColumn, dbColumn));
     }
 }

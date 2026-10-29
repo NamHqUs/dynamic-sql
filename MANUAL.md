@@ -59,9 +59,9 @@ var metadata = new[]
         Name: "User",
         Fields:
         [
-            new("Id", DataType.Number),
-            new("Name"),
-            new("Age", DataType.Number),
+            new DbField("Id", "Id"),
+            new DbField("Name", "Name"),
+            new DbField("Age", "Age"),
         ],
         Relations:
         [
@@ -89,8 +89,8 @@ new Entity(
     RawSql: "[User]",
     Fields:
     [
-        new("Name"),
-        new("Age", DataType.Number),
+        new DbField("Name", "Name"),
+        new DbField("Age", "Age"),
     ]);
 ```
 
@@ -103,27 +103,22 @@ When both are provided, they remain independent.
 
 Fields can be:
 
-- `FieldType.DbColumn`: a normal database column.
-- `FieldType.RawSql`: a trusted provider-specific SQL expression.
+- `DbField`: a database column. `Name` is the logical field name and
+  `DbColumn` is its physical database column name.
+- `RawSqlField`: a trusted provider-specific SQL expression.
 
-For a raw SQL field, set `Field.RawSql` to the expression. Use `@` before
-column names to have the current table alias inserted. For example, this
-defines a calculated `LineTotal` field without requiring a physical column:
+Use `@` before column names in a raw SQL expression to have the current table
+alias inserted. For example, this defines a calculated `LineTotal` field
+without requiring a physical column:
 
 ```csharp
-new Field("LineTotal", DataType.Number, FieldType.RawSql)
-{
-    RawSql = "@Quantity * @UnitPrice"
-}
+new RawSqlField("LineTotal", "@Quantity * @UnitPrice")
 ```
 
 The generated SQL expression will be similar to
 `(t0.Quantity * t0.UnitPrice)`, where `t0` is the generated table alias.
 Raw SQL is inserted into the query, so only use trusted metadata; never build
 it from user-supplied input.
-
-Supported metadata data types include `String`, `Number`, `Datetime`, and
-`Boolean`.
 
 ### Relationships
 
