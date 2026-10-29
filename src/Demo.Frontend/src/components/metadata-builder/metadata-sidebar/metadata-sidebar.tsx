@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, type RefObject } from "react";
 import Icon from "../../icon/icon";
 import "./metadata-sidebar.css";
 
@@ -19,6 +19,8 @@ type MetadataSidebarProps = {
   loadingMessage?: string;
   groups: MetadataSidebarGroup[];
   onFilterChange: (filter: string) => void;
+  scrollable?: boolean;
+  listRef?: RefObject<HTMLDivElement | null>;
 };
 
 export default function MetadataSidebar({
@@ -30,23 +32,12 @@ export default function MetadataSidebar({
   loadingMessage,
   groups,
   onFilterChange,
+  scrollable = false,
+  listRef,
 }: MetadataSidebarProps) {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-
-  return (
-    <aside className={className}>
-      <div className="metadata-list-head">
-        <span className="section-kicker">{title}</span>
-        <span className="tab-number">{totalCount}</span>
-      </div>
-      <label className="metadata-search">
-        <Icon name="search" size={14} />
-        <input
-          value={filter}
-          onChange={(event) => onFilterChange(event.target.value)}
-          placeholder={searchPlaceholder}
-        />
-      </label>
+  const listContent = (
+    <>
       {loadingMessage && <p className="metadata-message">{loadingMessage}</p>}
       {groups.map((group) => {
         const expanded = expandedGroups[group.id] ?? true;
@@ -73,6 +64,26 @@ export default function MetadataSidebar({
           </section>
         );
       })}
+    </>
+  );
+
+  return (
+    <aside className={className}>
+      <div className="metadata-list-head">
+        <span className="section-kicker">{title}</span>
+        <span className="tab-number">{totalCount}</span>
+      </div>
+      <label className="metadata-search">
+        <Icon name="search" size={14} />
+        <input
+          value={filter}
+          onChange={(event) => onFilterChange(event.target.value)}
+          placeholder={searchPlaceholder}
+        />
+      </label>
+      {scrollable
+        ? <div className="metadata-sidebar-scroll" ref={listRef}>{listContent}</div>
+        : listContent}
     </aside>
   );
 }

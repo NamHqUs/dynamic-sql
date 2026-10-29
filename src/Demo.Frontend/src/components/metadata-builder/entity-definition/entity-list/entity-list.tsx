@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import Icon from "../../../icon/icon";
 import { MetadataEntity } from "../../../query-builder/query-design/query-builder-slice";
 import MetadataSidebar, { type MetadataSidebarGroup } from "../../metadata-sidebar/metadata-sidebar";
@@ -20,6 +21,7 @@ export default function EntityList({
   onFilterChange,
   onSelectEntity,
 }: EntityListProps) {
+  const listRef = useRef<HTMLDivElement>(null);
   const visibleEntities = entities.filter((entity) =>
     entity.name.toLowerCase().includes(filter.toLowerCase()),
   );
@@ -56,9 +58,34 @@ export default function EntityList({
     },
   ];
 
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+
+    const scrollSelectedIntoView = () => {
+      const selectedItem = list.querySelector<HTMLElement>(".metadata-entity.active");
+      if (!selectedItem) return;
+
+      const listRect = list.getBoundingClientRect();
+      const itemRect = selectedItem.getBoundingClientRect();
+      const visibleTop = listRect.top + list.clientTop;
+      const visibleBottom = visibleTop + list.clientHeight;
+      if (itemRect.top < visibleTop) {
+        list.scrollTop -= visibleTop - itemRect.top;
+      } else if (itemRect.bottom > visibleBottom) {
+        list.scrollTop += itemRect.bottom - visibleBottom;
+      }
+    };
+
+    scrollSelectedIntoView();
+    const observer = new ResizeObserver(scrollSelectedIntoView);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [filter, selectedName]);
+
   return (
     <MetadataSidebar
-      className="metadata-list split-panel"
+      className="metadata-list entity-list split-panel"
       title="ENTITIES"
       totalCount={entities.length}
       filter={filter}
@@ -66,6 +93,8 @@ export default function EntityList({
       loadingMessage={status === "loading" ? "Loading metadata…" : undefined}
       groups={groups}
       onFilterChange={onFilterChange}
+      scrollable
+      listRef={listRef}
     />
   );
 }

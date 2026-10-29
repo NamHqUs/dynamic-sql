@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { useDispatch } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 import { apiUrls } from "../../const/api-urls";
@@ -57,6 +57,8 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [dirty, setDirty] = useState(false);
+  const entityWorkspaceRef = useRef<HTMLElement>(null);
+  const [entityListPanelMaxHeight, setEntityListPanelMaxHeight] = useState<number | null>(null);
   useEffect(() => { selectedNameRef.current = selectedName; }, [selectedName]);
   const requestedSection = searchParams.get("section");
   const activeSection: MetadataSection = requestedSection === "functions" || requestedSection === "operators"
@@ -73,6 +75,36 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   const fieldCount = entities.reduce((count, entity) => count + entity.fields.length, 0);
   const relationCount = entities.reduce((count, entity) => count + (entity.relations || []).length, 0);
   useDefinitionUnsavedWarning(dirty);
+
+  useEffect(() => {
+    const workspace = entityWorkspaceRef.current;
+    const sidebar = workspace?.querySelector(".entity-list");
+    const shell = workspace?.closest(".app-shell");
+    if (!workspace || !sidebar || !shell || activeSection !== "entities") return;
+
+    const updateMaxHeight = () => {
+      const footer = shell.querySelector("footer");
+      const shellPaddingBottom = Number.parseFloat(getComputedStyle(shell).paddingBottom) || 0;
+      const availablePanelHeight = window.innerHeight
+        - Math.max(0, workspace.getBoundingClientRect().top)
+        - (footer?.getBoundingClientRect().height ?? 0)
+        - shellPaddingBottom;
+      setEntityListPanelMaxHeight(Math.max(0, availablePanelHeight));
+    };
+
+    updateMaxHeight();
+    const observer = new ResizeObserver(updateMaxHeight);
+    observer.observe(workspace);
+    const footer = shell.querySelector("footer");
+    if (footer) observer.observe(footer);
+    window.addEventListener("resize", updateMaxHeight);
+    window.addEventListener("scroll", updateMaxHeight, { capture: true, passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateMaxHeight);
+      window.removeEventListener("scroll", updateMaxHeight, true);
+    };
+  }, [activeSection]);
 
   const loadEntities = async (selectFirst = false, preferredName = selectedName) => {
     setStatus("loading");
@@ -256,7 +288,13 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
         </nav>
       </section>
       <div className="metadata-workspace-panel" hidden={activeSection !== "entities"}>
-        <section className={`metadata-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>
+        <section
+          ref={entityWorkspaceRef}
+          className={`metadata-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`}
+          style={entityListPanelMaxHeight === null
+            ? panel.style
+            : { ...panel.style, "--entity-list-panel-max-height": `${entityListPanelMaxHeight}px` } as CSSProperties}
+        >
           <EntityList
             entities={entities}
             selectedName={selectedName}
