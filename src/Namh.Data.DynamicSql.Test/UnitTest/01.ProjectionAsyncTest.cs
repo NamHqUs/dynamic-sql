@@ -130,9 +130,9 @@ public class _01_ProjectionAsyncTest : TestBase
     }
 
     [Test]
-    public async Task _04_Field_Aggregate()
+    public async Task _04_Field_Collection_Aggregate_Function()
     {
-        var data = await _db.Query("User").Select("Id", "Name", "Members.TotalMembers").ToListAsync();
+        var data = await _db.Query("User").Select("Id", "Name", "Members.COUNT()").ToListAsync();
 
         string[] expectedValues = [
             "Alice - 2",
@@ -141,7 +141,7 @@ public class _01_ProjectionAsyncTest : TestBase
             "David - 2",
             "Eve - 0",
             "Frank - 0"];
-        var actualValues = data.Select(e => $"{e["Name"]} - {e["Members.TotalMembers"]}").ToArray();
+        var actualValues = data.Select(e => $"{e["Name"]} - {e["Members.COUNT()"]}").ToArray();
         Assert.That(actualValues, Is.EquivalentTo(expectedValues));
     }
 

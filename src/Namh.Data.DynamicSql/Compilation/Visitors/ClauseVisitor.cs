@@ -79,9 +79,6 @@ class ClauseVisitor(QueryContext queryContext)
             case nameof(IDbQueryableExtension.Skip):
                 return new SkipExpression(tableContext, (int)((ConstantExpression)methodCall.Arguments[1].StripQuotes()).Value!);
 
-            case nameof(IDbQueryableExtension.Aggregate):
-                return (AggregateExpression)QueryContext.ParseFieldPath(tableContext, ((ConstantExpression)methodCall.Arguments[1].StripQuotes()).Value!.ToString()!);
-
             case nameof(IDbQueryableExtension.GroupBy):
                 foreach (var field in (string[])((ConstantExpression)methodCall.Arguments[1]).Value!)
                 {

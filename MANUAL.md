@@ -104,7 +104,6 @@ When both are provided, they remain independent.
 Fields can be:
 
 - `FieldType.DbColumn`: a normal database column.
-- `FieldType.Aggregate`: an aggregate such as `Count(*)` or `Sum(@Age)`.
 - `FieldType.RawSql`: a trusted provider-specific SQL expression.
 
 Supported metadata data types include `String`, `Number`, `Datetime`, and
@@ -257,11 +256,10 @@ var hasManagers = db.Query("User")
 
 ### Aggregates
 
-If an aggregate field is defined in metadata:
-
-```csharp
-var totalAge = db.Query("User").Aggregate("TotalAges");
-```
+Define aggregates in the query projection with functions such as `COUNT()` and
+`SUM(Age)`. Query expressions can also aggregate over related collections, for
+example `Members.COUNT()`, without adding a synthetic aggregate field to entity
+metadata.
 
 ## YAML queries
 
@@ -319,7 +317,7 @@ Field references in filters use brackets:
 ```text
 [Name]
 [Manager.Name]
-[Members.TotalMembers]
+[Members.COUNT()]
 ```
 
 Values may be strings, integers, decimals, booleans, or `null`. JSON filter

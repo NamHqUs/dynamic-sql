@@ -14,7 +14,7 @@ public class TestBase
     [OneTimeSetUp]
     public void SetupOnce()
     {
-        _connection = DefinedData.GetDbConnection(DbServerType.SqlServer);
+        _connection = DefinedData.GetDbConnection(DbServerType.Sqlite);
 
         var entities = BuiltinMetadata.UnitTestData
             .Concat(BuiltinMetadata.SaleDemoData)

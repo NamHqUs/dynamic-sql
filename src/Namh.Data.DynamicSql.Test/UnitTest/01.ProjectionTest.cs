@@ -129,9 +129,9 @@ public class _01_ProjectionTest : TestBase
     }
 
     [Test]
-    public void _04_Field_Aggregate()
+    public void _04_Field_Collection_Aggregate_Function()
     {
-        var query = _db.Query("User").Select("Id", "Name", "Members.TotalMembers");
+        var query = _db.Query("User").Select("Id", "Name", "Members.COUNT()");
         var data = query.ToList();
 
         string[] expectedValues = [
@@ -141,7 +141,7 @@ public class _01_ProjectionTest : TestBase
             "David - 2",
             "Eve - 0",
             "Frank - 0"];
-        var actualValues = data.Select(e => $"{e["Name"]} - {e["Members.TotalMembers"]}").ToArray();
+        var actualValues = data.Select(e => $"{e["Name"]} - {e["Members.COUNT()"]}").ToArray();
         Assert.That(actualValues, Is.EquivalentTo(expectedValues));
     }
 

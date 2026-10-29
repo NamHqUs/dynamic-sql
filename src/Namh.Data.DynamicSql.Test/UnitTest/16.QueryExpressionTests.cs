@@ -53,6 +53,47 @@ public sealed class _16_QueryExpressionTests
     ];
 
     [Test]
+    public void CollectionAggregateFunctionsWorkWithoutAggregateMetadataFields()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                CREATE TABLE "Products" (
+                    "Id" INTEGER PRIMARY KEY,
+                    "Name" TEXT NOT NULL,
+                    "CostPrice" NUMERIC NOT NULL
+                );
+                CREATE TABLE "InvoiceItems" (
+                    "Id" INTEGER PRIMARY KEY,
+                    "ProductId" INTEGER NOT NULL,
+                    "InvoiceId" INTEGER NOT NULL,
+                    "Quantity" NUMERIC NOT NULL,
+                    "LineTotal" NUMERIC NOT NULL
+                );
+                INSERT INTO "Products" ("Id", "Name", "CostPrice") VALUES
+                    (1, 'Widget', 3),
+                    (2, 'No sales', 4);
+                INSERT INTO "InvoiceItems" ("Id", "ProductId", "InvoiceId", "Quantity", "LineTotal") VALUES
+                    (100, 1, 10, 2, 20),
+                    (101, 1, 10, 1, 12);
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        using var db = new DynamicSqlContext(connection, Metadata);
+        var records = db.Query("Products")
+            .Where(record => record["InvoiceItems.COUNT()"] >= 2)
+            .Select("Name", "InvoiceItems.COUNT()")
+            .ToList();
+
+        Assert.That(records, Has.Count.EqualTo(1));
+        Assert.That(records[0]["Name"], Is.EqualTo("Widget"));
+        Assert.That(Convert.ToInt32(records[0]["InvoiceItems.COUNT()"]), Is.EqualTo(2));
+    }
+
+    [Test]
     public async Task JsonDefinitionBuildsCalculatedAggregateProjectionWithFluentGrouping()
     {
         const string json = """

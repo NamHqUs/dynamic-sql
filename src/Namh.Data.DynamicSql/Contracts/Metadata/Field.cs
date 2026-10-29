@@ -4,8 +4,7 @@ namespace Namh.Data.DynamicSql;
 
 public enum FieldType
 {
-    DbColumn,
-    Aggregate,
+    DbColumn = 0,
     RawSql
 }
 public enum DataType

@@ -102,12 +102,6 @@ public static class IDbQueryableExtension
         CancellationToken cancellationToken = default)
         => (await source.TakeAsync(1, cancellationToken)).FirstOrDefault();
 
-    public static double Aggregate(this IDbQueryable source, string aggregateFieldName)
-    {
-        var expression = source.CreateQuery(MethodBase.GetCurrentMethod()!, Expression.Constant(aggregateFieldName)).Expression;
-        return Convert.ToDouble(source.Provider.ExecuteScalar(expression));
-    }
-
     public static int Count(this IDbQueryable source)
     {
         var expression = source.CreateQuery(MethodBase.GetCurrentMethod()!).Expression;

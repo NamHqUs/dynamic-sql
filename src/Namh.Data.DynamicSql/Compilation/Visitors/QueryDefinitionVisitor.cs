@@ -128,7 +128,6 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             return GetCteFields(sourceContext, definitions, visited);
 
         return queryContext.GetEntity(context.Query.Entity).Fields
-            .Where(field => field.FieldType != FieldType.Aggregate)
             .Select(field => new Field(field.Name, field.DataType))
             .ToList();
     }

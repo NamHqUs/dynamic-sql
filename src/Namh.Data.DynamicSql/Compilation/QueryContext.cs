@@ -63,17 +63,8 @@ class QueryContext(
 
         var lastEntity = joinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
         var metaField = lastEntity.GetField(fieldName);
-
-        if (metaField.FieldType == FieldType.Aggregate)
-        {
-            var lastTable = ApplyJoinAggregate(tableContext, joinedData);
-            return new AggregateExpression(lastTable, metaField.RawSql, !joinedData.Any());
-        }
-        else
-        {
-            var lastAlias = ApplyJoin(tableContext, joinedData).Alias;
-            return new FieldExpression(lastAlias, metaField);
-        }
+        var lastAlias = ApplyJoin(tableContext, joinedData).Alias;
+        return new FieldExpression(lastAlias, metaField);
     }
 
     public SqlExpression ParseQueryExpression(TableExpression tableContext, IFieldDefinition expression, int depth = 0)

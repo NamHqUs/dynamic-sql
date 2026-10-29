@@ -138,7 +138,6 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
               onChange={(event) => updateField(index, "fieldType", event.target.value)}
             >
               <option>DbColumn</option>
-              <option>Aggregate</option>
               <option>RawSql</option>
             </select>
             <input

@@ -123,11 +123,9 @@ public class _02_Filter_FieldTest : TestBase
     }
 
     [Test]
-    public void _04_Field_Aggregate()
+    public void _04_Field_Collection_Aggregate_Function()
     {
-        //"Aggregate Field must be follow collection field."
-
-        var query = _db.Query("User").Where(e => e["Members.TotalMembers"] >= 2);
+        var query = _db.Query("User").Where(e => e["Members.COUNT()"] >= 2);
         Assert.AreEqual(query.Count(), 2);
     }
 

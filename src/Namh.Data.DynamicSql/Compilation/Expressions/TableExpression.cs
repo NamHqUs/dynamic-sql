@@ -77,7 +77,6 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQue
         if (ProjectionItems.Any() || SqlSelect is not null)
             return;
         ProjectionItems = Entity.Fields
-            .Where(e => e.FieldType != FieldType.Aggregate)
             .Select(e => new ProjectionItem(new FieldExpression(Alias, e), e.Name))
             .ToList();
     }

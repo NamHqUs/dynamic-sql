@@ -637,7 +637,7 @@ public class _14_QueryRequestTests : TestBase
             Projection:
               - Name
               - Manager.Name | Manager-Name
-            Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.TotalMembers] < 12)"
+            Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.COUNT()] < 12)"
             Sorts: Manager.Name DESC
             Page: 1
             PageSize: 50

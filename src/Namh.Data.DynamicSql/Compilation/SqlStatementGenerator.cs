@@ -185,7 +185,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         {
             FieldType.DbColumn => $"{field.TableAlias}.{dialect.QuoteIdentifier(field.MetaField.RawSql)}",
             FieldType.RawSql => $"({field.MetaField.RawSql.Replace("@", field.TableAlias + ".")})",
-            _ => $"({field.MetaField.RawSql.Replace("@", field.TableAlias + ".")})"
+            _ => throw new NotSupportedException($"Unsupported field type [{field.MetaField.FieldType}].")
         };
     }
 

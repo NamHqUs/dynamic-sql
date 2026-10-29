@@ -39,8 +39,6 @@ public class DefinedMetadata
                 new("Age"),
                 new("Birthday"),
                 new("IsMale"),
-                new("TotalMembers", FieldType: FieldType.Aggregate) { RawSql ="Count(*)" },
-                new("TotalAges", FieldType: FieldType.Aggregate) { RawSql ="Sum(@Age)" },
             ],
 
             Relations : [
@@ -73,9 +71,6 @@ public class DefinedMetadata
             Fields : [
                 new("Name"),
                 new("Age"),
-                new("TotalMembers", FieldType: FieldType.Aggregate) { RawSql ="Count(*)" },
-                new("TotalAges",  FieldType: FieldType.Aggregate) { RawSql ="Sum(Age)" },
-                new("CountAgeWithNam", FieldType: FieldType.Aggregate) { RawSql ="Count(*)$Name='Nam'" }
             ]
         ),
         new(
