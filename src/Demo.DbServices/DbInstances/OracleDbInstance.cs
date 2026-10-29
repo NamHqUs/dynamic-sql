@@ -3,7 +3,7 @@ using Oracle.ManagedDataAccess.Client;
 
 namespace Demo.DbServices.DbInstances;
 
-public sealed class OracleDbInstance(string connectionString, string[] scriptFiles) : DbInstance(connectionString, scriptFiles)
+public sealed class OracleDbInstance(string connectionString, string[] scriptFiles) : DbInstance( DbServerType.Oracle, connectionString, scriptFiles)
 {
     protected override string? SqlScriptCheckIfDbExists
         => "SELECT CASE WHEN EXISTS (SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = 'CUSTOMERS') THEN 1 ELSE 0 END FROM DUAL";

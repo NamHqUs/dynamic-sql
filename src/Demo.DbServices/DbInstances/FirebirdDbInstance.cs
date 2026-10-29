@@ -3,7 +3,7 @@ using FirebirdSql.Data.FirebirdClient;
 
 namespace Demo.DbServices.DbInstances;
 
-public sealed class FirebirdDbInstance(string connectionString, string[] scriptFiles) : DbInstance(connectionString, scriptFiles)
+public sealed class FirebirdDbInstance(string connectionString, string[] scriptFiles) : DbInstance(DbServerType.Firebird, connectionString, scriptFiles)
 {
     protected override string? SqlScriptCheckIfDbExists
         => "SELECT CASE WHEN EXISTS (SELECT 1 FROM RDB$RELATIONS WHERE TRIM(RDB$RELATION_NAME) = 'CUSTOMERS') THEN 1 ELSE 0 END FROM RDB$DATABASE;";

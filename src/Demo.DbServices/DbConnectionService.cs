@@ -17,7 +17,7 @@ public enum DbServerType
     Oracle
 }
 
-public sealed class DbConnectionService(IConfiguration configuration, DatabaseService dbInstanceFactory) : IDbConnectionService
+public sealed class DbConnectionService(IConfiguration configuration, DatabaseService dbService) : IDbConnectionService
 {
     private readonly IReadOnlyDictionary<string, (string Provider, string ConnectionString)> _dbOptions =
         configuration.GetSection("DbOptions")
@@ -49,26 +49,12 @@ public sealed class DbConnectionService(IConfiguration configuration, DatabaseSe
     {
         if (isDirectConnection && !_directConnectionsEnabled)
             throw new InvalidOperationException("Direct database connections are disabled by the server.");
-
-        DbInstance? instance = null;
-
-        try
-        {
-            instance = dbInstanceFactory.CreateDbInstance(provider, connectionString);
-            using var connection = instance.CreateDbConnection();
-            connection.Open();
-            dbInstanceFactory.SetCurrentDbInstance(instance);
-        }
-        catch (DbException exception)
-        {
-            if (instance is IDisposable disposable)
-                disposable.Dispose();
-            throw new DatabaseConnectionException(exception);
-        }
+        
+        dbService.Connect(provider, connectionString);
     }
 
-    void IDbConnectionService.Disconnect() => dbInstanceFactory.Disconnect();
+    void IDbConnectionService.Disconnect() => dbService.Disconnect();
 
     IDbConnection IDbConnectionService.CreateConnection()
-        => dbInstanceFactory.CreateConnection();
+        => dbService.CreateConnection();
 }

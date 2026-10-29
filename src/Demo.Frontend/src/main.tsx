@@ -6,6 +6,7 @@ import { createBrowserRouter, Navigate, Route, RouterProvider, Routes, useBlocke
 import Icon, { getDatabaseIconName } from "./components/icon/icon";
 import DataSources from "./components/data-sources/data-sources";
 import DatabaseConnection from "./components/data-sources/database-connection/database-connection";
+import { fetchDbTables } from "./components/data-sources/database-slice";
 import QueryBuilder, { setQueryBuilderDefinition } from "./components/query-builder/query-builder";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
 import Reports from "./components/reports/reports";
@@ -49,6 +50,10 @@ function App() {
     if (targetPage === "metadata") return metadataNavigationGuard.current;
     return null;
   };
+
+  useEffect(() => {
+    void store.dispatch(fetchDbTables());
+  }, []);
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
     const currentPage = pageForPath(currentLocation.pathname);

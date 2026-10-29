@@ -12,46 +12,36 @@ public class DatabaseService(IConfiguration configuration) : IDatabaseService, I
     private readonly object _instanceLock = new();
     private DbInstance? _currentDbInstance;
 
-    public DbInstance? CurrentDbInstance
+    public DbInstance CurrentDbInstance
     {
         get
         {
-            lock (_instanceLock)
-                return _currentDbInstance;
+            if (_currentDbInstance is null)
+            {
+                var optonIndex = configuration.Get<int?>("DbProvider:DefaultDbOptionIndex");
+                if (optonIndex.HasValue)
+                {
+                    var section = configuration.GetSection($"DbOptions:{optonIndex.Value}");
+                    _currentDbInstance = CreateDbInstance(section["Provider"]!, section["ConnectionString"]!);
+                }
+            }
+
+            return _currentDbInstance ?? throw new DatabaseConnectionException();
         }
     }
 
-    public DbInstance CreateDbInstance(string provider, string connectionString)
+    public void Connect(string provider, string connectionString)
     {
-        if (!Enum.TryParse(provider, ignoreCase: true, out DbServerType providerType))
-            throw new ArgumentException($"Unsupported database '{provider}'.", nameof(provider));
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new ArgumentException("A connection string is required.", nameof(connectionString));
-
-        var scriptFiles = GetInitializationScripts(provider);
-        return providerType switch
-        {
-            DbServerType.Sqlite => new SqliteDbInstance(connectionString, scriptFiles),
-            DbServerType.SqlServer => new SqlServerInstance(connectionString, scriptFiles),
-            DbServerType.Firebird => new FirebirdDbInstance(connectionString, scriptFiles),
-            DbServerType.Postgres => new PostgresDbInstance(connectionString, scriptFiles),
-            DbServerType.MySql => new MySqlDbInstance(connectionString, scriptFiles),
-            DbServerType.Oracle => new OracleDbInstance(connectionString, scriptFiles),
-            _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, null)
-        };
-    }
-
-    public void SetCurrentDbInstance(DbInstance instance)
-    {
-        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(provider);
+        ArgumentNullException.ThrowIfNull(connectionString);
         DbInstance? previous;
         lock (_instanceLock)
         {
             previous = _currentDbInstance;
-            _currentDbInstance = instance;
+            _currentDbInstance = CreateDbInstance(provider, connectionString);
         }
 
-        if (!ReferenceEquals(previous, instance) && previous is IDisposable disposable)
+        if (!ReferenceEquals(previous, _currentDbInstance) && previous is IDisposable disposable)
             disposable.Dispose();
     }
 
@@ -73,28 +63,33 @@ public class DatabaseService(IConfiguration configuration) : IDatabaseService, I
             disposable.Dispose();
     }
 
-    public IDbConnection CreateConnection() => GetCurrentDbInstance().CreateDbConnection();
+    public IDbConnection CreateConnection() => CurrentDbInstance.CreateDbConnection();
 
-    public string[] GetTableNames() => GetCurrentDbInstance().GetTableNames();
+    public string[] GetTableNames() => CurrentDbInstance.GetTableNames();
 
-    public DatabaseSchemaDto GetDatabaseSchema() => GetCurrentDbInstance().GetDatabaseSchema();
+    public DatabaseSchemaDto GetDatabaseSchema() => CurrentDbInstance.GetDatabaseSchema();
 
     public DatabaseTableDataDto GetTableData(string tableName, string? schema = null, int? limit = null)
-        => GetCurrentDbInstance().GetTableData(tableName, schema, limit);
+        => CurrentDbInstance.GetTableData(tableName, schema, limit);
 
-    private DbInstance GetCurrentDbInstance()
+    private DbInstance CreateDbInstance(string provider, string connectionString)
     {
-        if (CurrentDbInstance is null)
-        {
-            var optonIndex = configuration.Get<int?>("DbProvider:DefaultDbOptionIndex");
-            if (optonIndex.HasValue)
-            { 
-                var section = configuration.GetSection($"DbOptions:{optonIndex.Value}");
-                _currentDbInstance = CreateDbInstance(section["Provider"]!, section["ConnectionString"]!);
-            }
-        }
+        if (!Enum.TryParse(provider, ignoreCase: true, out DbServerType providerType))
+            throw new ArgumentException($"Unsupported database '{provider}'.", nameof(provider));
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new ArgumentException("A connection string is required.", nameof(connectionString));
 
-        return CurrentDbInstance ?? throw new DatabaseConnectionException();
+        var scriptFiles = GetInitializationScripts(provider);
+        return providerType switch
+        {
+            DbServerType.Sqlite => new SqliteDbInstance(connectionString, scriptFiles),
+            DbServerType.SqlServer => new SqlServerDbInstance(connectionString, scriptFiles),
+            DbServerType.Firebird => new FirebirdDbInstance(connectionString, scriptFiles),
+            DbServerType.Postgres => new PostgresDbInstance(connectionString, scriptFiles),
+            DbServerType.MySql => new MySqlDbInstance(connectionString, scriptFiles),
+            DbServerType.Oracle => new OracleDbInstance(connectionString, scriptFiles),
+            _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, null)
+        };
     }
 
     private string[] GetInitializationScripts(string provider)

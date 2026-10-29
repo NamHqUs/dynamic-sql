@@ -3,7 +3,7 @@ using System.Data;
 
 namespace Demo.DbServices.DbInstances;
 
-public class SqlServerInstance(string connectionString, string[] scriptFiles) : DbInstance(connectionString, scriptFiles)
+public class SqlServerDbInstance(string connectionString, string[] scriptFiles) : DbInstance( DbServerType.SqlServer, connectionString, scriptFiles)
 {
     protected override string? SqlScriptCheckIfDbExists
         //=> "SELECT 0";

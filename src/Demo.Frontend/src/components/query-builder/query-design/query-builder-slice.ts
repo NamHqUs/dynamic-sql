@@ -665,7 +665,7 @@ export function toQueryBuilderSavedView(request: ApiSavedQueryRequest): QueryBui
     if (!expression) throw new Error("Query API returned an unsupported projection expression.");
     row.push(expression.kind === "field"
       ? expression.field
-      : `__calculated__${projection.alias || index}`);
+      : `__calculated__${fields.length - 1}`);
   });
   if (row.length) projectionRows.push(row);
 
@@ -693,7 +693,7 @@ function getSavedProjectionRows(definition: QueryDefinition): string[][] {
   return rows.filter((row) => row.length).map((row) => [...row]);
 }
 
-function toApiSavedRequest(request: { name: string; definition: QueryDefinition; id?: string }): ApiQueryDto {
+function toApiSavedRequest(request: { name: string; definition: QueryDefinition }): ApiQueryDto {
   const apiQuery = createApiQuery(request.definition);
   const rows = getSavedProjectionRows(request.definition);
   const projection = rows.flatMap((row, rowIndex) => [
@@ -724,10 +724,10 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition;
   collectContexts(apiQuery.contexts ?? []);
   const contextIds = new Map<string, string>();
   allContexts.forEach((context, index) => {
-    contextIds.set(context.id ?? `reference-${index}`, context.id ?? `${request.id ?? request.name}-context-${index}`);
+    contextIds.set(context.id ?? `reference-${index}`, context.id ?? `${request.name}-context-${index}`);
   });
   const getContextId = (context: ApiQueryContextDefinition) => contextIds.get(context.id ?? "")
-    ?? `${request.id ?? request.name}-context-${allContexts.indexOf(context)}`;
+    ?? `${request.name}-context-${allContexts.indexOf(context)}`;
   const toStoredContext = (context: ApiQueryContextDefinition) => ({
     id: getContextId(context),
     name: context.name,
@@ -756,7 +756,7 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition;
 
   return {
     mainQuery: {
-      id: request.id ?? request.name,
+      id: request.name,
       name: request.name,
       entity: apiQuery.entity,
       projection,
@@ -1029,12 +1029,12 @@ export const fetchQueryRequests = createAsyncThunk(
 
 export const saveQueryRequest = createAsyncThunk(
   "queryBuilder/saveQueryRequest",
-  async ({ name, definition, id }: { name: string; definition: QueryDefinition; id?: string }, { rejectWithValue }) => {
+  async ({ name, definition }: { name: string; definition: QueryDefinition }, { rejectWithValue }) => {
     try {
       await requestJson(apiUrls.queryRequests.byName(name), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(toApiSavedRequest({ name, definition, id })),
+        body: JSON.stringify(toApiSavedRequest({ name, definition })),
       });
       return name;
     } catch (error) {
@@ -1236,7 +1236,6 @@ const queryBuilderSlice = createSlice({
         state.queryRequests.unshift(toApiSavedRequest({
           name: action.payload,
           definition: action.meta.arg.definition,
-          id: action.meta.arg.id,
         }));
       })
       .addCase(saveQueryRequest.rejected, (state, action) => {

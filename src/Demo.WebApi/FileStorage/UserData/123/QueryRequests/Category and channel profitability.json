@@ -24,56 +24,92 @@
       {
         "Fields": [
           {
-            "kind": "field",
-            "field": "__calculated__OrdersContainingCategory"
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "OrderId"
+              }
+            ]
           }
         ],
-        "Alias": null
+        "Alias": "OrdersContainingCategory"
       },
       {
         "Fields": [
           {
-            "kind": "field",
-            "field": "__calculated__UnitsSold"
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "UnitsSold"
+              }
+            ]
           }
         ],
-        "Alias": null
+        "Alias": "UnitsSold"
       },
       {
         "Fields": [
           {
-            "kind": "field",
-            "field": "__calculated__NetRevenue"
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "NetRevenue"
+              }
+            ]
           }
         ],
-        "Alias": null
+        "Alias": "NetRevenue"
       },
       {
         "Fields": [
           {
-            "kind": "field",
-            "field": "__calculated__Discounts"
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Discounts"
+              }
+            ]
           }
         ],
-        "Alias": null
+        "Alias": "Discounts"
       },
       {
         "Fields": [
           {
-            "kind": "field",
-            "field": "__calculated__GrossProfit"
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "GrossProfit"
+              }
+            ]
           }
         ],
-        "Alias": null
+        "Alias": "GrossProfit"
       },
       {
         "Fields": [
           {
-            "kind": "field",
-            "field": "__calculated__AverageCategoryRevenuePerOrder"
+            "kind": "function",
+            "function": "AVG",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "NetRevenue"
+              }
+            ]
           }
         ],
-        "Alias": null
+        "Alias": "AverageCategoryRevenuePerOrder"
       }
     ],
     "Filters": null,

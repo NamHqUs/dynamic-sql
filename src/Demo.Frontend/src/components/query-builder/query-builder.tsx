@@ -522,8 +522,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     setQueryRequestNotice("");
     setIsSavingQuery(true);
     try {
-      const saved = queryRequests.find((request) => request.mainQuery.name === name);
-      const resultAction = await dispatch(saveQueryRequest({ name, definition: currentDefinition, id: saved?.id }));
+      const resultAction = await dispatch(saveQueryRequest({ name, definition: currentDefinition }));
       if (saveQueryRequest.fulfilled.match(resultAction)) {
         setSelectedRequestName(resultAction.payload);
         setSelectedRequestIsBuiltin(false);

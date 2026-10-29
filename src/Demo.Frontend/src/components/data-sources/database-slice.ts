@@ -69,7 +69,10 @@ export const fetchDatabaseConnections = createAsyncThunk(
     return payload;
   },
   {
-    condition: (_, { getState }) => getState().database.connectionOptionsStatus !== "loading",
+    condition: (_, { getState }) => {
+      const { connectionOptionsStatus } = getState().database;
+      return connectionOptionsStatus !== "loading" && connectionOptionsStatus !== "succeeded";
+    },
   },
 );
 
@@ -139,7 +142,8 @@ export const fetchDbTables = createAsyncThunk(
   {
     condition: (_, { getState }) => {
       const { tableStatus, connectionStatus } = getState().database;
-      return connectionStatus === "succeeded" && tableStatus !== "loading" && tableStatus !== "succeeded";
+      return connectionStatus !== "failed" && connectionStatus !== "loading"
+        && tableStatus !== "loading" && tableStatus !== "succeeded";
     },
   },
 );
@@ -177,7 +181,8 @@ export const fetchDbSchema = createAsyncThunk(
   {
     condition: (_, { getState }) => {
       const { schemaStatus, connectionStatus } = getState().database;
-      return connectionStatus === "succeeded" && schemaStatus !== "loading" && schemaStatus !== "succeeded";
+      return connectionStatus !== "failed" && connectionStatus !== "loading"
+        && schemaStatus !== "loading" && schemaStatus !== "succeeded";
     },
   },
 );
@@ -379,14 +384,24 @@ const databaseSlice = createSlice({
       .addCase(fetchDbTables.pending, (state) => {
         state.tableStatus = "loading";
         state.tableError = "";
+        if (state.connectionStatus === "idle") {
+          state.connectionStatus = "loading";
+          state.connectionError = "";
+        }
       })
       .addCase(fetchDbTables.fulfilled, (state, action) => {
         state.tables = action.payload;
         state.tableStatus = "succeeded";
+        state.connectedProvider ||= "Database";
+        state.connectionStatus = "succeeded";
+        state.connectionError = "";
+        state.connectionRequired = false;
       })
       .addCase(fetchDbTables.rejected, (state, action) => {
         state.tableStatus = "failed";
         state.tableError = action.payload || action.error.message || "Unable to load database tables.";
+        state.connectionStatus = "failed";
+        state.connectionError = state.tableError;
       })
       .addCase(fetchDbSchema.pending, (state) => {
         state.schemaStatus = "loading";
@@ -400,6 +415,10 @@ const databaseSlice = createSlice({
         state.selectedTable = selected?.name || "";
         state.selectedSchema = selected?.schema || "";
         state.schemaStatus = "succeeded";
+        state.connectedProvider ||= "Database";
+        state.connectionStatus = "succeeded";
+        state.connectionError = "";
+        state.connectionRequired = false;
       })
       .addCase(fetchDbSchema.rejected, (state, action) => {
         state.schemaStatus = "failed";

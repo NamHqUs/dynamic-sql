@@ -48,10 +48,10 @@ export default function DataSources() {
   }, [dispatch, routeViewMode]);
 
   useEffect(() => {
-    if (!isConnected) return;
+    if (connectionStatus === "failed" || connectionStatus === "loading") return;
     dispatch(fetchDbTables());
     dispatch(fetchDbSchema());
-  }, [dispatch, isConnected]);
+  }, [dispatch, connectionStatus]);
 
   useEffect(() => {
     if (isConnected && routeViewMode === "data" && viewMode === "data" && selectedTable && selectedStatus !== "succeeded" && selectedStatus !== "loading") {

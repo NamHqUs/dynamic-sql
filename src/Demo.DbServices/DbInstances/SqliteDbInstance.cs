@@ -8,10 +8,13 @@ namespace Demo.DbServices.DbInstances;
 public sealed class SqliteDbInstance : DbInstance, IDisposable
 {
     private readonly object _keepAliveLock = new();
+
+    private bool? _inMemory;
+    private bool InMemory => _inMemory ??= ConnectionString.Contains(":memory:");
     private SqliteConnection? _keepAliveConnection;
 
     public SqliteDbInstance(string connectionString, string[] scriptFiles)
-        : base(NormalizeConnectionString(connectionString), scriptFiles)
+        : base( DbServerType.Sqlite, NormalizeConnectionString(connectionString), scriptFiles)
     {
     }
 
@@ -24,6 +27,23 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
     protected override string SqlGetColumns => "SELECT NULL AS SchemaName, NULL AS TableName, NULL AS ColumnName, NULL AS DataType, 0 AS IsPrimaryKey WHERE 1 = 0;";
     protected override string SqlGetRelationships => "SELECT NULL AS RelationName, NULL AS SourceSchema, NULL AS SourceTable, NULL AS SourceColumn, NULL AS TargetSchema, NULL AS TargetTable, NULL AS TargetColumn, 0 AS Ordinal, 0 AS IsUnique WHERE 1 = 0;";
 
+    public override bool TestConnection()
+    {
+        if (!InMemory)
+            return base.TestConnection();
+
+        try
+        {
+            var cn = CreateDbConnection();
+            if (cn.State != ConnectionState.Open)
+                cn.Open();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
     public override DatabaseSchemaDto GetDatabaseSchema()
     {
         using var connection = CreateDbConnection();

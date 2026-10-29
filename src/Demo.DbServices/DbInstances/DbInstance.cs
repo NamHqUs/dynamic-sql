@@ -6,11 +6,12 @@ using System.Globalization;
 
 namespace Demo.DbServices.DbInstances;
 
-public abstract class DbInstance 
+public abstract class DbInstance
 {
     private static HashSet<string> _initializeDbs = [];
     private static object _initializationLock = new();
 
+    public readonly DbServerType Provider;
     protected readonly string ConnectionString;
     protected abstract string? SqlScriptCheckIfDbExists { get; }
     protected abstract string SqlGetTableNames { get; }
@@ -19,34 +20,21 @@ public abstract class DbInstance
     protected virtual string IdentifierQuotePrefix => "\"";
     protected virtual string IdentifierQuoteSuffix => "\"";
 
-    protected DbInstance(string connectionString, string[] scriptFields)
+    protected DbInstance(DbServerType provider, string connectionString, string[] scriptFields)
     {
+        Provider = provider;
         ConnectionString = connectionString;
         lock (_initializationLock)
         {
-        if (_initializeDbs.Add(connectionString))
+            TestConnection();
+            if (_initializeDbs.Add(connectionString))
                 EnsureDatabaseExists(scriptFields);
         }
     }
 
     public abstract IDbConnection CreateDbConnection();
 
-    protected virtual void EnsureDatabaseExists(string[] scriptFiles)
-    {
-        if (string.IsNullOrEmpty(SqlScriptCheckIfDbExists))
-            return;
 
-        using var cn = CreateDbConnection();
-        if (ExecuteScalar<long>(cn, SqlScriptCheckIfDbExists) != 1)
-        {
-            foreach (var fileName in scriptFiles)
-            {
-                var filePath = Path.Combine(Environment.CurrentDirectory, fileName);
-                var scripts = File.ReadAllText(filePath);
-                ExecuteNonQuery(cn, scripts);
-            }
-        }
-    }
     public virtual string[] GetTableNames()
     {
         using var connection = CreateDbConnection();
@@ -61,6 +49,20 @@ public abstract class DbInstance
             tableNames.Add(reader.GetString(0));
 
         return tableNames.ToArray();
+    }
+
+    public virtual bool TestConnection()
+    {
+        try
+        {
+            using var connection = CreateDbConnection();
+            connection.Open();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public virtual DatabaseSchemaDto GetDatabaseSchema()
@@ -155,6 +157,23 @@ public abstract class DbInstance
         }
 
         return new DatabaseTableDataDto(selectedTable.Name, columns, rows);
+    }
+
+    protected virtual void EnsureDatabaseExists(string[] scriptFiles)
+    {
+        if (scriptFiles.Length == 0 || string.IsNullOrEmpty(SqlScriptCheckIfDbExists))
+            return;
+
+        using var cn = CreateDbConnection();
+        if (ExecuteScalar<long>(cn, SqlScriptCheckIfDbExists) != 1)
+        {
+            foreach (var fileName in scriptFiles)
+            {
+                var filePath = Path.Combine(Environment.CurrentDirectory, fileName);
+                var scripts = File.ReadAllText(filePath);
+                ExecuteNonQuery(cn, scripts);
+            }
+        }
     }
 
     protected virtual DataTable ReadSchemaRows(DbConnection connection, string sql)

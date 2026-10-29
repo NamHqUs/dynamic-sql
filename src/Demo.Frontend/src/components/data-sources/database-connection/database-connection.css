@@ -125,6 +125,17 @@
   color: #f0a6ae;
 }
 
+.connection-options-status {
+  display: flex;
+  min-height: 28px;
+  align-items: flex-start;
+  margin-top: 14px;
+}
+
+.connection-options-status .connection-message {
+  margin: 0;
+}
+
 .connection-submit {
   display: inline-flex;
   min-height: 42px;
@@ -206,7 +217,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 9px;
-  min-height: 35px;
+  min-height: 80px;
   align-items: center;
   margin-top: 25px;
 }
@@ -319,6 +330,10 @@
     gap: 12px 15px;
     margin-top: 24px;
   }
+
+  .connection-provider-list {
+    min-height: 125px;
+  }
 }
 
 .database-connection-dialog-backdrop {
@@ -330,7 +345,6 @@
   padding: 24px;
   overflow: auto;
   background: #080a10c9;
-  backdrop-filter: blur(7px);
 }
 
 .database-connection-dialog {

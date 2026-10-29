@@ -92,8 +92,10 @@ export default function DatabaseConnection({ onConnected }: DatabaseConnectionPr
         </div>
 
         {!directConnectionsEnabled && <p className="connection-message">Direct connections are disabled by the server. An administrator can enable them for a trusted environment.</p>}
-        {connectionOptionsStatus === "loading" && <p className="connection-message">Loading available sources…</p>}
-        {connectionOptionsStatus === "failed" && <p className="connection-message error" role="alert">{connectionOptionsError}</p>}
+        <div className="connection-options-status" aria-live="polite">
+          {connectionOptionsStatus === "loading" && <p className="connection-message">Loading available sources…</p>}
+          {connectionOptionsStatus === "failed" && <p className="connection-message error" role="alert">{connectionOptionsError}</p>}
+        </div>
 
         <form className="connection-form" onSubmit={submit}>
           {mode === "internal" ? (

@@ -3,7 +3,8 @@ using MySqlConnector;
 
 namespace Demo.DbServices.DbInstances;
 
-public sealed class MySqlDbInstance(string connectionString, string[] scriptFiles) : DbInstance(connectionString, scriptFiles)
+public sealed class MySqlDbInstance(string connectionString, string[] scriptFiles) 
+    : DbInstance( DbServerType.MySql, connectionString, scriptFiles)
 {
     protected override string? SqlScriptCheckIfDbExists
         => "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'Customers') THEN 1 ELSE 0 END;";
