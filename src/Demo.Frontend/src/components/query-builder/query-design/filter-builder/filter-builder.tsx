@@ -1104,16 +1104,17 @@ export default function FilterBuilder({ metadata, functionDefinitions, functionD
             <button className="field-action field-action-icon" type="button" aria-label="Add condition" title="Add condition" onClick={addRootFilter}>
               <Icon name="plus" size={14} />
             </button>
-            <button
-              type="button"
-              className="field-action field-action-icon"
-              aria-label="Clear filters"
-              title="Clear filters"
-              onClick={clearFilters}
-              disabled={!definition.filters.filters.length}
-            >
-              <Icon name="close" size={14} />
-            </button>
+            {definition.filters.filters.length > 0 && (
+              <button
+                type="button"
+                className="field-action field-action-icon"
+                aria-label="Clear filters"
+                title="Clear filters"
+                onClick={clearFilters}
+              >
+                <Icon name="close" size={14} />
+              </button>
+            )}
           </div>
           <p className="filter-description">Drag a selected field here to create a filter.</p>
         </div>

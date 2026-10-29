@@ -214,16 +214,17 @@ export default function SortBuilder({ metadata, functionDefinitions, functionDef
             <button ref={addSortButtonRef} type="button" className="field-action field-action-icon" aria-label="Add sort" title="Add sort" onClick={() => setAddingSortField(true)}>
               <Icon name="plus" size={14} />
             </button>
-            <button
-              type="button"
-              className="field-action field-action-icon"
-              aria-label="Clear sorts"
-              title="Clear sorts"
-              onClick={clearSorts}
-              disabled={!definition.sorts.length}
-            >
-              <Icon name="close" size={14} />
-            </button>
+            {definition.sorts.length > 0 && (
+              <button
+                type="button"
+                className="field-action field-action-icon"
+                aria-label="Clear sorts"
+                title="Clear sorts"
+                onClick={clearSorts}
+              >
+                <Icon name="close" size={14} />
+              </button>
+            )}
           </div>
           <p className="filter-description">Select fields to sort the query results and choose the direction for each field.</p>
         </div>
