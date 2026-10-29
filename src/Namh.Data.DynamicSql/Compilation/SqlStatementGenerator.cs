@@ -136,11 +136,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     private string RenderExpression(SqlExpression expression)
         => expression switch
         {
-            FieldExpression field => field.TableAlias.Length == 0
-                ? $"({field.MetaField.RawSql})"
-                : field.MetaField.FieldType == FieldType.DbColumn
-                    ? $"{field.TableAlias}.{dialect.QuoteIdentifier(field.MetaField.RawSql)}"
-                    : $"({field.MetaField.RawSql.Replace("@", field.TableAlias + ".")})",
+            FieldExpression field => RenderField(field),
 
             RawSqlExpression raw => raw.Sql,
 
@@ -179,6 +175,19 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             _ => throw new NotSupportedException($"Unsupported SQL expression {expression.GetType().Name}")
         };
+
+    private string RenderField(FieldExpression field)
+    {
+        if (field.TableAlias.Length == 0)
+            return $"({field.MetaField.RawSql})";
+
+        return field.MetaField.FieldType switch
+        {
+            FieldType.DbColumn => $"{field.TableAlias}.{dialect.QuoteIdentifier(field.MetaField.RawSql)}",
+            FieldType.RawSql => $"({field.MetaField.RawSql.Replace("@", field.TableAlias + ".")})",
+            _ => $"({field.MetaField.RawSql.Replace("@", field.TableAlias + ".")})"
+        };
+    }
 
     private string RenderTemplateComparison(TemplateCompareSqlExpression compare)
         => "(" + compare.Template
