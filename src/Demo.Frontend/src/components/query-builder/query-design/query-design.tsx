@@ -268,7 +268,7 @@ export default function QueryDesign({
           aria-pressed={selectedContextIndex === null}
           onClick={() => onSelectContext(null)}
         >
-          <Icon name="table" size={14} /> Main Query
+          <Icon name="query" size={14} /> Main Query
         </button>
         {contextDefinitions.map((context, index) => <div className="query-context-tab-wrap" key={`${context.id ?? context.name}-${index}`}>
           <button
