@@ -59,17 +59,14 @@ export default function DataSources() {
     const workspace = workspaceRef.current;
     const sidebar = workspace?.querySelector(".database-sidebar");
     const tableList = workspace?.querySelector(".database-table-list");
-    const content = workspace?.querySelector(".database-content");
-    const details = content?.firstElementChild;
     const shell = workspace?.closest(".app-shell");
-    if (!workspace || !sidebar || !tableList || !content || !details || !shell) return;
+    if (!workspace || !sidebar || !tableList || !shell) return;
 
     const updateMaxHeight = () => {
       const footer = shell.querySelector("footer");
       const shellPaddingBottom = Number.parseFloat(getComputedStyle(shell).paddingBottom) || 0;
       const availableWorkspaceHeight = window.innerHeight
-        - workspace.getBoundingClientRect().top
-        - window.scrollY
+        - Math.max(0, workspace.getBoundingClientRect().top)
         - (footer?.getBoundingClientRect().height ?? 0)
         - shellPaddingBottom;
       const sidebarStyle = getComputedStyle(sidebar);
@@ -77,36 +74,22 @@ export default function DataSources() {
         - sidebar.getBoundingClientRect().top
         + (Number.parseFloat(sidebarStyle.paddingBottom) || 0)
         + (Number.parseFloat(sidebarStyle.borderBottomWidth) || 0);
-      const detailsStyle = getComputedStyle(details);
-      const contentStyle = getComputedStyle(content);
-      const detailsHeight = details.getBoundingClientRect().height
-        + (Number.parseFloat(detailsStyle.marginTop) || 0)
-        + (Number.parseFloat(detailsStyle.marginBottom) || 0)
-        + (Number.parseFloat(contentStyle.paddingTop) || 0)
-        + (Number.parseFloat(contentStyle.paddingBottom) || 0);
-      const tableContentHeight = Array.from(tableList.children).reduce((height, child) => {
-        const childStyle = getComputedStyle(child);
-        return height
-          + child.getBoundingClientRect().height
-          + (Number.parseFloat(childStyle.marginTop) || 0)
-          + (Number.parseFloat(childStyle.marginBottom) || 0);
-      }, 0);
-      const maxHeight = detailsHeight > availableWorkspaceHeight
-        ? Math.max(tableContentHeight, detailsHeight - sidebarChrome)
-        : availableWorkspaceHeight - sidebarChrome;
-
-      setTableListMaxHeight(Math.max(0, maxHeight));
+      setTableListMaxHeight(Math.max(0, availableWorkspaceHeight - sidebarChrome));
     };
 
     updateMaxHeight();
     const observer = new ResizeObserver(updateMaxHeight);
-    observer.observe(details);
+    observer.observe(workspace);
+    const footer = shell.querySelector("footer");
+    if (footer) observer.observe(footer);
     window.addEventListener("resize", updateMaxHeight);
+    window.addEventListener("scroll", updateMaxHeight, { capture: true, passive: true });
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", updateMaxHeight);
+      window.removeEventListener("scroll", updateMaxHeight, true);
     };
-  }, [connectionError, isConnected, selectedSchema, selectedStatus, selectedTable, tableStatus, viewMode]);
+  }, [isConnected, viewMode]);
 
   function changeViewMode(nextViewMode: DatabaseViewMode) {
     dispatch(setDatabaseViewMode(nextViewMode));

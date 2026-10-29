@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../../icon/icon";
 import { selectDbTable } from "../database-slice";
@@ -8,6 +8,7 @@ export default function TableList() {
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
   const { schema, selectedTable, selectedSchema, tableStatus, tableError, schemaStatus, schemaError } = useSelector((state) => state.database);
+  const tableListRef = useRef<HTMLDivElement>(null);
   const tablesBySchema = new Map();
   for (const table of schema.tables) {
     const searchText = `${table.schema || "Default schema"} ${table.name}`.toLocaleLowerCase();
@@ -18,6 +19,31 @@ export default function TableList() {
     tablesBySchema.set(schemaName, group);
   }
   const schemaNames = Array.from(tablesBySchema.keys()).sort((left, right) => left.localeCompare(right));
+
+  useEffect(() => {
+    const tableList = tableListRef.current;
+    if (!tableList) return;
+
+    const scrollSelectedIntoView = () => {
+      const selectedItem = tableList.querySelector<HTMLElement>(".database-table-item[aria-current='page']");
+      if (!selectedItem) return;
+
+      const listRect = tableList.getBoundingClientRect();
+      const itemRect = selectedItem.getBoundingClientRect();
+      const visibleTop = listRect.top + tableList.clientTop;
+      const visibleBottom = visibleTop + tableList.clientHeight;
+      if (itemRect.top < visibleTop) {
+        tableList.scrollTop -= visibleTop - itemRect.top;
+      } else if (itemRect.bottom > visibleBottom) {
+        tableList.scrollTop += itemRect.bottom - visibleBottom;
+      }
+    };
+
+    scrollSelectedIntoView();
+    const observer = new ResizeObserver(scrollSelectedIntoView);
+    observer.observe(tableList);
+    return () => observer.disconnect();
+  }, [searchQuery, selectedSchema, selectedTable]);
 
   return (
     <aside className="database-sidebar split-panel" aria-label="Database tables">
@@ -33,7 +59,7 @@ export default function TableList() {
         placeholder="Search tables"
         aria-label="Search tables"
       />
-      <div className="database-table-list">
+      <div className="database-table-list" ref={tableListRef}>
         {(tableStatus === "loading" || schemaStatus === "loading") && <p className="database-message">Loading tables…</p>}
         {tableStatus === "failed" && <p className="database-message error" role="alert">{tableError}</p>}
         {schemaStatus === "failed" && <p className="database-message error" role="alert">{schemaError}</p>}
