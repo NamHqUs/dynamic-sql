@@ -9,7 +9,6 @@
 
 .database-table-list {
   min-height: 0;
-  max-height: var(--table-list-max-height, calc(100vh - 435px));
   flex: 1 1 auto;
   overflow-y: auto;
 }

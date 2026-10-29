@@ -37,7 +37,7 @@ export default function DataSources() {
   const selectedData = dataByTable[selectedKey];
   const panel = useResizablePanel("data-sources");
   const workspaceRef = useRef<HTMLDivElement>(null);
-  const [tableListMaxHeight, setTableListMaxHeight] = useState<number | null>(null);
+  const [tableListPosition, setTableListPosition] = useState<{ top: number; left: number; width: number; bottom: number } | null>(null);
   const [diagramHeight, setDiagramHeight] = useState(600);
   const minDiagramHeight = 360;
 
@@ -59,35 +59,47 @@ export default function DataSources() {
     const workspace = workspaceRef.current;
     const sidebar = workspace?.querySelector(".database-sidebar");
     const tableList = workspace?.querySelector(".database-table-list");
-    const shell = workspace?.closest(".app-shell");
-    if (!workspace || !sidebar || !tableList || !shell) return;
+    const search = workspace?.querySelector(".database-table-search");
+    if (!workspace || !sidebar || !tableList || !search) return;
 
-    const updateMaxHeight = () => {
-      const footer = shell.querySelector("footer");
-      const shellPaddingBottom = Number.parseFloat(getComputedStyle(shell).paddingBottom) || 0;
-      const availableWorkspaceHeight = window.innerHeight
-        - Math.max(0, workspace.getBoundingClientRect().top)
-        - (footer?.getBoundingClientRect().height ?? 0)
-        - shellPaddingBottom;
+    const updateListPosition = () => {
+      const sidebarRect = sidebar.getBoundingClientRect();
       const sidebarStyle = getComputedStyle(sidebar);
-      const sidebarChrome = tableList.getBoundingClientRect().top
-        - sidebar.getBoundingClientRect().top
-        + (Number.parseFloat(sidebarStyle.paddingBottom) || 0)
-        + (Number.parseFloat(sidebarStyle.borderBottomWidth) || 0);
-      setTableListMaxHeight(Math.max(0, availableWorkspaceHeight - sidebarChrome));
+      const searchStyle = getComputedStyle(search);
+      const sidebarBottomPadding = Number.parseFloat(sidebarStyle.paddingBottom) || 0;
+      const sidebarBottomBorder = Number.parseFloat(sidebarStyle.borderBottomWidth) || 0;
+      const sidebarContentBottom = sidebarRect.bottom - sidebarBottomPadding - sidebarBottomBorder;
+      const bottomEdge = Math.max(0, Math.min(window.innerHeight - 20, sidebarContentBottom));
+      const top = Math.min(
+        bottomEdge,
+        Math.max(0, search.getBoundingClientRect().bottom + (Number.parseFloat(searchStyle.marginBottom) || 0)),
+      );
+      const nextPosition = {
+        top,
+        left: sidebarRect.left,
+        width: sidebarRect.width,
+        bottom: window.innerHeight - bottomEdge,
+      };
+      setTableListPosition((current) =>
+        current?.top === nextPosition.top
+        && current.left === nextPosition.left
+        && current.width === nextPosition.width
+        && current.bottom === nextPosition.bottom
+          ? current
+          : nextPosition,
+      );
     };
 
-    updateMaxHeight();
-    const observer = new ResizeObserver(updateMaxHeight);
-    observer.observe(workspace);
-    const footer = shell.querySelector("footer");
-    if (footer) observer.observe(footer);
-    window.addEventListener("resize", updateMaxHeight);
-    window.addEventListener("scroll", updateMaxHeight, { capture: true, passive: true });
+    updateListPosition();
+    const observer = new ResizeObserver(updateListPosition);
+    observer.observe(sidebar);
+    observer.observe(search);
+    window.addEventListener("resize", updateListPosition);
+    window.addEventListener("scroll", updateListPosition, { capture: true, passive: true });
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", updateMaxHeight);
-      window.removeEventListener("scroll", updateMaxHeight, true);
+      window.removeEventListener("resize", updateListPosition);
+      window.removeEventListener("scroll", updateListPosition, true);
     };
   }, [isConnected, viewMode]);
 
@@ -100,6 +112,21 @@ export default function DataSources() {
       return next;
     });
   }
+
+  const tableListStyle: CSSProperties | undefined = tableListPosition
+    ? {
+      position: "fixed",
+      top: tableListPosition.top,
+      bottom: tableListPosition.bottom,
+      left: tableListPosition.left,
+      width: tableListPosition.width,
+      boxSizing: "border-box",
+      zIndex: 4,
+      padding: "0 12px",
+      borderRight: "1px solid var(--line)",
+      backgroundColor: "#0e1117",
+    }
+    : undefined;
 
   return (
     <>
@@ -141,9 +168,8 @@ export default function DataSources() {
             <div
               ref={workspaceRef}
               className={`database-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`}
-              style={tableListMaxHeight === null ? undefined : { "--table-list-max-height": `${tableListMaxHeight}px` } as CSSProperties}
             >
-              <TableList />
+              <TableList scrollStyle={tableListStyle} />
               <PanelSplitter panel={panel} label="tables panel" />
               <section className="database-content" aria-live="polite">
                 {selectedTable ? (

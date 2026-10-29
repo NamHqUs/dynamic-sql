@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../../icon/icon";
 import { selectDbTable } from "../database-slice";
 import "./table-list.css";
 
-export default function TableList() {
+type TableListProps = {
+  scrollStyle?: CSSProperties;
+};
+
+export default function TableList({ scrollStyle }: TableListProps) {
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
   const { schema, selectedTable, selectedSchema, tableStatus, tableError, schemaStatus, schemaError } = useSelector((state) => state.database);
@@ -59,7 +63,7 @@ export default function TableList() {
         placeholder="Search tables"
         aria-label="Search tables"
       />
-      <div className="database-table-list" ref={tableListRef}>
+      <div className="database-table-list" ref={tableListRef} style={scrollStyle}>
         {(tableStatus === "loading" || schemaStatus === "loading") && <p className="database-message">Loading tables…</p>}
         {tableStatus === "failed" && <p className="database-message error" role="alert">{tableError}</p>}
         {schemaStatus === "failed" && <p className="database-message error" role="alert">{schemaError}</p>}

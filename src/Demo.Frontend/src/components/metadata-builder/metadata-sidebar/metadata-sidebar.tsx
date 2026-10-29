@@ -1,4 +1,4 @@
-import { useState, type ReactNode, type RefObject } from "react";
+import { useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import Icon from "../../icon/icon";
 import "./metadata-sidebar.css";
 
@@ -21,6 +21,7 @@ type MetadataSidebarProps = {
   onFilterChange: (filter: string) => void;
   scrollable?: boolean;
   listRef?: RefObject<HTMLDivElement | null>;
+  scrollStyle?: CSSProperties;
 };
 
 export default function MetadataSidebar({
@@ -34,6 +35,7 @@ export default function MetadataSidebar({
   onFilterChange,
   scrollable = false,
   listRef,
+  scrollStyle,
 }: MetadataSidebarProps) {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const listContent = (
@@ -82,7 +84,7 @@ export default function MetadataSidebar({
         />
       </label>
       {scrollable
-        ? <div className="metadata-sidebar-scroll" ref={listRef}>{listContent}</div>
+        ? <div className="metadata-sidebar-scroll" ref={listRef} style={scrollStyle}>{listContent}</div>
         : listContent}
     </aside>
   );
