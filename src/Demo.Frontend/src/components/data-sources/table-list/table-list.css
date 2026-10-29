@@ -1,7 +1,6 @@
 .database-sidebar {
   display: flex;
   min-height: 0;
-  max-height: calc(100vh - 250px);
   flex-direction: column;
   padding: 22px 12px;
   border-right: 1px solid var(--line);
@@ -10,9 +9,9 @@
 
 .database-table-list {
   min-height: 0;
+  max-height: var(--table-list-max-height, calc(100vh - 435px));
   flex: 1 1 auto;
   overflow-y: auto;
-  overscroll-behavior: contain;
   scrollbar-color: #514476 #11151d;
   scrollbar-width: thin;
 }

@@ -24,6 +24,16 @@
   border-radius: 6px;
 }
 
+.database-grid-loading {
+  display: grid;
+  min-height: 420px;
+  place-items: center;
+  border: 1px solid #252b38;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .database-grid {
   width: 100%;
   border-collapse: collapse;

@@ -26,6 +26,8 @@ export default function DataGrid({ table: previewTable, showHeading = true }: Da
   const tableData = dataByTable[tableDataKey];
   const columns = tableData?.columns || [];
   const rows = tableData?.rows || [];
+  const isLoading = !tableData || tableData.status === "loading";
+  const hasCachedData = tableData?.status === "loading" && Array.isArray(tableData.columns);
   const filters = tableData?.filters || {};
   const sort = tableData?.sort;
 
@@ -73,9 +75,9 @@ export default function DataGrid({ table: previewTable, showHeading = true }: Da
           {tableData?.status === "succeeded" && <span className="database-record-count">{viewMode === "diagram" ? "Top 10 row preview" : `Previewing up to ${rows.length} rows`}</span>}
         </div>
       )}
-      {tableData?.status === "loading" && <p className="database-message">Loading {tableName}…</p>}
+      {isLoading && !hasCachedData && <div className="database-grid-loading" role="status">Loading {tableName}…</div>}
       {tableData?.status === "failed" && <p className="database-message error" role="alert">{tableData.error}</p>}
-      {tableData?.status === "succeeded" && (
+      {(tableData?.status === "succeeded" || hasCachedData) && (
         <div className="database-grid-wrap">
           {columns.length > 0 ? (
             <table className="database-grid">

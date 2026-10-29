@@ -11,7 +11,15 @@
 }
 
 .database-browser.split-workspace {
-  min-height: 680px;
+  display: block;
+  min-height: 200px;
+}
+
+.database-workspace {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--panel-width, 260px) minmax(0, 1fr);
+  min-height: 200px;
 }
 
 .database-browser.database-disconnected {
@@ -273,6 +281,10 @@ section.page-heading.database-page-heading p {
   }
 
   .database-browser {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .database-workspace {
     grid-template-columns: minmax(0, 1fr);
   }
 

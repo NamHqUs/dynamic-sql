@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 import Icon from "../icon/icon";
@@ -7,7 +7,7 @@ import { useResizablePanel } from "../../utils/use-resizable-panel";
 import DataGrid from "./data-grid/data-grid";
 import DiagramSplitter from "./diagram-splitter/diagram-splitter";
 import DiagramView from "./diagram-view/diagram-view";
-import { fetchDbSchema, fetchDbTableData, fetchDbTables, setDatabaseViewMode } from "./database-slice";
+import { fetchDbSchema, fetchDbTables, setDatabaseViewMode } from "./database-slice";
 import TableList from "./table-list/table-list";
 import TableDetails from "./table-details/table-details";
 import "./data-sources.css";
@@ -36,6 +36,8 @@ export default function DataSources() {
   const selectedStatus = dataByTable[selectedKey]?.status;
   const selectedData = dataByTable[selectedKey];
   const panel = useResizablePanel("data-sources");
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const [tableListMaxHeight, setTableListMaxHeight] = useState<number | null>(null);
   const [diagramHeight, setDiagramHeight] = useState(600);
   const minDiagramHeight = 360;
 
@@ -54,10 +56,57 @@ export default function DataSources() {
   }, [dispatch, connectionStatus]);
 
   useEffect(() => {
-    if (isConnected && routeViewMode === "data" && viewMode === "data" && selectedTable && selectedStatus !== "succeeded" && selectedStatus !== "loading") {
-      dispatch(fetchDbTableData({ tableName: selectedTable, schema: selectedSchema }));
-    }
-  }, [dispatch, routeViewMode, selectedTable, selectedSchema, selectedStatus, viewMode, isConnected]);
+    const workspace = workspaceRef.current;
+    const sidebar = workspace?.querySelector(".database-sidebar");
+    const tableList = workspace?.querySelector(".database-table-list");
+    const content = workspace?.querySelector(".database-content");
+    const details = content?.firstElementChild;
+    const shell = workspace?.closest(".app-shell");
+    if (!workspace || !sidebar || !tableList || !content || !details || !shell) return;
+
+    const updateMaxHeight = () => {
+      const footer = shell.querySelector("footer");
+      const shellPaddingBottom = Number.parseFloat(getComputedStyle(shell).paddingBottom) || 0;
+      const availableWorkspaceHeight = window.innerHeight
+        - workspace.getBoundingClientRect().top
+        - window.scrollY
+        - (footer?.getBoundingClientRect().height ?? 0)
+        - shellPaddingBottom;
+      const sidebarStyle = getComputedStyle(sidebar);
+      const sidebarChrome = tableList.getBoundingClientRect().top
+        - sidebar.getBoundingClientRect().top
+        + (Number.parseFloat(sidebarStyle.paddingBottom) || 0)
+        + (Number.parseFloat(sidebarStyle.borderBottomWidth) || 0);
+      const detailsStyle = getComputedStyle(details);
+      const contentStyle = getComputedStyle(content);
+      const detailsHeight = details.getBoundingClientRect().height
+        + (Number.parseFloat(detailsStyle.marginTop) || 0)
+        + (Number.parseFloat(detailsStyle.marginBottom) || 0)
+        + (Number.parseFloat(contentStyle.paddingTop) || 0)
+        + (Number.parseFloat(contentStyle.paddingBottom) || 0);
+      const tableContentHeight = Array.from(tableList.children).reduce((height, child) => {
+        const childStyle = getComputedStyle(child);
+        return height
+          + child.getBoundingClientRect().height
+          + (Number.parseFloat(childStyle.marginTop) || 0)
+          + (Number.parseFloat(childStyle.marginBottom) || 0);
+      }, 0);
+      const maxHeight = detailsHeight > availableWorkspaceHeight
+        ? Math.max(tableContentHeight, detailsHeight - sidebarChrome)
+        : availableWorkspaceHeight - sidebarChrome;
+
+      setTableListMaxHeight(Math.max(0, maxHeight));
+    };
+
+    updateMaxHeight();
+    const observer = new ResizeObserver(updateMaxHeight);
+    observer.observe(details);
+    window.addEventListener("resize", updateMaxHeight);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateMaxHeight);
+    };
+  }, [connectionError, isConnected, selectedSchema, selectedStatus, selectedTable, tableStatus, viewMode]);
 
   function changeViewMode(nextViewMode: DatabaseViewMode) {
     dispatch(setDatabaseViewMode(nextViewMode));
@@ -106,13 +155,17 @@ export default function DataSources() {
       {isConnected ? (
         <section className={`database-browser${viewMode === "data" ? ` split-workspace${panel.collapsed ? " panel-collapsed" : ""}` : " diagram-browser"}`} style={viewMode === "data" ? panel.style : undefined}>
           {viewMode === "data" ? (
-            <>
+            <div
+              ref={workspaceRef}
+              className={`database-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`}
+              style={tableListMaxHeight === null ? undefined : { "--table-list-max-height": `${tableListMaxHeight}px` } as CSSProperties}
+            >
               <TableList />
               <PanelSplitter panel={panel} label="tables panel" />
               <section className="database-content" aria-live="polite">
                 {selectedTable ? (
                   <>
-                    <TableDetails />
+                    <TableDetails dataLoadingEnabled={isConnected && routeViewMode === "data" && viewMode === "data"} />
                   </>
                 ) : (
                   <div className="database-placeholder">
@@ -121,7 +174,7 @@ export default function DataSources() {
                   </div>
                 )}
               </section>
-            </>
+            </div>
           ) : (
             <div className="diagram-mode-content" style={{ "--diagram-panel-height": `${diagramHeight}px` } as CSSProperties}>
               <DiagramView />

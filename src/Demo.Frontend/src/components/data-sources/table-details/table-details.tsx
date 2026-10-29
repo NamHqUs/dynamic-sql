@@ -1,18 +1,25 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../../icon/icon";
 import DataGrid from "../data-grid/data-grid";
-import { selectDbTable } from "../database-slice";
+import { fetchDbTableData, selectDbTable } from "../database-slice";
 import "./table-details.css";
 
-export default function TableDetails() {
+export default function TableDetails({ dataLoadingEnabled }: { dataLoadingEnabled: boolean }) {
   const dispatch = useDispatch();
   const { schema, selectedTable, selectedSchema, dataByTable } = useSelector((state) => state.database);
   const [activeTab, setActiveTab] = useState<"columns" | "relations" | "data">("columns");
   const table = schema.tables.find((item) => item.name === selectedTable && item.schema === selectedSchema);
-  if (!table) return null;
   const tableDataKey = selectedSchema ? `${selectedSchema}.${selectedTable}` : selectedTable;
   const tableData = dataByTable[tableDataKey];
+
+  useEffect(() => {
+    if (!dataLoadingEnabled || activeTab !== "data" || !table
+      || tableData?.status === "succeeded" || tableData?.status === "loading") return;
+    dispatch(fetchDbTableData({ tableName: selectedTable, schema: selectedSchema }));
+  }, [activeTab, dataLoadingEnabled, dispatch, selectedSchema, selectedTable, table, tableData?.status]);
+
+  if (!table) return null;
 
   const relations = schema.relationships.flatMap((relation) => {
     if (relation.sourceTable === table.name && relation.sourceSchema === table.schema) {
@@ -33,7 +40,9 @@ export default function TableDetails() {
         </div>
         <div className="table-details-summary">
           <span>{table.columns.length} columns</span>
-          {tableData?.status === "succeeded" && <span>{tableData.rows.length} preview rows</span>}
+          {tableData?.status === "loading"
+            ? <span>Loading preview…</span>
+            : tableData?.status === "succeeded" && <span>{tableData.rows.length} preview rows</span>}
         </div>
       </div>
 
