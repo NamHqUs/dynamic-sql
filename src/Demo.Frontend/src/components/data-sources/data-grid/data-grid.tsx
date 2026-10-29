@@ -14,9 +14,10 @@ const columnClassName = (type, column, filters, sort) => [
 
 type DataGridProps = {
   table?: { name: string; schema?: string };
+  showHeading?: boolean;
 };
 
-export default function DataGrid({ table: previewTable }: DataGridProps = {}) {
+export default function DataGrid({ table: previewTable, showHeading = true }: DataGridProps = {}) {
   const dispatch = useDispatch();
   const { selectedTable, selectedSchema, viewMode, dataByTable } = useSelector((state) => state.database);
   const tableName = previewTable ? previewTable.name : selectedTable;
@@ -63,13 +64,15 @@ export default function DataGrid({ table: previewTable }: DataGridProps = {}) {
 
   return (
     <>
-      <div className="database-content-heading">
-        <div>
-          <span className="section-kicker">TABLE DATA</span>
-          <h2>{tableName}</h2>
+      {showHeading && (
+        <div className="database-content-heading">
+          <div>
+            <span className="section-kicker">TABLE DATA</span>
+            <h2>{tableName}</h2>
+          </div>
+          {tableData?.status === "succeeded" && <span className="database-record-count">{viewMode === "diagram" ? "Top 10 row preview" : `Previewing up to ${rows.length} rows`}</span>}
         </div>
-        {tableData?.status === "succeeded" && <span className="database-record-count">{viewMode === "diagram" ? "Top 10 row preview" : `Previewing up to ${rows.length} rows`}</span>}
-      </div>
+      )}
       {tableData?.status === "loading" && <p className="database-message">Loading {tableName}…</p>}
       {tableData?.status === "failed" && <p className="database-message error" role="alert">{tableData.error}</p>}
       {tableData?.status === "succeeded" && (

@@ -1,7 +1,39 @@
 .database-sidebar {
+  display: flex;
+  min-height: 0;
+  max-height: calc(100vh - 250px);
+  flex-direction: column;
   padding: 22px 12px;
   border-right: 1px solid var(--line);
   background: #0e1117;
+}
+
+.database-table-list {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #514476 #11151d;
+  scrollbar-width: thin;
+}
+
+.database-table-list::-webkit-scrollbar {
+  width: 7px;
+}
+
+.database-table-list::-webkit-scrollbar-track {
+  border-radius: 6px;
+  background: #11151d;
+}
+
+.database-table-list::-webkit-scrollbar-thumb {
+  border: 1px solid #11151d;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #806bb1, #514476);
+}
+
+.database-table-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a18ad6, #695a91);
 }
 
 .database-sidebar-heading {
@@ -21,6 +53,27 @@
   background: #28223d;
   border-radius: 12px;
   font: 12px "Manrope", sans-serif;
+}
+
+.database-table-search {
+  width: calc(100% - 16px);
+  margin: 0 8px 14px;
+  padding: 9px 10px;
+  border: 1px solid #303847;
+  border-radius: 6px;
+  outline: 0;
+  color: #c8ced9;
+  background: #11151d;
+  font-size: 12px;
+}
+
+.database-table-search:focus {
+  border-color: #8064e8;
+  box-shadow: 0 0 0 2px #8064e833;
+}
+
+.database-table-search::placeholder {
+  color: #697385;
 }
 
 .database-schema-group {
@@ -95,6 +148,7 @@
 
 @media (max-width: 760px) {
   .database-sidebar {
+    max-height: 40vh;
     border-right: 0;
     border-bottom: 1px solid var(--line);
   }

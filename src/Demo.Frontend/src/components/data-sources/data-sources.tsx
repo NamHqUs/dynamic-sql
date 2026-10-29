@@ -7,7 +7,7 @@ import { useResizablePanel } from "../../utils/use-resizable-panel";
 import DataGrid from "./data-grid/data-grid";
 import DiagramSplitter from "./diagram-splitter/diagram-splitter";
 import DiagramView from "./diagram-view/diagram-view";
-import { disconnectDatabase, fetchDbSchema, fetchDbTableData, fetchDbTables, setDatabaseViewMode } from "./database-slice";
+import { fetchDbSchema, fetchDbTableData, fetchDbTables, setDatabaseViewMode } from "./database-slice";
 import TableList from "./table-list/table-list";
 import TableDetails from "./table-details/table-details";
 import "./data-sources.css";
@@ -92,15 +92,13 @@ export default function DataSources() {
         </div>
         {isConnected && (
           <nav className="database-section-tabs" role="tablist" aria-label="Database views">
+            <button type="button" role="tab" aria-selected={viewMode === "data"} className={viewMode === "data" ? "active" : ""} onClick={() => changeViewMode("data")}>
+              <Icon name="table" size={14} /> Schema 
+            </button>
             <button type="button" role="tab" aria-selected={viewMode === "diagram"} className={viewMode === "diagram" ? "active" : ""} onClick={() => changeViewMode("diagram")}>
               <Icon name="schema" size={14} /> Diagram
             </button>
-            <button type="button" role="tab" aria-selected={viewMode === "data"} className={viewMode === "data" ? "active" : ""} onClick={() => changeViewMode("data")}>
-              <Icon name="table" size={14} /> Data View
-            </button>
-            <button type="button" className="database-disconnect" onClick={() => dispatch(disconnectDatabase())}>
-              Disconnect
-            </button>
+
           </nav>
         )}
       </section>
@@ -115,7 +113,6 @@ export default function DataSources() {
                 {selectedTable ? (
                   <>
                     <TableDetails />
-                    <DataGrid />
                   </>
                 ) : (
                   <div className="database-placeholder">

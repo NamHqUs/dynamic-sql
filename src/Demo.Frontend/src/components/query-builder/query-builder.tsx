@@ -442,7 +442,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   }, [metadata, definition.entity, definition.contextCatalog, definition.contexts, isNewBlankQuery]);
 
   const runQuery = async () => {
-    if (activeDefinition.entity && activeDefinition.columns.length) {
+    if (activeDefinition.entity.trim() && activeDefinition.columns.length) {
       if (activeContextIndex !== null) {
         updateDefinition(updateContextDefinition(activeContextIndex, activeDefinition));
       }
@@ -454,7 +454,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
 
   const changePage = (page: number) => {
-    if (!activeDefinition.entity || !activeDefinition.columns.length) return;
+    if (!activeDefinition.entity.trim() || !activeDefinition.columns.length) return;
     const nextActiveDefinition = { ...activeDefinition, page };
     const nextDefinition = activeContextIndex === null
       ? nextActiveDefinition
@@ -464,7 +464,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
 
   const getSql = () => {
-    if (activeDefinition.entity && activeDefinition.columns.length) {
+    if (activeDefinition.entity.trim() && activeDefinition.columns.length) {
       dispatch(getSqlStatement({
         ...activeDefinition,
         filters: activeDefinition.filters,
@@ -657,7 +657,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
           onPageChange={changePage}
           pageNavigationEnabled
           queryLoading={queryStatus === "loading"}
-          queryDisabled={!activeDefinition.entity || !activeDefinition.columns.length}
+          queryDisabled={!activeDefinition.entity.trim() || !activeDefinition.columns.length}
         />
       </section>
     </>

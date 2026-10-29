@@ -90,6 +90,8 @@ function EntityMenu({ entities, value, disabled, onChange }: EntityMenuProps) {
         className={`entity-menu-trigger${selectedEntity ? "" : " empty"}`}
         ref={triggerRef}
         aria-label="Entity"
+        aria-invalid={!value.trim()}
+        aria-describedby={!value.trim() ? "query-entity-error" : undefined}
         aria-expanded={open}
         aria-haspopup="menu"
         disabled={disabled}
@@ -286,12 +288,6 @@ export default function QueryDesign({
         <div className="query-name-field">
           <div className="query-name-label-row">
             <span className="section-kicker">{selectedContextIndex === null ? "QUERY NAME" : "CONTEXT NAME"}</span>
-            {selectedContextIndex === null && <button className="field-action field-action-icon query-create-context" type="button" aria-label="Create context" title="Create context" onClick={() => {
-              setContextDialogOpen(true);
-              setContextNameError("");
-            }}>
-              <Icon name="plus" size={14} />
-            </button>}
           </div>
           <input
             type="text"
@@ -308,7 +304,16 @@ export default function QueryDesign({
         </div>
       </div>
       <div className="query-builder-toolbar">
-        <label><span className="section-kicker">ENTITY</span>
+        <div className="query-entity-field">
+          <div className="query-entity-label-row">
+            <span className="section-kicker">ENTITY</span>
+            {selectedContextIndex === null && <button className="field-action field-action-icon query-create-context" type="button" aria-label="Create context" title="Create context" onClick={() => {
+              setContextDialogOpen(true);
+              setContextNameError("");
+            }}>
+              <Icon name="plus" size={14} />
+            </button>}
+          </div>
           <EntityMenu entities={entityOptions} value={definition.entity} disabled={!entityOptions.length} onChange={(selectedEntity) => {
             const contexts = (definition.contexts ?? []).filter((context) =>
               !(context.name === definition.entity && !context.alias?.trim() && !hasApiQueryCondition(context.condition))
@@ -329,14 +334,15 @@ export default function QueryDesign({
               contextCatalog: definition.contextCatalog,
               filters: { logicalOperation: 0, filters: [] },
               sorts: [],
-              page: 1,
-              pageSize: 50,
+              page: selectedContextIndex === null ? 1 : null,
+              pageSize: selectedContextIndex === null ? 50 : null,
             });
           }} />
-        </label>
+          {!definition.entity.trim() && <span className="query-entity-warning" id="query-entity-error" role="alert">Select an entity.</span>}
+        </div>
         <div className="query-paging-controls">
           <label><span className="section-kicker">PAGE</span>
-            <input className="small-input" type="number" min="1" step="1" value={definition.page ?? 1} disabled={(definition.page === null && definition.pageSize === null) || (definition.pageSize !== null && definition.pageSize < 1)} onChange={(event) => {
+            <input className="small-input" type="number" min="1" step="1" value={definition.page ?? ""} disabled={(definition.page === null && definition.pageSize === null) || (definition.pageSize !== null && definition.pageSize < 1)} onChange={(event) => {
               const value = event.target.value;
               const page = value ? Number.parseInt(value, 10) : null;
               onDefinitionChange({ ...definition, page: page === null ? null : Math.max(1, page) });

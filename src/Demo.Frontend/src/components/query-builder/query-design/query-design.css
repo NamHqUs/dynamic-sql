@@ -1,20 +1,24 @@
 .query-builder-card { --field-box-height: 34px; background: linear-gradient(135deg, #11141c, #0f1218); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
-.query-builder-toolbar { display: flex; align-items: end; gap: 16px; padding: 0; margin-bottom: 16px; border-bottom: 0; background: transparent; }
+.query-builder-toolbar { display: flex; align-items: flex-start; gap: 16px; padding: 0; margin-bottom: 16px; border-bottom: 0; background: transparent; }
+.query-entity-field { display: flex; flex-direction: column; gap: 7px; }
+.query-entity-label-row { display: flex; align-items: center; gap: 12px; min-height: 25px; color: #aab3c2; font: 11px "Manrope", sans-serif; letter-spacing: .7px; text-transform: uppercase; }
+.query-entity-warning { color: #e8bb67; font-size: 12px; }
 .query-builder-toolbar > .field-action { margin-left: auto; padding-bottom: 9px; white-space: nowrap; }
-.query-context-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0 -28px 20px; padding: 8px 28px; border-bottom: 1px solid #252b37; background: linear-gradient(100deg, #171923, #141922 62%, #121b20); }
-.query-context-tab-wrap { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid #2b3140; border-radius: 9px; background: #11141b; transition: border-color .18s ease, background .18s ease; }
-.query-context-tab-wrap:has(.query-context-tab.selected) { border-color: #65558f; background: #1b1925; box-shadow: inset 0 1px #ffffff08, 0 4px 12px #0002; }
-.query-context-tab { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; color: #929bad; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 6px 11px; font: 12px "Manrope", sans-serif; cursor: pointer; transition: color .18s ease, background .18s ease, border-color .18s ease; }
-.query-context-tab .icon { color: #7d8798; }
-.query-context-tab:hover, .query-context-tab:focus-visible { color: #fff; background: #211d32; border-color: #514373; }
+.query-context-bar { display: flex; width: fit-content; max-width: 100%; box-sizing: border-box; flex-wrap: wrap; align-items: center; gap: 5px; margin: 0 0 20px; padding: 5px; border: 1px solid #ffffff18; border-radius: 10px; background: linear-gradient(145deg, #0c1019c9, #171827b8); box-shadow: inset 0 1px #ffffff0a, 0 8px 24px #00000020; }
+.query-context-tab-wrap { display: inline-flex; align-items: center; gap: 2px; border: 1px solid transparent; border-radius: 7px; background: transparent; transition: color .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.query-context-tab-wrap:has(.query-context-tab.selected) { border-color: #9b83e54a; background: linear-gradient(135deg, #5a478c70, #332849a8); box-shadow: inset 0 1px #ffffff16, 0 3px 12px #00000026; }
+.query-context-tab { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; color: #9299aa; background: transparent; border: 1px solid transparent; border-radius: 7px; padding: 6px 12px; font: 600 11px "Manrope", sans-serif; cursor: pointer; transition: color .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.query-context-tab .icon { width: 23px; height: 23px; padding: 4px; border-radius: 6px; color: #828ba0; background: #ffffff08; }
+.query-context-tab:hover, .query-context-tab:focus-visible { color: #eee9ff; background: #ffffff08; }
 .query-context-tab:focus-visible { outline: 2px solid var(--purple); outline-offset: 1px; }
-.query-context-tab.selected { color: #f0eaff; background: linear-gradient(180deg, #38324d, #292538); border-color: #71649b; box-shadow: inset 0 1px #ffffff12; font-weight: 700; }
-.query-context-tab.selected .icon { color: #b7a3f4; }
-.query-context-delete { display: grid; width: 26px; height: 28px; place-items: center; color: #818a9a; background: transparent; border: 1px solid transparent; border-radius: 5px; cursor: pointer; transition: color .18s ease, background .18s ease, border-color .18s ease; }
+.query-context-tab.selected { color: #f1edff; font-weight: 600; }
+.query-context-tab.selected .icon { color: #d0c2ff; background: #9e84ed24; }
+.query-context-delete { display: grid; width: 23px; height: 23px; place-items: center; margin-right: 5px; color: #9299aa; background: #ffffff08; border: 1px solid transparent; border-radius: 6px; cursor: pointer; transition: color .16s ease, background .16s ease, border-color .16s ease; }
 .query-context-delete:hover, .query-context-delete:focus-visible { color: #ff9b9b; background: #43252c; border-color: #71333d; }
 .query-context-delete:focus-visible { outline: 2px solid var(--purple); outline-offset: 1px; }
-.query-paging-controls { display: flex; align-items: end; gap: 10px; }
+.query-paging-controls { display: flex; align-items: end; gap: 10px; margin-top: 3px; }
 .query-paging-controls label { display: flex; flex-direction: column; gap: 7px; color: #aab3c2; font: 11px "Manrope", sans-serif; letter-spacing: .7px; text-transform: uppercase; }
+.query-paging-controls .section-kicker { display: flex; align-items: center; min-height: 25px; }
 .query-paging-controls input { height: var(--field-box-height); box-sizing: border-box; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 7px; font-size: 13px; outline: 0; }
 .query-paging-controls input:focus { border-color: #7054d4; }
 .query-paging-controls input.small-input { width: 68px; }
@@ -45,6 +49,7 @@
 .entity-menu { position: relative; }
 .entity-menu-trigger { display: flex; align-items: center; justify-content: flex-start; gap: 12px; min-width: 220px; height: var(--field-box-height); box-sizing: border-box; color: #dce1eb; background: #191e28; border: 1px solid #323947; border-radius: 5px; padding: 0 9px; font: 13px "Manrope", sans-serif; text-align: left; cursor: pointer; }
 .entity-menu-trigger:hover, .entity-menu-trigger:focus-visible { border-color: #7054d4; outline: 0; }
+.entity-menu-trigger[aria-invalid="true"] { border-color: #d5a74e; }
 .entity-menu-trigger.empty { color: #697486; }
 .entity-menu-trigger:disabled { opacity: .65; cursor: default; }
 .entity-menu-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
