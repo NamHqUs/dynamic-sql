@@ -6,7 +6,7 @@ import { createBrowserRouter, Navigate, Route, RouterProvider, Routes, useBlocke
 import Icon, { getDatabaseIconName } from "./components/icon/icon";
 import DataSources from "./components/data-sources/data-sources";
 import DatabaseConnection from "./components/data-sources/database-connection/database-connection";
-import { fetchDbTables } from "./components/data-sources/database-slice";
+import { fetchDbProvider, fetchDbTables } from "./components/data-sources/database-slice";
 import QueryBuilder, { setQueryBuilderDefinition } from "./components/query-builder/query-builder";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
 import Reports from "./components/reports/reports";
@@ -52,7 +52,11 @@ function App() {
   };
 
   useEffect(() => {
-    void store.dispatch(fetchDbTables());
+    void store.dispatch(fetchDbProvider()).then((result) => {
+      if (fetchDbProvider.fulfilled.match(result) && result.payload !== null) {
+        void store.dispatch(fetchDbTables());
+      }
+    });
   }, []);
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
@@ -131,7 +135,19 @@ function App() {
         <button className="brand" type="button" aria-label="DynamicSQL Studio home" onClick={() => navigateToPage("reports")}><img className="brand-logo" src="/brand-concepts/dynamicsql-studio.svg" alt="" /></button>
         <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="query" /> Query builder</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="schema" /> Metadata</button></nav>
         <div className="top-actions">
-          {database.connectionStatus === "loading" ? (
+          {database.providerCheckStatus === "loading" ? (
+            <button className="database-status connecting" type="button" onClick={() => setConnectionDialogOpen(true)} aria-live="polite">
+              <span className="database-status-dot" />
+              <Icon name="database" size={15} />
+              <span>Checking connection…</span>
+            </button>
+          ) : database.providerCheckStatus === "failed" ? (
+            <button className="database-status failed" type="button" onClick={() => setConnectionDialogOpen(true)} title={database.connectionError}>
+              <span className="database-status-dot" />
+              <Icon name="database" size={15} />
+              <span>Connection status unavailable</span>
+            </button>
+          ) : database.connectionStatus === "loading" ? (
             <button className="database-status connecting" type="button" onClick={() => setConnectionDialogOpen(true)} aria-live="polite">
               <span className="database-status-dot" />
               <Icon name={getDatabaseIconName(database.connectingProvider)} size={15} />
@@ -141,13 +157,13 @@ function App() {
             <button className="database-status connected" type="button" onClick={() => setConnectionDialogOpen(true)} title="Change database connection">
               <span className="database-status-dot" />
               <Icon name={getDatabaseIconName(database.connectedProvider)} size={15} />
-              <span>{database.connectedProvider}{database.connectedProfileName ? ` · ${database.connectedProfileName}` : " · Direct connection"}</span>
+              <span>{database.connectedProvider}{database.connectedProfileName ? ` · ${database.connectedProfileName}` : " · Connecting"}</span>
             </button>
           ) : (
             <button className={`database-status${database.connectionStatus === "failed" ? " failed" : ""}`} type="button" onClick={() => setConnectionDialogOpen(true)}>
               <span className="database-status-dot" />
               <Icon name="database" size={15} />
-              {database.connectionStatus === "failed" ? "Connection failed · Retry" : "Connect database"}
+              <span>{database.connectionStatus === "failed" ? "Connection failed · Retry" : "Disconnected"}</span>
             </button>
           )}
           <button className="avatar" type="button" aria-label="User profile">N</button>

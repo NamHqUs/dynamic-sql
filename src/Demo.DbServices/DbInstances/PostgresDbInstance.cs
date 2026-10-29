@@ -17,6 +17,7 @@ public class PostgresDbInstance(string connectionString, string[] scriptFiles) :
             columns.table_name AS "TableName",
             columns.column_name AS "ColumnName",
             columns.data_type AS "DataType",
+            (columns.is_nullable = 'YES') AS "IsNullable",
             (primaryKeys.column_name IS NOT NULL) AS "IsPrimaryKey"
         FROM information_schema.columns AS columns
         LEFT JOIN (

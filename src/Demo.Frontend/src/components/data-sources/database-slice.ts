@@ -20,7 +20,7 @@ type DatabaseConnectionResponseDto = {
 
 class DatabaseConnectionRequiredError extends Error {}
 
-async function getJson(url, init = {}) {
+async function getJson(url, init = {}, allowNoContent = false) {
   let response;
   try {
     response = await fetch(url, init);
@@ -43,6 +43,8 @@ async function getJson(url, init = {}) {
     }
     throw new Error(detail);
   }
+
+  if (allowNoContent && response.status === 204) return null;
 
   try {
     return await response.json();
@@ -73,6 +75,22 @@ export const fetchDatabaseConnections = createAsyncThunk(
       const { connectionOptionsStatus } = getState().database;
       return connectionOptionsStatus !== "loading" && connectionOptionsStatus !== "succeeded";
     },
+  },
+);
+
+export const fetchDbProvider = createAsyncThunk(
+  "database/fetchProvider",
+  async (_, { rejectWithValue }) => {
+    let payload: unknown;
+    try {
+      payload = await getJson(apiUrls.database.provider, {}, true);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+    if (payload !== null && typeof payload !== "string") {
+      return rejectWithValue("Database provider API returned an invalid provider.");
+    }
+    return payload;
   },
 );
 
@@ -165,7 +183,8 @@ export const fetchDbSchema = createAsyncThunk(
         || !Array.isArray(table.columns)
         || table.columns.some((column) => typeof column.name !== "string"
           || typeof column.dataType !== "string"
-          || typeof column.isPrimaryKey !== "boolean"))
+          || typeof column.isPrimaryKey !== "boolean"
+          || typeof column.isNullable !== "boolean"))
       || payload.relationships.some((relation) => typeof relation.name !== "string"
         || typeof relation.sourceSchema !== "string"
         || typeof relation.sourceTable !== "string"
@@ -238,6 +257,7 @@ const databaseSlice = createSlice({
     directConnectionsEnabled: false,
     connectionOptionsStatus: "idle",
     connectionOptionsError: "",
+    providerCheckStatus: "idle",
     connectionStatus: "idle",
     connectionError: "",
     connectionRequired: false,
@@ -329,7 +349,23 @@ const databaseSlice = createSlice({
         state.connectionOptionsStatus = "failed";
         state.connectionOptionsError = action.payload || action.error.message || "Unable to load connection options.";
       })
+      .addCase(fetchDbProvider.pending, (state) => {
+        state.providerCheckStatus = "loading";
+      })
+      .addCase(fetchDbProvider.fulfilled, (state, action) => {
+        state.providerCheckStatus = "succeeded";
+        state.connectedProvider = action.payload ?? "";
+        state.connectedProfileName = "";
+        state.connectionStatus = action.payload === null ? "idle" : "succeeded";
+        state.connectionError = "";
+        state.connectionRequired = action.payload === null;
+      })
+      .addCase(fetchDbProvider.rejected, (state, action) => {
+        state.providerCheckStatus = "failed";
+        state.connectionError = action.payload || action.error.message || "Unable to check database connection status.";
+      })
       .addCase(connectDatabase.pending, (state, action) => {
+        state.providerCheckStatus = "idle";
         state.connectionStatus = "loading";
         state.connectionError = "";
         state.connectingProvider = "provider" in action.meta.arg ? action.meta.arg.provider : "";

@@ -18,6 +18,7 @@ public sealed class MySqlDbInstance(string connectionString, string[] scriptFile
             TABLE_NAME AS TableName,
             COLUMN_NAME AS ColumnName,
             COLUMN_TYPE AS DataType,
+            CASE WHEN IS_NULLABLE = 'YES' THEN 1 ELSE 0 END AS IsNullable,
             CASE WHEN COLUMN_KEY = 'PRI' THEN 1 ELSE 0 END AS IsPrimaryKey
         FROM information_schema.columns
         WHERE TABLE_SCHEMA = DATABASE()

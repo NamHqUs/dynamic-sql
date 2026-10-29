@@ -12,7 +12,8 @@ public sealed record DatabaseTableDto(
 public sealed record DatabaseColumnDto(
     string Name,
     string DataType,
-    bool IsPrimaryKey);
+    bool IsPrimaryKey,
+    bool IsNullable);
 
 public sealed record DatabaseRelationshipDto(
     string Name,

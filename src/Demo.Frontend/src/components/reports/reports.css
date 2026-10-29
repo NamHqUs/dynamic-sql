@@ -152,8 +152,7 @@
 .report-legend-toggle::before { display: block; font-size: 13px; line-height: 11px; content: "○"; }
 .report-legend-toggle[aria-pressed="true"]::before { content: "●"; }
 .report-legend-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.report-legend-item b { color: #d6d0e6; font: 10px "Manrope",sans-serif; }
-.report-series-legend { display: flex; width: 100%; min-width: 0; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 5px 8px; margin: 0 0 6px; padding: 0 10px; overflow-x: auto; color: #a5adbc; font-size: 10px; white-space: nowrap; scrollbar-width: none; }
-.report-series-legend::-webkit-scrollbar { display: none; }
+.report-series-legend { display: flex; width: 100%; min-width: 0; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 5px 8px; margin: 0 0 6px; padding: 0 10px; overflow-x: auto; color: #a5adbc; font-size: 10px; white-space: nowrap; }
 .report-series-legend::before { margin-right: 2px; color: #d8cff0; content: "Series"; font-size: 10px; font-weight: 750; letter-spacing: .45px; text-transform: uppercase; }
 .report-series-legend > span { display: inline-flex; align-items: center; gap: 4px; }
 .report-series-legend > span::before { display: inline-block; color: currentColor; font-size: 13px; line-height: 10px; content: "●"; }
@@ -162,10 +161,9 @@
 .report-series-legend button::before { display: inline-block; color: currentColor; font-size: 13px; line-height: 10px; content: "○"; }
 .report-series-legend button[aria-pressed="true"]::before { content: "●"; }
 .report-series-legend button:focus-visible,.report-legend-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-.report-chart-composition > .report-legend { display: flex; width: 100%; min-width: 0; flex-wrap: wrap; flex-direction: row; align-items: center; justify-content: center; gap: 4px 10px; margin: 0 10px 4px; overflow-x: auto; color: #a5adbc; font-size: 9px; text-align: center; white-space: nowrap; scrollbar-width: none; }
+.report-chart-composition > .report-legend { display: flex; width: 100%; min-width: 0; flex-wrap: wrap; flex-direction: row; align-items: center; justify-content: center; gap: 4px 10px; margin: 0 10px 4px; overflow-x: auto; color: #a5adbc; font-size: 9px; text-align: center; white-space: nowrap; }
 .report-chart-composition > .report-legend span { display: inline-flex; align-items: center; gap: 4px; }
 .report-chart-composition > .report-legend i { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 2px; }
-.report-chart-composition > .report-legend::-webkit-scrollbar { display: none; }
 .report-detail-chart .report-chart-bar > .report-legend { gap: 6px 12px; font-size: 12px; }
 .report-detail-chart .report-chart-bar > .report-legend i { width: 10px; height: 10px; flex-basis: 10px; }
 .report-detail-chart .report-chart-bar .chart-label,.report-detail-chart .report-series-chart .chart-label { font-size: 9px; }

@@ -18,6 +18,7 @@ public class SqlServerDbInstance(string connectionString, string[] scriptFiles) 
             tables.name AS TableName,
             columns.name AS ColumnName,
             types.name AS DataType,
+            columns.is_nullable AS IsNullable,
             CAST(CASE WHEN primaryKeys.column_id IS NULL THEN 0 ELSE 1 END AS bit) AS IsPrimaryKey
         FROM sys.tables AS tables
         INNER JOIN sys.schemas AS schemas ON schemas.schema_id = tables.schema_id

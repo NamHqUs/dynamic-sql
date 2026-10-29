@@ -17,6 +17,10 @@ public sealed class DatabaseController(
     public ActionResult<DatabaseConnectionOptionsDto> GetConnections()
         => Ok(connectionService.GetConnectionOptions());
 
+    [HttpGet("connections/provider")]
+    public ActionResult<string?> GetDbProvider()
+        => new JsonResult(connectionService.GetCurrentProvider());
+
     [HttpPost("connect")]
     public ActionResult<DatabaseConnectionResponseDto> Connect(
         [FromBody] DatabaseConnectionRequestDto request)

@@ -24,7 +24,7 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
     protected override string SqlGetTableNames
         => "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name;";
 
-    protected override string SqlGetColumns => "SELECT NULL AS SchemaName, NULL AS TableName, NULL AS ColumnName, NULL AS DataType, 0 AS IsPrimaryKey WHERE 1 = 0;";
+    protected override string SqlGetColumns => "SELECT NULL AS SchemaName, NULL AS TableName, NULL AS ColumnName, NULL AS DataType, 0 AS IsNullable, 0 AS IsPrimaryKey WHERE 1 = 0;";
     protected override string SqlGetRelationships => "SELECT NULL AS RelationName, NULL AS SourceSchema, NULL AS SourceTable, NULL AS SourceColumn, NULL AS TargetSchema, NULL AS TargetTable, NULL AS TargetColumn, 0 AS Ordinal, 0 AS IsUnique WHERE 1 = 0;";
 
     public override bool TestConnection()
@@ -61,7 +61,8 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
                 .Select(row => new DatabaseColumnDto(
                     row["name"]?.ToString() ?? string.Empty,
                     row["type"]?.ToString() ?? string.Empty,
-                    Convert.ToInt32(row["pk"]) > 0))
+                    Convert.ToInt32(row["pk"]) > 0,
+                    Convert.ToInt32(row["notnull"]) == 0 && Convert.ToInt32(row["pk"]) == 0))
                 .ToArray();
             tables.Add(new DatabaseTableDto("main", tableName, tableColumns));
 

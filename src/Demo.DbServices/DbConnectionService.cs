@@ -33,6 +33,18 @@ public sealed class DbConnectionService(IConfiguration configuration, DatabaseSe
 
             _directConnectionsEnabled);
 
+    string? IDbConnectionService.GetCurrentProvider()
+    {
+        try
+        {
+            return dbService.CurrentDbInstance.Provider.ToString();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     string IDbConnectionService.Connect(string profile)
     {
         var (provider, connectionString) = _dbOptions.TryGetValue(profile, out var option)

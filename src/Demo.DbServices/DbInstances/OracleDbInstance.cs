@@ -17,6 +17,7 @@ public sealed class OracleDbInstance(string connectionString, string[] scriptFil
             TABLE_NAME AS "TableName",
             COLUMN_NAME AS "ColumnName",
             DATA_TYPE AS "DataType",
+            CASE WHEN NULLABLE = 'Y' THEN 1 ELSE 0 END AS "IsNullable",
             CASE WHEN COLUMN_NAME IN (
                 SELECT primaryColumns.COLUMN_NAME
                 FROM ALL_CONSTRAINTS constraints

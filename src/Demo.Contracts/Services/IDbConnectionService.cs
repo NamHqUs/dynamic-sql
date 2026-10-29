@@ -5,6 +5,9 @@ public interface IDbConnectionService
 {
     IDbConnection CreateConnection();
     DatabaseConnectionOptionsDto GetConnectionOptions();
+
+    string? GetCurrentProvider();
+
     string Connect(string profile);
     void Connect(string provider, string connectionString);
     void Disconnect();

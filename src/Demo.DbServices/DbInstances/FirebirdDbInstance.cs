@@ -17,6 +17,7 @@ public sealed class FirebirdDbInstance(string connectionString, string[] scriptF
             TRIM(relations.RDB$RELATION_NAME) AS "TableName",
             TRIM(fields.RDB$FIELD_NAME) AS "ColumnName",
             TRIM(fieldTypes.RDB$TYPE_NAME) AS "DataType",
+            CAST(CASE WHEN COALESCE(fields.RDB$NULL_FLAG, dataFields.RDB$NULL_FLAG, 0) = 0 THEN 1 ELSE 0 END AS SMALLINT) AS "IsNullable",
             CAST(CASE WHEN primarySegments.RDB$FIELD_NAME IS NULL THEN 0 ELSE 1 END AS SMALLINT) AS "IsPrimaryKey"
         FROM RDB$RELATIONS AS relations
         INNER JOIN RDB$RELATION_FIELDS AS fields

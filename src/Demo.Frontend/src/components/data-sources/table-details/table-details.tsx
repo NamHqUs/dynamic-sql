@@ -91,13 +91,14 @@ export default function TableDetails({ dataLoadingEnabled }: { dataLoadingEnable
             tabIndex={0}
           >
             <div className="table-details-column-head">
-              <span>Column</span><span>Data type</span><span>Key</span>
+              <span>Column</span><span>Data type</span><span>Key</span><span>Nullable</span>
             </div>
             {table.columns.map((column) => (
               <div className="table-details-column" key={column.name}>
                 <span className="table-details-column-name">{column.name}</span>
                 <span className="table-details-column-type">{column.dataType || "—"}</span>
                 <span>{column.isPrimaryKey ? <span className="table-details-key">PRIMARY</span> : "—"}</span>
+                <span>{column.isNullable ? "YES" : "NO"}</span>
               </div>
             ))}
             {table.columns.length === 0 && <p className="database-message">No column metadata is available.</p>}

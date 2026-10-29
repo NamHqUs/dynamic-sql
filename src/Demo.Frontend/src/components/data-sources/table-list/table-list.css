@@ -12,27 +12,6 @@
   max-height: var(--table-list-max-height, calc(100vh - 435px));
   flex: 1 1 auto;
   overflow-y: auto;
-  scrollbar-color: #514476 #11151d;
-  scrollbar-width: thin;
-}
-
-.database-table-list::-webkit-scrollbar {
-  width: 7px;
-}
-
-.database-table-list::-webkit-scrollbar-track {
-  border-radius: 6px;
-  background: #11151d;
-}
-
-.database-table-list::-webkit-scrollbar-thumb {
-  border: 1px solid #11151d;
-  border-radius: 6px;
-  background: linear-gradient(180deg, #806bb1, #514476);
-}
-
-.database-table-list::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #a18ad6, #695a91);
 }
 
 .database-sidebar-heading {

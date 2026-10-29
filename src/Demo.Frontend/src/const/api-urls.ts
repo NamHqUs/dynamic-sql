@@ -5,6 +5,7 @@ export const apiUrls = {
   dataSource: import.meta.env.VITE_DATA_SOURCE_URL || "",
   database: {
     connections: `${backendApiUrl}/db/connections`,
+    provider: `${backendApiUrl}/db/connections/provider`,
     connect: `${backendApiUrl}/db/connect`,
     disconnect: `${backendApiUrl}/db/disconnect`,
     tables: `${backendApiUrl}/db/tables`,

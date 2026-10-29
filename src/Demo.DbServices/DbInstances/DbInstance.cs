@@ -85,7 +85,8 @@ public abstract class DbInstance
                 group.Select(row => new DatabaseColumnDto(
                     Value(row, "ColumnName"),
                     Value(row, "DataType"),
-                    Convert.ToBoolean(row["IsPrimaryKey"])))
+                    Convert.ToBoolean(row["IsPrimaryKey"]),
+                    Convert.ToBoolean(row["IsNullable"])))
                     .ToArray()))
             .ToArray();
 

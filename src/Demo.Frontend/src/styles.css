@@ -1,7 +1,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 
 :root { font-size: 17px; font-family: "Manrope", sans-serif; color: #e9edf4; background: #080a0f; font-synthesis: none; --panel: #10131a; --panel-2: #151923; --line: #252b38; --muted: #8993a5; --purple: #a78bfa; --green: #53d5a1; }
-* { box-sizing: border-box; }
+* { box-sizing: border-box; scrollbar-color: #514476 #11151d; scrollbar-width: thin; }
+*::-webkit-scrollbar { width: 7px; height: 7px; }
+*::-webkit-scrollbar-track { border-radius: 6px; background: #11151d; }
+*::-webkit-scrollbar-thumb { border: 1px solid #11151d; border-radius: 6px; background: linear-gradient(180deg, #806bb1, #514476); }
+*::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #a18ad6, #695a91); }
 body { margin: 0; min-width: 0; background: radial-gradient(circle at 76% -10%, #1b1630 0, transparent 32%), #080a0f; background-attachment: fixed; background-repeat: no-repeat; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
