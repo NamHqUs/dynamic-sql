@@ -35,14 +35,80 @@
   font: 600 11px "Manrope", sans-serif;
 }
 
-.diagram-group-switch {
+.diagram-group-toolbar {
   display: flex;
   flex: 0 0 auto;
-  flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
   padding: 13px 20px 15px;
   border-bottom: 1px solid #252b38;
   background: #11151d;
+}
+
+.diagram-group-switch {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.diagram-layout-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.diagram-auto-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #aeb7c5;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.diagram-auto-range input {
+  appearance: none;
+  display: block;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #424958;
+  border-radius: 999px;
+  background: #252b36;
+  cursor: pointer;
+  transition: background .16s, border-color .16s, box-shadow .16s;
+}
+
+.diagram-auto-range input::before {
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: 3px;
+  border-radius: 50%;
+  background: #aeb7c5;
+  content: "";
+  transition: transform .16s, background .16s;
+}
+
+.diagram-auto-range input:checked {
+  border-color: #8068b5;
+  background: #624b91;
+}
+
+.diagram-auto-range input:checked::before {
+  transform: translateX(14px);
+  background: #fff;
+}
+
+.diagram-auto-range input:focus-visible {
+  outline: 2px solid #b39ae7;
+  outline-offset: 3px;
 }
 
 .diagram-group-button {
@@ -113,7 +179,6 @@
 .diagram-group-dashboard-heading.tone-finance { --diagram-accent: #f0bd68; }
 .diagram-group-button.tone-custom,
 .diagram-group-dashboard-heading.tone-custom { --diagram-accent: #a7b4c8; }
-}
 
 .diagram-group-dashboard-heading {
   --diagram-accent: #a7b4c8;
@@ -445,9 +510,19 @@
     min-width: 0;
   }
 
-  .diagram-group-switch {
+  .diagram-group-toolbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
     padding-right: 12px;
     padding-left: 12px;
+  }
+
+  .diagram-group-switch {
+    flex-basis: 100%;
+  }
+
+  .diagram-layout-controls {
+    margin-left: 0;
   }
 
   .diagram-group-dashboard-heading {
@@ -458,6 +533,5 @@
 
   .diagram-arrange-button {
     padding: 7px;
-    font-size: 0;
   }
 }

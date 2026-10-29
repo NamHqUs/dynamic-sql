@@ -315,6 +315,7 @@ export default function DiagramView() {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [boardSize, setBoardSize] = useState({ width: 720, height: 360 });
   const [layoutSize, setLayoutSize] = useState({ width: 720, height: 360 });
+  const [autoRange, setAutoRange] = useState(true);
   const drag = useRef(null);
   const hasInitialLayoutSize = useRef(false);
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
@@ -328,6 +329,10 @@ export default function DiagramView() {
         setLayoutSize({ width: nextWidth, height: nextHeight });
         hasInitialLayoutSize.current = true;
       }
+      if (autoRange) {
+        setLayoutSize({ width: nextWidth, height: nextHeight });
+        setPositions({});
+      }
       setBoardSize((current) => current.width === nextWidth && current.height === nextHeight
         ? current
         : { width: nextWidth, height: nextHeight });
@@ -339,7 +344,7 @@ export default function DiagramView() {
     });
     observer.observe(scrollElement);
     return () => observer.disconnect();
-  }, [scrollElement]);
+  }, [autoRange, scrollElement]);
 
   const groups = useMemo(() => {
     const grouped = new Map(DOMAIN_ORDER.map((name) => [name, []]));
@@ -426,59 +431,78 @@ export default function DiagramView() {
           <p>Choose a domain to explore its relationships. Drag tables to adjust the layout; expand a table to inspect its columns. Double-click a table header to preview its first 10 rows.</p>
         </div>
       </div>
-      <nav className="diagram-group-switch" aria-label="Diagram table groups">
-        {groups.map((group) => (
-          <button
-            type="button"
-            className={`diagram-group-button tone-${domainTone(group.name)}${activeGroup?.name === group.name ? " active" : ""}`}
-            aria-pressed={activeGroup?.name === group.name}
-            key={group.name}
-            onClick={() => {
-              if (debugUiEnabled) {
-                const nextRelationships = getDiagramRelationships(group, schema.relationships);
-                const nextLayoutData = createLayout(group.tables, nextRelationships, boardSize.width, boardSize.height);
-                const nextLayout = {
-                  cardWidth: nextLayoutData.cardWidth,
-                  cardHeight: nextLayoutData.cardHeight,
-                  positions: Object.fromEntries(nextLayoutData.positions),
-                };
-                console.log("Database diagram render model:", {
-                  schema,
-                  groups,
-                  selectedGroup: group.name,
-                  activeGroup: group,
-                  relationships: nextRelationships,
-                  layout: nextLayout,
-                  tablePositions: nextLayout.positions,
-                  expandedTables,
-                  boardSize,
-                  layoutSize: boardSize,
-                });
-              }
-              setSelectedGroup(group.name);
-              setLayoutSize(boardSize);
-              setPositions({});
-            }}
-          >
-            <span className="diagram-group-mark" aria-hidden="true" />
-            <strong>{group.name}</strong>
-            <span className="diagram-group-count">{group.tables.length}</span>
-          </button>
-        ))}
-      </nav>
-      <div className="diagram-scroll" ref={setScrollElement}>
-        <div className="diagram-board" style={boardSize}>
-          <div className="diagram-board-tools">
+      <div className="diagram-group-toolbar">
+        <nav className="diagram-group-switch" aria-label="Diagram table groups">
+          {groups.map((group) => (
             <button
               type="button"
-              className="diagram-arrange-button"
+              className={`diagram-group-button tone-${domainTone(group.name)}${activeGroup?.name === group.name ? " active" : ""}`}
+              aria-pressed={activeGroup?.name === group.name}
+              key={group.name}
               onClick={() => {
+                if (debugUiEnabled) {
+                  const nextRelationships = getDiagramRelationships(group, schema.relationships);
+                  const nextLayoutData = createLayout(group.tables, nextRelationships, boardSize.width, boardSize.height);
+                  const nextLayout = {
+                    cardWidth: nextLayoutData.cardWidth,
+                    cardHeight: nextLayoutData.cardHeight,
+                    positions: Object.fromEntries(nextLayoutData.positions),
+                  };
+                  console.log("Database diagram render model:", {
+                    schema,
+                    groups,
+                    selectedGroup: group.name,
+                    activeGroup: group,
+                    relationships: nextRelationships,
+                    layout: nextLayout,
+                    tablePositions: nextLayout.positions,
+                    expandedTables,
+                    boardSize,
+                    layoutSize: boardSize,
+                  });
+                }
+                setSelectedGroup(group.name);
                 setLayoutSize(boardSize);
                 setPositions({});
               }}
             >
-              <Icon name="reset" size={14} /> Auto arrange
+              <span className="diagram-group-mark" aria-hidden="true" />
+              <strong>{group.name}</strong>
+              <span className="diagram-group-count">{group.tables.length}</span>
             </button>
+          ))}
+        </nav>
+        <div className="diagram-layout-controls">
+          <label className="diagram-auto-range">
+            <input
+              type="checkbox"
+              checked={autoRange}
+              onChange={(event) => {
+                const enabled = event.target.checked;
+                setAutoRange(enabled);
+                if (enabled) {
+                  setLayoutSize(boardSize);
+                  setPositions({});
+                }
+              }}
+            />
+            <span>Auto</span>
+          </label>
+          <button
+            type="button"
+            className="diagram-arrange-button"
+            onClick={() => {
+              setLayoutSize(boardSize);
+              setPositions({});
+            }}
+          >
+            <Icon name="reset" size={14} /> Arrange
+          </button>
+        </div>
+      </div>
+      <div className="diagram-scroll" ref={setScrollElement}>
+        <div className="diagram-board" style={boardSize}>
+          <div className="diagram-board-tools">
             <div className="diagram-legend" aria-label="Diagram legend">
               <span><span className="diagram-column-key primary"><Icon name="key" size={13} /></span><span>Primary key</span></span>
               <span><b>1:1</b><span>One-to-one</span></span>
