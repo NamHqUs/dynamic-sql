@@ -267,6 +267,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const [isNewBlankQuery, setIsNewBlankQuery] = useState(false);
   const [requestName, setRequestName] = useState("");
   const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [selectedRequestIsBuiltin, setSelectedRequestIsBuiltin] = useState(false);
   const [queryRequestNotice, setQueryRequestNotice] = useState("");
   const [requestNameError, setRequestNameError] = useState("");
@@ -474,6 +475,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const startNewRequest = () => {
     updateRequestRoute(null);
     setSelectedRequestName(null);
+    setSelectedRequestId(null);
     setSelectedContextIndex(null);
     setIsNewBlankQuery(true);
     setSelectedRequestIsBuiltin(false);
@@ -502,6 +504,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     setRequestName(savedRequest.mainQuery.name);
     setRequestNameError("");
     setSelectedRequestName(savedRequest.mainQuery.name);
+    setSelectedRequestId(savedRequest.mainQuery.id);
     setSelectedRequestIsBuiltin(savedRequest.isBuiltin);
     setQueryRequestNotice("");
   };
@@ -522,11 +525,17 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     setQueryRequestNotice("");
     setIsSavingQuery(true);
     try {
-      const resultAction = await dispatch(saveQueryRequest({ name, definition: currentDefinition }));
+      const resultAction = await dispatch(saveQueryRequest({
+        name,
+        definition: currentDefinition,
+        id: selectedRequestIsBuiltin ? undefined : selectedRequestId ?? undefined,
+      }));
       if (saveQueryRequest.fulfilled.match(resultAction)) {
-        setSelectedRequestName(resultAction.payload);
+        setSelectedRequestId(resultAction.payload.mainQuery.id);
+        setSelectedRequestName(resultAction.payload.mainQuery.name);
         setSelectedRequestIsBuiltin(false);
-        setRequestName(resultAction.payload);
+        setRequestName(resultAction.payload.mainQuery.name);
+        updateRequestRoute(resultAction.payload.mainQuery.name);
         setQueryRequestNotice("Query saved.");
       }
     } finally {
@@ -535,7 +544,7 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   };
   const saveCurrentRequest = () => void persistCurrentRequest(definition);
   const removeCurrentRequest = async () => {
-    if (!selectedRequestName || selectedRequestIsBuiltin) return;
+    if (!selectedRequestName || !selectedRequestId || selectedRequestIsBuiltin) return;
     const action = await showMessageBox({
       eyebrow: "DELETE SAVED QUERY",
       title: `Delete “${selectedRequestName}”?`,
@@ -546,12 +555,11 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
       ],
     });
     if (action !== "delete") return;
-    const saved = queryRequests.find((request) => request.mainQuery.name === selectedRequestName);
-    if (!saved) return;
-    const resultAction = await dispatch(deleteQueryRequest({ name: selectedRequestName, id: saved.id }));
+    const resultAction = await dispatch(deleteQueryRequest({ id: selectedRequestId }));
     if (deleteQueryRequest.fulfilled.match(resultAction)) {
       updateRequestRoute(null);
       setSelectedRequestName(null);
+      setSelectedRequestId(null);
       setSelectedContextIndex(null);
       setSelectedRequestIsBuiltin(false);
       setRequestName("");

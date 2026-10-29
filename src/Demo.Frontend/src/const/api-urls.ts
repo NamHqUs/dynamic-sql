@@ -38,6 +38,7 @@ export const apiUrls = {
   },
   queryRequests: {
     list: `${backendApiUrl}/query-request`,
-    byName: (name: string) => `${backendApiUrl}/query-request/${encodeURIComponent(name)}`,
+    create: `${backendApiUrl}/query-request`,
+    byId: (id: string) => `${backendApiUrl}/query-request/${encodeURIComponent(id)}`,
   },
 } as const;

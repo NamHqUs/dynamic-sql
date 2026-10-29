@@ -30,7 +30,7 @@ public abstract class FileRepositoryBase<T> : IRepository<T>
     public abstract void Save(string userSectionId, T item);
     public abstract bool Delete(string userSectionId, string id);
 
-    public string CreateId(string userSectionId)
+    public virtual string CreateId(string userSectionId)
     {
         string id;
         do

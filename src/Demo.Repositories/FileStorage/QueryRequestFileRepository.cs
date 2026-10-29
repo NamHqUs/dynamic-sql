@@ -1,6 +1,8 @@
 using Demo.Contracts.Repositories;
 using Demo.Contracts.Dto;
 using Namh.Data.DynamicSql;
+using System.Globalization;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -13,12 +15,25 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
 {
     private const string FOLDER_NAME = "QueryRequests";
     private const string FILE_EXTENSION = ".json";
+    private const string ID_CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static readonly JsonSerializerOptions JSON_OPTIONS = new()
     {
         PropertyNameCaseInsensitive = true,
         WriteIndented = true,
         Converters = { new JsonStringEnumConverter() }
     };
+
+    public override string CreateId(string userSectionId)
+    {
+        string id;
+        do
+        {
+            id = $"{DateTime.UtcNow.ToString("yy-MM-dd-HH-mm-ss", CultureInfo.InvariantCulture)}-{RandomNumberGenerator.GetString(ID_CHARACTERS, 8)}";
+        }
+        while (File.Exists(GetUserFilePath(userSectionId, id)));
+
+        return id;
+    }
 
     public override IReadOnlyCollection<QueryDto> GetBuiltin()
     {

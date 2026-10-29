@@ -693,7 +693,7 @@ function getSavedProjectionRows(definition: QueryDefinition): string[][] {
   return rows.filter((row) => row.length).map((row) => [...row]);
 }
 
-function toApiSavedRequest(request: { name: string; definition: QueryDefinition }): ApiQueryDto {
+function toApiSavedRequest(request: { name: string; definition: QueryDefinition; id?: string }): ApiQueryDto {
   const apiQuery = createApiQuery(request.definition);
   const rows = getSavedProjectionRows(request.definition);
   const projection = rows.flatMap((row, rowIndex) => [
@@ -724,10 +724,10 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition 
   collectContexts(apiQuery.contexts ?? []);
   const contextIds = new Map<string, string>();
   allContexts.forEach((context, index) => {
-    contextIds.set(context.id ?? `reference-${index}`, context.id ?? `${request.name}-context-${index}`);
+    contextIds.set(context.id ?? `reference-${index}`, context.id ?? `${request.id ?? request.name}-context-${index}`);
   });
   const getContextId = (context: ApiQueryContextDefinition) => contextIds.get(context.id ?? "")
-    ?? `${request.name}-context-${allContexts.indexOf(context)}`;
+    ?? `${request.id ?? request.name}-context-${allContexts.indexOf(context)}`;
   const toStoredContext = (context: ApiQueryContextDefinition) => ({
     id: getContextId(context),
     name: context.name,
@@ -756,7 +756,7 @@ function toApiSavedRequest(request: { name: string; definition: QueryDefinition 
 
   return {
     mainQuery: {
-      id: request.name,
+      id: request.id ?? "",
       name: request.name,
       entity: apiQuery.entity,
       projection,
@@ -1029,14 +1029,21 @@ export const fetchQueryRequests = createAsyncThunk(
 
 export const saveQueryRequest = createAsyncThunk(
   "queryBuilder/saveQueryRequest",
-  async ({ name, definition }: { name: string; definition: QueryDefinition }, { rejectWithValue }) => {
+  async ({ name, definition, id }: { name: string; definition: QueryDefinition; id?: string }, { rejectWithValue }) => {
     try {
-      await requestJson(apiUrls.queryRequests.byName(name), {
-        method: "PUT",
+      const saved = await requestJson(id ? apiUrls.queryRequests.byId(id) : apiUrls.queryRequests.create, {
+        method: id ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(toApiSavedRequest({ name, definition })),
+        body: JSON.stringify(toApiSavedRequest({ name, definition, id })),
       });
-      return name;
+      if (!saved?.mainQuery
+        || typeof saved.mainQuery.id !== "string"
+        || typeof saved.mainQuery.name !== "string"
+        || typeof saved.mainQuery.entity !== "string"
+        || !Array.isArray(saved.mainQuery.projection)) {
+        throw new Error("Query request API must return the saved query request.");
+      }
+      return saved as ApiQueryDto;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to save query.");
     }
@@ -1045,10 +1052,10 @@ export const saveQueryRequest = createAsyncThunk(
 
 export const deleteQueryRequest = createAsyncThunk(
   "queryBuilder/deleteQueryRequest",
-  async ({ name, id }: { name: string; id: string }, { rejectWithValue }) => {
+  async ({ id }: { id: string }, { rejectWithValue }) => {
     try {
-      await requestJson(apiUrls.queryRequests.byName(id), { method: "DELETE" });
-      return name;
+      await requestJson(apiUrls.queryRequests.byId(id), { method: "DELETE" });
+      return id;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : "Unable to delete query.");
     }
@@ -1232,18 +1239,15 @@ const queryBuilderSlice = createSlice({
         state.queryRequestsError = "";
         state.queryRequestsStatus = "succeeded";
         state.queryRequests = state.queryRequests.filter((item) =>
-          item.isBuiltin || item.mainQuery.name.toLowerCase() !== action.payload.toLowerCase());
-        state.queryRequests.unshift(toApiSavedRequest({
-          name: action.payload,
-          definition: action.meta.arg.definition,
-        }));
+          item.isBuiltin || item.mainQuery.id !== action.payload.mainQuery.id);
+        state.queryRequests.unshift(action.payload);
       })
       .addCase(saveQueryRequest.rejected, (state, action) => {
         state.queryRequestsError = String(action.payload || action.error.message || "Unable to save query.");
       })
       .addCase(deleteQueryRequest.fulfilled, (state, action) => {
         state.queryRequests = state.queryRequests.filter((item) =>
-          item.mainQuery.name.toLowerCase() !== action.payload.toLowerCase());
+          item.mainQuery.id !== action.payload);
       })
       .addCase(deleteQueryRequest.rejected, (state, action) => {
         state.queryRequestsError = String(action.payload || action.error.message || "Unable to delete query.");
