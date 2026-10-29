@@ -11,8 +11,6 @@
 .report-detail-section-heading > span { color: #858fa1; font: 11px "Manrope",sans-serif; }
 .report-detail-chart-controls { display: flex; align-items: flex-end; gap: 14px; }
 .report-detail-chart-controls > span { padding-bottom: 7px; color: #858fa1; font: 11px "Manrope",sans-serif; }
-.report-detail-apply-status { margin: -4px 0 12px; color: #8dd9bc; font-size: 11px; text-align: right; }
-.report-detail-apply-status[role="alert"] { color: #f0adb5; }
 .report-mode-switch { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid #303847; border-radius: 5px; background: #0e1117; }
 .report-mode-switch button { padding: 5px 10px; border: 0; border-radius: 3px; color: #929cad; background: transparent; font-size: 12px; cursor: pointer; }
 .report-mode-switch button[aria-pressed="true"] { color: #e0d7f3; background: #292340; }

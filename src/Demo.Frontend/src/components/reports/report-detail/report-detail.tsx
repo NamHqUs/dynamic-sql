@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Icon from "../../icon/icon";
+import ToastNotice from "../../toast-notice/toast-notice";
 import type { QueryResult, ReportDto } from "../../query-builder/query-design/query-builder-slice";
 import {
   categoryTone,
@@ -164,7 +165,11 @@ export default function ReportDetail({
               </label>}
             </div>
           </div>
-          {applyStatus && <p className="report-detail-apply-status" role={applyStatus.isError ? "alert" : "status"}>{applyStatus.message}</p>}
+          <ToastNotice
+            message={applyStatus?.message}
+            isError={Boolean(applyStatus?.isError)}
+            onDismiss={() => setApplyStatus(null)}
+          />
           {mode === "edit" && result && <div className="report-detail-edit-area" aria-label="Edit chart settings">
             <ReportChartSettingsPanel
             report={report}

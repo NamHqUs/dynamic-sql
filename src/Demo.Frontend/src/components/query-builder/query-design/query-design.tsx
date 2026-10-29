@@ -270,19 +270,25 @@ export default function QueryDesign({
         >
           <Icon name="query" size={14} /> Main Query
         </button>
-        {contextDefinitions.map((context, index) => <div className="query-context-tab-wrap" key={`${context.id ?? context.name}-${index}`}>
-          <button
-            type="button"
-            className={`query-context-tab${selectedContextIndex === index ? " selected" : ""}`}
-            aria-pressed={selectedContextIndex === index}
-            onClick={() => onSelectContext(index)}
-          >
-            <Icon name="table" size={14} /> {context.name}
-          </button>
-          <button type="button" className="query-context-delete" aria-label={`Delete ${context.name} context`} title={`Delete ${context.name} context`} onClick={() => onDeleteContext(index)}>
-            <Icon name="close" size={12} />
-          </button>
-        </div>)}
+        {contextDefinitions.map((context, index) => {
+          const contextError = context.query.entity.trim() ? null : "Select an entity.";
+          return <div className="query-context-tab-wrap" key={`${context.id ?? context.name}-${index}`}>
+            <button
+              type="button"
+              className={`query-context-tab${selectedContextIndex === index ? " selected" : ""}`}
+              aria-pressed={selectedContextIndex === index}
+              aria-label={contextError ? `${context.name}: ${contextError}` : undefined}
+              title={contextError ? `${context.name}: ${contextError}` : undefined}
+              onClick={() => onSelectContext(index)}
+            >
+              <Icon name="table" size={14} /> {context.name}
+              {contextError && <span className="query-context-error-indicator" aria-hidden="true">!</span>}
+            </button>
+            <button type="button" className="query-context-delete" aria-label={`Delete ${context.name} context`} title={`Delete ${context.name} context`} onClick={() => onDeleteContext(index)}>
+              <Icon name="close" size={12} />
+            </button>
+          </div>;
+        })}
       </nav>}
       <div className="query-name-row">
         <div className="query-name-field">

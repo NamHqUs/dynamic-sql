@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "../../icon/icon";
+import ToastNotice from "../../toast-notice/toast-notice";
 import type { QueryResult, ReportDto } from "../../query-builder/query-design/query-builder-slice";
 import ReportDetail from "../report-detail/report-detail";
 import ReportItem from "../report-item/report-item";
@@ -211,7 +212,7 @@ export default function ReportDashboard({
             <div><span className="eyebrow">REPORT DASHBOARD</span><h3>{category}</h3><p>{filteredReports.length} {filteredReports.length === 1 ? "report" : "reports"}{search ? " matching your search" : " for this sales question"}</p></div>
             <label className="report-search group-report-search"><Icon name="search" size={14} /><input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Find a report in this group…" /></label>
           </div>
-          {message && <div className={`report-toast${messageIsError ? " error" : ""}`} role={messageIsError ? "alert" : "status"}>{message}<button type="button" aria-label="Dismiss" onClick={onDismissMessage}><Icon name="close" size={13} /></button></div>}
+          <ToastNotice message={message} isError={messageIsError} onDismiss={onDismissMessage} />
           {reportsStatus === "loading" && <p className="report-list-status">Loading your reports…</p>}
           {reportsStatus === "failed" && <p className="report-list-status error" role="alert">{reportsError}</p>}
           {metadataStatus === "failed" && <p className="report-metadata-error" role="alert">Could not load report datasets: {metadataError}</p>}

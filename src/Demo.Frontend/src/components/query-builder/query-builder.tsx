@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 import Icon from "../icon/icon";
 import { useMessageBox } from "../message-box/message-box";
 import PanelSplitter from "../panel-splitter/panel-splitter";
+import ToastNotice from "../toast-notice/toast-notice";
 import { ApiQueryContextDefinition, createApiQuery, deleteQueryRequest, executeQuery, fetchFilterOperators, fetchFunctionDefinitions, fetchQueryMetadata, fetchQueryRequests, fromApiQuery, fromApiQueryDefinition, getSqlStatement, IFieldDefinition, MetadataEntity, MetadataField, QueryDefinition, QueryFilterGroup, QueryFilterNode, saveQueryRequest, toQueryBuilderSavedView } from "./query-design/query-builder-slice";
 import QueryDesign from "./query-design/query-design";
 import QueryResult from "./query-result/query-result";
@@ -263,9 +264,11 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
   const savedQueriesPanel = useResizablePanel("query-builder-saved-queries");
   const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, filterOperators, filterOperatorsStatus, filterOperatorsError, queryRequests, queryRequestsStatus, queryRequestsError, debugUiEnabled } = useSelector((state: RootState) => state.queryBuilder);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
+  const [requestName, setRequestName] = useState("");
+  const boundModelRef = useRef(JSON.stringify({ definition, requestName }));
+  const hasUnsavedChanges = JSON.stringify({ definition, requestName }) !== boundModelRef.current;
   const [selectedContextIndex, setSelectedContextIndex] = useState<number | null>(null);
   const [isNewBlankQuery, setIsNewBlankQuery] = useState(false);
-  const [requestName, setRequestName] = useState("");
   const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [selectedRequestIsBuiltin, setSelectedRequestIsBuiltin] = useState(false);
@@ -472,54 +475,11 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
     }
   };
 
-  const startNewRequest = () => {
-    updateRequestRoute(null);
-    setSelectedRequestName(null);
-    setSelectedRequestId(null);
-    setSelectedContextIndex(null);
-    setIsNewBlankQuery(true);
-    setSelectedRequestIsBuiltin(false);
-    setRequestName("");
-    setRequestNameError("");
-    setQueryRequestNotice("");
-    const nextDefinition = createDefinition("");
-    updateDefinition(nextDefinition);
-  };
-
-  const selectSavedRequest = (
-    savedRequest: (typeof queryRequests)[number],
-    updateRoute = true,
-  ) => {
-    if (debugUiEnabled) console.log("Saved Query Request:", savedRequest);
-    const savedView = toQueryBuilderSavedView(savedRequest);
-    if (updateRoute) updateRequestRoute(savedRequest.mainQuery.name);
-    setSelectedContextIndex(null);
-    setIsNewBlankQuery(false);
-    updateDefinition({
-      ...fromApiQuery(
-        savedView.query,
-        savedView.projectionRows,
-      ),
-    });
-    setRequestName(savedRequest.mainQuery.name);
-    setRequestNameError("");
-    setSelectedRequestName(savedRequest.mainQuery.name);
-    setSelectedRequestId(savedRequest.mainQuery.id);
-    setSelectedRequestIsBuiltin(savedRequest.isBuiltin);
-    setQueryRequestNotice("");
-  };
-  useEffect(() => {
-    const requestedName = searchParams.get("request");
-    if (!requestedName || selectedRequestName === requestedName) return;
-    const savedRequest = queryRequests.find((request) => request.mainQuery.name === requestedName);
-    if (savedRequest) selectSavedRequest(savedRequest, false);
-  }, [queryRequests, searchParams, selectedRequestName]);
-
   const persistCurrentRequest = async (currentDefinition: QueryDefinition) => {
     const name = requestName.trim();
     if (!name) {
       setRequestNameError("Enter a query name before saving.");
-      return;
+      return false;
     }
     setRequestNameError("");
     setQueryRequestNotice("");
@@ -537,11 +497,77 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
         setRequestName(resultAction.payload.mainQuery.name);
         updateRequestRoute(resultAction.payload.mainQuery.name);
         setQueryRequestNotice("Query saved.");
+        boundModelRef.current = JSON.stringify({
+          definition: currentDefinition,
+          requestName: resultAction.payload.mainQuery.name,
+        });
+        return true;
       }
+      return false;
     } finally {
       setIsSavingQuery(false);
     }
   };
+  const confirmModelReplacement = async () => {
+    if (!hasUnsavedChanges) return true;
+    const action = await showMessageBox({
+      eyebrow: "UNSAVED QUERY",
+      title: "Save your query changes?",
+      message: "Save your changes before continuing, discard them, or stay here to keep editing.",
+      actions: [
+        { value: "stay", label: "Stay here", variant: "secondary" },
+        { value: "discard", label: "Discard changes", variant: "secondary" },
+        { value: "save", label: "Save changes", variant: "primary" },
+      ],
+    });
+    if (action === "save") return persistCurrentRequest(definition);
+    return action === "discard";
+  };
+  const startNewRequest = async () => {
+    if (!(await confirmModelReplacement())) return;
+    updateRequestRoute(null);
+    setSelectedRequestName(null);
+    setSelectedRequestId(null);
+    setSelectedContextIndex(null);
+    setIsNewBlankQuery(true);
+    setSelectedRequestIsBuiltin(false);
+    setRequestName("");
+    setRequestNameError("");
+    setQueryRequestNotice("");
+    const nextDefinition = createDefinition("");
+    boundModelRef.current = JSON.stringify({ definition: nextDefinition, requestName: "" });
+    updateDefinition(nextDefinition);
+  };
+  const selectSavedRequest = async (
+    savedRequest: (typeof queryRequests)[number],
+    updateRoute = true,
+  ) => {
+    if (!(await confirmModelReplacement())) return;
+    if (debugUiEnabled) console.log("Saved Query Request:", savedRequest);
+    const savedView = toQueryBuilderSavedView(savedRequest);
+    const nextDefinition = fromApiQuery(savedView.query, savedView.projectionRows);
+    if (updateRoute) updateRequestRoute(savedRequest.mainQuery.name);
+    setSelectedContextIndex(null);
+    setIsNewBlankQuery(false);
+    boundModelRef.current = JSON.stringify({
+      definition: nextDefinition,
+      requestName: savedRequest.mainQuery.name,
+    });
+    updateDefinition(nextDefinition);
+    setRequestName(savedRequest.mainQuery.name);
+    setRequestNameError("");
+    setSelectedRequestName(savedRequest.mainQuery.name);
+    setSelectedRequestId(savedRequest.mainQuery.id);
+    setSelectedRequestIsBuiltin(savedRequest.isBuiltin);
+    setQueryRequestNotice("");
+  };
+  useEffect(() => {
+    const requestedName = searchParams.get("request");
+    if (!requestedName || selectedRequestName === requestedName) return;
+    const savedRequest = queryRequests.find((request) => request.mainQuery.name === requestedName);
+    if (savedRequest) void selectSavedRequest(savedRequest, false);
+  }, [queryRequests, searchParams, selectedRequestName]);
+
   const saveCurrentRequest = () => void persistCurrentRequest(definition);
   const removeCurrentRequest = async () => {
     if (!selectedRequestName || !selectedRequestId || selectedRequestIsBuiltin) return;
@@ -586,22 +612,25 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
         </div>
         <div className="heading-actions">
           {onBackToReports && <button className="button secondary" onClick={onBackToReports}><Icon name="arrow-left" size={14} /> Back to reports</button>}
-          <button className="button secondary" onClick={startNewRequest}>
-            <Icon name="plus" size={14} /> New Query
-          </button>
           {!selectedRequestIsBuiltin && <>
-            {selectedRequestName && <button className="button secondary" onClick={() => void removeCurrentRequest()}>
-              <Icon name="trash" size={14} /> Delete Query
+            {selectedRequestName && <button type="button" className="button secondary query-icon-button query-delete-button" aria-label="Delete query" title="Delete query" onClick={() => void removeCurrentRequest()}>
+              <Icon name="trash" size={16} />
             </button>}
-            <button type="button" className="button primary query-save-button" onClick={() => void saveCurrentRequest()} disabled={queryStatus === "loading" || isSavingQuery}>
-              <Icon name="check" size={14} /> {isSavingQuery ? "Saving..." : "Save Query"}
+            <button type="button" className="button primary query-icon-button query-save-button" aria-label={isSavingQuery ? "Saving query" : "Save query"} title={isSavingQuery ? "Saving query..." : "Save query"} onClick={() => void saveCurrentRequest()} disabled={queryStatus === "loading" || isSavingQuery}>
+              <Icon name="save" size={17} />
             </button>
           </>}
+          <button type="button" className="button secondary query-icon-button query-new-button" aria-label="New query" title="New query" onClick={startNewRequest}>
+            <Icon name="file-plus" size={17} />
+          </button>
+          <ToastNotice
+            key={queryRequestsStatus}
+            message={queryRequestsError || queryRequestNotice}
+            isError={Boolean(queryRequestsError)}
+            placement="anchor"
+          />
         </div>
       </section>
-      {(queryRequestsError || queryRequestNotice) && <p className={`query-request-feedback${queryRequestsError ? " error" : ""}`} role={queryRequestsError ? "alert" : "status"}>
-        {queryRequestsError || queryRequestNotice}
-      </p>}
 
       <section className="query-section query-design-section" aria-label="Section 1: Design">
         <div className={`query-design-workspace split-workspace${savedQueriesPanel.collapsed ? " panel-collapsed" : ""}`} style={savedQueriesPanel.style}>
