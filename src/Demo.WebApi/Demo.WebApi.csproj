@@ -19,6 +19,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\Demo.DbServices\Demo.DbServices.csproj" />
 		<ProjectReference Include="..\Demo.Services\Demo.Services.csproj" />
 		<ProjectReference Include="..\Demo.Repositories\Demo.Repositories.csproj" />
 	</ItemGroup>

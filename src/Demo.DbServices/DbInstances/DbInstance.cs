@@ -1,14 +1,17 @@
-﻿using System.Data;
+﻿using Demo.Contracts.Dto;
+using Demo.Contracts.Services;
+using System.Data;
 using System.Data.Common;
-using Demo.Contracts.Dto;
+using System.Globalization;
 
-namespace Demo.Repositories.DataProviders;
+namespace Demo.DbServices.DbInstances;
 
-public abstract class DbProviderBase(string[] scriptFiles)
+public abstract class DbInstance 
 {
-    private static readonly object oLock = new();
-    private static bool _initialized = false;
+    private static HashSet<string> _initializeDbs = [];
+    private static object _initializationLock = new();
 
+    protected readonly string ConnectionString;
     protected abstract string? SqlScriptCheckIfDbExists { get; }
     protected abstract string SqlGetTableNames { get; }
     protected abstract string SqlGetColumns { get; }
@@ -16,24 +19,37 @@ public abstract class DbProviderBase(string[] scriptFiles)
     protected virtual string IdentifierQuotePrefix => "\"";
     protected virtual string IdentifierQuoteSuffix => "\"";
 
-    public virtual IDbConnection GetDbConnection()
+    protected DbInstance(string connectionString, string[] scriptFields)
     {
-        var cn = CreateDbConnection();
-        lock (oLock)
+        ConnectionString = connectionString;
+        lock (_initializationLock)
         {
-            if (!_initialized  
-                && (string.IsNullOrEmpty(SqlScriptCheckIfDbExists) 
-                        || ExecuteScalar<long>(cn, SqlScriptCheckIfDbExists) != 1))
-                    InitializeDb(cn);
-
-            _initialized = true;
+        if (_initializeDbs.Add(connectionString))
+                EnsureDatabaseExists(scriptFields);
         }
-        return cn;
     }
 
-    public string[] GetTableNames()
+    public abstract IDbConnection CreateDbConnection();
+
+    protected virtual void EnsureDatabaseExists(string[] scriptFiles)
     {
-        using var connection = GetDbConnection();
+        if (string.IsNullOrEmpty(SqlScriptCheckIfDbExists))
+            return;
+
+        using var cn = CreateDbConnection();
+        if (ExecuteScalar<long>(cn, SqlScriptCheckIfDbExists) != 1)
+        {
+            foreach (var fileName in scriptFiles)
+            {
+                var filePath = Path.Combine(Environment.CurrentDirectory, fileName);
+                var scripts = File.ReadAllText(filePath);
+                ExecuteNonQuery(cn, scripts);
+            }
+        }
+    }
+    public virtual string[] GetTableNames()
+    {
+        using var connection = CreateDbConnection();
         if (connection.State != ConnectionState.Open)
             connection.Open();
 
@@ -49,7 +65,7 @@ public abstract class DbProviderBase(string[] scriptFiles)
 
     public virtual DatabaseSchemaDto GetDatabaseSchema()
     {
-        using var connection = GetDbConnection();
+        using var connection = CreateDbConnection();
         if (connection.State != ConnectionState.Open)
             connection.Open();
 
@@ -96,13 +112,50 @@ public abstract class DbProviderBase(string[] scriptFiles)
         return new DatabaseSchemaDto(tables, relationDtos);
     }
 
-    public string QuoteIdentifier(string identifier)
+    public DatabaseTableDataDto GetTableData(string tableName, string? schema = null, int? limit = null)
     {
-        var escapedIdentifier = identifier.Replace(IdentifierQuoteSuffix, IdentifierQuoteSuffix + IdentifierQuoteSuffix);
-        return $"{IdentifierQuotePrefix}{escapedIdentifier}{IdentifierQuoteSuffix}";
-    }
+        ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+        if (limit is <= 0)
+            throw new ArgumentOutOfRangeException(nameof(limit), "The row limit must be greater than zero.");
+        var rowLimit = Math.Min(limit ?? 10, 10);
 
-    protected abstract IDbConnection CreateDbConnection();
+        var matchingTables = GetDatabaseSchema().Tables.Where(table =>
+            string.Equals(table.Name, tableName, StringComparison.OrdinalIgnoreCase)
+            && (string.IsNullOrWhiteSpace(schema)
+                || string.Equals(table.Schema, schema, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        if (matchingTables.Length == 0)
+            throw new KeyNotFoundException($"Table '{tableName}' was not found.");
+        if (matchingTables.Length > 1)
+            throw new ArgumentException($"Table name '{tableName}' is ambiguous. Specify a schema.", nameof(tableName));
+
+        var selectedTable = matchingTables[0];
+        using var connection = CreateDbConnection();
+        if (connection.State != ConnectionState.Open)
+            connection.Open();
+        using var command = connection.CreateCommand();
+        var qualifiedName = QuoteIdentifier(selectedTable.Name);
+        if (!string.IsNullOrWhiteSpace(selectedTable.Schema))
+            qualifiedName = $"{QuoteIdentifier(selectedTable.Schema)}.{qualifiedName}";
+        command.CommandText = $"SELECT * FROM {qualifiedName}";
+        using var reader = command.ExecuteReader();
+
+        var columns = Enumerable.Range(0, reader.FieldCount)
+            .Select(reader.GetName)
+            .ToArray();
+        var rows = new List<IReadOnlyList<string>>();
+        while (rows.Count < rowLimit && reader.Read())
+        {
+            var row = new string[reader.FieldCount];
+            for (var index = 0; index < reader.FieldCount; index++)
+                row[index] = reader.IsDBNull(index)
+                    ? string.Empty
+                    : Convert.ToString(reader.GetValue(index), CultureInfo.InvariantCulture) ?? string.Empty;
+            rows.Add(row);
+        }
+
+        return new DatabaseTableDataDto(selectedTable.Name, columns, rows);
+    }
 
     protected virtual DataTable ReadSchemaRows(DbConnection connection, string sql)
     {
@@ -116,15 +169,9 @@ public abstract class DbProviderBase(string[] scriptFiles)
 
     private static string Value(DataRow row, string columnName)
         => row[columnName]?.ToString() ?? string.Empty;
-    private void InitializeDb(IDbConnection cn)
-    {
-        foreach (var fileName in scriptFiles)
-        {
-            var filePath = Path.Combine(Environment.CurrentDirectory, fileName);
-            var scripts = File.ReadAllText(filePath);
-            ExecuteNonQuery(cn, scripts);
-        }
-    }
+
+    private string QuoteIdentifier(string identifier)
+        => $"{IdentifierQuotePrefix}{identifier.Replace(IdentifierQuoteSuffix, IdentifierQuoteSuffix + IdentifierQuoteSuffix, StringComparison.Ordinal)}{IdentifierQuoteSuffix}";
 
     private static T ExecuteScalar<T>(IDbConnection cn, string sql)
     {
@@ -143,4 +190,5 @@ public abstract class DbProviderBase(string[] scriptFiles)
         cmd.CommandText = sql;
         cmd.ExecuteNonQuery();
     }
+
 }

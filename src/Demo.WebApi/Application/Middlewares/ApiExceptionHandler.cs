@@ -1,5 +1,7 @@
+using Demo.Contracts.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using System.Data.Common;
 using System.Text.Json;
 
 namespace Demo.WebApi.Application.Middlewares;
@@ -13,6 +15,8 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger) : I
     {
         var (statusCode, title) = exception switch
         {
+            DatabaseConnectionException or DbException =>
+                (StatusCodes.Status503ServiceUnavailable, "Database connection required"),
             KeyNotFoundException => (StatusCodes.Status404NotFound, "Not Found"),
             ArgumentException or FormatException or JsonException =>
                 (StatusCodes.Status400BadRequest, "Bad Request"),
@@ -24,13 +28,18 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger) : I
 
         logger.LogWarning(exception, "Handled API exception: {Title}", title);
         httpContext.Response.StatusCode = statusCode;
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        var problem = new ProblemDetails
         {
             Status = statusCode,
             Title = title,
-            Detail = exception.Message,
+            Detail = exception is DatabaseConnectionException
+                ? exception.Message
+                : DatabaseConnectionException.UserMessage,
             Instance = httpContext.Request.Path
-        }, cancellationToken);
+        };
+        if (exception is DatabaseConnectionException or DbException)
+            problem.Extensions["code"] = "database_connection_required";
+        await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
         return true;
     }
 }

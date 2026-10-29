@@ -71,6 +71,18 @@
   background: #9e84ed24;
 }
 
+.database-section-tabs button.database-disconnect {
+  margin-left: 5px;
+  border-color: #ffffff10;
+  color: #a6aabb;
+}
+
+.database-section-tabs button.database-disconnect:hover {
+  border-color: #f0a6ae4d;
+  color: #f0a6ae;
+  background: #f0a6ae12;
+}
+
 .diagram-browser {
   display: flex;
   height: auto;

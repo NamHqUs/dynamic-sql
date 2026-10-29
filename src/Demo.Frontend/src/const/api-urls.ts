@@ -4,6 +4,9 @@ export const apiUrls = {
   backend: backendApiUrl,
   dataSource: import.meta.env.VITE_DATA_SOURCE_URL || "",
   database: {
+    connections: `${backendApiUrl}/db/connections`,
+    connect: `${backendApiUrl}/db/connect`,
+    disconnect: `${backendApiUrl}/db/disconnect`,
     tables: `${backendApiUrl}/db/tables`,
     schema: `${backendApiUrl}/db/schema`,
     tableData: (tableName: string, schema?: string, limit?: number) => {

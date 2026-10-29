@@ -14,6 +14,12 @@ const paths = {
   "arrow-left": <><path d="m14 18-6-6 6-6M8 12h12" /></>,
   remove: <><circle cx="12" cy="12" r="9" /><path d="M8 12h8" /></>,
   database: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5" /><path d="M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></>,
+  firebird: <><path d="M12 3c1 4-3 5-2 8 1-1 2-2 2-4 4 3 6 6 4 10-1 2-3 3-5 3-4 0-7-3-6-7 0-2 2-4 4-6 0 2 0 3 1 4 1-2 2-4 2-8Z" /></>,
+  mysql: <><path d="M4 14c3 2 7 2 10 0 2-1 3-3 3-5l3 2-2 3c-1 2-3 4-6 5-3 1-7 0-9-2" /><path d="M7 11c2-3 4-4 7-4m-2 0 2-2m-2 2 2 2" /></>,
+  oracle: <><path d="M7 5h10a7 7 0 0 1 0 14H7A7 7 0 0 1 7 5Z" /></>,
+  postgres: <><path d="M7 5c2-2 7-2 9 0 2 2 2 5 1 7l2 3-3 1-2-2h-4l-2 4H5l2-6C5 10 5 7 7 5Z" /><path d="M14 6c1 1 1 3 0 4m-5 5v3m5-4v3" /><circle cx="13" cy="7" r=".7" fill="currentColor" stroke="none" /></>,
+  sqlserver: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v4c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 9v5c0 1.7 3.6 3 8 3s8-1.3 8-3V9M4 14v5c0 1.7 3.6 3 8 3s8-1.3 8-3v-5" /></>,
+  sqlite: <><path d="M5 19c4-1 6-5 8-9 1-2 3-4 6-5-1 3-3 5-5 6-2 1-3 3-4 5-1 2-2 3-5 3Z" /><path d="m11 15 3-1m-1-3 3-1m-7 6-1 3" /></>,
   sliders: <><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></>,
   play: <path d="m8 5 11 7-11 7V5Z" fill="currentColor" stroke="none" />,
   code: <><path d="m9 7-5 5 5 5M15 7l5 5-5 5" /></>,
@@ -51,6 +57,17 @@ const paths = {
 
 export type IconName = keyof typeof paths;
 
+export function getDatabaseIconName(provider: string): IconName {
+  const normalized = provider.toLowerCase().replace(/[^a-z]/g, "");
+  if (normalized.includes("postgres")) return "postgres";
+  if (normalized.includes("sqlserver")) return "sqlserver";
+  if (normalized.includes("sqlite")) return "sqlite";
+  if (normalized.includes("firebird")) return "firebird";
+  if (normalized.includes("mysql")) return "mysql";
+  if (normalized.includes("oracle")) return "oracle";
+  return "database";
+}
+
 export default function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
-  return <svg className="icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
+  return <svg className={`icon icon--${name}`} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
 }

@@ -68,7 +68,7 @@ export default function DataGrid({ table: previewTable }: DataGridProps = {}) {
           <span className="section-kicker">TABLE DATA</span>
           <h2>{tableName}</h2>
         </div>
-        {tableData?.status === "succeeded" && <span className="database-record-count">{viewMode === "diagram" ? "Top 10 row preview" : `${visibleRows.length} of ${rows.length} records`}</span>}
+        {tableData?.status === "succeeded" && <span className="database-record-count">{viewMode === "diagram" ? "Top 10 row preview" : `Previewing up to ${rows.length} rows`}</span>}
       </div>
       {tableData?.status === "loading" && <p className="database-message">Loading {tableName}…</p>}
       {tableData?.status === "failed" && <p className="database-message error" role="alert">{tableData.error}</p>}

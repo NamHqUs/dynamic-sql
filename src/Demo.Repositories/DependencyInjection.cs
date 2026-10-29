@@ -1,6 +1,4 @@
-using Demo.Repositories.DataProviders;
 using Demo.Repositories.FileStorage;
-using Demo.Repositories.InMemory;
 using Demo.Contracts.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,8 +11,6 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
-
         var provider = configuration["StorageProvider"] ?? "Files";
         if (provider.Equals("Files", StringComparison.OrdinalIgnoreCase))
         {
@@ -37,7 +33,6 @@ public static class DependencyInjection
                 $"Unsupported StorageProvider '{provider}'. Supported providers are Files and Memory.");
         }
 
-        services.AddSingleton<IRawDataRepository, RawDataRepository>();
         return services;
     }
 }

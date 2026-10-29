@@ -1,15 +1,15 @@
 ﻿using Npgsql;
 using System.Data;
 
-namespace Demo.Repositories.DataProviders;
+namespace Demo.DbServices.DbInstances;
 
-public class PostgresDbProvider(string cnString, string[] scriptFiles) : DbProviderBase(scriptFiles)
+public class PostgresDbInstance(string connectionString, string[] scriptFiles) : DbInstance(connectionString, scriptFiles)
 {
     protected override string? SqlScriptCheckIfDbExists =>
         "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'Customers') THEN 1 ELSE 0 END;";
 
     protected override string SqlGetTableNames
-        => "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY table_name;";
+        => "SELECT table_name FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema <> 'information_schema' AND table_schema NOT LIKE 'pg\\_%' ESCAPE '\\' ORDER BY table_schema, table_name;";
 
     protected override string SqlGetColumns => """
         SELECT
@@ -31,7 +31,8 @@ public class PostgresDbProvider(string cnString, string[] scriptFiles) : DbProvi
             ON primaryKeys.table_schema = columns.table_schema
             AND primaryKeys.table_name = columns.table_name
             AND primaryKeys.column_name = columns.column_name
-        WHERE columns.table_schema = 'public'
+        WHERE columns.table_schema <> 'information_schema'
+            AND columns.table_schema NOT LIKE 'pg\\_%' ESCAPE '\\'
         ORDER BY columns.table_schema, columns.table_name, columns.ordinal_position;
         """;
 
@@ -91,10 +92,11 @@ public class PostgresDbProvider(string cnString, string[] scriptFiles) : DbProvi
             AND referencedKeys.constraint_name = foreignKeys.constraint_name
             AND referencedKeys.ordinal_position = foreignKeys.position_in_unique_constraint
         WHERE constraints.constraint_type = 'FOREIGN KEY'
-            AND foreignKeys.table_schema = 'public'
+            AND foreignKeys.table_schema <> 'information_schema'
+            AND foreignKeys.table_schema NOT LIKE 'pg\\_%' ESCAPE '\\'
         ORDER BY foreignKeys.constraint_name, foreignKeys.ordinal_position;
         """;
 
-    protected override IDbConnection CreateDbConnection()
-        => new NpgsqlConnection(cnString);
+    public override IDbConnection CreateDbConnection()
+        => new NpgsqlConnection(ConnectionString);
 }

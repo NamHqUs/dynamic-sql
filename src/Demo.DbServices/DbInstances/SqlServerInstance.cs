@@ -1,9 +1,9 @@
 ﻿using Microsoft.Data.SqlClient;
 using System.Data;
 
-namespace Demo.Repositories.DataProviders;
+namespace Demo.DbServices.DbInstances;
 
-public class SqlServerDbProvider(string cnString, string[] scriptFiles) : DbProviderBase(scriptFiles)
+public class SqlServerInstance(string connectionString, string[] scriptFiles) : DbInstance(connectionString, scriptFiles)
 {
     protected override string? SqlScriptCheckIfDbExists
         //=> "SELECT 0";
@@ -94,6 +94,6 @@ public class SqlServerDbProvider(string cnString, string[] scriptFiles) : DbProv
     protected override string IdentifierQuotePrefix => "[";
     protected override string IdentifierQuoteSuffix => "]";
 
-    protected override IDbConnection CreateDbConnection()
-        => new SqlConnection(cnString);
+    public override IDbConnection CreateDbConnection()
+        => new SqlConnection(ConnectionString);
 }

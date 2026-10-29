@@ -1,29 +1,18 @@
-﻿using Microsoft.Data.Sqlite;
+using Microsoft.Data.Sqlite;
+using Demo.Contracts.Dto;
 using System.Data;
 using System.Data.Common;
-using Demo.Contracts.Dto;
 
-namespace Demo.Repositories.DataProviders;
+namespace Demo.DbServices.DbInstances;
 
-public class SqliteDbProvider : DbProviderBase
+public sealed class SqliteDbInstance : DbInstance, IDisposable
 {
-    private readonly string _connectionString;
-    private readonly bool _isInMemory;
     private readonly object _keepAliveLock = new();
     private SqliteConnection? _keepAliveConnection;
 
-    public SqliteDbProvider(string cnString, string[] scriptFiles) : base(scriptFiles)
+    public SqliteDbInstance(string connectionString, string[] scriptFiles)
+        : base(NormalizeConnectionString(connectionString), scriptFiles)
     {
-        var connectionStringBuilder = new SqliteConnectionStringBuilder(cnString);
-        _isInMemory = connectionStringBuilder.DataSource == ":memory:";
-        if (_isInMemory)
-        {
-            connectionStringBuilder.DataSource = $"DynamicSqlDemo_{Guid.NewGuid():N}";
-            connectionStringBuilder.Mode = SqliteOpenMode.Memory;
-            connectionStringBuilder.Cache = SqliteCacheMode.Shared;
-        }
-
-        _connectionString = connectionStringBuilder.ToString();
     }
 
     protected override string? SqlScriptCheckIfDbExists
@@ -37,7 +26,7 @@ public class SqliteDbProvider : DbProviderBase
 
     public override DatabaseSchemaDto GetDatabaseSchema()
     {
-        using var connection = GetDbConnection();
+        using var connection = CreateDbConnection();
         if (connection.State != ConnectionState.Open)
             connection.Open();
         var dbConnection = connection as DbConnection
@@ -78,21 +67,32 @@ public class SqliteDbProvider : DbProviderBase
         return new DatabaseSchemaDto(tables, relationships);
     }
 
-    protected override IDbConnection CreateDbConnection()
+    public override IDbConnection CreateDbConnection()
     {
-        if (_isInMemory)
+        var connectionStringBuilder = new SqliteConnectionStringBuilder(ConnectionString);
+        if (connectionStringBuilder.Mode != SqliteOpenMode.Memory)
+            return new SqliteConnection(ConnectionString);
+
+        lock (_keepAliveLock)
         {
-            lock (_keepAliveLock)
+            if (_keepAliveConnection?.State != ConnectionState.Open)
             {
-                if (_keepAliveConnection is null)
-                {
-                    _keepAliveConnection = new SqliteConnection(_connectionString);
-                    _keepAliveConnection.Open();
-                }
+                _keepAliveConnection?.Dispose();
+                _keepAliveConnection = new SqliteConnection(ConnectionString);
+                _keepAliveConnection.Open();
             }
         }
 
-        return new SqliteConnection(_connectionString);
+        return new SqliteConnection(ConnectionString);
+    }
+
+    public void Dispose()
+    {
+        lock (_keepAliveLock)
+        {
+            _keepAliveConnection?.Dispose();
+            _keepAliveConnection = null;
+        }
     }
 
     private HashSet<string>[] GetUniqueColumnSets(DbConnection connection, string tableName)
@@ -113,4 +113,17 @@ public class SqliteDbProvider : DbProviderBase
 
     private static string QuoteLiteral(string value)
         => $"'{value.Replace("'", "''")}'";
+
+    private static string NormalizeConnectionString(string connectionString)
+    {
+        var builder = new SqliteConnectionStringBuilder(connectionString);
+        if (builder.Mode == SqliteOpenMode.Memory || builder.DataSource == ":memory:")
+        {
+            if (string.IsNullOrWhiteSpace(builder.DataSource) || builder.DataSource == ":memory:")
+                builder.DataSource = $"DynamicSql-{Guid.NewGuid():N}";
+            builder.Mode = SqliteOpenMode.Memory;
+            builder.Cache = SqliteCacheMode.Shared;
+        }
+        return builder.ToString();
+    }
 }

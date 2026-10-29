@@ -1,4 +1,5 @@
 using Demo.Repositories;
+using Demo.DbServices;
 using Demo.Contracts.Application;
 using Demo.Services;
 using Demo.WebApi.Application.Middlewares;
@@ -7,6 +8,7 @@ using System.Text.Json.Serialization;
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddUserSecrets<Program>()
     .AddEnvironmentVariables()
     .BuildTemplateConfig();
 
@@ -33,6 +35,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDemoRepositories(builder.Configuration);
 builder.Services.AddDemoServices();
+builder.Services.AddDemoDbServices(builder.Configuration);
 builder.Services.AddSingleton<IUserSectionManager, UserSectionManager>();
 
 var app = builder.Build();

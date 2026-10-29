@@ -3,16 +3,45 @@ import { apiUrls } from "../../const/api-urls";
 
 const MAX_TABLE_DATA_ROWS = 10;
 
-async function getJson(url) {
+export type DatabaseConnectRequest =
+  | { profile: string }
+  | { provider: string; connectionString: string };
+
+type DatabaseConnectionOptionsDto = {
+  providers: string[];
+  profiles: string[];
+  directConnectionsEnabled: boolean;
+};
+
+type DatabaseConnectionResponseDto = {
+  provider: string;
+  profileName: string | null;
+};
+
+class DatabaseConnectionRequiredError extends Error {}
+
+async function getJson(url, init = {}) {
   let response;
   try {
-    response = await fetch(url);
+    response = await fetch(url, init);
   } catch (error) {
     throw new Error(`Could not reach the database API: ${error.message}`);
   }
 
   if (!response.ok) {
-    throw new Error(`Database request failed (${response.status}).`);
+    let detail = `Database request failed (${response.status}).`;
+    try {
+      const problem = await response.json();
+      if (problem?.code === "database_connection_required") {
+        throw new DatabaseConnectionRequiredError(
+          typeof problem.detail === "string" ? problem.detail : "Connect to a database to continue.",
+        );
+      }
+      if (typeof problem?.detail === "string") detail = problem.detail;
+    } catch (error) {
+      if (error instanceof DatabaseConnectionRequiredError) throw error;
+    }
+    throw new Error(detail);
   }
 
   try {
@@ -22,13 +51,84 @@ async function getJson(url) {
   }
 }
 
+export const fetchDatabaseConnections = createAsyncThunk(
+  "database/fetchConnections",
+  async (_, { rejectWithValue }) => {
+    let payload: DatabaseConnectionOptionsDto;
+    try {
+      payload = await getJson(apiUrls.database.connections);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+    if (!payload || !Array.isArray(payload.providers) || !Array.isArray(payload.profiles)
+      || typeof payload.directConnectionsEnabled !== "boolean"
+      || payload.providers.some((provider) => typeof provider !== "string")
+      || payload.profiles.some((profile) => typeof profile !== "string")) {
+      return rejectWithValue("Database connection API returned invalid provider or profile data.");
+    }
+    return payload;
+  },
+  {
+    condition: (_, { getState }) => getState().database.connectionOptionsStatus !== "loading",
+  },
+);
+
+export const connectDatabase = createAsyncThunk(
+  "database/connect",
+  async (request: DatabaseConnectRequest, { rejectWithValue }) => {
+    let payload: DatabaseConnectionResponseDto;
+    try {
+      const response = await fetch(apiUrls.database.connect, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+      });
+      if (!response.ok) {
+        let detail = `Database connection failed (${response.status}).`;
+        try {
+          const problem = await response.json();
+          if (typeof problem.detail === "string") detail = problem.detail;
+        } catch {
+          // Keep the HTTP status message when the server does not return a problem document.
+        }
+        throw new Error(detail);
+      }
+      payload = await response.json();
+    } catch (error) {
+      return rejectWithValue(error.message || "Could not connect to the database.");
+    }
+    if (!payload || typeof payload.provider !== "string"
+      || (payload.profileName !== null && typeof payload.profileName !== "string")) {
+      return rejectWithValue("Database connection API returned an invalid connection result.");
+    }
+    return payload;
+  },
+);
+
+export const disconnectDatabase = createAsyncThunk(
+  "database/disconnect",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch(apiUrls.database.disconnect, {
+        method: "POST",
+      });
+      if (!response.ok) throw new Error(`Database disconnect failed (${response.status}).`);
+      return true;
+    } catch (error) {
+      return rejectWithValue(error.message || "Could not disconnect from the database.");
+    }
+  },
+);
+
 export const fetchDbTables = createAsyncThunk(
   "database/fetchTables",
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue, dispatch }) => {
     let payload;
     try {
       payload = await getJson(apiUrls.database.tables);
     } catch (error) {
+      if (error instanceof DatabaseConnectionRequiredError)
+        dispatch(databaseConnectionRequired(error.message));
       return rejectWithValue(error.message);
     }
     if (!Array.isArray(payload) || payload.some((table) => typeof table !== "string")) {
@@ -38,19 +138,21 @@ export const fetchDbTables = createAsyncThunk(
   },
   {
     condition: (_, { getState }) => {
-      const { tableStatus } = getState().database;
-      return tableStatus !== "loading" && tableStatus !== "succeeded";
+      const { tableStatus, connectionStatus } = getState().database;
+      return connectionStatus === "succeeded" && tableStatus !== "loading" && tableStatus !== "succeeded";
     },
   },
 );
 
 export const fetchDbSchema = createAsyncThunk(
   "database/fetchSchema",
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue, dispatch }) => {
     let payload;
     try {
       payload = await getJson(apiUrls.database.schema);
     } catch (error) {
+      if (error instanceof DatabaseConnectionRequiredError)
+        dispatch(databaseConnectionRequired(error.message));
       return rejectWithValue(error.message);
     }
     if (!payload || !Array.isArray(payload.tables) || !Array.isArray(payload.relationships)
@@ -74,8 +176,8 @@ export const fetchDbSchema = createAsyncThunk(
   },
   {
     condition: (_, { getState }) => {
-      const { schemaStatus } = getState().database;
-      return schemaStatus !== "loading" && schemaStatus !== "succeeded";
+      const { schemaStatus, connectionStatus } = getState().database;
+      return connectionStatus === "succeeded" && schemaStatus !== "loading" && schemaStatus !== "succeeded";
     },
   },
 );
@@ -86,32 +188,39 @@ function tableDataKey(tableName, schema = "") {
 
 export const fetchDbTableData = createAsyncThunk(
   "database/fetchTableData",
-  async (request, { rejectWithValue }) => {
+  async (request, { getState, rejectWithValue, dispatch }) => {
     const { tableName, schema = "", limit = MAX_TABLE_DATA_ROWS } = typeof request === "string" ? { tableName: request } : request;
     const rowLimit = Math.min(limit, MAX_TABLE_DATA_ROWS);
     let payload;
     try {
       payload = await getJson(apiUrls.database.tableData(tableName, schema, rowLimit));
     } catch (error) {
+      if (error instanceof DatabaseConnectionRequiredError)
+        dispatch(databaseConnectionRequired(error.message));
       return rejectWithValue(error.message);
     }
-    if (!payload || typeof payload.name !== "string" || typeof payload.columns !== "string" || !Array.isArray(payload.rows) || payload.rows.some((row) => typeof row !== "string")) {
-      return rejectWithValue("Database table API must return a table name, comma-separated columns, and an array of row strings.");
+    if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.columns)
+      || payload.columns.some((column) => typeof column !== "string")
+      || !Array.isArray(payload.rows)
+      || payload.rows.some((row) => !Array.isArray(row) || row.some((value) => typeof value !== "string"))) {
+      return rejectWithValue("Database table API must return a table name, column names, and rows of string values.");
     }
     return {
       key: tableDataKey(tableName, schema),
       name: payload.name,
-      columns: payload.columns ? payload.columns.split(",") : [],
-      rows: payload.rows.slice(0, MAX_TABLE_DATA_ROWS).map((row) => row.split(",")),
+      columns: payload.columns,
+      rows: payload.rows.slice(0, MAX_TABLE_DATA_ROWS),
       limit: rowLimit,
     };
   },
   {
     condition: (request, { getState }) => {
       const { tableName, schema = "", limit = MAX_TABLE_DATA_ROWS, refresh = false } = typeof request === "string" ? { tableName: request } : request;
-      const { status, limit: existingLimit } = getState().database.dataByTable[tableDataKey(tableName, schema)] || {};
+      const { connectionStatus, dataByTable } = getState().database;
+      const { status, limit: existingLimit } = dataByTable[tableDataKey(tableName, schema)] || {};
       const requestedLimit = Math.min(limit, MAX_TABLE_DATA_ROWS);
-      return status !== "loading" && (refresh || status !== "succeeded" || existingLimit !== requestedLimit);
+      return connectionStatus === "succeeded" && status !== "loading"
+        && (refresh || status !== "succeeded" || existingLimit !== requestedLimit);
     },
   },
 );
@@ -119,6 +228,18 @@ export const fetchDbTableData = createAsyncThunk(
 const databaseSlice = createSlice({
   name: "database",
   initialState: {
+    connectionProfiles: [] as string[],
+    providers: [] as string[],
+    directConnectionsEnabled: false,
+    connectionOptionsStatus: "idle",
+    connectionOptionsError: "",
+    connectionStatus: "idle",
+    connectionError: "",
+    connectionRequired: false,
+    connectingProvider: "",
+    connectingProfileName: "",
+    connectedProvider: "",
+    connectedProfileName: "",
     tables: [],
     selectedTable: "",
     selectedSchema: "",
@@ -133,6 +254,23 @@ const databaseSlice = createSlice({
     debugUiEnabled: true,
   },
   reducers: {
+    databaseConnectionRequired(state, action: PayloadAction<string>) {
+      state.connectedProvider = "";
+      state.connectedProfileName = "";
+      state.connectionStatus = "failed";
+      state.connectionError = action.payload;
+      state.connectionRequired = true;
+      state.tables = [];
+      state.selectedTable = "";
+      state.selectedSchema = "";
+      state.previewTable = null;
+      state.tableStatus = "idle";
+      state.tableError = "";
+      state.schemaStatus = "idle";
+      state.schemaError = "";
+      state.schema = { tables: [], relationships: [] };
+      state.dataByTable = {};
+    },
     setDatabaseDebugUiEnabled(state, action: PayloadAction<boolean>) {
       state.debugUiEnabled = action.payload;
     },
@@ -172,13 +310,78 @@ const databaseSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchDatabaseConnections.pending, (state) => {
+        state.connectionOptionsStatus = "loading";
+        state.connectionOptionsError = "";
+      })
+      .addCase(fetchDatabaseConnections.fulfilled, (state, action) => {
+        state.providers = action.payload.providers;
+        state.connectionProfiles = action.payload.profiles;
+        state.directConnectionsEnabled = action.payload.directConnectionsEnabled;
+        state.connectionOptionsStatus = "succeeded";
+      })
+      .addCase(fetchDatabaseConnections.rejected, (state, action) => {
+        state.connectionOptionsStatus = "failed";
+        state.connectionOptionsError = action.payload || action.error.message || "Unable to load connection options.";
+      })
+      .addCase(connectDatabase.pending, (state, action) => {
+        state.connectionStatus = "loading";
+        state.connectionError = "";
+        state.connectingProvider = "provider" in action.meta.arg ? action.meta.arg.provider : "";
+        state.connectingProfileName = "profile" in action.meta.arg ? action.meta.arg.profile : "";
+      })
+      .addCase(connectDatabase.fulfilled, (state, action) => {
+        state.connectedProvider = action.payload.provider;
+        state.connectedProfileName = action.payload.profileName || "";
+        state.connectionStatus = "succeeded";
+        state.connectionError = "";
+        state.connectionRequired = false;
+        state.connectingProvider = "";
+        state.connectingProfileName = "";
+        state.tables = [];
+        state.selectedTable = "";
+        state.selectedSchema = "";
+        state.previewTable = null;
+        state.tableStatus = "idle";
+        state.tableError = "";
+        state.schemaStatus = "idle";
+        state.schemaError = "";
+        state.schema = { tables: [], relationships: [] };
+        state.dataByTable = {};
+      })
+      .addCase(connectDatabase.rejected, (state, action) => {
+        state.connectionStatus = "failed";
+        state.connectionError = action.payload || action.error.message || "Unable to connect to the database.";
+        state.connectingProvider = "";
+        state.connectingProfileName = "";
+      })
+      .addCase(disconnectDatabase.fulfilled, (state) => {
+        state.connectedProvider = "";
+        state.connectedProfileName = "";
+        state.connectionStatus = "idle";
+        state.connectionRequired = false;
+        state.connectingProvider = "";
+        state.connectingProfileName = "";
+        state.tables = [];
+        state.selectedTable = "";
+        state.selectedSchema = "";
+        state.previewTable = null;
+        state.tableStatus = "idle";
+        state.tableError = "";
+        state.schemaStatus = "idle";
+        state.schemaError = "";
+        state.schema = { tables: [], relationships: [] };
+        state.dataByTable = {};
+      })
+      .addCase(disconnectDatabase.rejected, (state, action) => {
+        state.connectionError = action.payload || action.error.message || "Unable to disconnect from the database.";
+      })
       .addCase(fetchDbTables.pending, (state) => {
         state.tableStatus = "loading";
         state.tableError = "";
       })
       .addCase(fetchDbTables.fulfilled, (state, action) => {
         state.tables = action.payload;
-        state.selectedTable = action.payload.includes(state.selectedTable) ? state.selectedTable : action.payload[0] || "";
         state.tableStatus = "succeeded";
       })
       .addCase(fetchDbTables.rejected, (state, action) => {
@@ -191,6 +394,11 @@ const databaseSlice = createSlice({
       })
       .addCase(fetchDbSchema.fulfilled, (state, action) => {
         state.schema = action.payload;
+        const selected = action.payload.tables.find((table) =>
+          table.name === state.selectedTable && table.schema === state.selectedSchema)
+          || action.payload.tables[0];
+        state.selectedTable = selected?.name || "";
+        state.selectedSchema = selected?.schema || "";
         state.schemaStatus = "succeeded";
       })
       .addCase(fetchDbSchema.rejected, (state, action) => {
@@ -230,6 +438,7 @@ const databaseSlice = createSlice({
 });
 
 export const {
+  databaseConnectionRequired,
   setDatabaseDebugUiEnabled,
   selectDbTable,
   setPreviewDbTable,

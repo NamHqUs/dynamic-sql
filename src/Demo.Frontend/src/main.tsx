@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Provider } from "react-redux";
+import { Provider, useSelector } from "react-redux";
 import { createBrowserRouter, Navigate, Route, RouterProvider, Routes, useBlocker, useLocation, useNavigate } from "react-router-dom";
-import Icon from "./components/icon/icon";
+import Icon, { getDatabaseIconName } from "./components/icon/icon";
 import DataSources from "./components/data-sources/data-sources";
 import QueryBuilder, { setQueryBuilderDefinition } from "./components/query-builder/query-builder";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
 import Reports from "./components/reports/reports";
 import { MessageBoxProvider } from "./components/message-box/message-box";
 import type { QueryDefinition } from "./components/query-builder/query-design/query-builder-slice";
-import { store } from "./store/store";
+import { store, type RootState } from "./store/store";
 import "./styles.css";
 
 const PAGE_PATHS = {
@@ -31,6 +31,7 @@ function pageForPath(path: string): Page | null {
 function App() {
   const location = useLocation();
   const routerNavigate = useNavigate();
+  const database = useSelector((state: RootState) => state.database);
   const page = pageForPath(location.pathname);
   const [metadataVisited, setMetadataVisited] = useState(() => location.pathname === PAGE_PATHS.metadata);
   const [queryBuilderVisited, setQueryBuilderVisited] = useState(() => location.pathname === PAGE_PATHS.builder);
@@ -65,14 +66,21 @@ function App() {
     if (location.pathname === PAGE_PATHS.builder) setQueryBuilderVisited(true);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if ((database.connectionRequired || (page === "builder" && database.connectionStatus !== "succeeded"))
+      && location.pathname !== PAGE_PATHS.sources)
+      routerNavigate(PAGE_PATHS.sources);
+  }, [database.connectionRequired, database.connectionStatus, location.pathname, page, routerNavigate]);
+
   const navigateToPage = (nextPage: Page, fromReport = false) => {
-    if (nextPage === page && !(nextPage === "builder" && fromReport)) return;
-    const destination = nextPage === "builder" && fromReport
+    const targetPage = nextPage === "builder" && database.connectionStatus !== "succeeded" ? "sources" : nextPage;
+    if (targetPage === page && !(targetPage === "builder" && fromReport)) return;
+    const destination = targetPage === "builder" && fromReport
       ? `${PAGE_PATHS.builder}?from=reports`
-      : PAGE_PATHS[nextPage];
+      : PAGE_PATHS[targetPage];
     const continueNavigation = () => {
-      if (nextPage === "metadata") setMetadataVisited(true);
-      if (nextPage === "builder") setQueryBuilderVisited(true);
+      if (targetPage === "metadata") setMetadataVisited(true);
+      if (targetPage === "builder") setQueryBuilderVisited(true);
       approvedNavigation.current = destination;
       routerNavigate(destination);
     };
@@ -108,7 +116,28 @@ function App() {
       <header className="topbar">
         <button className="brand" type="button" aria-label="DynamicSQL Studio home" onClick={() => navigateToPage("reports")}><img className="brand-logo" src="/brand-concepts/dynamicsql-studio.svg" alt="" /></button>
         <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="query" /> Query builder</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="schema" /> Metadata</button></nav>
-        <div className="top-actions"><span className="live-dot" /> Local demo <button className="avatar">N</button></div>
+        <div className="top-actions">
+          {database.connectionStatus === "loading" ? (
+            <button className="database-status connecting" type="button" onClick={() => navigateToPage("sources")} aria-live="polite">
+              <span className="database-status-dot" />
+              <Icon name={getDatabaseIconName(database.connectingProvider)} size={15} />
+              <span>Connecting{database.connectingProvider ? ` · ${database.connectingProvider}` : ""}{database.connectingProfileName ? ` · ${database.connectingProfileName}` : ""}</span>
+            </button>
+          ) : database.connectionStatus === "succeeded" ? (
+            <button className="database-status connected" type="button" onClick={() => navigateToPage("sources")} title="Open connected database">
+              <span className="database-status-dot" />
+              <Icon name={getDatabaseIconName(database.connectedProvider)} size={15} />
+              <span>{database.connectedProvider}{database.connectedProfileName ? ` · ${database.connectedProfileName}` : " · Direct connection"}</span>
+            </button>
+          ) : (
+            <button className={`database-status${database.connectionStatus === "failed" ? " failed" : ""}`} type="button" onClick={() => navigateToPage("sources")}>
+              <span className="database-status-dot" />
+              <Icon name="database" size={15} />
+              {database.connectionStatus === "failed" ? "Connection failed · Retry" : "Connect database"}
+            </button>
+          )}
+          <button className="avatar" type="button" aria-label="User profile">N</button>
+        </div>
       </header>
 
       <Routes>

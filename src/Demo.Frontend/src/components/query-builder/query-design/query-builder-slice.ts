@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { apiUrls } from "../../../const/api-urls";
+import { databaseConnectionRequired } from "../../data-sources/database-slice";
 import type { FunctionDefinition } from "../../metadata-builder/function-definition/types";
 
 export type MetadataField = {
@@ -214,6 +215,35 @@ export type QueryResult = {
   totalRecords: number;
 };
 
+class DatabaseConnectionRequiredError extends Error {}
+
+async function getApiError(response: Response, fallback: string): Promise<Error> {
+  const body = await response.text();
+  if (body) {
+    try {
+      const problem = JSON.parse(body);
+      if (problem?.code === "database_connection_required") {
+        return new DatabaseConnectionRequiredError(
+          typeof problem.detail === "string" ? problem.detail : "Connect to a database to continue.",
+        );
+      }
+      if (typeof problem?.detail === "string") return new Error(problem.detail);
+      if (typeof problem?.title === "string") return new Error(problem.title);
+    } catch {
+      return new Error(body);
+    }
+  }
+  return new Error(fallback);
+}
+
+function handleDatabaseConnectionError(
+  error: unknown,
+  dispatch: (action: ReturnType<typeof databaseConnectionRequired>) => unknown,
+) {
+  if (error instanceof DatabaseConnectionRequiredError)
+    dispatch(databaseConnectionRequired(error.message));
+}
+
 async function requestJson(url: string, options?: RequestInit) {
   let response: Response;
   try {
@@ -222,8 +252,7 @@ async function requestJson(url: string, options?: RequestInit) {
     throw new Error(`Could not reach the query API: ${error instanceof Error ? error.message : "network error"}`);
   }
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `Query request failed (${response.status}).`);
+    throw await getApiError(response, `Query request failed (${response.status}).`);
   }
   if (response.status === 204) return null;
   try {
@@ -241,8 +270,7 @@ async function requestText(url: string, options?: RequestInit) {
     throw new Error(`Could not reach the query API: ${error instanceof Error ? error.message : "network error"}`);
   }
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `Query request failed (${response.status}).`);
+    throw await getApiError(response, `Query request failed (${response.status}).`);
   }
   return response.text();
 }
@@ -820,7 +848,7 @@ export const fetchFilterOperators = createAsyncThunk(
 
 export const executeQuery = createAsyncThunk(
   "queryBuilder/execute",
-  async (definition: QueryDefinition, { rejectWithValue }) => {
+  async (definition: QueryDefinition, { rejectWithValue, dispatch }) => {
     try {
       const payload = await requestJson(apiUrls.dynamicQuery.execute, {
         method: "POST",
@@ -840,6 +868,7 @@ export const executeQuery = createAsyncThunk(
         totalRecords: payload.totalRecords,
       } as QueryResult;
     } catch (error) {
+      handleDatabaseConnectionError(error, dispatch);
       return rejectWithValue(error instanceof Error ? error.message : "Unable to execute query.");
     }
   },
@@ -847,7 +876,7 @@ export const executeQuery = createAsyncThunk(
 
 export const executeQueryFromText = createAsyncThunk(
   "queryBuilder/executeFromText",
-  async (text: string, { rejectWithValue }) => {
+  async (text: string, { rejectWithValue, dispatch }) => {
     try {
       const payload = await requestJson(apiUrls.dynamicQuery.executeText, {
         method: "POST",
@@ -867,6 +896,7 @@ export const executeQueryFromText = createAsyncThunk(
         totalRecords: payload.totalRecords,
       } as QueryResult;
     } catch (error) {
+      handleDatabaseConnectionError(error, dispatch);
       return rejectWithValue(error instanceof Error ? error.message : "Unable to execute query.");
     }
   },
@@ -874,7 +904,7 @@ export const executeQueryFromText = createAsyncThunk(
 
 export const getSqlStatement = createAsyncThunk(
   "queryBuilder/getSqlStatement",
-  async (definition: QueryDefinition, { rejectWithValue }) => {
+  async (definition: QueryDefinition, { rejectWithValue, dispatch }) => {
     try {
       const payload = await requestText(apiUrls.dynamicQuery.toString, {
         method: "POST",
@@ -886,6 +916,7 @@ export const getSqlStatement = createAsyncThunk(
       }
       return payload;
     } catch (error) {
+      handleDatabaseConnectionError(error, dispatch);
       return rejectWithValue(error instanceof Error ? error.message : "Unable to generate SQL statement.");
     }
   },
@@ -893,7 +924,7 @@ export const getSqlStatement = createAsyncThunk(
 
 export const getSqlStatementFromText = createAsyncThunk(
   "queryBuilder/getSqlStatementFromText",
-  async (text: string, { rejectWithValue }) => {
+  async (text: string, { rejectWithValue, dispatch }) => {
     try {
       return await requestText(apiUrls.dynamicQuery.toStringText, {
         method: "POST",
@@ -901,6 +932,7 @@ export const getSqlStatementFromText = createAsyncThunk(
         body: text,
       });
     } catch (error) {
+      handleDatabaseConnectionError(error, dispatch);
       return rejectWithValue(error instanceof Error ? error.message : "Unable to generate SQL statement.");
     }
   },

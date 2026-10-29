@@ -1,23 +1,74 @@
 using Demo.Contracts.Services;
 using Demo.Contracts.Dto;
+using Demo.Contracts.Exceptions;
 using Microsoft.AspNetCore.Mvc;
+using System.Data.Common;
 
 namespace Demo.WebApi.Application.Controllers;
 
 [ApiController]
 [Route("db")]
-public sealed class DatabaseController(IRawDataService rawDataService) : ControllerBase
+public sealed class DatabaseController(
+    IDatabaseService databaseService,
+    IDbConnectionService connectionService,
+    ILogger<DatabaseController> logger) : ControllerBase
 {
+    [HttpGet("connections")]
+    public ActionResult<DatabaseConnectionOptionsDto> GetConnections()
+        => Ok(connectionService.GetConnectionOptions());
+
+    [HttpPost("connect")]
+    public ActionResult<DatabaseConnectionResponseDto> Connect(
+        [FromBody] DatabaseConnectionRequestDto request)
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(request.Profile))
+            {
+                if (!string.IsNullOrWhiteSpace(request.Provider)
+                    || !string.IsNullOrWhiteSpace(request.ConnectionString))
+                    throw new ArgumentException("Select a profile or provide a direct connection, not both.", nameof(request));
+
+                connectionService.Connect(request.Profile);
+                return Ok(new DatabaseConnectionResponseDto(request.Provider!, request.Profile));
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Provider)
+                || string.IsNullOrWhiteSpace(request.ConnectionString))
+                throw new ArgumentException("A profile or both provider and connection string are required.", nameof(request));
+
+            connectionService.Connect(request.Provider, request.ConnectionString);
+            return Ok(new DatabaseConnectionResponseDto(request.Provider, null));
+        }
+        catch (Exception exception) when (exception is DbException or DatabaseConnectionException)
+        {
+            logger.LogWarning(
+                "Database connection attempt failed ({ExceptionType}).",
+                exception.GetType().Name);
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Database connection failed",
+                detail: "The server could not establish the connection. Check the provider, endpoint, credentials, and network access.");
+        }
+    }
+
+    [HttpPost("disconnect")]
+    public IActionResult Disconnect()
+    {
+        connectionService.Disconnect();
+        return NoContent();
+    }
+
     [HttpGet("tables")]
-    public ActionResult<string[]> GetTables() => Ok(rawDataService.GetExposedTables());
+    public ActionResult<string[]> GetTables() => Ok(databaseService.GetTableNames());
 
     [HttpGet("schema")]
-    public ActionResult<DatabaseSchemaDto> GetSchema() => Ok(rawDataService.GetDatabaseSchema());
+    public ActionResult<DatabaseSchemaDto> GetSchema() => Ok(databaseService.GetDatabaseSchema());
 
     [HttpGet("data/{tableName}")]
-    public ActionResult<TableDataDto> GetTableData(
+    public ActionResult<DatabaseTableDataDto> GetTableData(
         string tableName,
         [FromQuery] string? schema = null,
         [FromQuery] int? limit = null)
-        => Ok(rawDataService.GetTableData(tableName, schema, limit));
+        => Ok(databaseService.GetTableData(tableName, schema, limit));
 }
