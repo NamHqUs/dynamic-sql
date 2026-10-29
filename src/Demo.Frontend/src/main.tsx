@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { Provider, useSelector } from "react-redux";
 import { createBrowserRouter, Navigate, Route, RouterProvider, Routes, useBlocker, useLocation, useNavigate } from "react-router-dom";
 import Icon, { getDatabaseIconName } from "./components/icon/icon";
 import DataSources from "./components/data-sources/data-sources";
+import DatabaseConnection from "./components/data-sources/database-connection/database-connection";
 import QueryBuilder, { setQueryBuilderDefinition } from "./components/query-builder/query-builder";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
 import Reports from "./components/reports/reports";
@@ -36,6 +38,7 @@ function App() {
   const [metadataVisited, setMetadataVisited] = useState(() => location.pathname === PAGE_PATHS.metadata);
   const [queryBuilderVisited, setQueryBuilderVisited] = useState(() => location.pathname === PAGE_PATHS.builder);
   const [queryBuilderInstance, setQueryBuilderInstance] = useState(0);
+  const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
   const metadataNavigationGuard = useRef<NavigationGuard | null>(null);
   const approvedNavigation = useRef<string | null>(null);
   const handledBlockedLocation = useRef<string | null>(null);
@@ -67,20 +70,26 @@ function App() {
   }, [location.pathname]);
 
   useEffect(() => {
-    if ((database.connectionRequired || (page === "builder" && database.connectionStatus !== "succeeded"))
-      && location.pathname !== PAGE_PATHS.sources)
-      routerNavigate(PAGE_PATHS.sources);
-  }, [database.connectionRequired, database.connectionStatus, location.pathname, page, routerNavigate]);
+    if (database.connectionRequired) setConnectionDialogOpen(true);
+  }, [database.connectionRequired]);
+
+  useEffect(() => {
+    if (!connectionDialogOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setConnectionDialogOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [connectionDialogOpen]);
 
   const navigateToPage = (nextPage: Page, fromReport = false) => {
-    const targetPage = nextPage === "builder" && database.connectionStatus !== "succeeded" ? "sources" : nextPage;
-    if (targetPage === page && !(targetPage === "builder" && fromReport)) return;
-    const destination = targetPage === "builder" && fromReport
+    if (nextPage === page && !(nextPage === "builder" && fromReport)) return;
+    const destination = nextPage === "builder" && fromReport
       ? `${PAGE_PATHS.builder}?from=reports`
-      : PAGE_PATHS[targetPage];
+      : PAGE_PATHS[nextPage];
     const continueNavigation = () => {
-      if (targetPage === "metadata") setMetadataVisited(true);
-      if (targetPage === "builder") setQueryBuilderVisited(true);
+      if (nextPage === "metadata") setMetadataVisited(true);
+      if (nextPage === "builder") setQueryBuilderVisited(true);
       approvedNavigation.current = destination;
       routerNavigate(destination);
     };
@@ -118,19 +127,19 @@ function App() {
         <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="query" /> Query builder</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="schema" /> Metadata</button></nav>
         <div className="top-actions">
           {database.connectionStatus === "loading" ? (
-            <button className="database-status connecting" type="button" onClick={() => navigateToPage("sources")} aria-live="polite">
+            <button className="database-status connecting" type="button" onClick={() => setConnectionDialogOpen(true)} aria-live="polite">
               <span className="database-status-dot" />
               <Icon name={getDatabaseIconName(database.connectingProvider)} size={15} />
               <span>Connecting{database.connectingProvider ? ` · ${database.connectingProvider}` : ""}{database.connectingProfileName ? ` · ${database.connectingProfileName}` : ""}</span>
             </button>
           ) : database.connectionStatus === "succeeded" ? (
-            <button className="database-status connected" type="button" onClick={() => navigateToPage("sources")} title="Open connected database">
+            <button className="database-status connected" type="button" onClick={() => setConnectionDialogOpen(true)} title="Change database connection">
               <span className="database-status-dot" />
               <Icon name={getDatabaseIconName(database.connectedProvider)} size={15} />
               <span>{database.connectedProvider}{database.connectedProfileName ? ` · ${database.connectedProfileName}` : " · Direct connection"}</span>
             </button>
           ) : (
-            <button className={`database-status${database.connectionStatus === "failed" ? " failed" : ""}`} type="button" onClick={() => navigateToPage("sources")}>
+            <button className={`database-status${database.connectionStatus === "failed" ? " failed" : ""}`} type="button" onClick={() => setConnectionDialogOpen(true)}>
               <span className="database-status-dot" />
               <Icon name="database" size={15} />
               {database.connectionStatus === "failed" ? "Connection failed · Retry" : "Connect database"}
@@ -152,6 +161,28 @@ function App() {
         <Route path={PAGE_PATHS.sources} element={<div className="page-transition page-transition-no-slide"><DataSources /></div>} />
         <Route path="*" element={<Navigate to={PAGE_PATHS.reports} replace />} />
       </Routes>
+      {connectionDialogOpen && createPortal(
+        <div className="database-connection-dialog-backdrop" onClick={() => setConnectionDialogOpen(false)}>
+          <section
+            className="database-connection-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="connection-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="database-connection-dialog-close"
+              type="button"
+              aria-label="Close database connection"
+              onClick={() => setConnectionDialogOpen(false)}
+            >
+              <Icon name="close" size={16} />
+            </button>
+            <DatabaseConnection onConnected={() => setConnectionDialogOpen(false)} />
+          </section>
+        </div>,
+        document.body,
+      )}
       {queryBuilderVisited && <div hidden={page !== "builder"} className={page === "builder" ? "page-transition page-transition-no-slide" : undefined}><QueryBuilder
         key={queryBuilderInstance}
         onBackToReports={new URLSearchParams(location.search).get("from") === "reports"

@@ -86,9 +86,12 @@ public class DatabaseService(IConfiguration configuration) : IDatabaseService, I
     {
         if (CurrentDbInstance is null)
         {
-            var section = configuration.GetSection("DbProvider:DefaultDbOption");
-            if (!section.Exists())
+            var optonIndex = configuration.Get<int?>("DbProvider:DefaultDbOptionIndex");
+            if (optonIndex.HasValue)
+            { 
+                var section = configuration.GetSection($"DbOptions:{optonIndex.Value}");
                 _currentDbInstance = CreateDbInstance(section["Provider"]!, section["ConnectionString"]!);
+            }
         }
 
         return CurrentDbInstance ?? throw new DatabaseConnectionException();

@@ -320,3 +320,66 @@
     margin-top: 24px;
   }
 }
+
+.database-connection-dialog-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: safe center;
+  padding: 24px;
+  overflow: auto;
+  background: #080a10c9;
+  backdrop-filter: blur(7px);
+}
+
+.database-connection-dialog {
+  position: relative;
+  width: min(1120px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border: 1px solid #ffffff20;
+  border-radius: 12px;
+  background: #10151b;
+  box-shadow: 0 28px 90px #00000080;
+}
+
+.database-connection-dialog .connection-screen {
+  min-height: 580px;
+  border: 0;
+  border-radius: 12px;
+}
+
+.database-connection-dialog-close {
+  position: absolute;
+  z-index: 1;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #ffffff20;
+  border-radius: 7px;
+  color: #c6ccda;
+  background: #11151ecc;
+}
+
+.database-connection-dialog-close:hover {
+  color: #fff;
+  background: #29233a;
+}
+
+@media (max-width: 560px) {
+  .database-connection-dialog-backdrop {
+    padding: 10px;
+  }
+
+  .database-connection-dialog {
+    max-height: calc(100vh - 20px);
+  }
+
+  .database-connection-dialog .connection-screen {
+    min-height: 580px;
+  }
+}

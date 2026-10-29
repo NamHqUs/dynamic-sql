@@ -6,7 +6,11 @@ import "./database-connection.css";
 
 type ConnectionMode = "internal" | "direct";
 
-export default function DatabaseConnection() {
+type DatabaseConnectionProps = {
+  onConnected?: () => void;
+};
+
+export default function DatabaseConnection({ onConnected }: DatabaseConnectionProps) {
   const dispatch = useDispatch();
   const {
     connectionProfiles,
@@ -43,6 +47,7 @@ export default function DatabaseConnection() {
     try {
       await dispatch(connectDatabase(request)).unwrap();
       setConnectionString("");
+      onConnected?.();
     } catch {
       // The rejected thunk stores the message for display below.
     }
@@ -136,9 +141,9 @@ export default function DatabaseConnection() {
           <button
             className="connection-submit"
             type="submit"
-            disabled={connectionStatus === "loading" || !provider
-              || (mode === "internal" && connectionProfiles.length === 0)
-              || (mode === "direct" && !connectionString.trim())}
+            disabled={connectionStatus === "loading" || (mode === "internal"
+              ? !profileName || connectionProfiles.length === 0
+              : !provider || !connectionString.trim())}
           >
             <Icon name="database" size={15} />
             {connectionStatus === "loading" ? "Connecting…" : "Connect database"}

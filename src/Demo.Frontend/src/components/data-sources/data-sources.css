@@ -14,6 +14,10 @@
   min-height: 680px;
 }
 
+.database-browser.database-disconnected {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .database-section-tabs {
   position: relative;
   z-index: 1;

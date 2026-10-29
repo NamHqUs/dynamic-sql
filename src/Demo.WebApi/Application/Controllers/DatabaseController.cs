@@ -29,8 +29,8 @@ public sealed class DatabaseController(
                     || !string.IsNullOrWhiteSpace(request.ConnectionString))
                     throw new ArgumentException("Select a profile or provide a direct connection, not both.", nameof(request));
 
-                connectionService.Connect(request.Profile);
-                return Ok(new DatabaseConnectionResponseDto(request.Provider!, request.Profile));
+                var provider = connectionService.Connect(request.Profile);
+                return Ok(new DatabaseConnectionResponseDto(provider, request.Profile));
             }
 
             if (string.IsNullOrWhiteSpace(request.Provider)

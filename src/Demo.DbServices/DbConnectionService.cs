@@ -33,13 +33,14 @@ public sealed class DbConnectionService(IConfiguration configuration, DatabaseSe
 
             _directConnectionsEnabled);
 
-    void IDbConnectionService.Connect(string profile)
+    string IDbConnectionService.Connect(string profile)
     {
         var (provider, connectionString) = _dbOptions.TryGetValue(profile, out var option)
             ? option
             : throw new KeyNotFoundException($"Database options profile '{profile}' was not found.");
 
         Connect(provider, connectionString, isDirectConnection: false);
+        return provider;
     }
     void IDbConnectionService.Connect(string provider, string connectionString)
         => Connect(provider, connectionString, isDirectConnection: true);

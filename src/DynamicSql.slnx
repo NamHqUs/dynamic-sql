@@ -12,6 +12,7 @@
     <File Path="../docker/start.dbservers-docker-compose.ps1" />
     <File Path="../README.md" />
     <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
   </Folder>
   <Project Path="Namh.Data.DynamicSql.Test/Namh.Data.DynamicSql.Test.csproj" Id="f65d7da3-d0b0-49c3-b963-a0ee3519366c" />
   <Project Path="Namh.Data.DynamicSql/Namh.Data.DynamicSql.csproj" />

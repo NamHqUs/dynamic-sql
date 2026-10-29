@@ -5,7 +5,6 @@ import Icon from "../icon/icon";
 import PanelSplitter from "../panel-splitter/panel-splitter";
 import { useResizablePanel } from "../../utils/use-resizable-panel";
 import DataGrid from "./data-grid/data-grid";
-import DatabaseConnection from "./database-connection/database-connection";
 import DiagramSplitter from "./diagram-splitter/diagram-splitter";
 import DiagramView from "./diagram-view/diagram-view";
 import { disconnectDatabase, fetchDbSchema, fetchDbTableData, fetchDbTables, setDatabaseViewMode } from "./database-slice";
@@ -77,10 +76,10 @@ export default function DataSources() {
           <span className="database-heading-mark" aria-hidden="true"><Icon name="database" size={21} /></span>
           <div className="database-heading-copy">
             <span className="database-heading-eyebrow">DATA EXPLORER <i /> TABLES · COLUMNS · RECORDS</span>
-            <h2>{isConnected ? "Explore your database" : "Connect a database"}</h2>
+            <h2>{isConnected ? "Explore your database" : "Database connection"}</h2>
             <p>{isConnected
               ? `Connected to ${connectedProfileName || connectedProvider}. Browse tables, inspect relationships, and preview records.`
-              : "Connect to a configured source or your own database to begin."}</p>
+              : "Use the connection control in the top bar to connect to or change a database."}</p>
             <div className="database-heading-summary" aria-label="Database summary">
               {isConnected && <>
                 <span className="database-heading-current"><Icon name="table" size={13} />{selectedTable ? `${selectedSchema ? `${selectedSchema}.` : ""}${selectedTable}` : "No table selected"}</span>
@@ -145,7 +144,14 @@ export default function DataSources() {
             </div>
           )}
         </section>
-      ) : <DatabaseConnection />}
+      ) : (
+        <section className="database-browser database-disconnected">
+          <div className="database-placeholder">
+            <Icon name="database" size={24} />
+            <p>Connect to a database from the top bar to browse its tables and records.</p>
+          </div>
+        </section>
+      )}
     </>
   );
 }
