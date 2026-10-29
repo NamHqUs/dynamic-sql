@@ -195,6 +195,10 @@
   font-size: 12px;
 }
 
+.table-details-column:last-child {
+  border-bottom: 0;
+}
+
 .table-details-column-name,
 .table-details-column-type {
   overflow: hidden;
