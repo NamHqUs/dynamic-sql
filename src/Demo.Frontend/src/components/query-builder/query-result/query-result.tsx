@@ -60,12 +60,27 @@ export default function QueryResult({ result, sqlStatement, resultView, onRunQue
           {resultView === "data" && result && <span className="result-count">{result.totalRecords < 0 ? "1000+" : result.totalRecords} records</span>}
         </div>
         <div className="query-result-tools">
-          <button className="button primary" onClick={onRunQuery} disabled={queryLoading || queryDisabled}>
-            <Icon name="play" size={14} /> {queryLoading ? "Running…" : "Run query"}
+           <button
+            type="button"
+            className="button secondary query-result-action"
+            aria-label="Get SQL statement"
+            title="Get SQL statement"
+            onClick={onGetSql}
+            disabled={queryLoading || queryDisabled}
+          >
+            <Icon name="code" size={20} />
           </button>
-          <button className="button primary" onClick={onGetSql} disabled={queryLoading || queryDisabled}>
-            <Icon name="code" size={14} /> Get SQL statement
+          <button
+            type="button"
+            className="button primary query-result-action"
+            aria-label={queryLoading ? "Running query" : "Run query"}
+            title={queryLoading ? "Running query" : "Run query"}
+            onClick={onRunQuery}
+            disabled={queryLoading || queryDisabled}
+          >
+            <Icon name="play" size={20} />
           </button>
+         
         </div>
       </div>
       {resultView === "sql" && sqlStatement

@@ -19,8 +19,8 @@ section.page-heading.query-page-heading h2 { max-width: 680px; margin: 10px 0 8p
 .query-page-heading .query-icon-button { box-sizing: border-box; width: 38px; height: 38px; min-height: 38px; justify-content: center; padding: 0; border-radius: 10px; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease; }
 .query-page-heading .query-icon-button:hover:not(:disabled) { transform: translateY(-1px); }
 .query-page-heading .query-icon-button:focus-visible { outline: 2px solid #b8a5ff; outline-offset: 3px; }
-.query-page-heading .query-new-button { color: #d3c8ff; border-color: #7866aa80; background: linear-gradient(145deg, #33294f, #25233c); }
-.query-page-heading .query-new-button:hover:not(:disabled) { border-color: #a38ce8; background: linear-gradient(145deg, #493875, #302a4c); box-shadow: 0 6px 16px #8069cb33; }
+.query-page-heading .query-new-button { color: #d3c8ff; border-color: #7866aa80; background: #7054d4; }
+.query-page-heading .query-new-button:hover:not(:disabled) { border-color: #a38ce8; background: #8169e3; box-shadow: 0 6px 16px #8069cb33; }
 .query-page-heading .query-delete-button { color: #e6a3aa; border-color: #70404780; background: linear-gradient(145deg, #342026, #261b23); }
 .query-page-heading .query-delete-button:hover:not(:disabled) { color: #ffc0c5; border-color: #b95d69; background: linear-gradient(145deg, #48262e, #321d25); box-shadow: 0 6px 16px #9d394433; }
 .query-page-heading .query-save-button { color: #fff; border-color: #a28bec; background: linear-gradient(145deg, #8068d1, #624cb0); box-shadow: inset 0 1px #ffffff30, 0 5px 15px #6752ba44; }
