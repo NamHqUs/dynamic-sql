@@ -31,7 +31,7 @@ public sealed record MetadataEntityDto(
 //}
 //public enum FieldDtoType
 //{
-//    DbField,
+//    Field,
 //    RawSqlField
 //}
 //public sealed record FieldDto(

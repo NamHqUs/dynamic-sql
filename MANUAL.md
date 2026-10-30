@@ -59,9 +59,9 @@ var metadata = new[]
         Name: "User",
         Fields:
         [
-            new DbField("Id", "Id"),
-            new DbField("Name", "Name"),
-            new DbField("Age", "Age"),
+            new Field("Id", "Id"),
+            new Field("Name", "Name"),
+            new Field("Age", "Age"),
         ],
         Relations:
         [
@@ -90,8 +90,8 @@ new Entity(
     DbTable: "User",
     Fields:
     [
-        new DbField("Name", "Name"),
-        new DbField("Age", "Age"),
+        new Field("Name", "Name"),
+        new Field("Age", "Age"),
     ]);
 ```
 
@@ -105,9 +105,9 @@ new RawSqlEntity(
     Name: "Calculation",
     RawSql: "(SELECT Id, Name, Amount * Quantity AS Total FROM OrderLines)",
     Fields: [
-        new DbField("Id"),
-        new DbField("Name"),
-        new DbField("Total")
+        new Field("Id"),
+        new Field("Name"),
+        new Field("Total")
     ]);
 ```
 
@@ -126,7 +126,7 @@ trusted and use read-only database permissions where applicable.
 
 Fields can be:
 
-- `DbField`: a database column. `Name` is the logical field name and
+- `Field`: a database column. `Name` is the logical field name and
   `DbColumn` is its physical database column name.
 - `RawSqlField`: a trusted provider-specific SQL expression.
 

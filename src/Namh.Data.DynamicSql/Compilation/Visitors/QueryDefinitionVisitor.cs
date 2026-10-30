@@ -85,7 +85,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             {
                 var cteTable = cteTables[GetContextAlias(reference)];
                 cteTable.Entity.Fields.Clear();
-                cteTable.Entity.Fields.AddRange(cteQuery.ProjectionItems.Select(item => new DbField(item.Alias, item.Alias)));
+                cteTable.Entity.Fields.AddRange(cteQuery.ProjectionItems.Select(item => new Field(item.Alias, item.Alias)));
             }
         }
 
@@ -126,13 +126,13 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             return projections.Select(projection =>
             {
                 var name = GetProjectionAlias(projection);
-                return (IField)new DbField(name, name);
+                return (IField)new Field(name, name);
             }).ToList();
         if (definitions.TryGetValue(context.Query.Entity, out var sourceContext))
             return GetCteFields(sourceContext, definitions, visited);
 
         return queryContext.GetEntity(context.Query.Entity).Fields
-            .Select(field => (IField)new DbField(field.Name, field.Name))
+            .Select(field => (IField)new Field(field.Name, field.Name))
             .ToList();
     }
 

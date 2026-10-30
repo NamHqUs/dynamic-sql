@@ -54,7 +54,7 @@ public class BoundedTotalRecordsSqliteTests
 
         using var db = new DynamicSqlContext(
             connection,
-            [new Entity("Probe", [new DbField("Id", "Id"), new DbField("Name", "Name")])]);
+            [new Entity("Probe", [new Field("Id", "Id"), new Field("Name", "Name")])]);
 
         Assert.That(db.Query("Probe").Select("Id").TakeQuery(10).ToList(), Has.Count.EqualTo(10));
 

@@ -136,7 +136,7 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
                     dbColumn: current.kind === "dbField" ? current.dbColumn : current.name,
                   })}
             >
-              <option value="dbField">DbField</option>
+              <option value="dbField">Field</option>
               <option value="rawSqlField">RawSqlField</option>
             </select>
             <input

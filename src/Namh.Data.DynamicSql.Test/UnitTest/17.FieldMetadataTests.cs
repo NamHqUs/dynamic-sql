@@ -12,9 +12,9 @@ public sealed class _17_FieldMetadataTests
         var entity = new Entity(
             "OrderLine",
             [
-                new DbField("CustomerName", "customer_name"),
+                new Field("CustomerName", "customer_name"),
                 new RawSqlField("LineTotal", "@Quantity * @UnitPrice"),
-                new DbField("Quantity")
+                new Field("Quantity")
             ]);
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
@@ -24,9 +24,9 @@ public sealed class _17_FieldMetadataTests
         Assert.That(json, Does.Contain("\"kind\":\"dbField\""));
         Assert.That(json, Does.Contain("\"kind\":\"rawSqlField\""));
         Assert.That(json, Does.Contain("\"dbColumn\":null"));
-        Assert.That(restored.Fields[0], Is.EqualTo(new DbField("CustomerName", "customer_name")));
+        Assert.That(restored.Fields[0], Is.EqualTo(new Field("CustomerName", "customer_name")));
         Assert.That(restored.Fields[1], Is.EqualTo(new RawSqlField("LineTotal", "@Quantity * @UnitPrice")));
-        Assert.That(restored.Fields[2], Is.EqualTo(new DbField("Quantity")));
+        Assert.That(restored.Fields[2], Is.EqualTo(new Field("Quantity")));
     }
 
     [Test]
@@ -56,7 +56,7 @@ public sealed class _17_FieldMetadataTests
             json,
             new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
 
-        Assert.That(entity.Fields[0], Is.EqualTo(new DbField("CustomerName", "customer_name")));
+        Assert.That(entity.Fields[0], Is.EqualTo(new Field("CustomerName", "customer_name")));
         Assert.That(entity.Fields[1], Is.EqualTo(new RawSqlField("LineTotal", "@Quantity * @UnitPrice")));
     }
 
@@ -68,8 +68,8 @@ public sealed class _17_FieldMetadataTests
             new Entity(
                 "OrderLine",
                 [
-                    new DbField("Quantity", "Quantity"),
-                    new DbField("UnitPrice", "UnitPrice"),
+                    new Field("Quantity", "Quantity"),
+                    new Field("UnitPrice", "UnitPrice"),
                     new RawSqlField("LineTotal", "@Quantity * @UnitPrice")
                 ])
         ]);
@@ -85,7 +85,7 @@ public sealed class _17_FieldMetadataTests
     {
         var metadata = new MetaProvider(
         [
-            new Entity("Customer", [new DbField("DisplayName", "display_name")])
+            new Entity("Customer", [new Field("DisplayName", "display_name")])
         ]);
         using var db = new DynamicSqlContext(new SqliteConnection(), metadata, new SqliteDialect());
 
@@ -99,7 +99,7 @@ public sealed class _17_FieldMetadataTests
     {
         var metadata = new MetaProvider(
         [
-            new Entity("Customer", [new DbField("DisplayName")])
+            new Entity("Customer", [new Field("DisplayName")])
         ]);
         using var db = new DynamicSqlContext(new SqliteConnection(), metadata, new SqliteDialect());
 

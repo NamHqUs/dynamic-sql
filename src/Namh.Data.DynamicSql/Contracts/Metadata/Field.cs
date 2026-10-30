@@ -11,7 +11,7 @@ public interface IField
     string Name { get; init; }
 }
 
-public sealed record DbField(string Name, string? DbColumn = null) : IField;
+public sealed record Field(string Name, string? DbColumn = null) : IField;
 
 public sealed record RawSqlField(string Name, string Expression) : IField;
 
@@ -37,7 +37,7 @@ public sealed class FieldJsonConverter : JsonConverter<IField>
         {
             return kind switch
             {
-                "dbField" => new DbField(name, GetString(root, "dbColumn")),
+                "dbField" => new Field(name, GetString(root, "dbColumn")),
                 "rawSqlField" => new RawSqlField(
                     name,
                     GetString(root, "expression")
@@ -48,7 +48,7 @@ public sealed class FieldJsonConverter : JsonConverter<IField>
 
         return IsLegacyRawSql(root)
             ? new RawSqlField(name, GetString(root, "rawSql") ?? name)
-            : new DbField(name, GetString(root, "rawSql") ?? name);
+            : new Field(name, GetString(root, "rawSql") ?? name);
     }
 
     public override void Write(Utf8JsonWriter writer, IField value, JsonSerializerOptions options)
@@ -58,11 +58,11 @@ public sealed class FieldJsonConverter : JsonConverter<IField>
 
         switch (value)
         {
-            case DbField dbField:
+            case Field dbField:
                 writer.WriteString("kind", "dbField");
                 writer.WriteString(nameProperty, dbField.Name);
                 writer.WriteString(
-                    options.PropertyNamingPolicy?.ConvertName(nameof(DbField.DbColumn)) ?? nameof(DbField.DbColumn),
+                    options.PropertyNamingPolicy?.ConvertName(nameof(Field.DbColumn)) ?? nameof(Field.DbColumn),
                     dbField.DbColumn);
                 break;
             case RawSqlField rawSqlField:

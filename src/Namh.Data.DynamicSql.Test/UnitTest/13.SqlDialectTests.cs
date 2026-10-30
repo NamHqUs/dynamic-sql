@@ -7,7 +7,7 @@ public class _13_SqlDialectTests
 {
     private static readonly IMetaProvider Metadata = new MetaProvider(
     [
-        new Entity("User", [new DbField("Id", "Id"), new DbField("Name", "Name")])
+        new Entity("User", [new Field("Id", "Id"), new Field("Name", "Name")])
     ]);
 
     [Test]

@@ -1,4 +1,4 @@
-﻿using Namh.Data.DynamicSql;
+using Namh.Data.DynamicSql;
 using Namh.Data.DynamicSql.Compilation.Expressions;
 using Namh.Data.DynamicSql.Compilation.Models;
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
@@ -470,9 +470,9 @@ class QueryContext(
         var predicates = new List<SqlExpression>();
         foreach (var e in relation.RelatedKeys)
             predicates.Add(new BinarySqlExpression(
-                new FieldExpression(joinedTable.Alias, new DbField(e.ToDbColumn, e.ToDbColumn)),
+                new FieldExpression(joinedTable.Alias, new Field(e.ToDbColumn, e.ToDbColumn)),
                 "=",
-                new FieldExpression(table.Alias, new DbField(e.FromDbColumn, e.FromDbColumn)),
+                new FieldExpression(table.Alias, new Field(e.FromDbColumn, e.FromDbColumn)),
                 typeof(bool)));
 
         return predicates;

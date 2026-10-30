@@ -1,4 +1,4 @@
-﻿namespace Namh.Data.DynamicSql.Test.TestData;
+namespace Namh.Data.DynamicSql.Test.TestData;
 
 public class DefinedMetadata
 {
@@ -8,7 +8,7 @@ public class DefinedMetadata
             Name: "School",
             Fields:
             [
-                new DbField("Name", "Name"),
+                new Field("Name", "Name"),
             ],
             Relations: [
                 new(
@@ -32,13 +32,13 @@ public class DefinedMetadata
         new(
             Name : "User",
             Fields : [
-                new DbField("Id", "Id"),
-                new DbField("Name", "Name"),
-                //new DbField("ManagerId", "ManagerId"),
-                //new DbField("SchoolId", "SchoolId"),
-                new DbField("Age", "Age"),
-                new DbField("Birthday", "Birthday"),
-                new DbField("IsMale", "IsMale"),
+                new Field("Id", "Id"),
+                new Field("Name", "Name"),
+                //new Field("ManagerId", "ManagerId"),
+                //new Field("SchoolId", "SchoolId"),
+                new Field("Age", "Age"),
+                new Field("Birthday", "Birthday"),
+                new Field("IsMale", "IsMale"),
             ],
 
             Relations : [
@@ -69,8 +69,8 @@ public class DefinedMetadata
             Name : "Student",
             RawSql : "[User]",
             Fields : [
-                new DbField("Name", "Name"),
-                new DbField("Age", "Age"),
+                new Field("Name", "Name"),
+                new Field("Age", "Age"),
             ]),
         new RawSqlEntity(
             Name : "Calculation",
@@ -78,16 +78,16 @@ public class DefinedMetadata
                   $"From[User] t0 " +
                     $"Left Join(Select ManagerId, Count(*) Count From [User] Group By ManagerId) t1 On t1.ManagerId = t0.Id)",
             Fields : [
-                new DbField("Id", "Id"),
-                new DbField("Name", "Name"),
-                new DbField("CalculatedAge", "CalculatedAge"),
-                new DbField("Count", "Count"),
+                new Field("Id", "Id"),
+                new Field("Name", "Name"),
+                new Field("CalculatedAge", "CalculatedAge"),
+                new Field("Count", "Count"),
             ]),
         new(
             Name : "Teacher",
             Fields : [
-                new DbField("Id", "Id"),
-                new DbField("Name", "Name"),
+                new Field("Id", "Id"),
+                new Field("Name", "Name"),
             ],
             Relations : [
                 new(
@@ -103,16 +103,16 @@ public class DefinedMetadata
         new(
                 Name: "Customers",
                 Fields: [
-                    new DbField("Id", "Id"),
-                    new DbField("Name", "Name"),
-                    new DbField("Email", "Email"),
-                    new DbField("Phone", "Phone"),
-                    new DbField("Address", "Address"),
-                    new DbField("Segment", "Segment"),
-                    new DbField("Region", "Region"),
-                    new DbField("CustomerSince", "CustomerSince"),
-                    new DbField("CreatedOn", "CreatedOn"),
-                    new DbField("UpdatedOn", "UpdatedOn")
+                    new Field("Id", "Id"),
+                    new Field("Name", "Name"),
+                    new Field("Email", "Email"),
+                    new Field("Phone", "Phone"),
+                    new Field("Address", "Address"),
+                    new Field("Segment", "Segment"),
+                    new Field("Region", "Region"),
+                    new Field("CustomerSince", "CustomerSince"),
+                    new Field("CreatedOn", "CreatedOn"),
+                    new Field("UpdatedOn", "UpdatedOn")
                 ],
                 Relations: [
                     new(
@@ -124,16 +124,16 @@ public class DefinedMetadata
             new(
                 Name: "Products",
                 Fields: [
-                    new DbField("Id", "Id"),
-                    new DbField("Name", "Name"),
-                    new DbField("Description", "Description"),
-                    new DbField("Category", "Category"),
-                    new DbField("UnitPrice", "UnitPrice"),
-                    new DbField("CostPrice", "CostPrice"),
-                    new DbField("StockQuantity", "StockQuantity"),
-                    new DbField("ReorderLevel", "ReorderLevel"),
-                    new DbField("CreatedOn", "CreatedOn"),
-                    new DbField("UpdatedOn", "UpdatedOn")
+                    new Field("Id", "Id"),
+                    new Field("Name", "Name"),
+                    new Field("Description", "Description"),
+                    new Field("Category", "Category"),
+                    new Field("UnitPrice", "UnitPrice"),
+                    new Field("CostPrice", "CostPrice"),
+                    new Field("StockQuantity", "StockQuantity"),
+                    new Field("ReorderLevel", "ReorderLevel"),
+                    new Field("CreatedOn", "CreatedOn"),
+                    new Field("UpdatedOn", "UpdatedOn")
                 ],
                 Relations: [
                     new(
@@ -145,20 +145,20 @@ public class DefinedMetadata
             new(
                 Name: "Invoices",
                 Fields: [
-                    new DbField("Id", "Id"),
-                    new DbField("CustomerId", "CustomerId"),
-                    new DbField("InvoiceNumber", "InvoiceNumber"),
-                    new DbField("InvoiceDate", "InvoiceDate"),
-                    new DbField("DueDate", "DueDate"),
-                    new DbField("Status", "Status"),
-                    new DbField("SalesChannel", "SalesChannel"),
-                    new DbField("PaymentMethod", "PaymentMethod"),
-                    new DbField("PaidOn", "PaidOn"),
-                    new DbField("DiscountAmount", "DiscountAmount"),
-                    new DbField("TaxAmount", "TaxAmount"),
-                    new DbField("TotalAmount", "TotalAmount"),
-                    new DbField("CreatedOn", "CreatedOn"),
-                    new DbField("UpdatedOn", "UpdatedOn")
+                    new Field("Id", "Id"),
+                    new Field("CustomerId", "CustomerId"),
+                    new Field("InvoiceNumber", "InvoiceNumber"),
+                    new Field("InvoiceDate", "InvoiceDate"),
+                    new Field("DueDate", "DueDate"),
+                    new Field("Status", "Status"),
+                    new Field("SalesChannel", "SalesChannel"),
+                    new Field("PaymentMethod", "PaymentMethod"),
+                    new Field("PaidOn", "PaidOn"),
+                    new Field("DiscountAmount", "DiscountAmount"),
+                    new Field("TaxAmount", "TaxAmount"),
+                    new Field("TotalAmount", "TotalAmount"),
+                    new Field("CreatedOn", "CreatedOn"),
+                    new Field("UpdatedOn", "UpdatedOn")
                 ],
                 Relations: [
                     new(
@@ -175,15 +175,15 @@ public class DefinedMetadata
             new(
                 Name: "InvoiceItems",
                 Fields: [
-                    new DbField("Id", "Id"),
-                    new DbField("InvoiceId", "InvoiceId"),
-                    new DbField("ProductId", "ProductId"),
-                    new DbField("Quantity", "Quantity"),
-                    new DbField("UnitPrice", "UnitPrice"),
-                    new DbField("DiscountAmount", "DiscountAmount"),
-                    new DbField("LineTotal", "LineTotal"),
-                    new DbField("CreatedOn", "CreatedOn"),
-                    new DbField("UpdatedOn", "UpdatedOn")
+                    new Field("Id", "Id"),
+                    new Field("InvoiceId", "InvoiceId"),
+                    new Field("ProductId", "ProductId"),
+                    new Field("Quantity", "Quantity"),
+                    new Field("UnitPrice", "UnitPrice"),
+                    new Field("DiscountAmount", "DiscountAmount"),
+                    new Field("LineTotal", "LineTotal"),
+                    new Field("CreatedOn", "CreatedOn"),
+                    new Field("UpdatedOn", "UpdatedOn")
                 ],
                 Relations: [
                     new(

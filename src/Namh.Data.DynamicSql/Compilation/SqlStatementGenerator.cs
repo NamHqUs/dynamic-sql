@@ -181,14 +181,14 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         if (field.TableAlias.Length == 0)
             return field.MetaField switch
             {
-                DbField dbField => $"({dbField.DbColumn ?? dbField.Name})",
+                Field dbField => $"({dbField.DbColumn ?? dbField.Name})",
                 RawSqlField rawSqlField => $"({rawSqlField.Expression})",
                 _ => throw new NotSupportedException($"Unsupported field type [{field.MetaField.GetType().Name}].")
             };
 
         return field.MetaField switch
         {
-            DbField dbField => $"{field.TableAlias}.{dialect.QuoteIdentifier(dbField.DbColumn ?? dbField.Name)}",
+            Field dbField => $"{field.TableAlias}.{dialect.QuoteIdentifier(dbField.DbColumn ?? dbField.Name)}",
             RawSqlField rawSqlField => $"({rawSqlField.Expression.Replace("@", field.TableAlias + ".")})",
             _ => throw new NotSupportedException($"Unsupported field type [{field.MetaField.GetType().Name}].")
         };

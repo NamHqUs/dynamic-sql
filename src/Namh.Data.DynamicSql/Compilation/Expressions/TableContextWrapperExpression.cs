@@ -1,4 +1,4 @@
-﻿using Namh.Data.DynamicSql;
+using Namh.Data.DynamicSql;
 
 namespace Namh.Data.DynamicSql.Compilation.Expressions;
 
@@ -9,5 +9,5 @@ class TableContextWrapperExpression(TableExpression tableContext, string alias)
         => new RawSqlEntity(
             Name: $"Wrap_{tableContext.Entity.Name}",
             RawSql: $"({tableContext})",
-            Fields: tableContext.ProjectionItems.Select(e => (IField)new DbField(e.Alias, e.Alias)).ToList());
+            Fields: tableContext.ProjectionItems.Select(e => (IField)new Field(e.Alias, e.Alias)).ToList());
 }

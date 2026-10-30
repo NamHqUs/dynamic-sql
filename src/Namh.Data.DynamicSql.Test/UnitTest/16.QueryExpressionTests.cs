@@ -13,9 +13,9 @@ public sealed class _16_QueryExpressionTests
             Name: "Products",
             Fields:
             [
-                new DbField("Id", "Id"),
-                new DbField("Name", "Name"),
-                new DbField("CostPrice", "CostPrice")
+                new Field("Id", "Id"),
+                new Field("Name", "Name"),
+                new Field("CostPrice", "CostPrice")
             ],
             Relations:
             [
@@ -29,11 +29,11 @@ public sealed class _16_QueryExpressionTests
             Name: "InvoiceItems",
             Fields:
             [
-                new DbField("Id", "Id"),
-                new DbField("ProductId", "ProductId"),
-                new DbField("InvoiceId", "InvoiceId"),
-                new DbField("Quantity", "Quantity"),
-                new DbField("LineTotal", "LineTotal")
+                new Field("Id", "Id"),
+                new Field("ProductId", "ProductId"),
+                new Field("InvoiceId", "InvoiceId"),
+                new Field("Quantity", "Quantity"),
+                new Field("LineTotal", "LineTotal")
             ],
             Relations:
             [
@@ -47,8 +47,8 @@ public sealed class _16_QueryExpressionTests
             Name: "Invoices",
             Fields:
             [
-                new DbField("Id", "Id"),
-                new DbField("Status", "Status")
+                new Field("Id", "Id"),
+                new Field("Status", "Status")
             ])
     ];
 
