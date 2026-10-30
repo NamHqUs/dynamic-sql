@@ -9,6 +9,7 @@ import { useResizablePanel } from "../../utils/use-resizable-panel";
 import { MetadataEntity, invalidateQueryMetadata } from "../query-builder/query-design/query-builder-slice";
 import EntityList from "./entity-definition/entity-list/entity-list";
 import EntityBuilder from "./entity-definition/entity-builder/entity-builder";
+import EntityDiagram from "./entity-diagram/entity-diagram";
 import { EditableEntity, emptyEntity, toEditable } from "./types";
 import FunctionDefinitionsWorkspace from "../function-definition/function-definition";
 import OperatorDefinition from "./operator-definition/operator-definition";
@@ -19,7 +20,7 @@ import "./metadata-builder.css";
 export * from "./types";
 
 type NavigationGuard = (continueNavigation: () => void, cancelNavigation?: () => void) => void;
-type MetadataSection = "entities" | "functions" | "operators";
+type MetadataSection = "diagram" | "entities" | "functions" | "operators";
 
 async function request(url: string, options?: RequestInit) {
   const response = await fetch(url, options);
@@ -61,7 +62,7 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
   const [dirty, setDirty] = useState(false);
   useEffect(() => { selectedNameRef.current = selectedName; }, [selectedName]);
   const requestedSection = searchParams.get("section");
-  const activeSection: MetadataSection = entityOnly ? "entities" : requestedSection === "functions" || requestedSection === "operators"
+  const activeSection: MetadataSection = entityOnly ? "entities" : requestedSection === "diagram" || requestedSection === "functions" || requestedSection === "operators"
     ? requestedSection
     : "entities";
   const selectSection = async (section: MetadataSection) => {
@@ -223,6 +224,34 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
     setMessage("");
   };
 
+  const openTableAsEntity = (table: { name: string; schema: string; columns: { name: string; dataType: string; isPrimaryKey: boolean }[] }) => {
+    const existing = entities.find((entity) => entity.name === table.name);
+    if (existing) {
+      setSelectedName(existing.name);
+      setDraft(toEditable(existing));
+    } else {
+      setSelectedName("");
+      setDraft({
+        name: table.name,
+        schema: table.schema,
+        rawSql: table.name,
+        fields: table.columns.map((column) => ({
+          id: `diagram_${column.name}`,
+          name: column.name,
+          dbColumn: column.name,
+          dataType: column.dataType,
+          isRawSql: false,
+        })),
+        relations: [],
+      });
+    }
+    setDirty(false);
+    setMessage("");
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete("section");
+    setSearchParams(nextSearchParams);
+  };
+
   const entityActionAdapter: DefinitionActionAdapter = {
     resourceName: "entity",
     selectedName,
@@ -256,17 +285,17 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
           </div>
         </div>
         {!entityOnly && <nav className="metadata-section-tabs" role="tablist" aria-label="Metadata definition types">
+          <button type="button" role="tab" aria-selected={activeSection === "diagram"} className={activeSection === "diagram" ? "active" : ""} onClick={() => selectSection("diagram")}>
+            <Icon name="schema" size={14} /> Diagram
+          </button>
           <button type="button" role="tab" aria-selected={activeSection === "entities"} className={activeSection === "entities" ? "active" : ""} onClick={() => selectSection("entities")}>
             <Icon name="table" size={14} /> Entity definitions
           </button>
-          <button type="button" role="tab" aria-selected={activeSection === "functions"} className={activeSection === "functions" ? "active" : ""} onClick={() => selectSection("functions")}>
-            <Icon name="function" size={14} /> Function definitions
-          </button>
-          {/* <button type="button" role="tab" aria-selected={activeSection === "operators"} className={activeSection === "operators" ? "active" : ""} onClick={() => selectSection("operators")}>
-            <Icon name="operator" size={14} /> Operator definitions
-          </button> */}
         </nav>}
       </section>}
+      {!entityOnly && <div className="metadata-workspace-panel" hidden={activeSection !== "diagram"}>
+        <EntityDiagram entities={entities} onOpenEntity={openTableAsEntity} />
+      </div>}
       <div className="metadata-workspace-panel" hidden={activeSection !== "entities"}>
         <section className={`metadata-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>
           <EntityList
