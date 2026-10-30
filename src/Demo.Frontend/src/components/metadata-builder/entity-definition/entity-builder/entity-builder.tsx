@@ -27,10 +27,11 @@ export default function EntityBuilder({
   onDraftChange,
 }: EntityBuilderProps) {
   return (
-    <main className="metadata-editor">
-      <div className="editor-head">
-        <div>
-          <span className="section-kicker">{selectedName || (draft ? "New Entity…" : "Select an entity")}</span>
+    <div className="metadata-editor">
+      <div className="table-details-heading metadata-editor-heading">
+        <div className="table-details-title">
+          <span className="section-kicker">METADATA DEFINITION</span>
+          <h3>{selectedName || (draft ? "New Entity…" : "Select an entity")}</h3>
         </div>
         <DefinitionActions adapter={actionAdapter} />
       </div>
@@ -105,6 +106,6 @@ export default function EntityBuilder({
             </fieldset>
           </div>
         </>}
-    </main>
+    </div>
   );
 }

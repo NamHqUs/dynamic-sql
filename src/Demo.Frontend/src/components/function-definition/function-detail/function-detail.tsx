@@ -66,10 +66,11 @@ export default function FunctionDetail({
   );
 
   return (
-    <main className="metadata-editor">
-      <div className="editor-head">
-        <div>
-          <span className="section-kicker">{selectedName || (draft ? "New Function…" : "Select a function")}</span>
+    <div className="metadata-editor">
+      <div className="table-details-heading metadata-editor-heading">
+        <div className="table-details-title">
+          <span className="section-kicker">FUNCTION DEFINITION</span>
+          <h3>{selectedName || (draft ? "New Function…" : "Select a function")}</h3>
         </div>
         <DefinitionActions adapter={actionAdapter} />
       </div>
@@ -300,6 +301,6 @@ export default function FunctionDetail({
         </section>
           </fieldset>
         </>}
-    </main>
+    </div>
   );
 }

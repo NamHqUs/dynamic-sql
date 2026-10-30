@@ -36,6 +36,22 @@
   text-overflow: ellipsis;
 }
 
+.metadata-editor-heading .table-details-title h3 {
+  display: block;
+  color: #e9edf4;
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.metadata-editor-heading .editor-actions {
+  margin-left: auto;
+}
+
+.metadata-editor-heading {
+  margin: 21px 27px 0;
+}
+
 .table-details-title h3 span {
   flex: 0 1 auto;
   overflow: hidden;
@@ -275,6 +291,12 @@
 
 .table-details-data-panel .database-grid-wrap {
   border-color: #252b38;
+}
+
+@media (max-width: 760px) {
+  .metadata-editor-heading {
+    margin: 20px 16px 0;
+  }
 }
 
 @media (max-width: 600px) {

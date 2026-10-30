@@ -39,6 +39,7 @@ function App() {
   const database = useSelector((state: RootState) => state.database);
   const page = pageForPath(location.pathname);
   const [metadataVisited, setMetadataVisited] = useState(() => location.pathname === PAGE_PATHS.metadata);
+  const [functionDefinitionsVisited, setFunctionDefinitionsVisited] = useState(() => location.pathname === PAGE_PATHS.functions);
   const [queryBuilderVisited, setQueryBuilderVisited] = useState(() => location.pathname === PAGE_PATHS.builder);
   const [queryBuilderInstance, setQueryBuilderInstance] = useState(0);
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
@@ -82,6 +83,7 @@ function App() {
 
   useEffect(() => {
     if (location.pathname === PAGE_PATHS.metadata) setMetadataVisited(true);
+    if (location.pathname === PAGE_PATHS.functions) setFunctionDefinitionsVisited(true);
     if (location.pathname === PAGE_PATHS.builder) setQueryBuilderVisited(true);
   }, [location.pathname]);
 
@@ -103,6 +105,7 @@ function App() {
       : PAGE_PATHS[nextPage];
     const continueNavigation = () => {
       if (nextPage === "metadata") setMetadataVisited(true);
+      if (nextPage === "functions") setFunctionDefinitionsVisited(true);
       if (nextPage === "builder") setQueryBuilderVisited(true);
       approvedNavigation.current = destination;
       routerNavigate(destination);
@@ -218,7 +221,7 @@ function App() {
           : undefined}
       /></div>}
       {metadataVisited && <div hidden={page !== "metadata"} className={page === "metadata" ? "page-transition page-transition-no-slide" : undefined}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
-      {page === "functions" && <div className="page-transition page-transition-no-slide">
+      {functionDefinitionsVisited && <div hidden={page !== "functions"} className={page === "functions" ? "page-transition page-transition-no-slide" : undefined}>
         <section className="page-heading metadata-page-heading function-page-heading">
           <div className="metadata-heading-main">
             <span className="metadata-heading-mark" aria-hidden="true"><Icon name="function" size={21} /></span>
