@@ -6,7 +6,7 @@ import { createBrowserRouter, Navigate, Route, RouterProvider, Routes, useBlocke
 import Icon, { getDatabaseIconName } from "./components/icon/icon";
 import DataSources from "./components/data-sources/data-sources";
 import DatabaseConnection from "./components/data-sources/database-connection/database-connection";
-import { fetchDbProvider, fetchDbTables } from "./components/data-sources/database-slice";
+import { fetchDbProvider, fetchDbSchema, fetchDbTables } from "./components/data-sources/database-slice";
 import QueryBuilder, { setQueryBuilderDefinition } from "./components/query-builder/query-builder";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
 import FunctionDefinitionsWorkspace from "./components/function-definition/function-definition";
@@ -63,6 +63,7 @@ function App() {
     void store.dispatch(fetchDbProvider()).then((result) => {
       if (fetchDbProvider.fulfilled.match(result) && result.payload !== null) {
         void store.dispatch(fetchDbTables());
+        void store.dispatch(fetchDbSchema());
       }
     });
   }, []);

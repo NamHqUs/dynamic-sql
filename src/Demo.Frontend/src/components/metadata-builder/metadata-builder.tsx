@@ -62,7 +62,7 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
   const [dirty, setDirty] = useState(false);
   useEffect(() => { selectedNameRef.current = selectedName; }, [selectedName]);
   const requestedSection = searchParams.get("section");
-  const activeSection: MetadataSection = entityOnly ? "entities" : requestedSection === "diagram" || requestedSection === "functions" || requestedSection === "operators"
+  const activeSection: MetadataSection = entityOnly ? "entities" : requestedSection === "diagram" || requestedSection === "entities" || requestedSection === "functions" || requestedSection === "operators"
     ? requestedSection
     : "diagram";
   useEffect(() => {
