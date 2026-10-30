@@ -1,6 +1,6 @@
 .database-sidebar {
   display: flex;
-  min-height: 0;
+  min-height: calc(100vh - 257px);
   flex-direction: column;
   padding: 22px 12px;
   border-right: 1px solid var(--line);
