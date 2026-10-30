@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS "in".PremiumPayments;
 DROP TABLE IF EXISTS "in".Claims;
 DROP TABLE IF EXISTS "in".Policies;
 DROP TABLE IF EXISTS "in".InsurancePlans;
+DROP TABLE IF EXISTS main.__DynamicSqlRelations;
 DROP TABLE IF EXISTS he.LabResults;
 DROP TABLE IF EXISTS he.Visits;
 DROP TABLE IF EXISTS he.Diagnoses;
@@ -87,6 +88,34 @@ CREATE TABLE "in".Claims (
     BilledAmount NUMERIC NOT NULL, AllowedAmount NUMERIC NOT NULL, PaidAmount NUMERIC NOT NULL,
     Status TEXT NOT NULL, DenialReason TEXT NULL, ProcessedDate TEXT NULL,
     FOREIGN KEY (PolicyId) REFERENCES Policies (Id));
+
+-- SQLite cannot declare foreign keys across attached schemas. Keep those
+-- logical relationships here so schema discovery can return both schema keys.
+CREATE TABLE main.__DynamicSqlRelations (
+    RelationName TEXT NOT NULL,
+    SourceSchema TEXT NOT NULL,
+    SourceTable TEXT NOT NULL,
+    SourceColumn TEXT NOT NULL,
+    TargetSchema TEXT NOT NULL,
+    TargetTable TEXT NOT NULL,
+    TargetColumn TEXT NOT NULL,
+    Ordinal INTEGER NOT NULL,
+    IsUnique INTEGER NOT NULL,
+    PRIMARY KEY (RelationName, Ordinal));
+INSERT INTO main.__DynamicSqlRelations
+    (RelationName, SourceSchema, SourceTable, SourceColumn, TargetSchema, TargetTable, TargetColumn, Ordinal, IsUnique)
+VALUES
+    ('FK_main_Employees_hr_Departments', 'main', 'Employees', 'DepartmentId', 'hr', 'Departments', 'Id', 0, 0),
+    ('FK_hr_PerformanceReviews_main_Employees', 'hr', 'PerformanceReviews', 'EmployeeId', 'main', 'Employees', 'Id', 0, 0),
+    ('FK_hr_LeaveRequests_main_Employees', 'hr', 'LeaveRequests', 'EmployeeId', 'main', 'Employees', 'Id', 0, 0),
+    ('FK_sa_Orders_main_Users', 'sa', 'Orders', 'UserId', 'main', 'Users', 'Id', 0, 0),
+    ('FK_sa_Orders_main_Employees', 'sa', 'Orders', 'SalesRepId', 'main', 'Employees', 'Id', 0, 0),
+    ('FK_he_Visits_main_Users', 'he', 'Visits', 'UserId', 'main', 'Users', 'Id', 0, 0),
+    ('FK_he_Visits_main_Employees', 'he', 'Visits', 'DoctorId', 'main', 'Employees', 'Id', 0, 0),
+    ('FK_he_Visits_main_Locations', 'he', 'Visits', 'LocationId', 'main', 'Locations', 'Id', 0, 0),
+    ('FK_in_Policies_main_Users', 'in', 'Policies', 'UserId', 'main', 'Users', 'Id', 0, 0),
+    ('FK_in_Policies_main_Employees', 'in', 'Policies', 'AgentId', 'main', 'Employees', 'Id', 0, 0),
+    ('FK_in_Claims_he_Visits', 'in', 'Claims', 'VisitId', 'he', 'Visits', 'Id', 0, 0);
 
 CREATE INDEX he.IX_Visits_UserId ON Visits (UserId);
 CREATE INDEX "in".IX_Claims_PolicyId ON Claims (PolicyId);

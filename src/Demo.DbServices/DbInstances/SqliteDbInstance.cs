@@ -10,6 +10,8 @@ namespace Demo.DbServices.DbInstances;
 
 public sealed class SqliteDbInstance : DbInstance, IDisposable
 {
+    private const string CrossSchemaRelationsTable = "__DynamicSqlRelations";
+
     private static readonly Regex MemoryDatabaseAttachment = new(
         """ATTACH\s+DATABASE\s+':memory:'\s+AS\s+(?<schema>"(?:""|[^"])+"|[A-Za-z_][A-Za-z0-9_]*)\s*;""",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -97,7 +99,7 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
                 var sourceColumns = orderedColumns.Select(row => row["from"]?.ToString() ?? string.Empty).ToArray();
                 var targetColumns = orderedColumns.Select(row => row["to"]?.ToString() ?? string.Empty).ToArray();
                 relationships.Add(new DatabaseRelationshipDto(
-                    $"FK_{table.Name}_{foreignKey.Key}",
+                    $"FK_{table.Schema}_{table.Name}_{foreignKey.Key}",
                     table.Schema,
                     table.Name,
                     sourceColumns,
@@ -108,6 +110,7 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
             }
         }
 
+        relationships.AddRange(ReadCrossSchemaRelationships(dbConnection));
         return new DatabaseSchemaDto(tables, relationships);
     }
 
@@ -154,10 +157,44 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
                 $"SELECT name FROM {QuoteIdentifier(schema)}.sqlite_master " +
                 "WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name;");
             tables.AddRange(schemaTables.Rows.Cast<DataRow>()
-                .Select(row => (Schema: schema, Name: row["name"]?.ToString() ?? string.Empty)));
+                .Select(row => (Schema: schema, Name: row["name"]?.ToString() ?? string.Empty))
+                .Where(table => !string.Equals(table.Schema, "main", StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(table.Name, CrossSchemaRelationsTable, StringComparison.OrdinalIgnoreCase)));
         }
 
         return tables;
+    }
+
+    private List<DatabaseRelationshipDto> ReadCrossSchemaRelationships(DbConnection connection)
+    {
+        var metadataTable = ReadSchemaRows(connection,
+            $"SELECT 1 FROM {QuoteIdentifier("main")}.sqlite_master " +
+            $"WHERE type = 'table' AND name = {QuoteLiteral(CrossSchemaRelationsTable)};");
+        if (metadataTable.Rows.Count == 0)
+            return [];
+
+        var rows = ReadSchemaRows(connection,
+            $"SELECT RelationName, SourceSchema, SourceTable, SourceColumn, " +
+            $"TargetSchema, TargetTable, TargetColumn, Ordinal, IsUnique " +
+            $"FROM {QuoteIdentifier("main")}.{QuoteIdentifier(CrossSchemaRelationsTable)} " +
+            "ORDER BY RelationName, Ordinal;");
+        return rows.Rows.Cast<DataRow>()
+            .GroupBy(row => row["RelationName"]?.ToString() ?? string.Empty, StringComparer.Ordinal)
+            .Select(group =>
+            {
+                var orderedRows = group.OrderBy(row => Convert.ToInt32(row["Ordinal"])).ToArray();
+                var first = orderedRows[0];
+                return new DatabaseRelationshipDto(
+                    first["RelationName"]?.ToString() ?? string.Empty,
+                    first["SourceSchema"]?.ToString() ?? string.Empty,
+                    first["SourceTable"]?.ToString() ?? string.Empty,
+                    orderedRows.Select(row => row["SourceColumn"]?.ToString() ?? string.Empty).ToArray(),
+                    first["TargetSchema"]?.ToString() ?? string.Empty,
+                    first["TargetTable"]?.ToString() ?? string.Empty,
+                    orderedRows.Select(row => row["TargetColumn"]?.ToString() ?? string.Empty).ToArray(),
+                    Convert.ToBoolean(first["IsUnique"]));
+            })
+            .ToList();
     }
 
     private HashSet<string>[] GetUniqueColumnSets(DbConnection connection, string schema, string tableName)

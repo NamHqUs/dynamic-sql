@@ -27,7 +27,7 @@ const TABLE_DOMAINS = {
   PremiumPayments: ["Insurance"],
   Claims: ["Insurance"],
 };
-const DOMAIN_ORDER = ["HR", "Insurance", "Sales", "Healthcare", "Others"];
+const DOMAIN_ORDER = ["All", "HR", "Insurance", "Sales", "Healthcare", "Others"];
 const DOMAIN_TONES = {
   HR: "finance",
   Insurance: "customer",
@@ -348,6 +348,7 @@ export default function DiagramView() {
 
   const groups = useMemo(() => {
     const grouped = new Map(DOMAIN_ORDER.map((name) => [name, []]));
+    grouped.get("All").push(...schema.tables);
     for (const table of schema.tables) {
       const domains = TABLE_DOMAINS[table.name] || ["Others"];
       for (const domain of domains) grouped.get(domain).push(table);
