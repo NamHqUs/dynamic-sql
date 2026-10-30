@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../../icon/icon";
 import { selectDbTable } from "../database-slice";
@@ -11,18 +11,48 @@ type TableListProps = {
 export default function TableList({ scrollStyle }: TableListProps) {
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
-  const { schema, selectedTable, selectedSchema, tableStatus, tableError, schemaStatus, schemaError } = useSelector((state) => state.database);
+  const { schema, selectedTable, selectedSchema, tableStatus, tableError, schemaStatus, schemaError, debugUiEnabled } = useSelector((state) => state.database);
   const tableListRef = useRef<HTMLDivElement>(null);
-  const tablesBySchema = new Map();
-  for (const table of schema.tables) {
-    const searchText = `${table.schema || "Default schema"} ${table.name}`.toLocaleLowerCase();
-    if (!searchText.includes(searchQuery.trim().toLocaleLowerCase())) continue;
-    const schemaName = table.schema || "";
-    const group = tablesBySchema.get(schemaName) || [];
-    group.push(table);
-    tablesBySchema.set(schemaName, group);
-  }
-  const schemaNames = Array.from(tablesBySchema.keys()).sort((left, right) => left.localeCompare(right));
+  const filteredTables = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase();
+    return schema.tables
+      .filter((table) => `${table.schema || "Default schema"} ${table.name}`.toLocaleLowerCase().includes(query))
+      .slice()
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }, [schema.tables, searchQuery]);
+
+  useEffect(() => {
+    if (!debugUiEnabled) return;
+
+    console.log("Database table list render model:", {
+      props: { scrollStyle },
+      redux: {
+        schema,
+        selectedTable,
+        selectedSchema,
+        tableStatus,
+        tableError,
+        schemaStatus,
+        schemaError,
+      },
+      viewModel: {
+        searchQuery,
+        filteredTables,
+      },
+    });
+  }, [
+    debugUiEnabled,
+    schema,
+    selectedTable,
+    selectedSchema,
+    tableStatus,
+    tableError,
+    schemaStatus,
+    schemaError,
+    searchQuery,
+    filteredTables,
+    scrollStyle,
+  ]);
 
   useEffect(() => {
     const tableList = tableListRef.current;
@@ -67,34 +97,23 @@ export default function TableList({ scrollStyle }: TableListProps) {
         {(tableStatus === "loading" || schemaStatus === "loading") && <p className="database-message">Loading tables…</p>}
         {tableStatus === "failed" && <p className="database-message error" role="alert">{tableError}</p>}
         {schemaStatus === "failed" && <p className="database-message error" role="alert">{schemaError}</p>}
-        {schemaStatus === "succeeded" && schemaNames.map((schemaName) => (
-          <section className="database-schema-group" key={schemaName || "default"}>
-            <div className="database-schema-heading">
-              <Icon name="schema" size={13} />
-              <span>{schemaName || "Default schema"}</span>
-              <span className="database-schema-count">{tablesBySchema.get(schemaName).length}</span>
-            </div>
-            {tablesBySchema.get(schemaName)
-              .slice()
-              .sort((left, right) => left.name.localeCompare(right.name))
-              .map((table) => {
-                const isSelected = table.name === selectedTable && table.schema === selectedSchema;
-                return (
-                  <button
-                    className={`database-table-item${isSelected ? " active" : ""}`}
-                    key={`${table.schema}.${table.name}`}
-                    onClick={() => dispatch(selectDbTable({ name: table.name, schema: table.schema }))}
-                    aria-current={isSelected ? "page" : undefined}
-                  >
-                    <Icon name="table" size={15} />
-                    <span>{table.name}</span>
-                    <Icon name="chevron" size={14} />
-                  </button>
-                );
-              })}
-          </section>
-        ))}
-        {schemaStatus === "succeeded" && schema.tables.length > 0 && tablesBySchema.size === 0 && (
+        {schemaStatus === "succeeded" && filteredTables.map((table) => {
+            const isSelected = table.name === selectedTable && table.schema === selectedSchema;
+            return (
+              <button
+                className={`database-table-item${isSelected ? " active" : ""}`}
+                key={`${table.schema}.${table.name}`}
+                onClick={() => dispatch(selectDbTable({ name: table.name, schema: table.schema }))}
+                aria-current={isSelected ? "page" : undefined}
+              >
+                <Icon name="table" size={15} />
+                <span className="database-table-name">{table.name}</span>
+                <span className="database-table-schema">{table.schema || "Default schema"}</span>
+                <Icon name="chevron" size={14} />
+              </button>
+            );
+          })}
+        {schemaStatus === "succeeded" && schema.tables.length > 0 && filteredTables.length === 0 && (
           <p className="database-message">No tables match your search.</p>
         )}
         {schemaStatus === "succeeded" && schema.tables.length === 0 && <p className="database-message">No tables are available.</p>}

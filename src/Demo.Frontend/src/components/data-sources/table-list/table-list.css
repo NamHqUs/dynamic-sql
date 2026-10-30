@@ -53,38 +53,6 @@
   color: #697385;
 }
 
-.database-schema-group {
-  margin-bottom: 14px;
-}
-
-.database-schema-heading {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  padding: 8px 10px 6px;
-  color: #aaa1c8;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .3px;
-}
-
-.database-schema-heading > span:nth-child(2) {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.database-schema-heading > svg {
-  flex: 0 0 auto;
-  color: #8372b2;
-}
-
-.database-schema-count {
-  color: #757e90;
-  font: 10px "Manrope", sans-serif;
-}
-
 .database-table-item {
   width: 100%;
   display: flex;
@@ -99,8 +67,31 @@
   font-size: 13px;
 }
 
-.database-table-item > span {
+.database-table-name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.database-table-schema {
+  max-width: 35%;
+  margin-left: auto;
+  padding: 3px 6px;
+  overflow: hidden;
+  color: #757e90;
+  background: #1a1e29;
+  border-radius: 4px;
+  font-size: 10px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.database-table-item.active > .database-table-schema {
+  color: #b5a5df;
+  background: #342c4d;
 }
 
 .database-table-item > .icon:last-child {

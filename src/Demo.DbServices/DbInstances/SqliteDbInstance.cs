@@ -37,6 +37,17 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
     protected override string PrepareInitializationScript(string script)
         => MemoryDatabaseAttachment.Replace(script, string.Empty);
 
+    public override string[] GetTableNames()
+    {
+        using var connection = CreateDbConnection();
+        if (connection.State != ConnectionState.Open)
+            connection.Open();
+        var dbConnection = connection as DbConnection
+            ?? throw new InvalidOperationException("The configured database connection does not support schema discovery.");
+
+        return GetTables(dbConnection).Select(table => table.Name).ToArray();
+    }
+
     public override bool TestConnection()
     {
         if (!InMemory)
@@ -64,9 +75,10 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
 
         var tables = new List<DatabaseTableDto>();
         var relationships = new List<DatabaseRelationshipDto>();
-        foreach (var tableName in GetTableNames())
+        foreach (var table in GetTables(dbConnection))
         {
-            var columns = ReadSchemaRows(dbConnection, $"PRAGMA table_info({QuoteLiteral(tableName)});");
+            var columns = ReadSchemaRows(dbConnection,
+                $"PRAGMA {QuoteIdentifier(table.Schema)}.table_info({QuoteLiteral(table.Name)});");
             var tableColumns = columns.Rows.Cast<DataRow>()
                 .Select(row => new DatabaseColumnDto(
                     row["name"]?.ToString() ?? string.Empty,
@@ -74,21 +86,22 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
                     Convert.ToInt32(row["pk"]) > 0,
                     Convert.ToInt32(row["notnull"]) == 0 && Convert.ToInt32(row["pk"]) == 0))
                 .ToArray();
-            tables.Add(new DatabaseTableDto("main", tableName, tableColumns));
+            tables.Add(new DatabaseTableDto(table.Schema, table.Name, tableColumns));
 
-            var uniqueColumnSets = GetUniqueColumnSets(dbConnection, tableName);
-            var foreignKeys = ReadSchemaRows(dbConnection, $"PRAGMA foreign_key_list({QuoteLiteral(tableName)});");
+            var uniqueColumnSets = GetUniqueColumnSets(dbConnection, table.Schema, table.Name);
+            var foreignKeys = ReadSchemaRows(dbConnection,
+                $"PRAGMA {QuoteIdentifier(table.Schema)}.foreign_key_list({QuoteLiteral(table.Name)});");
             foreach (var foreignKey in foreignKeys.Rows.Cast<DataRow>().GroupBy(row => Convert.ToInt32(row["id"])))
             {
                 var orderedColumns = foreignKey.OrderBy(row => Convert.ToInt32(row["seq"])).ToArray();
                 var sourceColumns = orderedColumns.Select(row => row["from"]?.ToString() ?? string.Empty).ToArray();
                 var targetColumns = orderedColumns.Select(row => row["to"]?.ToString() ?? string.Empty).ToArray();
                 relationships.Add(new DatabaseRelationshipDto(
-                    $"FK_{tableName}_{foreignKey.Key}",
-                    "main",
-                    tableName,
+                    $"FK_{table.Name}_{foreignKey.Key}",
+                    table.Schema,
+                    table.Name,
                     sourceColumns,
-                    "main",
+                    table.Schema,
                     orderedColumns[0]["table"]?.ToString() ?? string.Empty,
                     targetColumns,
                     uniqueColumnSets.Any(uniqueColumns => uniqueColumns.SetEquals(sourceColumns))));
@@ -128,15 +141,36 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
         }
     }
 
-    private HashSet<string>[] GetUniqueColumnSets(DbConnection connection, string tableName)
+    private IReadOnlyList<(string Schema, string Name)> GetTables(DbConnection connection)
     {
-        var indexes = ReadSchemaRows(connection, $"PRAGMA index_list({QuoteLiteral(tableName)});");
+        var schemas = ReadSchemaRows(connection, "PRAGMA database_list;").Rows.Cast<DataRow>()
+            .Select(row => row["name"]?.ToString() ?? string.Empty)
+            .Where(schema => !string.IsNullOrWhiteSpace(schema) &&
+                !string.Equals(schema, "temp", StringComparison.OrdinalIgnoreCase));
+        var tables = new List<(string Schema, string Name)>();
+        foreach (var schema in schemas)
+        {
+            var schemaTables = ReadSchemaRows(connection,
+                $"SELECT name FROM {QuoteIdentifier(schema)}.sqlite_master " +
+                "WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name;");
+            tables.AddRange(schemaTables.Rows.Cast<DataRow>()
+                .Select(row => (Schema: schema, Name: row["name"]?.ToString() ?? string.Empty)));
+        }
+
+        return tables;
+    }
+
+    private HashSet<string>[] GetUniqueColumnSets(DbConnection connection, string schema, string tableName)
+    {
+        var indexes = ReadSchemaRows(connection,
+            $"PRAGMA {QuoteIdentifier(schema)}.index_list({QuoteLiteral(tableName)});");
         return indexes.Rows.Cast<DataRow>()
             .Where(row => Convert.ToInt32(row["unique"]) == 1)
             .Select(row =>
             {
                 var indexName = row["name"]?.ToString() ?? string.Empty;
-                var columns = ReadSchemaRows(connection, $"PRAGMA index_info({QuoteLiteral(indexName)});");
+                var columns = ReadSchemaRows(connection,
+                    $"PRAGMA {QuoteIdentifier(schema)}.index_info({QuoteLiteral(indexName)});");
                 return columns.Rows.Cast<DataRow>()
                     .Select(column => column["name"]?.ToString() ?? string.Empty)
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
