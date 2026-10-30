@@ -27,7 +27,7 @@ const TABLE_DOMAINS = {
   PremiumPayments: ["Insurance"],
   Claims: ["Insurance"],
 };
-const DOMAIN_ORDER = ["All", "HR", "Insurance", "Sales", "Healthcare", "Others"];
+const DOMAIN_ORDER = ["Sales", "HR", "Insurance", "Healthcare", "Others", "All"];
 const DOMAIN_TONES = {
   HR: "finance",
   Insurance: "customer",
