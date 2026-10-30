@@ -7,7 +7,7 @@ import "./diagram-view.css";
 export type DiagramTable = {
   schema: string;
   name: string;
-  columns: { name: string; dataType: string; isPrimaryKey: boolean }[];
+  columns: { name: string; dataType: string; isPrimaryKey: boolean; isNullable?: boolean }[];
 };
 
 type DiagramViewProps = {
@@ -18,8 +18,7 @@ type DiagramViewProps = {
 const CARD_WIDTH = 210;
 const CARD_HEIGHT = 112;
 const BOARD_MARGIN = 20;
-const RELATION_LABEL_WIDTH = 48;
-const RELATION_LABEL_HEIGHT = 22;
+const ARROW_CLEARANCE = 8;
 const TABLE_DOMAINS = {
   Locations: ["HR", "Healthcare"],
   Users: ["Insurance", "Sales", "Healthcare"],
@@ -53,10 +52,6 @@ function tableKey(schema, name) {
 
 function domainTone(domain) {
   return DOMAIN_TONES[domain] || "custom";
-}
-
-function relationCardinality(relation) {
-  return relation.isManyToMany ? "N:N" : relation.isUnique ? "1:1" : "1:N";
 }
 
 function orientation(a, b, c) {
@@ -107,21 +102,13 @@ function relationGeometry(from, to, cardWidth, fromHeight, toHeight = fromHeight
   const unitX = (end.x - start.x) / distance;
   const unitY = (end.y - start.y) / distance;
   const cardExtent = cardWidth * Math.abs(unitX) + ((fromHeight + toHeight) / 2) * Math.abs(unitY);
-  const labelExtent = RELATION_LABEL_WIDTH * Math.abs(unitX)
-    + RELATION_LABEL_HEIGHT * Math.abs(unitY);
-  const requiredDistance = cardExtent + labelExtent + 20;
+  const requiredDistance = cardExtent + 20 + ARROW_CLEARANCE;
   const fromOffset = (cardWidth / 2) * Math.abs(unitX) + (fromHeight / 2) * Math.abs(unitY);
   const toOffset = (cardWidth / 2) * Math.abs(unitX) + (toHeight / 2) * Math.abs(unitY);
   return {
     start: { x: start.x + unitX * fromOffset, y: start.y + unitY * fromOffset },
-    end: { x: end.x - unitX * toOffset, y: end.y - unitY * toOffset },
+    end: { x: end.x - unitX * (toOffset + ARROW_CLEARANCE), y: end.y - unitY * (toOffset + ARROW_CLEARANCE) },
     midpoint: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
-    label: {
-      left: (start.x + end.x) / 2 - RELATION_LABEL_WIDTH / 2,
-      right: (start.x + end.x) / 2 + RELATION_LABEL_WIDTH / 2,
-      top: (start.y + end.y) / 2 - RELATION_LABEL_HEIGHT / 2,
-      bottom: (start.y + end.y) / 2 + RELATION_LABEL_HEIGHT / 2,
-    },
     distance,
     requiredDistance,
   };
@@ -177,15 +164,11 @@ function createLayout(tables, relationships, boardWidth, boardHeight) {
         if (tableKeyValue === relation.from || tableKeyValue === relation.to) continue;
         const tableRect = rectangleFor(position, cardWidth, cardHeight, 4);
         if (segmentIntersectsRectangle(geometry.start, geometry.end, tableRect)) score += 1e8;
-        if (rectanglesOverlap(geometry.label, tableRect)) score += 1e8;
       }
       for (const existing of laidOutEdges) {
         if (relation.from === existing.relation.from || relation.from === existing.relation.to
           || relation.to === existing.relation.from || relation.to === existing.relation.to) continue;
         if (segmentsCross(geometry.start, geometry.end, existing.geometry.start, existing.geometry.end)) score += 1e8;
-        if (segmentIntersectsRectangle(geometry.start, geometry.end, existing.geometry.label)
-          || segmentIntersectsRectangle(existing.geometry.start, existing.geometry.end, geometry.label)) score += 1e8;
-        if (rectanglesOverlap(geometry.label, existing.geometry.label)) score += 1e8;
       }
       newGeometries.push({ relation, geometry });
     }
@@ -341,7 +324,7 @@ export default function DiagramView({ tables: suppliedTables, onOpenTable }: Dia
         setLayoutSize({ width: nextWidth, height: nextHeight });
         hasInitialLayoutSize.current = true;
       }
-      if (autoRange) {
+      if (autoRange && !suppliedTables) {
         setLayoutSize({ width: nextWidth, height: nextHeight });
         setPositions({});
       }
@@ -432,10 +415,10 @@ export default function DiagramView({ tables: suppliedTables, onOpenTable }: Dia
     dispatch(fetchDbTableData({ tableName: table.name, schema: table.schema, limit: 10, refresh: true }));
   }
 
-  if (schemaStatus === "loading" || schemaStatus === "idle") {
+  if (!suppliedTables && (schemaStatus === "loading" || schemaStatus === "idle")) {
     return <div className="diagram-state"><Icon name="schema" size={20} /><span>Loading database relationships…</span></div>;
   }
-  if (schemaStatus === "failed") {
+  if (!suppliedTables && schemaStatus === "failed") {
     return <p className="diagram-state error" role="alert">{schemaError || "Unable to load database relationships."}</p>;
   }
   if (diagramTables.length === 0) {
@@ -521,14 +504,6 @@ export default function DiagramView({ tables: suppliedTables, onOpenTable }: Dia
       </div>}
       <div className="diagram-scroll" ref={setScrollElement}>
         <div className="diagram-board" style={boardSize}>
-          <div className="diagram-board-tools">
-            <div className="diagram-legend" aria-label="Diagram legend">
-              <span><span className="diagram-column-key primary"><Icon name="key" size={13} /></span><span>Primary key</span></span>
-              <span><b>1:1</b><span>One-to-one</span></span>
-              <span><b>1:N</b><span>One-to-many</span></span>
-              <span><b>N:N</b><span>Many-to-many</span></span>
-            </div>
-          </div>
           <svg className="diagram-relations" width={boardSize.width} height={boardSize.height} aria-label="Table relationships">
             <defs>
               <marker id="diagram-relation-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
@@ -549,8 +524,6 @@ export default function DiagramView({ tables: suppliedTables, onOpenTable }: Dia
                             d={`M ${geometry.start.x} ${geometry.start.y} L ${geometry.end.x} ${geometry.end.y}`}
                             markerEnd="url(#diagram-relation-arrow)"
                           />
-                          <rect x={geometry.midpoint.x - RELATION_LABEL_WIDTH / 2} y={geometry.midpoint.y - RELATION_LABEL_HEIGHT / 2} width={RELATION_LABEL_WIDTH} height={RELATION_LABEL_HEIGHT} rx="6" />
-                          <text className="diagram-edge-cardinality" x={geometry.midpoint.x} y={geometry.midpoint.y + 3}>{relationCardinality(relation)}</text>
                           </g>
               );
             })}
@@ -582,6 +555,7 @@ export default function DiagramView({ tables: suppliedTables, onOpenTable }: Dia
                   <Icon name="table" size={15} />
                   <span>{table.name}</span>
                   <small>{table.columns.length}</small>
+                  <span className="diagram-table-schema">{table.schema}</span>
                 </button>
                 <button
                   type="button"
@@ -597,11 +571,11 @@ export default function DiagramView({ tables: suppliedTables, onOpenTable }: Dia
                   <ul className="diagram-column-list">
                     {table.columns.map((column) => (
                       <li key={column.name} title={`${column.name} — ${column.dataType || "unknown type"}`}>
-                        <span className="diagram-column-name">{column.name}</span>
-                        <span className="diagram-column-type">{column.dataType || "?"}</span>
-                        <span className={`diagram-column-key${column.isPrimaryKey ? " primary" : ""}`} title={column.isPrimaryKey ? "Primary key" : "Column type"}>
-                          <Icon name={column.isPrimaryKey ? "key" : "type"} size={13} />
+                        <span className="diagram-column-key primary">
+                          {column.isPrimaryKey && <Icon name="key" size={13} />}
                         </span>
+                        <span className={`diagram-column-name${column.isPrimaryKey ? " primary" : ""}`}>{column.name}</span>
+                        <span className="diagram-column-type" title="Nullable">{column.isNullable ? "YES" : "NO"}</span>
                       </li>
                     ))}
                     {table.columns.length === 0 && <li className="diagram-no-columns">No columns</li>}

@@ -1,7 +1,5 @@
 import { MetadataEntity, MetadataField, MetadataRelation } from "../query-builder/query-design/query-builder-slice";
 
-export const relationTypes = ["Lookup", "Collection"];
-
 let nextFieldId = 1;
 export const createFieldId = () => `f_${nextFieldId++}`;
 

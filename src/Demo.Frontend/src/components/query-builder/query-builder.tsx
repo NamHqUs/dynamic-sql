@@ -606,10 +606,10 @@ export default function QueryBuilder({ onBackToReports, onRequestConnection }: Q
             <h2>Explore your data</h2>
             <p>Shape a query visually, then inspect its SQL and live results.</p>
             <div className="query-heading-summary" aria-label="Current query summary">
-              <span className="query-heading-source"><Icon name="table" size={13} />{activeEntity?.name || activeDefinition.entity || "Choose a data source"}</span>
               <span><strong>{activeDefinition.columns.length}</strong> fields</span>
               <span><strong>{countFilters(activeDefinition.filters)}</strong> filters</span>
               <span><strong>{activeDefinition.sorts.length}</strong> sorts</span>
+              <span className="query-heading-source"><Icon name="table" size={13} />{activeEntity?.name || activeDefinition.entity || "Choose a data source"}</span>
             </div>
           </div>
         </div>

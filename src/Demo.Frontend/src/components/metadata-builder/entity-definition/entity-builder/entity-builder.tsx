@@ -1,43 +1,29 @@
 import Icon from "../../../icon/icon";
 import { MetadataEntity } from "../../../query-builder/query-design/query-builder-slice";
 import { EditableEntity } from "../../types";
-import DefinitionActions from "../../definition-actions/definition-actions";
-import type { DefinitionActionAdapter } from "../../definition-actions/definition-actions";
 import FieldsBuilder from "./fields-builder/fields-builder";
 import RelationsBuilder from "./relations-builder/relations-builder";
 import "./entity-builder.css";
 
 type EntityBuilderProps = {
   draft: EditableEntity | null;
-  selectedName: string;
   canEdit: boolean;
   message: string;
   allEntities: MetadataEntity[];
-  actionAdapter: DefinitionActionAdapter;
   onDraftChange: (updater: (draft: EditableEntity) => EditableEntity) => void;
   compact?: boolean;
 };
 
 export default function EntityBuilder({
   draft,
-  selectedName,
   canEdit,
   message,
   allEntities,
-  actionAdapter,
   onDraftChange,
   compact = false,
 }: EntityBuilderProps) {
   return (
-    <div className={`metadata-editor${compact ? " metadata-editor-compact" : ""}`}>
-      <div className="table-details-heading metadata-editor-heading">
-        <div className="table-details-title">
-          <span className="section-kicker">METADATA DEFINITION</span>
-          <h3>{selectedName || (draft ? "New Entity…" : "Select an entity")}</h3>
-        </div>
-        <DefinitionActions adapter={actionAdapter} />
-      </div>
-
+    <div className={`metadata-editor-content${compact ? " metadata-editor-compact" : ""}`}>
       {!draft
         ? <div className="metadata-empty">
             <Icon name="table" size={32} />
@@ -63,17 +49,7 @@ export default function EntityBuilder({
             />
           </label>
           <label>
-            Schema
-            <input
-              value={draft.schema}
-              onChange={(event) =>
-                onDraftChange((entity) => ({ ...entity, schema: event.target.value }))
-              }
-              placeholder="e.g. dbo"
-            />
-          </label>
-          <label>
-            Raw SQL source
+            SQL Statement
             <input
               value={draft.rawSql}
               onChange={(event) =>

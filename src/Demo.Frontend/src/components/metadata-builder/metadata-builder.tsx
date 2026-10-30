@@ -14,6 +14,7 @@ import { EditableEntity, emptyEntity, toEditable } from "./types";
 import FunctionDefinitionsWorkspace from "../function-definition/function-definition";
 import OperatorDefinition from "./operator-definition/operator-definition";
 import { resolveDefinitionChanges, useDefinitionUnsavedWarning } from "./definition-actions/definition-actions";
+import DefinitionActions from "./definition-actions/definition-actions";
 import type { DefinitionActionAdapter } from "./definition-actions/definition-actions";
 import "./metadata-builder.css";
 
@@ -284,10 +285,10 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
             <h2>Define your data model</h2>
             <p>Describe your entities and relationships to make your data ready for querying.</p>
             <div className="metadata-heading-summary" aria-label="Metadata summary">
-              <span className="metadata-heading-current"><Icon name="table" size={13} />{selectedName || "No entity selected"}</span>
               <span><strong>{status === "succeeded" ? entities.length : "—"}</strong> entities</span>
               <span><strong>{status === "succeeded" ? fieldCount : "—"}</strong> fields</span>
               <span><strong>{status === "succeeded" ? relationCount : "—"}</strong> relations</span>
+              <span className="metadata-heading-current"><Icon name="table" size={13} />{selectedName || "No entity selected"}</span>
             </div>
           </div>
         </div>
@@ -304,14 +305,21 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
         <EntityDiagram
           entities={entities}
           onOpenEntity={(table) => openTableAsEntity(table, false)}
+          entityEditorHeader={
+            <div className="table-details-heading metadata-editor-heading">
+              <div className="table-details-title">
+                <span className="section-kicker">METADATA DEFINITION</span>
+                <h3>{selectedName || (draft ? "New Entity…" : "Select an entity")}</h3>
+              </div>
+              <DefinitionActions adapter={entityActionAdapter} />
+            </div>
+          }
           entityEditor={
             <EntityBuilder
               draft={draft}
-              selectedName={selectedName}
               canEdit={!selectedName || Boolean(draft?.canDelete)}
               message={message}
               allEntities={entities}
-              actionAdapter={entityActionAdapter}
               onDraftChange={updateDraft}
               compact
             />
@@ -329,15 +337,22 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
             onSelectEntity={selectEntity}
           />
           <PanelSplitter panel={panel} label="entities panel" />
-          <EntityBuilder
-            draft={draft}
-            selectedName={selectedName}
-            canEdit={!selectedName || Boolean(draft?.canDelete)}
-            message={message}
-            allEntities={entities}
-            actionAdapter={entityActionAdapter}
-            onDraftChange={updateDraft}
-          />
+          <div className="metadata-editor">
+            <div className="table-details-heading metadata-editor-heading">
+              <div className="table-details-title">
+                <span className="section-kicker">METADATA DEFINITION</span>
+                <h3>{selectedName || (draft ? "New Entity…" : "Select an entity")}</h3>
+              </div>
+              <DefinitionActions adapter={entityActionAdapter} />
+            </div>
+            <EntityBuilder
+              draft={draft}
+              canEdit={!selectedName || Boolean(draft?.canDelete)}
+              message={message}
+              allEntities={entities}
+              onDraftChange={updateDraft}
+            />
+          </div>
         </section>
       </div>
       {!entityOnly && <div className="metadata-workspace-panel" hidden={activeSection !== "functions"}>

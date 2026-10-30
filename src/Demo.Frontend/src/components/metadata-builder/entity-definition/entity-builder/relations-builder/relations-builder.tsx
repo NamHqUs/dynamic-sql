@@ -1,6 +1,6 @@
 import Icon from "../../../../icon/icon";
 import { MetadataEntity } from "../../../../query-builder/query-design/query-builder-slice";
-import { EditableRelation, emptyRelation, relationTypes } from "../../../types";
+import { EditableRelation, emptyRelation } from "../../../types";
 import "./relations-builder.css";
 
 type RelationsBuilderProps = {
@@ -102,14 +102,6 @@ export default function RelationsBuilder({
               placeholder="Relation name"
             />
             <select
-              value={relation.type}
-              onChange={(event) => updateRelation(index, "type", event.target.value)}
-            >
-              {relationTypes.map((type) => (
-                <option key={type}>{type}</option>
-              ))}
-            </select>
-            <select
               value={relation.relatedEntity}
               onChange={(event) => updateRelation(index, "relatedEntity", event.target.value)}
             >
@@ -120,6 +112,7 @@ export default function RelationsBuilder({
                   <option key={entity.name}>{entity.name}</option>
                 ))}
             </select>
+            <span className="relation-key-label">Reference keys</span>
             <button
               className="icon-button subtle"
               type="button"

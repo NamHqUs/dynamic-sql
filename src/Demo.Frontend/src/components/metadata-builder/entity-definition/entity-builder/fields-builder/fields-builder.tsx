@@ -3,6 +3,8 @@ import Icon from "../../../../icon/icon";
 import { EditableEntity, emptyField } from "../../../types";
 import "./fields-builder.css";
 
+const dataTypes = ["String", "Number", "Boolean", "Datetime"];
+
 type FieldsBuilderProps = {
   fields: EditableEntity["fields"];
   onChange: (updater: (fields: EditableEntity["fields"]) => EditableEntity["fields"]) => void;
@@ -52,8 +54,8 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
         <div className="field-editor-head">
           <span className="drag-handle-col" />
           <span>Name</span>
-          <span>Kind</span>
-          <span>Column or expression</span>
+          <span>Column or SQL Statement</span>
+          <span>Column DataType</span>
           <span />
         </div>
         {fields.map((field, index) => (
@@ -120,32 +122,31 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
               onChange={(event) => updateField(index, (current) => ({ ...current, name: event.target.value }))}
               placeholder="Field name"
             />
+            <div className="field-source-cell">
+              <input
+                value={field.dbColumn ?? ""}
+                onChange={(event) => updateField(index, (current) => ({ ...current, dbColumn: event.target.value }))}
+                placeholder={field.isRawSql ? "SQL expression" : field.name || "Column name"}
+              />
+              <button
+                className={`field-source-toggle${field.isRawSql ? " active" : ""}`}
+                type="button"
+                title={field.isRawSql ? "Treat as database column" : "Treat as SQL statement"}
+                onClick={() => updateField(index, (current) => ({
+                  ...current,
+                  isRawSql: !current.isRawSql,
+                  dbColumn: current.dbColumn || current.name,
+                }))}
+              >
+                {field.isRawSql ? "SQL" : "DB"}
+              </button>
+            </div>
             <select
-              value={field.isRawSql ? "rawSqlField" : "dbField"}
-              onChange={(event) => updateField(index, (current) => event.target.value === "rawSqlField"
-                ? {
-                    id: current.id,
-                    name: current.name,
-                    dbColumn: current.isRawSql ? current.dbColumn : "",
-                    dataType: current.dataType,
-                    isRawSql: true,
-                  }
-                : {
-                    id: current.id,
-                    name: current.name,
-                    dbColumn: current.isRawSql ? current.name : current.dbColumn,
-                    dataType: current.dataType,
-                    isRawSql: false,
-                  })}
+              value={field.dataType || "String"}
+              onChange={(event) => updateField(index, (current) => ({ ...current, dataType: event.target.value }))}
             >
-              <option value="dbField">Field</option>
-              <option value="rawSqlField">RawSqlField</option>
+              {dataTypes.map((dataType) => <option key={dataType}>{dataType}</option>)}
             </select>
-            <input
-              value={field.dbColumn ?? ""}
-              onChange={(event) => updateField(index, (current) => ({ ...current, dbColumn: event.target.value }))}
-              placeholder={field.isRawSql ? "@Column expression" : field.name || "Column name"}
-            />
             <button
               className="icon-button subtle"
               type="button"
