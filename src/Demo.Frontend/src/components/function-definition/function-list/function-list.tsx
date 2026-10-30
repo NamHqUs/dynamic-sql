@@ -72,6 +72,7 @@ export default function FunctionList({
       loadingMessage={status === "loading" ? "Loading function definitions…" : undefined}
       groups={groups}
       onFilterChange={setFilter}
+      scrollable
     />
   );
 }

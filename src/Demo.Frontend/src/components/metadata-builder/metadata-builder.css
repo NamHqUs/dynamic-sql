@@ -1,7 +1,7 @@
 .metadata-workspace { min-height: 640px; display: grid; grid-template-columns: var(--panel-width, 260px) minmax(0, 1fr); overflow: hidden; background: linear-gradient(135deg, #11141c, #0f1218); border: 0; border-radius: 9px; box-shadow: 0 14px 40px #00000018; }
 .metadata-list { background: #0e1117; border-right: 1px solid var(--line); padding: 22px 12px; }
-.metadata-list-head, .editor-section-head, .editor-head { display: flex; align-items: center; justify-content: space-between; }
-.metadata-list-head { height: 37px; padding: 0 10px 15px; }
+.sidebar-list-heading, .editor-section-head, .editor-head { display: flex; align-items: center; justify-content: space-between; }
+.sidebar-list-heading { height: 37px; padding: 0 10px 15px; }
 .editor-current-selection { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
 .metadata-search { display: flex; align-items: center; gap: 8px; color: #687385; background: #171b24; border: 1px solid #2b3340; border-radius: 5px; padding: 0 9px; margin-bottom: 14px; }
 .metadata-search input { width: 100%; border: 0; outline: 0; color: #e9edf4; background: transparent; font-size: 12px; padding: 9px 0; }

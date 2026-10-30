@@ -1,5 +1,6 @@
 import { useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import Icon from "../../icon/icon";
+import SidebarList from "../../sidebar-list/sidebar-list";
 import "./metadata-sidebar.css";
 
 export type MetadataSidebarGroup = {
@@ -70,22 +71,20 @@ export default function MetadataSidebar({
   );
 
   return (
-    <aside className={className}>
-      <div className="metadata-list-head">
-        <span className="section-kicker">{title}</span>
-        <span className="tab-number">{totalCount}</span>
-      </div>
-      <label className="metadata-search">
-        <Icon name="search" size={14} />
-        <input
-          value={filter}
-          onChange={(event) => onFilterChange(event.target.value)}
-          placeholder={searchPlaceholder}
-        />
-      </label>
-      {scrollable
-        ? <div className="metadata-sidebar-scroll" ref={listRef} style={scrollStyle}>{listContent}</div>
-        : listContent}
-    </aside>
+    <SidebarList
+      className={className}
+      ariaLabel={title}
+      title={title}
+      totalCount={<span className="tab-number">{totalCount}</span>}
+      filter={filter}
+      searchPlaceholder={searchPlaceholder}
+      onFilterChange={onFilterChange}
+      listRef={listRef}
+      listClassName={scrollable ? "metadata-sidebar-scroll" : "metadata-sidebar-content"}
+      searchClassName="metadata-search"
+      scrollStyle={scrollStyle}
+    >
+      {listContent}
+    </SidebarList>
   );
 }

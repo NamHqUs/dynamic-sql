@@ -11,9 +11,10 @@
   min-height: 0;
   flex: 1 1 auto;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
-.database-sidebar-heading {
+.sidebar-list-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -33,9 +34,12 @@
 }
 
 .database-table-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: calc(100% - 16px);
   margin: 0 8px 14px;
-  padding: 9px 10px;
+  padding: 0 10px;
   border: 1px solid #303847;
   border-radius: 6px;
   outline: 0;
@@ -44,12 +48,23 @@
   font-size: 12px;
 }
 
-.database-table-search:focus {
+.database-table-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 0;
+  border: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+
+.database-table-search:focus-within {
   border-color: #8064e8;
   box-shadow: 0 0 0 2px #8064e833;
 }
 
-.database-table-search::placeholder {
+.database-table-search input::placeholder {
   color: #697385;
 }
 

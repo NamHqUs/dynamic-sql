@@ -8,14 +8,19 @@
 .signature-paren, .signature-arrow { color: #8f7fca; font: 500 20px "Manrope", sans-serif; }
 .signature-argument-list { flex: 1 1 auto; min-width: 0; }
 .signature-result { flex: 0 0 130px; }
-.function-argument-table-wrap { overflow-x: auto; border: 1px solid #2a3140; border-radius: 6px; }
-.function-argument-table-header { min-width: 520px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; color: #dce1eb; border-bottom: 1px solid #2a3140; }
+.function-argument-table-wrap { overflow: hidden; border: 1px solid #2a3140; border-radius: 6px; }
+.function-argument-table-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; color: #dce1eb; border-bottom: 1px solid #2a3140; }
 .function-argument-table-header strong { font-size: 12px; }
-.function-argument-table { width: 100%; min-width: 520px; border-collapse: collapse; text-align: left; }
+.function-argument-table { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; text-align: left; }
 .function-argument-table th { color: #858fa1; background: #10131a; border-bottom: 1px solid #2a3140; font: 500 11px "Manrope", sans-serif; letter-spacing: .5px; text-transform: uppercase; padding: 10px 12px; }
 .function-argument-table td { padding: 6px 12px; border-bottom: 1px solid #202633; }
 .function-argument-table tr:last-child td { border-bottom: 0; }
-.function-argument-table td:last-child, .function-argument-table th:last-child { width: 48px; text-align: center; }
+.function-argument-table th:nth-child(1), .function-argument-table td:nth-child(1) { width: 25%; }
+.function-argument-table th:nth-child(2), .function-argument-table td:nth-child(2) { width: 25%; }
+.function-argument-table th:nth-child(3), .function-argument-table td:nth-child(3) { width: 42%; }
+.function-argument-table td:last-child, .function-argument-table th:last-child { width: 60px; text-align: center; }
+.function-argument-table td:last-child { padding-right: 16px; }
+.function-argument-table td:last-child .icon-button { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0; margin-right: 4px; }
 .function-argument-table input, .function-argument-table select, .function-template-table input, .function-template-table select { width: 100%; border: 0; background: transparent; }
 .function-argument-table select, .function-template-table select { color-scheme: dark; }
 .function-argument-table select option, .function-template-table select option { color: #dce1eb; background-color: #191e28; }

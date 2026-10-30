@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "../../icon/icon";
+import SidebarList from "../../sidebar-list/sidebar-list";
 import { selectDbTable } from "../database-slice";
 import "./table-list.css";
 
@@ -80,20 +81,19 @@ export default function TableList({ scrollStyle }: TableListProps) {
   }, [searchQuery, selectedSchema, selectedTable]);
 
   return (
-    <aside className="database-sidebar split-panel" aria-label="Database tables">
-      <div className="database-sidebar-heading">
-        <span className="section-kicker">TABLES</span>
-        {schemaStatus === "succeeded" && <span className="database-table-count">{schema.tables.length}</span>}
-      </div>
-      <input
-        className="database-table-search"
-        type="search"
-        value={searchQuery}
-        onChange={(event) => setSearchQuery(event.target.value)}
-        placeholder="Search tables"
-        aria-label="Search tables"
-      />
-      <div className="database-table-list" ref={tableListRef} style={scrollStyle}>
+    <SidebarList
+      className="database-sidebar split-panel"
+      ariaLabel="Database tables"
+      title="TABLES"
+      totalCount={schemaStatus === "succeeded" ? <span className="database-table-count">{schema.tables.length}</span> : undefined}
+      filter={searchQuery}
+      searchPlaceholder="Search tables"
+      onFilterChange={setSearchQuery}
+      listRef={tableListRef}
+      listClassName="database-table-list"
+      searchClassName="database-table-search"
+      scrollStyle={scrollStyle}
+    >
         {(tableStatus === "loading" || schemaStatus === "loading") && <p className="database-message">Loading tables…</p>}
         {tableStatus === "failed" && <p className="database-message error" role="alert">{tableError}</p>}
         {schemaStatus === "failed" && <p className="database-message error" role="alert">{schemaError}</p>}
@@ -117,7 +117,6 @@ export default function TableList({ scrollStyle }: TableListProps) {
           <p className="database-message">No tables match your search.</p>
         )}
         {schemaStatus === "succeeded" && schema.tables.length === 0 && <p className="database-message">No tables are available.</p>}
-      </div>
-    </aside>
+    </SidebarList>
   );
 }
