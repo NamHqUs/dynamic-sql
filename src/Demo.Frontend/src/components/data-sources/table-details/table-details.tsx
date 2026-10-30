@@ -23,10 +23,22 @@ export default function TableDetails({ dataLoadingEnabled }: { dataLoadingEnable
 
   const relations = schema.relationships.flatMap((relation) => {
     if (relation.sourceTable === table.name && relation.sourceSchema === table.schema) {
-      return [{ relation, otherSchema: relation.targetSchema, otherTable: relation.targetTable }];
+      return [{
+        relation,
+        currentColumns: relation.sourceColumns,
+        otherColumns: relation.targetColumns,
+        otherSchema: relation.targetSchema,
+        otherTable: relation.targetTable,
+      }];
     }
     if (relation.targetTable === table.name && relation.targetSchema === table.schema) {
-      return [{ relation, otherSchema: relation.sourceSchema, otherTable: relation.sourceTable }];
+      return [{
+        relation,
+        currentColumns: relation.targetColumns,
+        otherColumns: relation.sourceColumns,
+        otherSchema: relation.sourceSchema,
+        otherTable: relation.sourceTable,
+      }];
     }
     return [];
   });
@@ -111,24 +123,26 @@ export default function TableDetails({ dataLoadingEnabled }: { dataLoadingEnable
             aria-labelledby="table-details-relations-tab"
             tabIndex={0}
           >
-            {relations.length > 0 ? relations.map((relation) => (
-              <div className="table-details-relation" key={`${relation.relation.name}-${relation.otherSchema}-${relation.otherTable}`}>
-                <div className="table-details-joined-keys">
-                  <span>{relation.relation.sourceColumns.join(", ")}</span>
-                  <Icon name="chevron" size={13} />
-                  <span>{relation.relation.targetColumns.join(", ")}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => dispatch(selectDbTable({ name: relation.otherTable, schema: relation.otherSchema }))}
-                  title={`View ${relation.otherSchema ? `${relation.otherSchema}.` : ""}${relation.otherTable}`}
-                >
-                  <Icon name="table" size={13} />
-                  {relation.otherSchema ? `${relation.otherSchema}.` : ""}{relation.otherTable}
-                  <Icon name="chevron" size={12} />
-                </button>
+            {relations.length > 0 ? (
+              <div className="table-details-relations">
+                {relations.map((relation) => (
+                  <div className="table-details-relation" key={`${relation.relation.name}-${relation.otherSchema}-${relation.otherTable}`}>
+                    <span className="table-details-current-column">{relation.currentColumns.join(", ")}</span>
+                    <Icon name="link" size={16} />
+                    <span className="table-details-other-column">{relation.otherColumns.join(", ")}</span>
+                    <button
+                      type="button"
+                      onClick={() => dispatch(selectDbTable({ name: relation.otherTable, schema: relation.otherSchema }))}
+                      title={`View ${relation.otherSchema ? `${relation.otherSchema}.` : ""}${relation.otherTable}`}
+                    >
+                      <Icon name="table" size={13} />
+                      {relation.otherSchema ? `${relation.otherSchema}.` : ""}{relation.otherTable}
+                      <Icon name="chevron" size={12} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            )) : <p className="database-message">No table relations.</p>}
+            ) : <p className="database-message">No table relations.</p>}
           </div>
         ) : (
           <div

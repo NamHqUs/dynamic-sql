@@ -12,6 +12,7 @@ const paths = {
   folder: <><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></>,
   group: <><rect x="3" y="4" width="11" height="11" rx="2" /><rect x="10" y="9" width="11" height="11" rx="2" /></>,
   "arrow-left": <><path d="m14 18-6-6 6-6M8 12h12" /></>,
+  link: <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /><path d="M8 12h8" /></>,
   remove: <><circle cx="12" cy="12" r="9" /><path d="M8 12h8" /></>,
   database: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5" /><path d="M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></>,
   firebird: <><path d="M12 3c1 4-3 5-2 8 1-1 2-2 2-4 4 3 6 6 4 10-1 2-3 3-5 3-4 0-7-3-6-7 0-2 2-4 4-6 0 2 0 3 1 4 1-2 2-4 2-8Z" /></>,
