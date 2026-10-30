@@ -98,34 +98,34 @@ IF OBJECT_ID(N'sa.Orders', N'U') IS NOT NULL DROP TABLE [sa].[Orders];
 IF OBJECT_ID(N'sa.Products', N'U') IS NOT NULL DROP TABLE [sa].[Products];
 IF OBJECT_ID(N'hr.LeaveRequests', N'U') IS NOT NULL DROP TABLE [hr].[LeaveRequests];
 IF OBJECT_ID(N'hr.PerformanceReviews', N'U') IS NOT NULL DROP TABLE [hr].[PerformanceReviews];
-IF OBJECT_ID(N'Main.Employees', N'U') IS NOT NULL DROP TABLE [Main].[Employees];
-IF OBJECT_ID(N'Main.Users', N'U') IS NOT NULL DROP TABLE [Main].[Users];
+IF OBJECT_ID(N'main.Employees', N'U') IS NOT NULL DROP TABLE [Main].[Employees];
+IF OBJECT_ID(N'main.Users', N'U') IS NOT NULL DROP TABLE [Main].[Users];
 IF OBJECT_ID(N'hr.Departments', N'U') IS NOT NULL DROP TABLE [hr].[Departments];
-IF OBJECT_ID(N'Main.Locations', N'U') IS NOT NULL DROP TABLE [Main].[Locations];
+IF OBJECT_ID(N'main.Locations', N'U') IS NOT NULL DROP TABLE [Main].[Locations];
 
 -- Shared
-CREATE TABLE Main.[Locations] (Id int PRIMARY KEY, Name nvarchar(255) NOT NULL, City nvarchar(255) NOT NULL, State nvarchar(255) NOT NULL);
-CREATE TABLE Main.[Users] (
+CREATE TABLE main.[Locations] (Id int PRIMARY KEY, Name nvarchar(255) NOT NULL, City nvarchar(255) NOT NULL, State nvarchar(255) NOT NULL);
+CREATE TABLE main.[Users] (
     Id int PRIMARY KEY, FirstName nvarchar(255) NOT NULL, LastName nvarchar(255) NOT NULL, BirthDate date NOT NULL,
     Gender nvarchar(255) NOT NULL, City nvarchar(255) NOT NULL, State nvarchar(255) NOT NULL);
 
 -- HR
 CREATE TABLE hr.[Departments] (Id int PRIMARY KEY, Name nvarchar(255) NOT NULL);
-CREATE TABLE Main.[Employees] (
+CREATE TABLE main.[Employees] (
     Id int PRIMARY KEY, FirstName nvarchar(255) NOT NULL, LastName nvarchar(255) NOT NULL,
     DepartmentId int NOT NULL, LocationId int NOT NULL, ManagerId int NULL,
     JobTitle nvarchar(255) NOT NULL, HireDate date NOT NULL, Salary decimal(18, 4) NOT NULL, EmploymentType nvarchar(255) NOT NULL,
     FOREIGN KEY (DepartmentId) REFERENCES hr.[Departments] (Id),
-    FOREIGN KEY (LocationId) REFERENCES Main.[Locations] (Id),
-    FOREIGN KEY (ManagerId) REFERENCES Main.[Employees] (Id));
+    FOREIGN KEY (LocationId) REFERENCES main.[Locations] (Id),
+    FOREIGN KEY (ManagerId) REFERENCES main.[Employees] (Id));
 CREATE TABLE hr.[PerformanceReviews] (
     Id int PRIMARY KEY, EmployeeId int NOT NULL, ReviewYear int NOT NULL,
     Rating int NOT NULL, BonusAmount decimal(18, 4) NOT NULL,
-    FOREIGN KEY (EmployeeId) REFERENCES Main.[Employees] (Id));
+    FOREIGN KEY (EmployeeId) REFERENCES main.[Employees] (Id));
 CREATE TABLE hr.[LeaveRequests] (
     Id int PRIMARY KEY, EmployeeId int NOT NULL, LeaveType nvarchar(255) NOT NULL,
     StartDate date NOT NULL, Days int NOT NULL, Status nvarchar(255) NOT NULL,
-    FOREIGN KEY (EmployeeId) REFERENCES Main.[Employees] (Id));
+    FOREIGN KEY (EmployeeId) REFERENCES main.[Employees] (Id));
 
 -- Sales
 CREATE TABLE sa.[Products] (
@@ -134,8 +134,8 @@ CREATE TABLE sa.[Products] (
 CREATE TABLE sa.[Orders] (
     Id int PRIMARY KEY, UserId int NOT NULL, SalesRepId int NOT NULL, OrderDate date NOT NULL,
     Channel nvarchar(255) NOT NULL, Status nvarchar(255) NOT NULL,
-    FOREIGN KEY (UserId) REFERENCES Main.[Users] (Id),
-    FOREIGN KEY (SalesRepId) REFERENCES Main.[Employees] (Id));
+    FOREIGN KEY (UserId) REFERENCES main.[Users] (Id),
+    FOREIGN KEY (SalesRepId) REFERENCES main.[Employees] (Id));
 CREATE TABLE sa.[OrderItems] (
     Id int PRIMARY KEY, OrderId int NOT NULL, ProductId int NOT NULL,
     Quantity int NOT NULL, UnitPrice decimal(18, 4) NOT NULL, DiscountAmount decimal(18, 4) NOT NULL,
@@ -149,9 +149,9 @@ CREATE TABLE he.[Visits] (
     Id int PRIMARY KEY, UserId int NOT NULL, DoctorId int NOT NULL, LocationId int NOT NULL,
     VisitDate date NOT NULL, VisitType nvarchar(255) NOT NULL, DiagnosisId int NOT NULL,
     DurationMinutes int NOT NULL, Charge decimal(18, 4) NOT NULL, Status nvarchar(255) NOT NULL,
-    FOREIGN KEY (UserId) REFERENCES Main.[Users] (Id),
-    FOREIGN KEY (DoctorId) REFERENCES Main.[Employees] (Id),
-    FOREIGN KEY (LocationId) REFERENCES Main.[Locations] (Id),
+    FOREIGN KEY (UserId) REFERENCES main.[Users] (Id),
+    FOREIGN KEY (DoctorId) REFERENCES main.[Employees] (Id),
+    FOREIGN KEY (LocationId) REFERENCES main.[Locations] (Id),
     FOREIGN KEY (DiagnosisId) REFERENCES he.[Diagnoses] (Id));
 CREATE TABLE he.[LabResults] (
     Id int PRIMARY KEY, VisitId int NOT NULL, TestName nvarchar(255) NOT NULL,
@@ -165,9 +165,9 @@ CREATE TABLE [in].[InsurancePlans] (
 CREATE TABLE [in].[Policies] (
     Id int PRIMARY KEY, UserId int NOT NULL, PlanId int NOT NULL, AgentId int NOT NULL,
     StartDate date NOT NULL, EndDate date NULL, Status nvarchar(255) NOT NULL,
-    FOREIGN KEY (UserId) REFERENCES Main.[Users] (Id),
+    FOREIGN KEY (UserId) REFERENCES main.[Users] (Id),
     FOREIGN KEY (PlanId) REFERENCES [in].[InsurancePlans] (Id),
-    FOREIGN KEY (AgentId) REFERENCES Main.[Employees] (Id));
+    FOREIGN KEY (AgentId) REFERENCES main.[Employees] (Id));
 CREATE TABLE [in].[PremiumPayments] (
     Id int PRIMARY KEY, PolicyId int NOT NULL, PaymentDate date NOT NULL, Amount decimal(18, 4) NOT NULL, Status nvarchar(255) NOT NULL,
     FOREIGN KEY (PolicyId) REFERENCES [in].[Policies] (Id));
@@ -183,7 +183,7 @@ CREATE INDEX IX_Claims_PolicyId ON [in].[Claims] (PolicyId);
 CREATE INDEX IX_OrderItems_OrderId ON sa.[OrderItems] (OrderId);
 CREATE INDEX IX_Orders_UserId ON sa.[Orders] (UserId);
 
-INSERT INTO Main.[Locations] (Id, Name, City, State) VALUES
+INSERT INTO main.[Locations] (Id, Name, City, State) VALUES
     (1, 'NorthStar Boston Center', 'Boston', 'MA'),
     (2, 'NorthStar New York Center', 'New York', 'NY'),
     (3, 'NorthStar Philadelphia Center', 'Philadelphia', 'PA'),
@@ -207,7 +207,7 @@ INSERT INTO hr.[Departments] (Id, Name) VALUES
     (9, 'Human Resources'),
     (10, 'Finance & IT');
 
-INSERT INTO Main.[Employees] (Id, FirstName, LastName, DepartmentId, LocationId, ManagerId, JobTitle, HireDate, Salary, EmploymentType) VALUES
+INSERT INTO main.[Employees] (Id, FirstName, LastName, DepartmentId, LocationId, ManagerId, JobTitle, HireDate, Salary, EmploymentType) VALUES
     (1, 'Amber', 'Anderson', 1, 1, 10, 'Head of Retail Sales', '2015-01-31', 105000.0, 'Full-time'),
     (2, 'Justin', 'Lewis', 2, 1, 10, 'Chief of Primary Care', '2013-02-23', 324000.0, 'Full-time'),
     (3, 'Sophia', 'Patel', 3, 5, 10, 'Chief of Specialty Care', '2012-12-22', 513000.0, 'Full-time'),
@@ -300,7 +300,7 @@ INSERT INTO Main.[Employees] (Id, FirstName, LastName, DepartmentId, LocationId,
     (90, 'Katherine', 'Peterson', 10, 3, 10, 'Financial Analyst', '2017-02-24', 126700.0, 'Full-time'),
     (91, 'Sophia', 'Myers', 10, 3, 10, 'Financial Analyst', '2021-11-26', 97300.0, 'Full-time');
 
-INSERT INTO Main.[Users] (Id, FirstName, LastName, BirthDate, Gender, City, State) VALUES
+INSERT INTO main.[Users] (Id, FirstName, LastName, BirthDate, Gender, City, State) VALUES
     (1, 'Patricia', 'Ramirez', '2015-09-03', 'M', 'New York', 'NY'),
     (2, 'Philip', 'Cox', '1960-07-22', 'M', 'Atlanta', 'GA'),
     (3, 'Sara', 'Adams', '1980-11-28', 'F', 'Seattle', 'WA'),

@@ -18,21 +18,21 @@ DROP TABLE IF EXISTS sa.Orders;
 DROP TABLE IF EXISTS sa.Products;
 DROP TABLE IF EXISTS hr.LeaveRequests;
 DROP TABLE IF EXISTS hr.PerformanceReviews;
-DROP TABLE IF EXISTS Main.Employees;
-DROP TABLE IF EXISTS Main.Users;
+DROP TABLE IF EXISTS main.Employees;
+DROP TABLE IF EXISTS main.Users;
 DROP TABLE IF EXISTS hr.Departments;
-DROP TABLE IF EXISTS Main.Locations;
+DROP TABLE IF EXISTS main.Locations;
 
--- Tables shared by more than one business scope stay in Main.
-CREATE TABLE Main.Locations (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL, City TEXT NOT NULL, State TEXT NOT NULL);
-CREATE TABLE Main.Users (
+-- Tables shared by more than one business scope stay in main.
+CREATE TABLE main.Locations (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL, City TEXT NOT NULL, State TEXT NOT NULL);
+CREATE TABLE main.Users (
     Id INTEGER PRIMARY KEY, FirstName TEXT NOT NULL, LastName TEXT NOT NULL, BirthDate TEXT NOT NULL,
     Gender TEXT NOT NULL, City TEXT NOT NULL, State TEXT NOT NULL);
 
 -- SQLite cannot enforce foreign keys across attached schemas.
 -- HR
 CREATE TABLE hr.Departments (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL);
-CREATE TABLE Main.Employees (
+CREATE TABLE main.Employees (
     Id INTEGER PRIMARY KEY, FirstName TEXT NOT NULL, LastName TEXT NOT NULL,
     DepartmentId INTEGER NOT NULL, LocationId INTEGER NOT NULL, ManagerId INTEGER NULL,
     JobTitle TEXT NOT NULL, HireDate TEXT NOT NULL, Salary NUMERIC NOT NULL, EmploymentType TEXT NOT NULL,
@@ -93,7 +93,7 @@ CREATE INDEX "in".IX_Claims_PolicyId ON Claims (PolicyId);
 CREATE INDEX sa.IX_OrderItems_OrderId ON OrderItems (OrderId);
 CREATE INDEX sa.IX_Orders_UserId ON Orders (UserId);
 
-INSERT INTO Main.Locations (Id, Name, City, State) VALUES
+INSERT INTO main.Locations (Id, Name, City, State) VALUES
     (1, 'NorthStar Boston Center', 'Boston', 'MA'),
     (2, 'NorthStar New York Center', 'New York', 'NY'),
     (3, 'NorthStar Philadelphia Center', 'Philadelphia', 'PA'),
@@ -117,7 +117,7 @@ INSERT INTO hr.Departments (Id, Name) VALUES
     (9, 'Human Resources'),
     (10, 'Finance & IT');
 
-INSERT INTO Main.Employees (Id, FirstName, LastName, DepartmentId, LocationId, ManagerId, JobTitle, HireDate, Salary, EmploymentType) VALUES
+INSERT INTO main.Employees (Id, FirstName, LastName, DepartmentId, LocationId, ManagerId, JobTitle, HireDate, Salary, EmploymentType) VALUES
     (1, 'Amber', 'Anderson', 1, 1, 10, 'Head of Retail Sales', '2015-01-31', 105000.0, 'Full-time'),
     (2, 'Justin', 'Lewis', 2, 1, 10, 'Chief of Primary Care', '2013-02-23', 324000.0, 'Full-time'),
     (3, 'Sophia', 'Patel', 3, 5, 10, 'Chief of Specialty Care', '2012-12-22', 513000.0, 'Full-time'),
@@ -210,7 +210,7 @@ INSERT INTO Main.Employees (Id, FirstName, LastName, DepartmentId, LocationId, M
     (90, 'Katherine', 'Peterson', 10, 3, 10, 'Financial Analyst', '2017-02-24', 126700.0, 'Full-time'),
     (91, 'Sophia', 'Myers', 10, 3, 10, 'Financial Analyst', '2021-11-26', 97300.0, 'Full-time');
 
-INSERT INTO Main.Users (Id, FirstName, LastName, BirthDate, Gender, City, State) VALUES
+INSERT INTO main.Users (Id, FirstName, LastName, BirthDate, Gender, City, State) VALUES
     (1, 'Patricia', 'Ramirez', '2015-09-03', 'M', 'New York', 'NY'),
     (2, 'Philip', 'Cox', '1960-07-22', 'M', 'Atlanta', 'GA'),
     (3, 'Sara', 'Adams', '1980-11-28', 'F', 'Seattle', 'WA'),
