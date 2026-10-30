@@ -41,7 +41,7 @@ public sealed class SqlServerDialect : ISqlDialect
 
     public string RenderTable(IEntity entity)
         => entity is RawSqlEntity rawSqlEntity
-            ? rawSqlEntity.RawSql
+            ? RawSqlEntitySqlGuard.ValidateAndReturn(rawSqlEntity.RawSql, RawSqlEntityDialect.SqlServer)
             : $"{QuoteIdentifier(entity.DbSchema ?? "dbo")}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public string RenderBoolean(bool value) => value ? "1" : "0";
@@ -109,7 +109,7 @@ public sealed class SqliteDialect(string? schema = null) : ISqlDialect
 
     public string RenderTable(IEntity entity)
         => entity is RawSqlEntity rawSqlEntity
-            ? rawSqlEntity.RawSql
+            ? RawSqlEntitySqlGuard.ValidateAndReturn(rawSqlEntity.RawSql, RawSqlEntityDialect.Sqlite)
             : string.IsNullOrEmpty(entity.DbSchema ?? schema)
                 ? QuoteIdentifier(entity.DbTable ?? entity.Name)
                 : $"{QuoteIdentifier(entity.DbSchema ?? schema!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
@@ -144,7 +144,7 @@ public sealed class PostgresDialect(string schema = "public") : ISqlDialect
 
     public string RenderTable(IEntity entity)
         => entity is RawSqlEntity rawSqlEntity
-            ? rawSqlEntity.RawSql
+            ? RawSqlEntitySqlGuard.ValidateAndReturn(rawSqlEntity.RawSql, RawSqlEntityDialect.Postgres)
             : $"{QuoteIdentifier(entity.DbSchema ?? schema)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public string RenderBoolean(bool value) => value ? "TRUE" : "FALSE";

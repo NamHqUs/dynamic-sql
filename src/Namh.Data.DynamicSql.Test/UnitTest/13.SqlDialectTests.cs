@@ -107,6 +107,56 @@ public class _13_SqlDialectTests
     }
 
     [Test]
+    public void RawSqlEntityAllowsSelectSourcesWithBlacklistedWordsInLiteralsAndIdentifiers()
+    {
+        var sqlServerEntity = new RawSqlEntity(
+            Name: "Users",
+            Fields: [],
+            RawSql: "(SELECT N'delete update' AS [delete] FROM [Update])");
+        var sqliteEntity = new RawSqlEntity(
+            Name: "Users",
+            Fields: [],
+            RawSql: "(SELECT 'delete update' AS `delete` FROM `Update`)");
+        var postgresEntity = new RawSqlEntity(
+            Name: "Users",
+            Fields: [],
+            RawSql: "(SELECT $value$delete update into$value$ AS \"delete\" FROM \"Update\")");
+
+        Assert.That(new SqlServerDialect().RenderTable(sqlServerEntity), Is.EqualTo(sqlServerEntity.RawSql));
+        Assert.That(new SqliteDialect().RenderTable(sqliteEntity), Is.EqualTo(sqliteEntity.RawSql));
+        Assert.That(new PostgresDialect().RenderTable(postgresEntity), Is.EqualTo(postgresEntity.RawSql));
+    }
+
+    [Test]
+    public void RawSqlEntityRejectsBlacklistedKeywordsInTheSource()
+    {
+        var sqlServerEntity = new RawSqlEntity(
+            Name: "Users",
+            Fields: [],
+            RawSql: "(SELECT Id INTO NewUsers FROM Users)");
+        var sqliteEntity = new RawSqlEntity(
+            Name: "Users",
+            Fields: [],
+            RawSql: "(SELECT Id FROM Users; DELETE FROM Users)");
+        var postgresEntity = new RawSqlEntity(
+            Name: "Users",
+            Fields: [],
+            RawSql: "(WITH removed AS (DELETE FROM Users RETURNING Id) SELECT Id FROM removed)");
+
+        Assert.Throws<ArgumentException>(() => new SqlServerDialect().RenderTable(sqlServerEntity));
+        Assert.Throws<ArgumentException>(() => new SqliteDialect().RenderTable(sqliteEntity));
+        Assert.Throws<ArgumentException>(() => new PostgresDialect().RenderTable(postgresEntity));
+    }
+
+    [Test]
+    public void RawSqlEntityGuardDoesNotRejectRegularEntityTableNames()
+    {
+        var entity = new Entity("User", "dbo", "Update", []);
+
+        Assert.That(new SqlServerDialect().RenderTable(entity), Is.EqualTo("[dbo].[Update]"));
+    }
+
+    [Test]
     public void EntityKeepsLogicalAndPhysicalNamesIndependentWhenBothAreProvided()
     {
         var entity = new RawSqlEntity(Name: "Student", Fields: [], RawSql: "[User]");

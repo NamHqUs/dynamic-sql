@@ -111,10 +111,16 @@ new RawSqlEntity(
     ]);
 ```
 
-`RawSqlEntity.RawSql` is a trusted SQL source expression. Its fields and relations are
+`RawSqlEntity.RawSql` is the trusted SQL source for the entity, rendered in the query's
+`FROM` clause. It is distinct from `RawSqlField.Expression`, which defines an individual
+field expression. Its fields and relations are
 available to the query compiler in the same way as table-backed entity metadata.
 If only one is provided, the missing value is copied from the provided value.
 When both are provided, they remain independent.
+The built-in SQL dialects reject configured DML/DDL keywords in this source after
+ignoring literals, quoted identifiers, and comments. This is a conservative
+blacklist check, not a SQL parser or a security boundary; keep raw SQL metadata
+trusted and use read-only database permissions where applicable.
 
 ### Fields
 
