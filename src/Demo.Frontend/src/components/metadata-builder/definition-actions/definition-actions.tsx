@@ -117,24 +117,24 @@ export default function DefinitionActions({ adapter }: { adapter: DefinitionActi
         <button
           className="icon-button definition-action-button primary"
           type="button"
-          title="Save"
-          aria-label="Save"
+          title="Save function"
+          aria-label="Save function"
           onClick={() => void adapter.onSave?.()}
           disabled={!adapter.onSave || !adapter.dirty || adapter.saving}
         >
-          <Icon name="check" size={16} />
+          <Icon name="save" size={17} />
         </button>
       )}
       {adapter.isBuiltIn && <span className="section-kicker definition-readonly">BUILT-IN · READ-ONLY</span>}
       <button
-        className="icon-button definition-action-button"
+        className="icon-button definition-action-button create"
         type="button"
-        title="New custom definition"
-        aria-label="New custom definition"
+        title="Create function"
+        aria-label="Create function"
         onClick={() => void handleNew()}
         disabled={!adapter.onNew || adapter.saving}
       >
-        <Icon name="plus" size={17} />
+        <Icon name="file-plus" size={17} />
       </button>
     </div>
   );

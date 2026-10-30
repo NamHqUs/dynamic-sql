@@ -52,6 +52,10 @@
 .editor-actions { flex: 0 0 auto; justify-content: flex-end; width: auto; max-width: none; gap: 8px; }
 .definition-action-button { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; color: #aeb6c5; border: 1px solid var(--line); border-radius: 5px; background: #131720; }
 .definition-action-button:hover:not(:disabled) { color: #fff; border-color: #8064e8; background: #1b202b; }
+.definition-action-button.create { color: #d3c8ff; border-color: #7866aa80; background: #7054d4; }
+.definition-action-button.create:hover:not(:disabled) { border-color: #a38ce8; background: #8169e3; }
+.definition-action-button.primary { color: #fff; border-color: #a28bec; background: linear-gradient(145deg, #8068d1, #624cb0); box-shadow: inset 0 1px #ffffff30, 0 5px 15px #6752ba44; }
+.definition-action-button.primary:hover:not(:disabled) { border-color: #c1b2ff; background: linear-gradient(145deg, #927be5, #735dc7); }
 .definition-action-button.danger { color: #e7a1aa; }
 .definition-action-button:disabled { opacity: .5; cursor: not-allowed; }
 .definition-readonly { margin-right: 2px; }

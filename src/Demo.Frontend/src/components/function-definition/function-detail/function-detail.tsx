@@ -97,7 +97,7 @@ export default function FunctionDetail({
                 <div className="function-argument-table-header">
                   <strong>Arguments</strong>
                   <button
-                    className="button secondary compact"
+                    className="button primary compact"
                     type="button"
                     onClick={() => updateDraft((current) => ({
                       ...current,

@@ -59,7 +59,7 @@ export const emptyFunctionTemplate = (databaseType: FunctionDatabaseType): Edita
 
 export const emptyFunction = (): EditableFunctionDefinition => ({
   name: "",
-  arguments: [],
+  arguments: [emptyFunctionArgument()],
   resultType: "String",
   isAggregate: false,
   description: "",
