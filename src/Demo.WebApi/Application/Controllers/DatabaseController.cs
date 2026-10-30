@@ -1,6 +1,5 @@
 using Demo.Contracts.Services;
 using Demo.Contracts.Dto;
-using Demo.Contracts.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System.Data.Common;
 
@@ -44,7 +43,7 @@ public sealed class DatabaseController(
             connectionService.Connect(request.Provider, request.ConnectionString);
             return Ok(new DatabaseConnectionResponseDto(request.Provider, null));
         }
-        catch (Exception exception) when (exception is DbException or DatabaseConnectionException)
+        catch (DbException exception)
         {
             logger.LogWarning(
                 "Database connection attempt failed ({ExceptionType}).",

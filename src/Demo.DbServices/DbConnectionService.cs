@@ -1,8 +1,6 @@
-﻿using Demo.Contracts.Exceptions;
-using Demo.Contracts.Services;
+﻿using Demo.Contracts.Services;
 using Demo.DbServices.DbInstances;
 using Microsoft.Extensions.Configuration;
-using System.Data.Common;
 using System.Data;
 
 namespace Demo.DbServices;
@@ -34,16 +32,7 @@ public sealed class DbConnectionService(IConfiguration configuration, DatabaseSe
             _directConnectionsEnabled);
 
     string? IDbConnectionService.GetCurrentProvider()
-    {
-        try
-        {
-            return dbService.CurrentDbInstance.Provider.ToString();
-        }
-        catch
-        {
-            return null;
-        }
-    }
+        => dbService.GetCurrentProvider();
 
     string IDbConnectionService.Connect(string profile)
     {

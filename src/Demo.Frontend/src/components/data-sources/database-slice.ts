@@ -18,8 +18,6 @@ type DatabaseConnectionResponseDto = {
   profileName: string | null;
 };
 
-class DatabaseConnectionRequiredError extends Error {}
-
 async function getJson(url, init = {}, allowNoContent = false) {
   let response;
   try {
@@ -32,14 +30,9 @@ async function getJson(url, init = {}, allowNoContent = false) {
     let detail = `Database request failed (${response.status}).`;
     try {
       const problem = await response.json();
-      if (problem?.code === "database_connection_required") {
-        throw new DatabaseConnectionRequiredError(
-          typeof problem.detail === "string" ? problem.detail : "Connect to a database to continue.",
-        );
-      }
       if (typeof problem?.detail === "string") detail = problem.detail;
-    } catch (error) {
-      if (error instanceof DatabaseConnectionRequiredError) throw error;
+    } catch {
+      // Keep the HTTP status message when the server does not return a problem document.
     }
     throw new Error(detail);
   }
@@ -143,13 +136,11 @@ export const disconnectDatabase = createAsyncThunk(
 
 export const fetchDbTables = createAsyncThunk(
   "database/fetchTables",
-  async (_, { getState, rejectWithValue, dispatch }) => {
+  async (_, { rejectWithValue }) => {
     let payload;
     try {
       payload = await getJson(apiUrls.database.tables);
     } catch (error) {
-      if (error instanceof DatabaseConnectionRequiredError)
-        dispatch(databaseConnectionRequired(error.message));
       return rejectWithValue(error.message);
     }
     if (!Array.isArray(payload) || payload.some((table) => typeof table !== "string")) {
@@ -168,13 +159,11 @@ export const fetchDbTables = createAsyncThunk(
 
 export const fetchDbSchema = createAsyncThunk(
   "database/fetchSchema",
-  async (_, { getState, rejectWithValue, dispatch }) => {
+  async (_, { rejectWithValue }) => {
     let payload;
     try {
       payload = await getJson(apiUrls.database.schema);
     } catch (error) {
-      if (error instanceof DatabaseConnectionRequiredError)
-        dispatch(databaseConnectionRequired(error.message));
       return rejectWithValue(error.message);
     }
     if (!payload || !Array.isArray(payload.tables) || !Array.isArray(payload.relationships)
@@ -212,15 +201,13 @@ function tableDataKey(tableName, schema = "") {
 
 export const fetchDbTableData = createAsyncThunk(
   "database/fetchTableData",
-  async (request, { getState, rejectWithValue, dispatch }) => {
+  async (request, { rejectWithValue }) => {
     const { tableName, schema = "", limit = MAX_TABLE_DATA_ROWS } = typeof request === "string" ? { tableName: request } : request;
     const rowLimit = Math.min(limit, MAX_TABLE_DATA_ROWS);
     let payload;
     try {
       payload = await getJson(apiUrls.database.tableData(tableName, schema, rowLimit));
     } catch (error) {
-      if (error instanceof DatabaseConnectionRequiredError)
-        dispatch(databaseConnectionRequired(error.message));
       return rejectWithValue(error.message);
     }
     if (!payload || typeof payload.name !== "string" || !Array.isArray(payload.columns)
@@ -260,7 +247,6 @@ const databaseSlice = createSlice({
     providerCheckStatus: "idle",
     connectionStatus: "idle",
     connectionError: "",
-    connectionRequired: false,
     connectingProvider: "",
     connectingProfileName: "",
     connectedProvider: "",
@@ -279,23 +265,6 @@ const databaseSlice = createSlice({
     debugUiEnabled: true,
   },
   reducers: {
-    databaseConnectionRequired(state, action: PayloadAction<string>) {
-      state.connectedProvider = "";
-      state.connectedProfileName = "";
-      state.connectionStatus = "failed";
-      state.connectionError = action.payload;
-      state.connectionRequired = true;
-      state.tables = [];
-      state.selectedTable = "";
-      state.selectedSchema = "";
-      state.previewTable = null;
-      state.tableStatus = "idle";
-      state.tableError = "";
-      state.schemaStatus = "idle";
-      state.schemaError = "";
-      state.schema = { tables: [], relationships: [] };
-      state.dataByTable = {};
-    },
     setDatabaseDebugUiEnabled(state, action: PayloadAction<boolean>) {
       state.debugUiEnabled = action.payload;
     },
@@ -358,7 +327,18 @@ const databaseSlice = createSlice({
         state.connectedProfileName = "";
         state.connectionStatus = action.payload === null ? "idle" : "succeeded";
         state.connectionError = "";
-        state.connectionRequired = action.payload === null;
+        if (action.payload === null) {
+          state.tables = [];
+          state.selectedTable = "";
+          state.selectedSchema = "";
+          state.previewTable = null;
+          state.tableStatus = "idle";
+          state.tableError = "";
+          state.schemaStatus = "idle";
+          state.schemaError = "";
+          state.schema = { tables: [], relationships: [] };
+          state.dataByTable = {};
+        }
       })
       .addCase(fetchDbProvider.rejected, (state, action) => {
         state.providerCheckStatus = "failed";
@@ -375,8 +355,8 @@ const databaseSlice = createSlice({
         state.connectedProvider = action.payload.provider;
         state.connectedProfileName = action.payload.profileName || "";
         state.connectionStatus = "succeeded";
+        state.providerCheckStatus = "succeeded";
         state.connectionError = "";
-        state.connectionRequired = false;
         state.connectingProvider = "";
         state.connectingProfileName = "";
         state.tables = [];
@@ -400,7 +380,6 @@ const databaseSlice = createSlice({
         state.connectedProvider = "";
         state.connectedProfileName = "";
         state.connectionStatus = "idle";
-        state.connectionRequired = false;
         state.connectingProvider = "";
         state.connectingProfileName = "";
         state.tables = [];
@@ -431,7 +410,6 @@ const databaseSlice = createSlice({
         state.connectedProvider ||= "Database";
         state.connectionStatus = "succeeded";
         state.connectionError = "";
-        state.connectionRequired = false;
       })
       .addCase(fetchDbTables.rejected, (state, action) => {
         state.tableStatus = "failed";
@@ -454,7 +432,6 @@ const databaseSlice = createSlice({
         state.connectedProvider ||= "Database";
         state.connectionStatus = "succeeded";
         state.connectionError = "";
-        state.connectionRequired = false;
       })
       .addCase(fetchDbSchema.rejected, (state, action) => {
         state.schemaStatus = "failed";
@@ -493,7 +470,6 @@ const databaseSlice = createSlice({
 });
 
 export const {
-  databaseConnectionRequired,
   setDatabaseDebugUiEnabled,
   selectDbTable,
   setPreviewDbTable,

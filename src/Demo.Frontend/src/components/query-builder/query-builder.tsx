@@ -15,6 +15,7 @@ import "./query-builder.css";
 
 type QueryBuilderProps = {
   onBackToReports?: () => void;
+  onRequestConnection: () => void;
 };
 
 let cachedDefinition: QueryDefinition | null = null;
@@ -257,12 +258,13 @@ function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity
   };
 }
 
-export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
+export default function QueryBuilder({ onBackToReports, onRequestConnection }: QueryBuilderProps) {
   const dispatch = useDispatch<AppDispatch>();
   const showMessageBox = useMessageBox();
   const [searchParams, setSearchParams] = useSearchParams();
   const savedQueriesPanel = useResizablePanel("query-builder-saved-queries");
   const { metadata, metadataStatus, metadataError, result, sqlStatement, resultView, queryStatus, queryError, functionDefinitions, functionDefinitionsStatus, functionDefinitionsError, filterOperators, filterOperatorsStatus, filterOperatorsError, queryRequests, queryRequestsStatus, queryRequestsError, debugUiEnabled } = useSelector((state: RootState) => state.queryBuilder);
+  const { connectedProvider, connectionStatus } = useSelector((state: RootState) => state.database);
   const [definition, setDefinition] = useState<QueryDefinition>(loadDefinition);
   const [requestName, setRequestName] = useState("");
   const boundModelRef = useRef(JSON.stringify({ definition, requestName }));
@@ -446,6 +448,10 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
 
   const runQuery = async () => {
     if (activeDefinition.entity.trim() && activeDefinition.columns.length) {
+      if (!connectedProvider || connectionStatus !== "succeeded") {
+        onRequestConnection();
+        return;
+      }
       if (activeContextIndex !== null) {
         updateDefinition(updateContextDefinition(activeContextIndex, activeDefinition));
       }
@@ -458,6 +464,10 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
 
   const changePage = (page: number) => {
     if (!activeDefinition.entity.trim() || !activeDefinition.columns.length) return;
+    if (!connectedProvider || connectionStatus !== "succeeded") {
+      onRequestConnection();
+      return;
+    }
     const nextActiveDefinition = { ...activeDefinition, page };
     const nextDefinition = activeContextIndex === null
       ? nextActiveDefinition
@@ -468,6 +478,10 @@ export default function QueryBuilder({ onBackToReports }: QueryBuilderProps) {
 
   const getSql = () => {
     if (activeDefinition.entity.trim() && activeDefinition.columns.length) {
+      if (!connectedProvider || connectionStatus !== "succeeded") {
+        onRequestConnection();
+        return;
+      }
       dispatch(getSqlStatement({
         ...activeDefinition,
         filters: activeDefinition.filters,

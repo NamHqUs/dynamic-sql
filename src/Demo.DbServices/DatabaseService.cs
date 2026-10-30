@@ -1,6 +1,5 @@
-﻿using Demo.DbServices.DbInstances;
+using Demo.DbServices.DbInstances;
 using Demo.Contracts.Dto;
-using Demo.Contracts.Exceptions;
 using Demo.Contracts.Services;
 using Microsoft.Extensions.Configuration;
 using System.Data;
@@ -12,7 +11,7 @@ public class DatabaseService(IConfiguration configuration) : IDatabaseService, I
     private readonly object _instanceLock = new();
     private DbInstance? _currentDbInstance;
 
-    public DbInstance CurrentDbInstance
+    private DbInstance? CurrentDbInstanceOrNull
     {
         get
         {
@@ -26,9 +25,15 @@ public class DatabaseService(IConfiguration configuration) : IDatabaseService, I
                 }
             }
 
-            return _currentDbInstance ?? throw new DatabaseConnectionException();
+            return _currentDbInstance;
         }
     }
+
+    public DbInstance CurrentDbInstance
+        => CurrentDbInstanceOrNull ?? throw new InvalidOperationException("A database connection is required.");
+
+    public string? GetCurrentProvider()
+        => CurrentDbInstanceOrNull?.Provider.ToString();
 
     public void Connect(string provider, string connectionString)
     {

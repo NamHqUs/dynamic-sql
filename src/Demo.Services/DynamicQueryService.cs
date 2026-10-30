@@ -1,8 +1,6 @@
 using Demo.Contracts.Services;
-using Demo.Contracts.Exceptions;
 using Microsoft.Extensions.Logging;
 using Namh.Data.DynamicSql;
-using System.Data.Common;
 
 namespace Demo.Services;
 
@@ -14,50 +12,33 @@ public sealed class DynamicQueryService(
 {
     public string GetSqlQueryString(QueryDefinition query)
     {
-        try
-        {
-            using var connection = dbConnectionService.CreateConnection();
-            using var context = new DynamicSqlContext(
-                connection,
-                metadataService.GetMetaProvider(),
-                metadataService.GetFunctionProvider());
-            return context.Query(PrepareQuery(query, connection)).ToSql().CommandText;
-        }
-        catch (DbException exception)
-        {
-            throw new DatabaseConnectionException(exception);
-        }
+        using var connection = dbConnectionService.CreateConnection();
+        using var context = new DynamicSqlContext(
+            connection,
+            metadataService.GetMetaProvider(),
+            metadataService.GetFunctionProvider());
+        return context.Query(PrepareQuery(query, connection)).ToSql().CommandText;
     }
 
     public async Task<TableDataDto> ExecuteQueryAsync(
         QueryDefinition query,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            using var connection = dbConnectionService.CreateConnection();
-            using var context = new DynamicSqlContext(
-                connection,
-                metadataService.GetMetaProvider(),
-                metadataService.GetFunctionProvider());
-            var result = await context.Query(PrepareQuery(query, connection))
-                .ToListWithTotalRecordsAsync(cancellationToken);
+        using var connection = dbConnectionService.CreateConnection();
+        using var context = new DynamicSqlContext(
+            connection,
+            metadataService.GetMetaProvider(),
+            metadataService.GetFunctionProvider());
+        var result = await context.Query(PrepareQuery(query, connection))
+            .ToListWithTotalRecordsAsync(cancellationToken);
 
-            logger.LogInformation("\n{query}\n", query);
-            logger.LogInformation("Dynamic query returned {TotalRecords} total records.", result.TotalRecords);
-
-            return new TableDataDto(
-                Name: query.Entity,
-                Columns: string.Join(",", query.Projection.Select(field => field.Alias ?? field.ToText())),
-                Rows: result.Records.Select(row => string.Join(",", row.Select(value => value.Value))).ToArray(),
-                Page: query.Page,
-                PageSize: query.PageSize,
-                TotalRecords: result.TotalRecords);
-        }
-        catch (DbException exception)
-        {
-            throw new DatabaseConnectionException(exception);
-        }
+        return new TableDataDto(
+            Name: query.Entity,
+            Columns: string.Join(",", query.Projection.Select(field => field.Alias ?? field.ToText())),
+            Rows: result.Records.Select(row => string.Join(",", row.Select(value => value.Value))).ToArray(),
+            Page: query.Page,
+            PageSize: query.PageSize,
+            TotalRecords: result.TotalRecords);
     }
 
     private QueryDefinition PrepareQuery(QueryDefinition query, System.Data.IDbConnection connection)

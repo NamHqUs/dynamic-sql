@@ -78,9 +78,7 @@ function App() {
     if (location.pathname === PAGE_PATHS.builder) setQueryBuilderVisited(true);
   }, [location.pathname]);
 
-  useEffect(() => {
-    if (database.connectionRequired) setConnectionDialogOpen(true);
-  }, [database.connectionRequired]);
+  const requestDatabaseConnection = useCallback(() => setConnectionDialogOpen(true), []);
 
   useEffect(() => {
     if (!connectionDialogOpen) return;
@@ -163,7 +161,7 @@ function App() {
             <button className={`database-status${database.connectionStatus === "failed" ? " failed" : ""}`} type="button" onClick={() => setConnectionDialogOpen(true)}>
               <span className="database-status-dot" />
               <Icon name="database" size={15} />
-              <span>{database.connectionStatus === "failed" ? "Connection failed · Retry" : "Disconnected"}</span>
+              <span>{database.connectionStatus === "failed" ? "Connection failed · Retry" : "Not connected"}</span>
             </button>
           )}
           <button className="avatar" type="button" aria-label="User profile">N</button>
@@ -179,7 +177,7 @@ function App() {
         <Route path={PAGE_PATHS.builder} element={null} />
         <Route path={PAGE_PATHS.metadata} element={null} />
         <Route path={LEGACY_FUNCTIONS_PATH} element={<Navigate to={`${PAGE_PATHS.metadata}?section=functions`} replace />} />
-        <Route path={PAGE_PATHS.sources} element={<div className="page-transition page-transition-no-slide"><DataSources /></div>} />
+        <Route path={PAGE_PATHS.sources} element={<div className="page-transition page-transition-no-slide"><DataSources onRequestConnection={requestDatabaseConnection} /></div>} />
         <Route path="*" element={<Navigate to={PAGE_PATHS.reports} replace />} />
       </Routes>
       {connectionDialogOpen && createPortal(
@@ -206,6 +204,7 @@ function App() {
       )}
       {queryBuilderVisited && <div hidden={page !== "builder"} className={page === "builder" ? "page-transition page-transition-no-slide" : undefined}><QueryBuilder
         key={queryBuilderInstance}
+        onRequestConnection={requestDatabaseConnection}
         onBackToReports={new URLSearchParams(location.search).get("from") === "reports"
           ? () => navigateToPage("reports")
           : undefined}

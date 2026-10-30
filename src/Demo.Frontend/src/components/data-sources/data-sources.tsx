@@ -14,7 +14,11 @@ import "./data-sources.css";
 
 type DatabaseViewMode = "data" | "diagram";
 
-export default function DataSources() {
+type DataSourcesProps = {
+  onRequestConnection: () => void;
+};
+
+export default function DataSources({ onRequestConnection }: DataSourcesProps) {
   const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
@@ -26,6 +30,7 @@ export default function DataSources() {
     tableStatus,
     dataByTable,
     connectionStatus,
+    providerCheckStatus,
     connectedProvider,
     connectedProfileName,
     connectionError,
@@ -50,10 +55,15 @@ export default function DataSources() {
   }, [dispatch, routeViewMode]);
 
   useEffect(() => {
+    if (providerCheckStatus === "loading" || providerCheckStatus === "idle") return;
+    if (!connectedProvider) {
+      if (providerCheckStatus === "succeeded") onRequestConnection();
+      return;
+    }
     if (connectionStatus === "failed" || connectionStatus === "loading") return;
     dispatch(fetchDbTables());
     dispatch(fetchDbSchema());
-  }, [dispatch, connectionStatus]);
+  }, [dispatch, providerCheckStatus, connectionStatus, connectedProvider, onRequestConnection]);
 
   useEffect(() => {
     const workspace = workspaceRef.current;
@@ -138,7 +148,7 @@ export default function DataSources() {
             <h2>{isConnected ? "Explore your database" : "Database connection"}</h2>
             <p>{isConnected
               ? `Connected to ${connectedProfileName || connectedProvider}. Browse tables, inspect relationships, and preview records.`
-              : "Use the connection control in the top bar to connect to or change a database."}</p>
+              : "Connect to a database to browse its schema and records."}</p>
             <div className="database-heading-summary" aria-label="Database summary">
               {isConnected && <>
                 <span className="database-heading-current"><Icon name="table" size={13} />{selectedTable ? `${selectedSchema ? `${selectedSchema}.` : ""}${selectedTable}` : "No table selected"}</span>
