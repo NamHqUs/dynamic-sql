@@ -1,5 +1,4 @@
 using Demo.Contracts.Dto;
-using Namh.Data.DynamicSql;
 
 namespace Demo.Contracts.Services;
 

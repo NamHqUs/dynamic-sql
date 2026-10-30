@@ -24,6 +24,9 @@ public sealed class DynamicQueryService(
         QueryDefinition query,
         CancellationToken cancellationToken = default)
     {
+
+        logger.LogInformation("\n{query}\n", query);
+
         using var connection = dbConnectionService.CreateConnection();
         using var context = new DynamicSqlContext(
             connection,
@@ -31,6 +34,8 @@ public sealed class DynamicQueryService(
             metadataService.GetFunctionProvider());
         var result = await context.Query(PrepareQuery(query, connection))
             .ToListWithTotalRecordsAsync(cancellationToken);
+       
+        logger.LogInformation("Dynamic query returned {TotalRecords} total records.", result.TotalRecords);
 
         return new TableDataDto(
             Name: query.Entity,

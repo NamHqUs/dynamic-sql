@@ -2,7 +2,6 @@
 namespace Namh.Data.DynamicSql;
 
 using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
-using System.Runtime.Serialization.Formatters;
 #pragma warning restore IDE0130
 
 public sealed class QueryDefinition

@@ -1,7 +1,5 @@
 namespace Namh.Data.DynamicSql.Contracts.QueryDefinitions;
 
-using YamlDotNet.Serialization;
-
 public record YamlQueryDefinition()
 {
     public string? Name { get; set; }

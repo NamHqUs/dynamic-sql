@@ -2,11 +2,18 @@ using Microsoft.Data.Sqlite;
 using Demo.Contracts.Dto;
 using System.Data;
 using System.Data.Common;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Demo.DbServices.DbInstances;
 
 public sealed class SqliteDbInstance : DbInstance, IDisposable
 {
+    private static readonly Regex MemoryDatabaseAttachment = new(
+        """ATTACH\s+DATABASE\s+':memory:'\s+AS\s+(?<schema>"(?:""|[^"])+"|[A-Za-z_][A-Za-z0-9_]*)\s*;""",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     private readonly object _keepAliveLock = new();
 
     private bool? _inMemory;
@@ -26,6 +33,9 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
 
     protected override string SqlGetColumns => "SELECT NULL AS SchemaName, NULL AS TableName, NULL AS ColumnName, NULL AS DataType, 0 AS IsNullable, 0 AS IsPrimaryKey WHERE 1 = 0;";
     protected override string SqlGetRelationships => "SELECT NULL AS RelationName, NULL AS SourceSchema, NULL AS SourceTable, NULL AS SourceColumn, NULL AS TargetSchema, NULL AS TargetTable, NULL AS TargetColumn, 0 AS Ordinal, 0 AS IsUnique WHERE 1 = 0;";
+
+    protected override string PrepareInitializationScript(string script)
+        => MemoryDatabaseAttachment.Replace(script, string.Empty);
 
     public override bool TestConnection()
     {
@@ -91,8 +101,9 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
     public override IDbConnection CreateDbConnection()
     {
         var connectionStringBuilder = new SqliteConnectionStringBuilder(ConnectionString);
+        var attachedDatabases = GetAttachedDatabases(connectionStringBuilder.DataSource);
         if (connectionStringBuilder.Mode != SqliteOpenMode.Memory)
-            return new SqliteConnection(ConnectionString);
+            return CreateConfiguredConnection(attachedDatabases);
 
         lock (_keepAliveLock)
         {
@@ -101,10 +112,11 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
                 _keepAliveConnection?.Dispose();
                 _keepAliveConnection = new SqliteConnection(ConnectionString);
                 _keepAliveConnection.Open();
+                AttachDatabases(_keepAliveConnection, attachedDatabases);
             }
         }
 
-        return new SqliteConnection(ConnectionString);
+        return CreateConfiguredConnection(attachedDatabases);
     }
 
     public void Dispose()
@@ -131,6 +143,48 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
             })
             .ToArray();
     }
+
+    private SqliteConnection CreateConfiguredConnection(
+        IReadOnlyCollection<(string Schema, string DataSource)> attachedDatabases)
+    {
+        var connection = new SqliteConnection(ConnectionString);
+        if (attachedDatabases.Count > 0)
+        {
+            connection.Open();
+            AttachDatabases(connection, attachedDatabases);
+        }
+        return connection;
+    }
+
+    private IReadOnlyCollection<(string Schema, string DataSource)> GetAttachedDatabases(string dataSource)
+        => InitializationScripts
+            .Where(File.Exists)
+            .SelectMany(fileName => MemoryDatabaseAttachment.Matches(File.ReadAllText(fileName)).Cast<Match>())
+            .Select(match =>
+            {
+                var schema = match.Groups["schema"].Value;
+                if (schema.StartsWith('"'))
+                    schema = schema[1..^1].Replace("\"\"", "\"", StringComparison.Ordinal);
+                var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{dataSource}|{schema}")));
+                return (Schema: schema, DataSource: $"file:DynamicSql-{key}?mode=memory&cache=shared");
+            })
+            .DistinctBy(database => database.Schema, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    private static void AttachDatabases(
+        SqliteConnection connection,
+        IEnumerable<(string Schema, string DataSource)> attachedDatabases)
+    {
+        foreach (var (schema, dataSource) in attachedDatabases)
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = $"ATTACH DATABASE '{dataSource}' AS {QuoteIdentifier(schema)};";
+            command.ExecuteNonQuery();
+        }
+    }
+
+    private static string QuoteIdentifier(string identifier)
+        => $"\"{identifier.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
 
     private static string QuoteLiteral(string value)
         => $"'{value.Replace("'", "''")}'";

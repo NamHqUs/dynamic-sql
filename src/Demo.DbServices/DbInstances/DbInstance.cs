@@ -1,5 +1,4 @@
 ﻿using Demo.Contracts.Dto;
-using Demo.Contracts.Services;
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
@@ -13,6 +12,7 @@ public abstract class DbInstance
 
     public readonly DbServerType Provider;
     protected readonly string ConnectionString;
+    protected readonly string[] InitializationScripts;
     protected abstract string? SqlScriptCheckIfDbExists { get; }
     protected abstract string SqlGetTableNames { get; }
     protected abstract string SqlGetColumns { get; }
@@ -24,6 +24,7 @@ public abstract class DbInstance
     {
         Provider = provider;
         ConnectionString = connectionString;
+        InitializationScripts = scriptFields;
         lock (_initializationLock)
         {
             TestConnection();
@@ -172,10 +173,12 @@ public abstract class DbInstance
             {
                 var filePath = Path.Combine(Environment.CurrentDirectory, fileName);
                 var scripts = File.ReadAllText(filePath);
-                ExecuteNonQuery(cn, scripts);
+                ExecuteNonQuery(cn, PrepareInitializationScript(scripts));
             }
         }
     }
+
+    protected virtual string PrepareInitializationScript(string script) => script;
 
     protected virtual DataTable ReadSchemaRows(DbConnection connection, string sql)
     {
