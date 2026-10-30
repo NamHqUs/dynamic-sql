@@ -7,7 +7,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Namh.Configuration.Template" Version="1.0.1" />
+		<ProjectReference Include="..\template-config\src\Namh.Configuration.Template\Namh.Configuration.Template.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

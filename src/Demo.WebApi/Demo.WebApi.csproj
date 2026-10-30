@@ -14,7 +14,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.24.2-preview.1" />
-		<PackageReference Include="Namh.Configuration.GlobalTemplate" Version="1.0.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.0" />
 	</ItemGroup>
 
@@ -22,6 +21,7 @@
 		<ProjectReference Include="..\Demo.DbServices\Demo.DbServices.csproj" />
 		<ProjectReference Include="..\Demo.Services\Demo.Services.csproj" />
 		<ProjectReference Include="..\Demo.Repositories\Demo.Repositories.csproj" />
+		<ProjectReference Include="..\template-config\src\Namh.Configuration.Template\Namh.Configuration.Template.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

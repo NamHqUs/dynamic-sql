@@ -64,12 +64,17 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
   const requestedSection = searchParams.get("section");
   const activeSection: MetadataSection = entityOnly ? "entities" : requestedSection === "diagram" || requestedSection === "functions" || requestedSection === "operators"
     ? requestedSection
-    : "entities";
+    : "diagram";
+  useEffect(() => {
+    if (entityOnly || requestedSection === "diagram" || requestedSection === "entities" || requestedSection === "functions" || requestedSection === "operators") return;
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("section", "diagram");
+    setSearchParams(nextSearchParams, { replace: true });
+  }, [entityOnly, requestedSection, searchParams, setSearchParams]);
   const selectSection = async (section: MetadataSection) => {
     if (section === activeSection || !(await resolveAllDirtyChanges(activeSection))) return;
     const nextSearchParams = new URLSearchParams(searchParams);
-    if (section === "entities") nextSearchParams.delete("section");
-    else nextSearchParams.set("section", section);
+    nextSearchParams.set("section", section);
     setSearchParams(nextSearchParams);
   };
   const selectedIsBuiltin = entities.find((entity) => entity.name === selectedName)?.canDelete === false;
@@ -248,7 +253,7 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
     setDirty(false);
     setMessage("");
     const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.delete("section");
+    nextSearchParams.set("section", "entities");
     setSearchParams(nextSearchParams);
   };
 
