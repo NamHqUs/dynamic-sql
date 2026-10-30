@@ -8,7 +8,7 @@ import "./table-details.css";
 export default function TableDetails({ dataLoadingEnabled }: { dataLoadingEnabled: boolean }) {
   const dispatch = useDispatch();
   const { schema, selectedTable, selectedSchema, dataByTable } = useSelector((state) => state.database);
-  const [activeTab, setActiveTab] = useState<"columns" | "relations" | "data">("columns");
+  const [activeTab, setActiveTab] = useState<"structure" | "data">("structure");
   const table = schema.tables.find((item) => item.name === selectedTable && item.schema === selectedSchema);
   const tableDataKey = selectedSchema ? `${selectedSchema}.${selectedTable}` : selectedTable;
   const tableData = dataByTable[tableDataKey];
@@ -62,25 +62,14 @@ export default function TableDetails({ dataLoadingEnabled }: { dataLoadingEnable
         <div className="table-details-tabs" role="tablist" aria-label="Table details">
           <button
             type="button"
-            id="table-details-columns-tab"
+            id="table-details-structure-tab"
             role="tab"
-            aria-selected={activeTab === "columns"}
-            aria-controls="table-details-columns-panel"
-            className={activeTab === "columns" ? "active" : ""}
-            onClick={() => setActiveTab("columns")}
+            aria-selected={activeTab === "structure"}
+            aria-controls="table-details-structure-panel"
+            className={activeTab === "structure" ? "active" : ""}
+            onClick={() => setActiveTab("structure")}
           >
-            COLUMNS
-          </button>
-          <button
-            type="button"
-            id="table-details-relations-tab"
-            role="tab"
-            aria-selected={activeTab === "relations"}
-            aria-controls="table-details-relations-panel"
-            className={activeTab === "relations" ? "active" : ""}
-            onClick={() => setActiveTab("relations")}
-          >
-            RELATIONS
+            STRUCTURE
           </button>
           <button
             type="button"
@@ -94,19 +83,20 @@ export default function TableDetails({ dataLoadingEnabled }: { dataLoadingEnable
             DATA
           </button>
         </div>
-        {activeTab === "columns" ? (
+        <>
           <div
             className="table-details-tab-panel"
-            id="table-details-columns-panel"
+            id="table-details-structure-panel"
             role="tabpanel"
-            aria-labelledby="table-details-columns-tab"
+            aria-labelledby="table-details-structure-tab"
+            hidden={activeTab !== "structure"}
             tabIndex={0}
           >
             <div className="table-details-column-head">
               <span>Column</span><span>Data type</span><span>Key</span><span>Nullable</span>
             </div>
-            {table.columns.map((column) => (
-              <div className="table-details-column" key={column.name}>
+            {table.columns.map((column, index) => (
+              <div className={`table-details-column${index === table.columns.length - 1 ? " table-details-column-last" : ""}`} key={column.name}>
                 <span className="table-details-column-name">{column.name}</span>
                 <span className="table-details-column-type">{column.dataType || "—"}</span>
                 <span>{column.isPrimaryKey ? <span className="table-details-key">PRIMARY</span> : "—"}</span>
@@ -114,17 +104,18 @@ export default function TableDetails({ dataLoadingEnabled }: { dataLoadingEnable
               </div>
             ))}
             {table.columns.length === 0 && <p className="database-message">No column metadata is available.</p>}
-          </div>
-        ) : activeTab === "relations" ? (
-          <div
-            className="table-details-tab-panel"
-            id="table-details-relations-panel"
-            role="tabpanel"
-            aria-labelledby="table-details-relations-tab"
-            tabIndex={0}
-          >
+            <div className="table-details-subsection-heading">
+              <span>Relations</span>
+              <span>{relations.length}</span>
+            </div>
             {relations.length > 0 ? (
               <div className="table-details-relations">
+                <div className="table-details-relation table-details-relation-head">
+                  <span>Column</span>
+                  <span>Relation</span>
+                  <span>Related column</span>
+                  <span>Related Table</span>
+                </div>
                 {relations.map((relation) => (
                   <div className="table-details-relation" key={`${relation.relation.name}-${relation.otherSchema}-${relation.otherTable}`}>
                     <span className="table-details-current-column">{relation.currentColumns.join(", ")}</span>
@@ -144,18 +135,18 @@ export default function TableDetails({ dataLoadingEnabled }: { dataLoadingEnable
               </div>
             ) : <p className="database-message">No table relations.</p>}
           </div>
-        ) : (
           <div
             className="table-details-tab-panel table-details-data-panel"
             id="table-details-data-panel"
             role="tabpanel"
             aria-labelledby="table-details-data-tab"
+            hidden={activeTab !== "data"}
             tabIndex={0}
           >
             <p className="table-details-data-note">Previewing up to 10 rows.</p>
             <DataGrid showHeading={false} />
           </div>
-        )}
+        </>
       </section>
     </section>
   );

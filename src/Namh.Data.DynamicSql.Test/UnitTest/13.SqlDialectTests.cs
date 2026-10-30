@@ -95,53 +95,60 @@ public class _13_SqlDialectTests
 
         Assert.That(entity.Name, Is.EqualTo("User"));
         Assert.That(entity.DbTable, Is.EqualTo("User"));
+        Assert.That(entity.IsRawSql, Is.False);
     }
 
     [Test]
-    public void RawSqlEntityPreservesItsLogicalName()
+    public void RawSqlEntityFlagPreservesItsLogicalName()
     {
-        var entity = new RawSqlEntity(Name: "Users", Fields: [], RawSql: "Users");
+        var entity = new Entity(Name: "Users", Fields: [], IsRawSql: true, DbTable: "Users");
 
         Assert.That(entity.Name, Is.EqualTo("Users"));
-        Assert.That(entity.RawSql, Is.EqualTo("Users"));
+        Assert.That(entity.DbTable, Is.EqualTo("Users"));
     }
 
     [Test]
-    public void RawSqlEntityAllowsSelectSourcesWithBlacklistedWordsInLiteralsAndIdentifiers()
+    public void RawSqlEntityFlagAllowsSelectSourcesWithBlacklistedWordsInLiteralsAndIdentifiers()
     {
-        var sqlServerEntity = new RawSqlEntity(
+        var sqlServerEntity = new Entity(
             Name: "Users",
             Fields: [],
-            RawSql: "(SELECT N'delete update' AS [delete] FROM [Update])");
-        var sqliteEntity = new RawSqlEntity(
+            IsRawSql: true,
+            DbTable: "(SELECT N'delete update' AS [delete] FROM [Update])");
+        var sqliteEntity = new Entity(
             Name: "Users",
             Fields: [],
-            RawSql: "(SELECT 'delete update' AS `delete` FROM `Update`)");
-        var postgresEntity = new RawSqlEntity(
+            IsRawSql: true,
+            DbTable: "(SELECT 'delete update' AS `delete` FROM `Update`)");
+        var postgresEntity = new Entity(
             Name: "Users",
             Fields: [],
-            RawSql: "(SELECT $value$delete update into$value$ AS \"delete\" FROM \"Update\")");
+            IsRawSql: true,
+            DbTable: "(SELECT $value$delete update into$value$ AS \"delete\" FROM \"Update\")");
 
-        Assert.That(new SqlServerDialect().RenderTable(sqlServerEntity), Is.EqualTo(sqlServerEntity.RawSql));
-        Assert.That(new SqliteDialect().RenderTable(sqliteEntity), Is.EqualTo(sqliteEntity.RawSql));
-        Assert.That(new PostgresDialect().RenderTable(postgresEntity), Is.EqualTo(postgresEntity.RawSql));
+        Assert.That(new SqlServerDialect().RenderTable(sqlServerEntity), Is.EqualTo(sqlServerEntity.DbTable));
+        Assert.That(new SqliteDialect().RenderTable(sqliteEntity), Is.EqualTo(sqliteEntity.DbTable));
+        Assert.That(new PostgresDialect().RenderTable(postgresEntity), Is.EqualTo(postgresEntity.DbTable));
     }
 
     [Test]
-    public void RawSqlEntityRejectsBlacklistedKeywordsInTheSource()
+    public void RawSqlEntityFlagRejectsBlacklistedKeywordsInTheSource()
     {
-        var sqlServerEntity = new RawSqlEntity(
+        var sqlServerEntity = new Entity(
             Name: "Users",
             Fields: [],
-            RawSql: "(SELECT Id INTO NewUsers FROM Users)");
-        var sqliteEntity = new RawSqlEntity(
+            IsRawSql: true,
+            DbTable: "(SELECT Id INTO NewUsers FROM Users)");
+        var sqliteEntity = new Entity(
             Name: "Users",
             Fields: [],
-            RawSql: "(SELECT Id FROM Users; DELETE FROM Users)");
-        var postgresEntity = new RawSqlEntity(
+            IsRawSql: true,
+            DbTable: "(SELECT Id FROM Users; DELETE FROM Users)");
+        var postgresEntity = new Entity(
             Name: "Users",
             Fields: [],
-            RawSql: "(WITH removed AS (DELETE FROM Users RETURNING Id) SELECT Id FROM removed)");
+            IsRawSql: true,
+            DbTable: "(WITH removed AS (DELETE FROM Users RETURNING Id) SELECT Id FROM removed)");
 
         Assert.Throws<ArgumentException>(() => new SqlServerDialect().RenderTable(sqlServerEntity));
         Assert.Throws<ArgumentException>(() => new SqliteDialect().RenderTable(sqliteEntity));
@@ -159,10 +166,10 @@ public class _13_SqlDialectTests
     [Test]
     public void EntityKeepsLogicalAndPhysicalNamesIndependentWhenBothAreProvided()
     {
-        var entity = new RawSqlEntity(Name: "Student", Fields: [], RawSql: "[User]");
+        var entity = new Entity(Name: "Student", Fields: [], IsRawSql: true, DbTable: "[User]");
 
         Assert.That(entity.Name, Is.EqualTo("Student"));
-        Assert.That(entity.RawSql, Is.EqualTo("[User]"));
+        Assert.That(entity.DbTable, Is.EqualTo("[User]"));
     }
 
     [Test]

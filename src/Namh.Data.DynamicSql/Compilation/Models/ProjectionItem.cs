@@ -12,7 +12,7 @@ class ProjectionItem(SqlExpression item, string alias)
     {
     }
 
-    public ProjectionItem(string tableAlias, IField field)
+    public ProjectionItem(string tableAlias, Field field)
         : this(new FieldExpression(tableAlias, field))
     {
     }

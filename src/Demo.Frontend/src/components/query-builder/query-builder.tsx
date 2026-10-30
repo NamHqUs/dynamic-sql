@@ -69,7 +69,7 @@ function createContextEntity(
       .filter((column) => !column.expression && !column.field.startsWith("__calculated__"))
       .map((column) => column.field),
   ])]
-    .map((name) => ({ kind: "dbField" as const, name, dbColumn: name }));
+    .map((name) => ({ name, dbColumn: name }));
 
   return { name: context.name, fields };
 }
@@ -270,7 +270,6 @@ export default function QueryBuilder({ onBackToReports, onRequestConnection }: Q
   const boundModelRef = useRef(JSON.stringify({ definition, requestName }));
   const hasUnsavedChanges = JSON.stringify({ definition, requestName }) !== boundModelRef.current;
   const [selectedContextIndex, setSelectedContextIndex] = useState<number | null>(null);
-  const [isNewBlankQuery, setIsNewBlankQuery] = useState(false);
   const [selectedRequestName, setSelectedRequestName] = useState<string | null>(null);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [selectedRequestIsBuiltin, setSelectedRequestIsBuiltin] = useState(false);
@@ -326,7 +325,6 @@ export default function QueryBuilder({ onBackToReports, onRequestConnection }: Q
   };
   const updateDefinitionFromDesign = (nextDefinition: QueryDefinition) => {
     if (activeContextIndex === null) {
-      if (nextDefinition.entity) setIsNewBlankQuery(false);
       updateDefinition(nextDefinition);
       return;
     }
@@ -427,7 +425,7 @@ export default function QueryBuilder({ onBackToReports, onRequestConnection }: Q
 
   useEffect(() => {
     const isContextEntity = definition.contextCatalog?.some((context) => context.name === definition.entity);
-    if (!isNewBlankQuery && metadata.length && !metadata.some((item) => item.name === definition.entity)
+    if (metadata.length && !metadata.some((item) => item.name === definition.entity)
       && !isContextEntity
       && !definition.contexts?.length) {
       updateDefinition(createDefinition(metadata[0].name, metadata[0].fields));
@@ -444,7 +442,7 @@ export default function QueryBuilder({ onBackToReports, onRequestConnection }: Q
     } else if (reconciled !== definition) {
       updateDefinition(reconciled);
     }
-  }, [metadata, definition.entity, definition.contextCatalog, definition.contexts, isNewBlankQuery]);
+  }, [metadata, definition.entity, definition.contextCatalog, definition.contexts]);
 
   const runQuery = async () => {
     if (activeDefinition.entity.trim() && activeDefinition.columns.length) {
@@ -543,7 +541,6 @@ export default function QueryBuilder({ onBackToReports, onRequestConnection }: Q
     setSelectedRequestName(null);
     setSelectedRequestId(null);
     setSelectedContextIndex(null);
-    setIsNewBlankQuery(true);
     setSelectedRequestIsBuiltin(false);
     setRequestName("");
     setRequestNameError("");
@@ -562,7 +559,6 @@ export default function QueryBuilder({ onBackToReports, onRequestConnection }: Q
     const nextDefinition = fromApiQuery(savedView.query, savedView.projectionRows);
     if (updateRoute) updateRequestRoute(savedRequest.mainQuery.name);
     setSelectedContextIndex(null);
-    setIsNewBlankQuery(false);
     boundModelRef.current = JSON.stringify({
       definition: nextDefinition,
       requestName: savedRequest.mainQuery.name,

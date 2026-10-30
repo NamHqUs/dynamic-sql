@@ -11,9 +11,9 @@ public class BuiltinMetadata
             DbSchema: "sa",
             Fields:
             [
-                new Field("Id", "Id"), new Field("Name", "Name"), new Field("Email", "Email"), new Field("Phone", "Phone"), new Field("Address", "Address"),
-                new Field("Segment", "Segment"), new Field("Region", "Region"), new Field("CustomerSince", "CustomerSince"),
-                new Field("CreatedOn", "CreatedOn"), new Field("UpdatedOn", "UpdatedOn")
+                new("Id", "Id"), new("Name", "Name"), new("Email", "Email"), new("Phone", "Phone"), new("Address", "Address"),
+                new("Segment", "Segment"), new("Region", "Region"), new("CustomerSince", "CustomerSince"),
+                new("CreatedOn", "CreatedOn"), new("UpdatedOn", "UpdatedOn")
             ],
             Relations:
             [
@@ -24,10 +24,10 @@ public class BuiltinMetadata
             DbSchema: "sa",
             Fields:
             [
-                new Field("Id", "Id"), new Field("Name", "Name"), new Field("Description", "Description"), new Field("Category", "Category"),
-                new Field("UnitPrice", "UnitPrice"), new Field("CostPrice", "CostPrice"),
-                new Field("StockQuantity", "StockQuantity"), new Field("ReorderLevel", "ReorderLevel"),
-                new Field("CreatedOn", "CreatedOn"), new Field("UpdatedOn", "UpdatedOn")
+                new("Id", "Id"), new("Name", "Name"), new("Description", "Description"), new("Category", "Category"),
+                new("UnitPrice", "UnitPrice"), new("CostPrice", "CostPrice"),
+                new("StockQuantity", "StockQuantity"), new("ReorderLevel", "ReorderLevel"),
+                new("CreatedOn", "CreatedOn"), new("UpdatedOn", "UpdatedOn")
             ],
             Relations:
             [
@@ -38,12 +38,12 @@ public class BuiltinMetadata
             DbSchema: "sa",
             Fields:
             [
-                new Field("Id", "Id"), new Field("CustomerId", "CustomerId"), new Field("InvoiceNumber", "InvoiceNumber"),
-                new Field("InvoiceDate", "InvoiceDate"), new Field("DueDate", "DueDate"), new Field("Status", "Status"),
-                new Field("SalesChannel", "SalesChannel"), new Field("PaymentMethod", "PaymentMethod"), new Field("PaidOn", "PaidOn"),
-                new Field("DiscountAmount", "DiscountAmount"), new Field("TaxAmount", "TaxAmount"),
-                new Field("TotalAmount", "TotalAmount"), new Field("CreatedOn", "CreatedOn"),
-                new Field("UpdatedOn", "UpdatedOn")
+                new("Id", "Id"), new("CustomerId", "CustomerId"), new("InvoiceNumber", "InvoiceNumber"),
+                new("InvoiceDate", "InvoiceDate"), new("DueDate", "DueDate"), new("Status", "Status"),
+                new("SalesChannel", "SalesChannel"), new("PaymentMethod", "PaymentMethod"), new("PaidOn", "PaidOn"),
+                new("DiscountAmount", "DiscountAmount"), new("TaxAmount", "TaxAmount"),
+                new("TotalAmount", "TotalAmount"), new("CreatedOn", "CreatedOn"),
+                new("UpdatedOn", "UpdatedOn")
             ],
             Relations:
             [
@@ -55,10 +55,10 @@ public class BuiltinMetadata
             DbSchema: "sa",
             Fields:
             [
-                new Field("Id", "Id"), new Field("InvoiceId", "InvoiceId"), new Field("ProductId", "ProductId"),
-                new Field("Quantity", "Quantity"), new Field("UnitPrice", "UnitPrice"),
-                new Field("DiscountAmount", "DiscountAmount"), new Field("LineTotal", "LineTotal"),
-                new Field("CreatedOn", "CreatedOn"), new Field("UpdatedOn", "UpdatedOn")
+                new ("Id", "Id"), new("InvoiceId", "InvoiceId"), new("ProductId", "ProductId"),
+                new("Quantity", "Quantity"), new("UnitPrice", "UnitPrice"),
+                new("DiscountAmount", "DiscountAmount"), new("LineTotal", "LineTotal"),
+                new("CreatedOn", "CreatedOn"), new("UpdatedOn", "UpdatedOn")
             ],
             Relations:
             [
@@ -74,7 +74,7 @@ public class BuiltinMetadata
                 DbSchema: "Main",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("Name", "Name"), new Field("City", "City"), new Field("State", "State")
+                    new("Id", "Id"), new("Name", "Name"), new("City", "City"), new("State", "State")
                 ],
                 Relations:
                 [
@@ -86,8 +86,8 @@ public class BuiltinMetadata
                 DbSchema: "Main",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("FirstName", "FirstName"), new Field("LastName", "LastName"),
-                    new Field("BirthDate", "BirthDate"), new Field("Gender", "Gender"), new Field("City", "City"), new Field("State", "State")
+                    new("Id", "Id"), new("FirstName", "FirstName"), new("LastName", "LastName"),
+                    new("BirthDate", "BirthDate"), new("Gender", "Gender"), new("City", "City"), new("State", "State")
                 ],
                 Relations:
                 [
@@ -100,7 +100,7 @@ public class BuiltinMetadata
                 DbSchema: "hr",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("Name", "Name")
+                    new("Id", "Id"), new("Name", "Name")
                 ],
                 Relations:
                 [
@@ -111,10 +111,10 @@ public class BuiltinMetadata
                 DbSchema: "Main",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("FirstName", "FirstName"), new Field("LastName", "LastName"),
-                    new Field("DepartmentId", "DepartmentId"), new Field("LocationId", "LocationId"),
-                    new Field("ManagerId", "ManagerId"), new Field("JobTitle", "JobTitle"), new Field("HireDate", "HireDate"),
-                    new Field("Salary", "Salary"), new Field("EmploymentType", "EmploymentType")
+                    new("Id", "Id"), new("FirstName", "FirstName"), new("LastName", "LastName"),
+                    new("DepartmentId", "DepartmentId"), new("LocationId", "LocationId"),
+                    new("ManagerId", "ManagerId"), new("JobTitle", "JobTitle"), new("HireDate", "HireDate"),
+                    new("Salary", "Salary"), new("EmploymentType", "EmploymentType")
                 ],
                 Relations:
                 [
@@ -133,9 +133,9 @@ public class BuiltinMetadata
                 DbSchema: "hr",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("EmployeeId", "EmployeeId"),
-                    new Field("ReviewYear", "ReviewYear"), new Field("Rating", "Rating"),
-                    new Field("BonusAmount", "BonusAmount")
+                    new("Id", "Id"), new("EmployeeId", "EmployeeId"),
+                    new("ReviewYear", "ReviewYear"), new("Rating", "Rating"),
+                    new("BonusAmount", "BonusAmount")
                 ],
                 Relations:
                 [
@@ -146,8 +146,8 @@ public class BuiltinMetadata
                 DbSchema: "hr",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("EmployeeId", "EmployeeId"), new Field("LeaveType", "LeaveType"),
-                    new Field("StartDate", "StartDate"), new Field("Days", "Days"), new Field("Status", "Status")
+                    new("Id", "Id"), new("EmployeeId", "EmployeeId"), new("LeaveType", "LeaveType"),
+                    new("StartDate", "StartDate"), new("Days", "Days"), new("Status", "Status")
                 ],
                 Relations:
                 [
@@ -159,8 +159,8 @@ public class BuiltinMetadata
                 "sa",
                 "Products",
                 [
-                    new Field("Id", "Id"), new Field("Name", "Name"), new Field("Category", "Category"),
-                    new Field("UnitPrice", "UnitPrice"), new Field("CostPrice", "CostPrice")
+                    new("Id", "Id"), new("Name", "Name"), new("Category", "Category"),
+                    new("UnitPrice", "UnitPrice"), new("CostPrice", "CostPrice")
                 ],
                 [
                     new("OrderItems", "OrderItems", RelationType.Collection, [new("Id", "ProductId")])
@@ -170,9 +170,9 @@ public class BuiltinMetadata
                 DbSchema: "sa",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("UserId", "UserId"),
-                    new Field("SalesRepId", "SalesRepId"), new Field("OrderDate", "OrderDate"),
-                    new Field("Channel", "Channel"), new Field("Status", "Status")
+                    new("Id", "Id"), new("UserId", "UserId"),
+                    new("SalesRepId", "SalesRepId"), new("OrderDate", "OrderDate"),
+                    new("Channel", "Channel"), new("Status", "Status")
                 ],
                 Relations:
                 [
@@ -185,9 +185,9 @@ public class BuiltinMetadata
                 DbSchema: "sa",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("OrderId", "OrderId"),
-                    new Field("ProductId", "ProductId"), new Field("Quantity", "Quantity"),
-                    new Field("UnitPrice", "UnitPrice"), new Field("DiscountAmount", "DiscountAmount")
+                    new("Id", "Id"), new("OrderId", "OrderId"),
+                    new("ProductId", "ProductId"), new("Quantity", "Quantity"),
+                    new("UnitPrice", "UnitPrice"), new("DiscountAmount", "DiscountAmount")
                 ],
                 Relations:
                 [
@@ -199,8 +199,8 @@ public class BuiltinMetadata
                 DbSchema: "he",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("Code", "Code"), new Field("Name", "Name"), new Field("Category", "Category"),
-                    new Field("IsChronic", "IsChronic")
+                    new("Id", "Id"), new("Code", "Code"), new("Name", "Name"), new("Category", "Category"),
+                    new("IsChronic", "IsChronic")
                 ],
                 Relations:
                 [
@@ -211,10 +211,10 @@ public class BuiltinMetadata
                 DbSchema: "he",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("UserId", "UserId"),
-                    new Field("DoctorId", "DoctorId"), new Field("LocationId", "LocationId"),
-                    new Field("VisitDate", "VisitDate"), new Field("VisitType", "VisitType"), new Field("DiagnosisId", "DiagnosisId"),
-                    new Field("DurationMinutes", "DurationMinutes"), new Field("Charge", "Charge"), new Field("Status", "Status")
+                    new("Id", "Id"), new("UserId", "UserId"),
+                    new("DoctorId", "DoctorId"), new("LocationId", "LocationId"),
+                    new("VisitDate", "VisitDate"), new("VisitType", "VisitType"), new("DiagnosisId", "DiagnosisId"),
+                    new("DurationMinutes", "DurationMinutes"), new("Charge", "Charge"), new("Status", "Status")
                 ],
                 Relations:
                 [
@@ -230,9 +230,9 @@ public class BuiltinMetadata
                 DbSchema: "he",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("VisitId", "VisitId"), new Field("TestName", "TestName"),
-                    new Field("ResultValue", "ResultValue"), new Field("ReferenceMax", "ReferenceMax"),
-                    new Field("IsAbnormal", "IsAbnormal")
+                    new("Id", "Id"), new("VisitId", "VisitId"), new("TestName", "TestName"),
+                    new("ResultValue", "ResultValue"), new("ReferenceMax", "ReferenceMax"),
+                    new("IsAbnormal", "IsAbnormal")
                 ],
                 Relations:
                 [
@@ -243,9 +243,9 @@ public class BuiltinMetadata
                 DbSchema: "in",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("Name", "Name"), new Field("Tier", "Tier"),
-                    new Field("MonthlyPremium", "MonthlyPremium"), new Field("Deductible", "Deductible"),
-                    new Field("OutOfPocketMax", "OutOfPocketMax"), new Field("CoinsuranceRate", "CoinsuranceRate")
+                    new("Id", "Id"), new("Name", "Name"), new("Tier", "Tier"),
+                    new("MonthlyPremium", "MonthlyPremium"), new("Deductible", "Deductible"),
+                    new("OutOfPocketMax", "OutOfPocketMax"), new("CoinsuranceRate", "CoinsuranceRate")
                 ],
                 Relations:
                 [
@@ -256,9 +256,9 @@ public class BuiltinMetadata
                 DbSchema: "in",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("UserId", "UserId"),
-                    new Field("PlanId", "PlanId"), new Field("AgentId", "AgentId"),
-                    new Field("StartDate", "StartDate"), new Field("EndDate", "EndDate"), new Field("Status", "Status")
+                    new("Id", "Id"), new("UserId", "UserId"),
+                    new("PlanId", "PlanId"), new("AgentId", "AgentId"),
+                    new("StartDate", "StartDate"), new("EndDate", "EndDate"), new("Status", "Status")
                 ],
                 Relations:
                 [
@@ -273,8 +273,8 @@ public class BuiltinMetadata
                 DbSchema: "in",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("PolicyId", "PolicyId"),
-                    new Field("PaymentDate", "PaymentDate"), new Field("Amount", "Amount"), new Field("Status", "Status")
+                    new("Id", "Id"), new("PolicyId", "PolicyId"),
+                    new("PaymentDate", "PaymentDate"), new("Amount", "Amount"), new("Status", "Status")
                 ],
                 Relations:
                 [
@@ -285,11 +285,11 @@ public class BuiltinMetadata
                 DbSchema: "in",
                 Fields:
                 [
-                    new Field("Id", "Id"), new Field("PolicyId", "PolicyId"),
-                    new Field("VisitId", "VisitId"), new Field("ClaimDate", "ClaimDate"),
-                    new Field("BilledAmount", "BilledAmount"), new Field("AllowedAmount", "AllowedAmount"),
-                    new Field("PaidAmount", "PaidAmount"), new Field("Status", "Status"), new Field("DenialReason", "DenialReason"),
-                    new Field("ProcessedDate", "ProcessedDate")
+                    new("Id", "Id"), new("PolicyId", "PolicyId"),
+                    new("VisitId", "VisitId"), new("ClaimDate", "ClaimDate"),
+                    new("BilledAmount", "BilledAmount"), new("AllowedAmount", "AllowedAmount"),
+                    new("PaidAmount", "PaidAmount"), new("Status", "Status"), new("DenialReason", "DenialReason"),
+                    new("ProcessedDate", "ProcessedDate")
                 ],
                 Relations:
                 [
@@ -304,7 +304,7 @@ public class BuiltinMetadata
             Name: "School",
             Fields:
             [
-                new Field("Name", "Name"),
+                new("Name", "Name"),
             ],
             Relations: [
                 new(
@@ -328,13 +328,13 @@ public class BuiltinMetadata
         new(
             Name : "User",
             Fields : [
-                new Field("Id", "Id"),
-                new Field("Name", "Name"),
-                new Field("ManagerId", "ManagerId"),
-                //new Field("SchoolId", "SchoolId"),
-                new Field("Age", "Age"),
-                new Field("Birthday", "Birthday"),
-                new Field("IsMale", "IsMale"),
+                new("Id", "Id"),
+                new("Name", "Name"),
+                new("ManagerId", "ManagerId"),
+                //new("SchoolId", "SchoolId"),
+                new("Age", "Age"),
+                new("Birthday", "Birthday"),
+                new("IsMale", "IsMale"),
             ],
 
             Relations : [

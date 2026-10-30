@@ -13,7 +13,7 @@ export type EditableField = MetadataField & { id?: string };
 export type EditableRelation = MetadataRelation & { id?: string; type: string; relatedKeys: RelationKey[] };
 export type EditableEntity = MetadataEntity & { rawSql: string; fields: EditableField[]; relations: EditableRelation[] };
 
-export const emptyField = (): EditableField => ({ id: createFieldId(), kind: "dbField", name: "", dbColumn: "" });
+export const emptyField = (): EditableField => ({ id: createFieldId(), name: "", dbColumn: "", dataType: "String", isRawSql: false });
 export const emptyRelation = (): EditableRelation => ({ id: createRelationId(), name: "", relatedEntity: "", type: "Lookup", relatedKeys: [{ fromDbColumn: "", toDbColumn: "" }] });
 
 export function toEditable(entity: MetadataEntity): EditableEntity {

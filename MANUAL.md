@@ -97,13 +97,14 @@ new Entity(
 
 `Name` is the logical entity name used by queries and relationships.
 `DbSchema` and `DbTable` identify a normal physical table and are quoted by the SQL dialect.
-For a view-like entity backed by a calculated or joined SQL statement, use
-`RawSqlEntity` instead:
+For a view-like entity backed by a calculated or joined SQL statement, set
+`IsRawSql` to `true` and provide the SQL source through `DbTable`:
 
 ```csharp
-new RawSqlEntity(
+new Entity(
     Name: "Calculation",
-    RawSql: "(SELECT Id, Name, Amount * Quantity AS Total FROM OrderLines)",
+    DbTable: "(SELECT Id, Name, Amount * Quantity AS Total FROM OrderLines)",
+    IsRawSql: true,
     Fields: [
         new Field("Id"),
         new Field("Name"),
@@ -111,12 +112,10 @@ new RawSqlEntity(
     ]);
 ```
 
-`RawSqlEntity.RawSql` is the trusted SQL source for the entity, rendered in the query's
-`FROM` clause. It is distinct from `RawSqlField.Expression`, which defines an individual
-field expression. Its fields and relations are
+When `Entity.IsRawSql` is true, `Entity.DbTable` is the trusted SQL source rendered in the
+`FROM` clause. A field with `IsRawSql` set to `true` uses `DbColumn` as its trusted SQL
+expression. Its fields and relations are
 available to the query compiler in the same way as table-backed entity metadata.
-If only one is provided, the missing value is copied from the provided value.
-When both are provided, they remain independent.
 The built-in SQL dialects reject configured DML/DDL keywords in this source after
 ignoring literals, quoted identifiers, and comments. This is a conservative
 blacklist check, not a SQL parser or a security boundary; keep raw SQL metadata
@@ -128,14 +127,15 @@ Fields can be:
 
 - `Field`: a database column. `Name` is the logical field name and
   `DbColumn` is its physical database column name.
-- `RawSqlField`: a trusted provider-specific SQL expression.
+- A raw SQL `Field` has `IsRawSql` set to `true`; its `DbColumn` stores a trusted
+  provider-specific SQL expression.
 
 Use `@` before column names in a raw SQL expression to have the current table
 alias inserted. For example, this defines a calculated `LineTotal` field
 without requiring a physical column:
 
 ```csharp
-new RawSqlField("LineTotal", "@Quantity * @UnitPrice")
+new Field("LineTotal", "@Quantity * @UnitPrice", IsRawSql: true)
 ```
 
 The generated SQL expression will be similar to

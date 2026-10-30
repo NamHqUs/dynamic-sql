@@ -17,10 +17,10 @@ class QueryContext(
 
     public IEnumerable<DbParameter> DbParameters => _dbParameters;
 
-    public IEntity GetEntity(string entityName)
+    public Entity GetEntity(string entityName)
         => metaProvider.GetEntity(entityName);
 
-    public TableExpression CreateTableContext(IEntity entity)
+    public TableExpression CreateTableContext(Entity entity)
     {
         return new TableExpression(entity, GetNextAlias());
     }
@@ -394,12 +394,12 @@ class QueryContext(
         return joinedTable;
     }
 
-    private IEnumerable<(Relation relation, IEntity joinedEntity)> ParseRelationPath(TableExpression table, string? relationPath)
+    private IEnumerable<(Relation relation, Entity joinedEntity)> ParseRelationPath(TableExpression table, string? relationPath)
     {
         var next = table.Entity;
 
         return string.IsNullOrEmpty(relationPath)
-            ? Enumerable.Empty<(Relation relation, IEntity joinedEntity)>()
+            ? Enumerable.Empty<(Relation relation, Entity joinedEntity)>()
             : relationPath.Split('.')
                 .Select(e =>
                 {
@@ -410,7 +410,7 @@ class QueryContext(
                 .ToList();
     }
 
-    private TableExpression ApplyJoin(TableExpression tableContext, IEnumerable<(Relation relation, IEntity joinedEntity)> joinedData)
+    private TableExpression ApplyJoin(TableExpression tableContext, IEnumerable<(Relation relation, Entity joinedEntity)> joinedData)
     {
         var lastTable = tableContext;
         foreach (var (relation, joinedEntity) in joinedData)
@@ -429,7 +429,7 @@ class QueryContext(
         return lastTable;
     }
 
-    private TableExpression ApplyJoinAggregate(TableExpression tableContext, IEnumerable<(Relation relation, IEntity joinedEntity)> joinedData)
+    private TableExpression ApplyJoinAggregate(TableExpression tableContext, IEnumerable<(Relation relation, Entity joinedEntity)> joinedData)
     {
         var lastTable = tableContext;
         if (joinedData.Any())

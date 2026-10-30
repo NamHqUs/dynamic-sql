@@ -4,23 +4,23 @@ namespace Namh.Data.DynamicSql;
 
 public interface IMetadataProvider
 {
-    IEntity GetEntity(string entityName);
+    Entity GetEntity(string entityName);
 }
 
 public class MetadataProvider : IMetadataProvider
 {
-    private readonly Dictionary<string, IEntity> _entities;
+    private readonly Dictionary<string, Entity> _entities;
 
-    public MetadataProvider(IEnumerable<IEntity> entities)
+    public MetadataProvider(IEnumerable<Entity> entities)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
         _entities = entities.ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    public IEntity GetEntity(string entityName)
+    public Entity GetEntity(string entityName)
     {
-        if (_entities.TryGetValue(entityName, out IEntity? entity))
+        if (_entities.TryGetValue(entityName, out Entity? entity))
             return entity;
 
         throw new EntityNotFoundException(entityName);
@@ -30,7 +30,7 @@ public class MetadataProvider : IMetadataProvider
 
 public sealed class MetaProvider : MetadataProvider, IMetaProvider
 {
-    public MetaProvider(IEnumerable<IEntity> entities)
+    public MetaProvider(IEnumerable<Entity> entities)
         : base(entities)
     {
     }

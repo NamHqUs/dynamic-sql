@@ -2,9 +2,12 @@ import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/tool
 import { apiUrls } from "../../../const/api-urls";
 import type { FunctionDefinition } from "../../metadata-builder/function-definition/types";
 
-export type MetadataField =
-  | { kind: "dbField"; name: string; dbColumn: string }
-  | { kind: "rawSqlField"; name: string; expression: string };
+export type MetadataField = {
+  name: string;
+  dbColumn?: string | null;
+  dataType?: string;
+  isRawSql?: boolean;
+};
 
 export type FilterOperatorDefinition = {
   id: string;

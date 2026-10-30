@@ -390,7 +390,7 @@ public sealed class _24_FunctionMetadataTests
         public string QuoteIdentifier(string identifier)
             => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
-        public string RenderTable(IEntity entity)
+        public string RenderTable(Entity entity)
             => $"{QuoteIdentifier(entity.Name)}";
 
         public string RenderBoolean(bool value) => value ? "1" : "0";

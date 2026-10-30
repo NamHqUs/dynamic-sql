@@ -19,7 +19,7 @@ public class DynamicSqlContext(
     {
     }
 
-    public DynamicSqlContext(IDbConnection dbConnection, IEnumerable<IEntity> entities, IEnumerable<SqlFunctionDefintion>? functions = null, ISqlDialect? sqlDialect = null):
+    public DynamicSqlContext(IDbConnection dbConnection, IEnumerable<Entity> entities, IEnumerable<SqlFunctionDefintion>? functions = null, ISqlDialect? sqlDialect = null):
         this(dbConnection, new MetaProvider(entities), new FunctionProvider(functions), sqlDialect)
     {
     }

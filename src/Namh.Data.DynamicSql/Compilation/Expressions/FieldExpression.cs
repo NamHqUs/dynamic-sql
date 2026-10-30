@@ -1,8 +1,8 @@
 ﻿namespace Namh.Data.DynamicSql.Compilation.Expressions;
 
-class FieldExpression(string tableAlias, IField field) : SqlExpression(typeof(DataValue))
+class FieldExpression(string tableAlias, Field field) : SqlExpression(typeof(DataValue))
 {
-    public IField MetaField { get; } = field;
+    public Field MetaField { get; } = field;
     public string TableAlias { get; } = tableAlias;
 
     internal override string DebugView

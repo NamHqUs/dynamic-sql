@@ -216,7 +216,7 @@ export default function QueryDesign({
     }) ?? [];
     return {
       name: context.name,
-      fields: [...new Set(fields)].map((name) => ({ kind: "dbField" as const, name, dbColumn: name })),
+      fields: [...new Set(fields)].map((name) => ({ name, dbColumn: name })),
     };
   });
   const metadataWithContexts = [

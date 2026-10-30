@@ -121,30 +121,30 @@ export default function FieldsBuilder({ fields, onChange }: FieldsBuilderProps) 
               placeholder="Field name"
             />
             <select
-              value={field.kind}
+              value={field.isRawSql ? "rawSqlField" : "dbField"}
               onChange={(event) => updateField(index, (current) => event.target.value === "rawSqlField"
                 ? {
                     id: current.id,
-                    kind: "rawSqlField",
                     name: current.name,
-                    expression: current.kind === "rawSqlField" ? current.expression : "",
+                    dbColumn: current.isRawSql ? current.dbColumn : "",
+                    dataType: current.dataType,
+                    isRawSql: true,
                   }
                 : {
                     id: current.id,
-                    kind: "dbField",
                     name: current.name,
-                    dbColumn: current.kind === "dbField" ? current.dbColumn : current.name,
+                    dbColumn: current.isRawSql ? current.name : current.dbColumn,
+                    dataType: current.dataType,
+                    isRawSql: false,
                   })}
             >
               <option value="dbField">Field</option>
               <option value="rawSqlField">RawSqlField</option>
             </select>
             <input
-              value={field.kind === "dbField" ? field.dbColumn : field.expression}
-              onChange={(event) => updateField(index, (current) => current.kind === "dbField"
-                ? { ...current, dbColumn: event.target.value }
-                : { ...current, expression: event.target.value })}
-              placeholder={field.kind === "dbField" ? field.name || "Column name" : "@Column expression"}
+              value={field.dbColumn ?? ""}
+              onChange={(event) => updateField(index, (current) => ({ ...current, dbColumn: event.target.value }))}
+              placeholder={field.isRawSql ? "@Column expression" : field.name || "Column name"}
             />
             <button
               className="icon-button subtle"

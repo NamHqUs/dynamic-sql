@@ -65,18 +65,20 @@ public class DefinedMetadata
                     ])
             ]),
 
-        new RawSqlEntity(
+        new Entity(
             Name : "Student",
-            RawSql : "[User]",
+            DbTable : "[User]",
+            IsRawSql : true,
             Fields : [
                 new Field("Name", "Name"),
                 new Field("Age", "Age"),
             ]),
-        new RawSqlEntity(
+        new Entity(
             Name : "Calculation",
-            RawSql : $"(Select t0.*, DATEDIFF(year, t0.BirthDay, GetDate()) As [CalculatedAge], t1.Count " +
+            DbTable : $"(Select t0.*, DATEDIFF(year, t0.BirthDay, GetDate()) As [CalculatedAge], t1.Count " +
                   $"From[User] t0 " +
                     $"Left Join(Select ManagerId, Count(*) Count From [User] Group By ManagerId) t1 On t1.ManagerId = t0.Id)",
+            IsRawSql : true,
             Fields : [
                 new Field("Id", "Id"),
                 new Field("Name", "Name"),

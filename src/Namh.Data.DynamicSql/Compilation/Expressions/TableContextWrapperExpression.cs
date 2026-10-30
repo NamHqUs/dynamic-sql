@@ -5,9 +5,10 @@ namespace Namh.Data.DynamicSql.Compilation.Expressions;
 class TableContextWrapperExpression(TableExpression tableContext, string alias)
     : TableExpression(CreateEntity(tableContext), alias)
 {
-    private static IEntity CreateEntity(TableExpression tableContext)
-        => new RawSqlEntity(
+    private static Entity CreateEntity(TableExpression tableContext)
+        => new Entity(
             Name: $"Wrap_{tableContext.Entity.Name}",
-            RawSql: $"({tableContext})",
-            Fields: tableContext.ProjectionItems.Select(e => (IField)new Field(e.Alias, e.Alias)).ToList());
+            DbTable: $"({tableContext})",
+            IsRawSql: true,
+            Fields: tableContext.ProjectionItems.Select(e => new Field(e.Alias, e.Alias)).ToList());
 }

@@ -2,6 +2,8 @@ using Demo.Contracts.Repositories;
 using Demo.Share;
 using Microsoft.Extensions.Configuration;
 using Namh.Data.DynamicSql;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace Demo.Repositories.FileStorage;
@@ -10,7 +12,7 @@ public sealed class MetadataFileRepository(IConfiguration configuration, FilePat
     : FileRepositoryBase<Entity>(filePathResolver, FOLDER_NAME), IMetadataRepository
 {
     private const string FOLDER_NAME = "UnitTestData";
-    private IReadOnlyCollection<Entity> _builtinEntities= default!;
+    private IReadOnlyCollection<Entity> _builtinEntities = default!;
     public void Reset(string userSectionId)
     {
         var dir = GetUserStoreFolder(userSectionId);
@@ -45,21 +47,20 @@ public sealed class MetadataFileRepository(IConfiguration configuration, FilePat
         if (!Directory.Exists(dir))
             return [];
 
-        return Directory.EnumerateFiles(dir, "*.json")
-            .Select(file => DeserializeEntity(file))
-            .ToArray();
-    }
-
-    private static Entity DeserializeEntity(string file)
-    {
-        var json = File.ReadAllText(file);
-        using var document = JsonDocument.Parse(json);
-        var root = document.RootElement;
-        var entity = (root.TryGetProperty("rawSql", out _) || root.TryGetProperty("RawSql", out _))
-            ? JsonSerializer.Deserialize<RawSqlEntity>(json)
-            : JsonSerializer.Deserialize<Entity>(json);
-        return entity
-            ?? throw new InvalidOperationException($"Failed to deserialize metadata from '{file}'.");
+        var builtInNames = GetBuiltin()
+            .Select(entity => entity.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var entities = new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in Directory.EnumerateFiles(dir, "*.json"))
+        {
+            var entity = JsonSerializer.Deserialize<Entity>(File.ReadAllText(path))
+                ?? throw new InvalidOperationException($"Failed to deserialize entity from '{path}'.");
+            if (builtInNames.Contains(entity.Name))
+                throw new InvalidDataException($"User entity '{entity.Name}' cannot replace a built-in entity.");
+            if (!entities.TryAdd(entity.Name, entity))
+                throw new InvalidDataException($"Duplicate user entity '{entity.Name}' found in '{path}'.");
+        }
+        return entities.Values.ToArray();
     }
 
     public override Entity? Get(string userSectionId, string id)
@@ -68,20 +69,22 @@ public sealed class MetadataFileRepository(IConfiguration configuration, FilePat
 
     public override void Save(string userSectionId, Entity entity)
     {
-        var dir = GetUserStoreFolder(userSectionId);
-        Directory.CreateDirectory(dir);
+        Directory.CreateDirectory(GetUserStoreFolder(userSectionId));
         File.WriteAllText(
-            GetUserFilePath(userSectionId, $"{entity.Name}.json"),
+            GetUserFilePath(userSectionId, GetFileId(entity.Name)),
             JsonSerializer.Serialize(entity, new JsonSerializerOptions { WriteIndented = true }));
     }
 
     public override bool Delete(string userSectionId, string id)
     {
-        var path = GetUserFilePath(userSectionId, $"{id}.json");
+        var path = GetUserFilePath(userSectionId, GetFileId(id));
         if (!File.Exists(path))
             return false;
         File.Delete(path);
         return true;
     }
+
+    private static string GetFileId(string id)
+        => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(id.ToUpperInvariant())));
 
 }

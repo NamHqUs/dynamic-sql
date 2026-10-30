@@ -16,7 +16,7 @@ class DbQueryProvider(
     ISqlDialect sqlDialect,
     string entityName) : IDbQueryProvider
 {
-    public readonly IEntity Entity = metaProvider.GetEntity(entityName);
+    public readonly Entity Entity = metaProvider.GetEntity(entityName);
 
     public IDbQueryable CreateQuery(Expression expression)
         => new DbQueryable(this, expression);

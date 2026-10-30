@@ -266,7 +266,7 @@ The IR must not depend on `ISqlDialect`.
 | Query root | `IDbQueryable` | Deferred query and expression-tree root |
 | C# field input | `IRecordParameter` / `DataValue` | Dynamic fields, parameters, and related queries |
 | JSON input | `QueryDto`, `FilterDto`, `SortDto` | Serializable query transport, including page and page size |
-| Metadata | `IMetadataProvider`, `IFunctionProvider`, `IEntity`, `Entity`, `RawSqlEntity`, `Field`, `Relation`, `FunctionDefinition` | Runtime schema, relationships, and function signatures |
+| Metadata | `IMetadataProvider`, `IFunctionProvider`, `Entity`, `Field`, `Relation`, `FunctionDefinition` | Runtime schema, relationships, and function signatures |
 | Compiler IR | Internal `SqlExpression` hierarchy | Provider-independent query representation |
 | SQL target | `ISqlDialect` | SQL Server, SQLite, PostgreSQL, or a custom provider |
 | Diagnostic output | `SqlQuery`, `SqlQueryParameter` | SQL text plus parameter values for `ToSql` |

@@ -13,7 +13,7 @@ internal sealed record CommonTableExpression(string Name, TableExpression Query)
 
 internal sealed record OrderExpression(SqlExpression Expression, bool Descending, string? ProjectionAlias = null);
 
-class TableExpression(IEntity entity, string alias) : SqlExpression(typeof(IDbQueryable))
+class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IDbQueryable))
 {
     public IEnumerable<ProjectionItem> ProjectionItems = [];
     public List<CommonTableExpression> CommonTableExpressions { get; } = [];
@@ -25,7 +25,7 @@ class TableExpression(IEntity entity, string alias) : SqlExpression(typeof(IDbQu
     public StringBuilder? SqlSelect { get; protected set; }
     public StringBuilder? SqlOrder { get; set; }
     public readonly string Alias = alias;
-    public readonly IEntity Entity = entity;
+    public readonly Entity Entity = entity;
     public string? CommonTableExpressionName { get; protected set; }
     public readonly List<FieldExpression> Fields = [];
     public readonly Dictionary<string, TableExpression> JoinedTables = [];
@@ -86,7 +86,7 @@ internal sealed class CteTableExpression : TableExpression
 {
     public string Name { get; }
 
-    public CteTableExpression(string name, IEntity entity, string alias)
+    public CteTableExpression(string name, Entity entity, string alias)
         : base(entity, alias)
     {
         Name = name;

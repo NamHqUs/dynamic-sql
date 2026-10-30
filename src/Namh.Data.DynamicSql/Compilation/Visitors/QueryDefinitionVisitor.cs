@@ -105,7 +105,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         return queryContext.CreateTableContext(queryContext.GetEntity(entityName));
     }
 
-    private IEntity CreateCteEntity(
+    private Entity CreateCteEntity(
         QueryContextDefintion context,
         IReadOnlyDictionary<string, QueryContextDefintion> definitions)
     {
@@ -114,7 +114,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         return new Entity(context.Name, fields, DbTable: context.Name);
     }
 
-    private List<IField> GetCteFields(
+    private List<Field> GetCteFields(
         QueryContextDefintion context,
         IReadOnlyDictionary<string, QueryContextDefintion> definitions,
         HashSet<string> visited)
@@ -126,13 +126,13 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             return projections.Select(projection =>
             {
                 var name = GetProjectionAlias(projection);
-                return (IField)new Field(name, name);
+                return new Field(name, name);
             }).ToList();
         if (definitions.TryGetValue(context.Query.Entity, out var sourceContext))
             return GetCteFields(sourceContext, definitions, visited);
 
         return queryContext.GetEntity(context.Query.Entity).Fields
-            .Select(field => (IField)new Field(field.Name, field.Name))
+            .Select(field => new Field(field.Name, field.Name))
             .ToList();
     }
 

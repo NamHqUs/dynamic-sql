@@ -118,16 +118,19 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
       setMessage("Entity and field names are required.");
       return false;
     }
-    if (draft.fields.some((field) => field.kind === "rawSqlField" && !field.expression.trim())) {
+    if (draft.fields.some((field) => field.isRawSql && !field.dbColumn?.trim())) {
       setMessage("Raw SQL expressions are required.");
       return false;
     }
     const payload = {
       name: draft.name.trim(),
       rawSql: draft.rawSql.trim() || draft.name.trim(),
-      fields: draft.fields.map((field) => field.kind === "dbField"
-        ? { kind: field.kind, name: field.name.trim(), dbColumn: field.dbColumn.trim() || field.name.trim() }
-        : { kind: field.kind, name: field.name.trim(), expression: field.expression.trim() }),
+      fields: draft.fields.map((field) => ({
+        name: field.name.trim(),
+        dbColumn: field.dbColumn?.trim() || field.name.trim(),
+        dataType: field.dataType || "String",
+        isRawSql: field.isRawSql ?? false,
+      })),
       relations: draft.relations.map(({ name, relatedEntity, type, relatedKeys }) => ({ name: name.trim(), relatedEntity: relatedEntity.trim(), type, relatedKeys })),
     };
     setStatus("saving");

@@ -178,20 +178,18 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
     private string RenderField(FieldExpression field)
     {
-        if (field.TableAlias.Length == 0)
-            return field.MetaField switch
-            {
-                Field dbField => $"({dbField.DbColumn ?? dbField.Name})",
-                RawSqlField rawSqlField => $"({rawSqlField.Expression})",
-                _ => throw new NotSupportedException($"Unsupported field type [{field.MetaField.GetType().Name}].")
-            };
-
-        return field.MetaField switch
+        if (field.MetaField.IsRawSql)
         {
-            Field dbField => $"{field.TableAlias}.{dialect.QuoteIdentifier(dbField.DbColumn ?? dbField.Name)}",
-            RawSqlField rawSqlField => $"({rawSqlField.Expression.Replace("@", field.TableAlias + ".")})",
-            _ => throw new NotSupportedException($"Unsupported field type [{field.MetaField.GetType().Name}].")
-        };
+            var rawSql = field.MetaField.DbColumn ?? field.MetaField.Name;
+            return field.TableAlias.Length == 0
+                ? $"({rawSql})"
+                : $"({rawSql.Replace("@", field.TableAlias + ".")})";
+        }
+
+        var dbColumn = field.MetaField.DbColumn ?? field.MetaField.Name;
+        return field.TableAlias.Length == 0
+            ? $"({dbColumn})"
+            : $"{field.TableAlias}.{dialect.QuoteIdentifier(dbColumn)}";
     }
 
     private string RenderTemplateComparison(TemplateCompareSqlExpression compare)

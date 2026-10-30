@@ -9,7 +9,7 @@ public interface ISqlDialect
     string Key
         => throw new NotSupportedException("A custom SQL dialect must provide a dialect identifier.");
     string QuoteIdentifier(string identifier);
-    string RenderTable(IEntity entity);
+    string RenderTable(Entity entity);
     string RenderBoolean(bool value);
     string RenderStringLiteral(string value);
     string RenderStringConcatenation(string left, string right);
@@ -39,9 +39,9 @@ public sealed class SqlServerDialect : ISqlDialect
     public string QuoteIdentifier(string identifier)
         => $"[{identifier.Replace("]", "]]")}]";
 
-    public string RenderTable(IEntity entity)
-        => entity is RawSqlEntity rawSqlEntity
-            ? RawSqlEntitySqlGuard.ValidateAndReturn(rawSqlEntity.RawSql, RawSqlEntityDialect.SqlServer)
+    public string RenderTable(Entity entity)
+        => entity.IsRawSql
+            ? RawSqlEntitySqlGuard.ValidateAndReturn(entity.DbTable, RawSqlEntityDialect.SqlServer)
             : $"{QuoteIdentifier(entity.DbSchema ?? "dbo")}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public string RenderBoolean(bool value) => value ? "1" : "0";
@@ -107,9 +107,9 @@ public sealed class SqliteDialect(string? schema = null) : ISqlDialect
     public string QuoteIdentifier(string identifier)
         => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
-    public string RenderTable(IEntity entity)
-        => entity is RawSqlEntity rawSqlEntity
-            ? RawSqlEntitySqlGuard.ValidateAndReturn(rawSqlEntity.RawSql, RawSqlEntityDialect.Sqlite)
+    public string RenderTable(Entity entity)
+        => entity.IsRawSql
+            ? RawSqlEntitySqlGuard.ValidateAndReturn(entity.DbTable, RawSqlEntityDialect.Sqlite)
             : string.IsNullOrEmpty(entity.DbSchema ?? schema)
                 ? QuoteIdentifier(entity.DbTable ?? entity.Name)
                 : $"{QuoteIdentifier(entity.DbSchema ?? schema!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
@@ -142,9 +142,9 @@ public sealed class PostgresDialect(string schema = "public") : ISqlDialect
     public string QuoteIdentifier(string identifier)
         => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
-    public string RenderTable(IEntity entity)
-        => entity is RawSqlEntity rawSqlEntity
-            ? RawSqlEntitySqlGuard.ValidateAndReturn(rawSqlEntity.RawSql, RawSqlEntityDialect.Postgres)
+    public string RenderTable(Entity entity)
+        => entity.IsRawSql
+            ? RawSqlEntitySqlGuard.ValidateAndReturn(entity.DbTable, RawSqlEntityDialect.Postgres)
             : $"{QuoteIdentifier(entity.DbSchema ?? schema)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public string RenderBoolean(bool value) => value ? "TRUE" : "FALSE";
