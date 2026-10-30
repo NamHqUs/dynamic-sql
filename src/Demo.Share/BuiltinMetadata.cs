@@ -8,6 +8,7 @@ public class BuiltinMetadata
     [
         new(
             Name: "Customers",
+            DbSchema: "sa",
             Fields:
             [
                 new DbField("Id", "Id"), new DbField("Name", "Name"), new DbField("Email", "Email"), new DbField("Phone", "Phone"), new DbField("Address", "Address"),
@@ -20,6 +21,7 @@ public class BuiltinMetadata
             ]),
         new(
             Name: "Products",
+            DbSchema: "sa",
             Fields:
             [
                 new DbField("Id", "Id"), new DbField("Name", "Name"), new DbField("Description", "Description"), new DbField("Category", "Category"),
@@ -33,6 +35,7 @@ public class BuiltinMetadata
             ]),
         new(
             Name: "Invoices",
+            DbSchema: "sa",
             Fields:
             [
                 new DbField("Id", "Id"), new DbField("CustomerId", "CustomerId"), new DbField("InvoiceNumber", "InvoiceNumber"),
@@ -49,6 +52,7 @@ public class BuiltinMetadata
             ]),
         new(
             Name: "InvoiceItems",
+            DbSchema: "sa",
             Fields:
             [
                 new DbField("Id", "Id"), new DbField("InvoiceId", "InvoiceId"), new DbField("ProductId", "ProductId"),
@@ -67,6 +71,7 @@ public class BuiltinMetadata
     [
             new(
                 Name: "Locations",
+                DbSchema: "Main",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("Name", "Name"), new DbField("City", "City"), new DbField("State", "State")
@@ -78,6 +83,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "Users",
+                DbSchema: "Main",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("FirstName", "FirstName"), new DbField("LastName", "LastName"),
@@ -91,6 +97,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "Departments",
+                DbSchema: "hr",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("Name", "Name")
@@ -101,6 +108,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "Employees",
+                DbSchema: "Main",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("FirstName", "FirstName"), new DbField("LastName", "LastName"),
@@ -122,6 +130,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "PerformanceReviews",
+                DbSchema: "hr",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("EmployeeId", "EmployeeId"),
@@ -134,6 +143,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "LeaveRequests",
+                DbSchema: "hr",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("EmployeeId", "EmployeeId"), new DbField("LeaveType", "LeaveType"),
@@ -145,19 +155,19 @@ public class BuiltinMetadata
                 ]),
             // The legacy sales demo already defines a different Products entity.
             new(
-                Name: "NorthStarProducts",
-                Fields:
+                "NorthStarProducts",
+                "sa",
+                "Products",
                 [
                     new DbField("Id", "Id"), new DbField("Name", "Name"), new DbField("Category", "Category"),
                     new DbField("UnitPrice", "UnitPrice"), new DbField("CostPrice", "CostPrice")
                 ],
-                RawSql: "Products",
-                Relations:
                 [
                     new("OrderItems", "OrderItems", RelationType.Collection, [new("Id", "ProductId")])
                 ]),
             new(
                 Name: "Orders",
+                DbSchema: "sa",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("UserId", "UserId"),
@@ -172,6 +182,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "OrderItems",
+                DbSchema: "sa",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("OrderId", "OrderId"),
@@ -185,6 +196,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "Diagnoses",
+                DbSchema: "he",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("Code", "Code"), new DbField("Name", "Name"), new DbField("Category", "Category"),
@@ -196,6 +208,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "Visits",
+                DbSchema: "he",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("UserId", "UserId"),
@@ -214,6 +227,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "LabResults",
+                DbSchema: "he",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("VisitId", "VisitId"), new DbField("TestName", "TestName"),
@@ -226,6 +240,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "InsurancePlans",
+                DbSchema: "in",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("Name", "Name"), new DbField("Tier", "Tier"),
@@ -238,6 +253,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "Policies",
+                DbSchema: "in",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("UserId", "UserId"),
@@ -254,6 +270,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "PremiumPayments",
+                DbSchema: "in",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("PolicyId", "PolicyId"),
@@ -265,6 +282,7 @@ public class BuiltinMetadata
                 ]),
             new(
                 Name: "Claims",
+                DbSchema: "in",
                 Fields:
                 [
                     new DbField("Id", "Id"), new DbField("PolicyId", "PolicyId"),

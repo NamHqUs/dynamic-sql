@@ -2,27 +2,40 @@
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
-public interface IMetaProvider
+public interface IMetadataProvider
 {
-    Entity GetEntity(string entityName);
+    IEntity GetEntity(string entityName);
 }
 
-public class MetaProvider : IMetaProvider
+public class MetadataProvider : IMetadataProvider
 {
-    private readonly Dictionary<string, Entity> _entities;
+    private readonly Dictionary<string, IEntity> _entities;
 
-    public MetaProvider(IEnumerable<Entity> entities)
+    public MetadataProvider(IEnumerable<IEntity> entities)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
         _entities = entities.ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    public Entity GetEntity(string entityName)
+    public IEntity GetEntity(string entityName)
     {
-        if (_entities.TryGetValue(entityName, out Entity? entity))
+        if (_entities.TryGetValue(entityName, out IEntity? entity))
             return entity;
 
         throw new EntityNotFoundException(entityName);
     }
+
+}
+
+public sealed class MetaProvider : MetadataProvider, IMetaProvider
+{
+    public MetaProvider(IEnumerable<IEntity> entities)
+        : base(entities)
+    {
+    }
+}
+
+public interface IMetaProvider : IMetadataProvider
+{
 }

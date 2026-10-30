@@ -12,7 +12,7 @@ internal sealed record CompiledQuery(
     string? TotalRecordsCommandText);
 
 internal sealed class SqlQueryCompiler(
-    IMetaProvider metaProvider,
+    IMetadataProvider metaProvider,
     IFunctionProvider functionProvider,
     ISqlDialect sqlDialect)
 {

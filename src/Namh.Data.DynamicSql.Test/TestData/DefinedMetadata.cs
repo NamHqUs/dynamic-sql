@@ -65,14 +65,24 @@ public class DefinedMetadata
                     ])
             ]),
 
-        new(
+        new RawSqlEntity(
             Name : "Student",
             RawSql : "[User]",
             Fields : [
                 new DbField("Name", "Name"),
                 new DbField("Age", "Age"),
-            ]
-        ),
+            ]),
+        new RawSqlEntity(
+            Name : "Calculation",
+            RawSql : $"(Select t0.*, DATEDIFF(year, t0.BirthDay, GetDate()) As [CalculatedAge], t1.Count " +
+                  $"From[User] t0 " +
+                    $"Left Join(Select ManagerId, Count(*) Count From [User] Group By ManagerId) t1 On t1.ManagerId = t0.Id)",
+            Fields : [
+                new DbField("Id", "Id"),
+                new DbField("Name", "Name"),
+                new DbField("CalculatedAge", "CalculatedAge"),
+                new DbField("Count", "Count"),
+            ]),
         new(
             Name : "Teacher",
             Fields : [
@@ -87,18 +97,6 @@ public class DefinedMetadata
                     RelatedKeys : [
                         new("SchoolId", "Id")
                     ])
-            ]
-        ),
-        new(
-            Name : "Calculation",
-            RawSql : $"(Select t0.*, DATEDIFF(year, t0.BirthDay, GetDate()) As [CalculatedAge], t1.Count " +
-                  $"From[User] t0 " +
-                    $"Left Join(Select ManagerId, Count(*) Count From [User] Group By ManagerId) t1 On t1.ManagerId = t0.Id)",
-            Fields : [
-                new DbField("Id", "Id"),
-                new DbField("Name", "Name"),
-                new DbField("CalculatedAge", "CalculatedAge"),
-                new DbField("Count", "Count"),
             ]
         ),
 

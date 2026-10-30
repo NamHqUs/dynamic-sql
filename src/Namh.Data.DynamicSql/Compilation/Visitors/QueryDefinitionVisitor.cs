@@ -105,13 +105,13 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         return queryContext.CreateTableContext(queryContext.GetEntity(entityName));
     }
 
-    private Entity CreateCteEntity(
+    private IEntity CreateCteEntity(
         QueryContextDefintion context,
         IReadOnlyDictionary<string, QueryContextDefintion> definitions)
     {
         var fields = GetCteFields(context, definitions, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 
-        return new Entity(context.Name, fields, context.Name);
+        return new Entity(context.Name, fields, DbTable: context.Name);
     }
 
     private List<IField> GetCteFields(

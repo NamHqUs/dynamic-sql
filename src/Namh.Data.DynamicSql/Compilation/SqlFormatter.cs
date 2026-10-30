@@ -94,7 +94,7 @@ internal static class SqlFormatter
             }
             else if (LineBreakKeywords.Contains(keyword))
                 NewLine();
-            else if (lineHasContent && result[^1] != ' ' && result[^1] != '(')
+            else if (value != "." && lineHasContent && result[^1] != ' ' && result[^1] != '(')
                 result.Append(' ');
 
             result.Append(value);

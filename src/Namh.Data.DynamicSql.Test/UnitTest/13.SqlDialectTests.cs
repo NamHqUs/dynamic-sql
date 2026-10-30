@@ -16,10 +16,12 @@ public class _13_SqlDialectTests
         using var connection = new Microsoft.Data.SqlClient.SqlConnection();
         using var db = new DynamicSqlContext(connection, Metadata, new SqlServerDialect());
 
+        Assert.That(new SqlServerDialect().RenderTable(Metadata.GetEntity("User")), Is.EqualTo("[dbo].[User]"));
+
         var sql = db.Query("User").Select("Id").ToString();
 
         Assert.That(sql, Does.Contain("SELECT t0.[Id]"));
-        Assert.That(sql, Does.Contain("FROM dbo.[User] t0"));
+        Assert.That(sql, Does.Contain("FROM [dbo].[User] t0"));
         Assert.That(new SqlServerDialect().RenderTakePrefix(2), Is.EqualTo("TOP 2 "));
     }
 
@@ -87,18 +89,18 @@ public class _13_SqlDialectTests
     }
 
     [Test]
-    public void EntityCopiesLogicalNameToPhysicalTableNameWhenRawSqlIsMissing()
+    public void EntityUsesLogicalNameAsDefaultPhysicalTableName()
     {
         var entity = new Entity("User", []);
 
         Assert.That(entity.Name, Is.EqualTo("User"));
-        Assert.That(entity.RawSql, Is.EqualTo("User"));
+        Assert.That(entity.DbTable, Is.EqualTo("User"));
     }
 
     [Test]
-    public void EntityCopiesPhysicalTableNameToLogicalNameWhenNameIsMissing()
+    public void RawSqlEntityPreservesItsLogicalName()
     {
-        var entity = new Entity(Name: null, Fields: [], RawSql: "Users");
+        var entity = new RawSqlEntity(Name: "Users", Fields: [], RawSql: "Users");
 
         Assert.That(entity.Name, Is.EqualTo("Users"));
         Assert.That(entity.RawSql, Is.EqualTo("Users"));
@@ -107,10 +109,22 @@ public class _13_SqlDialectTests
     [Test]
     public void EntityKeepsLogicalAndPhysicalNamesIndependentWhenBothAreProvided()
     {
-        var entity = new Entity(Name: "Student", Fields: [], RawSql: "[User]");
+        var entity = new RawSqlEntity(Name: "Student", Fields: [], RawSql: "[User]");
 
         Assert.That(entity.Name, Is.EqualTo("Student"));
         Assert.That(entity.RawSql, Is.EqualTo("[User]"));
+    }
+
+    [Test]
+    public void EntityRendersConfiguredSchemaAndTable()
+    {
+        var entity = new Entity("Student", "school", "students", []);
+
+        Assert.That(new SqlServerDialect().RenderTable(entity), Is.EqualTo("[school].[students]"));
+        Assert.That(new PostgresDialect().RenderTable(entity), Is.EqualTo("\"school\".\"students\""));
+        Assert.That(
+            new SqlServerDialect().RenderTable(new Entity("Claim", "in", "Claims", [])),
+            Is.EqualTo("[in].[Claims]"));
     }
 
     [Test]

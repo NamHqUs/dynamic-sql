@@ -46,9 +46,20 @@ public sealed class MetadataFileRepository(IConfiguration configuration, FilePat
             return [];
 
         return Directory.EnumerateFiles(dir, "*.json")
-            .Select(file => JsonSerializer.Deserialize<Entity>(File.ReadAllText(file))
-                ?? throw new InvalidOperationException($"Failed to deserialize metadata from '{file}'."))
+            .Select(file => DeserializeEntity(file))
             .ToArray();
+    }
+
+    private static Entity DeserializeEntity(string file)
+    {
+        var json = File.ReadAllText(file);
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+        var entity = (root.TryGetProperty("rawSql", out _) || root.TryGetProperty("RawSql", out _))
+            ? JsonSerializer.Deserialize<RawSqlEntity>(json)
+            : JsonSerializer.Deserialize<Entity>(json);
+        return entity
+            ?? throw new InvalidOperationException($"Failed to deserialize metadata from '{file}'.");
     }
 
     public override Entity? Get(string userSectionId, string id)

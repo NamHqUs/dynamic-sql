@@ -7,19 +7,19 @@ namespace Namh.Data.DynamicSql;
 
 public class DynamicSqlContext(
     IDbConnection dbConnection,
-    IMetaProvider metaProvider,
+    IMetadataProvider metaProvider,
     IFunctionProvider functionProvider,
     ISqlDialect? sqlDialect = null) : IDisposable
 {
     private readonly ISqlDialect _sqlDialect = sqlDialect ?? SqlDialect.ForConnection(dbConnection);
     private bool _disposed;
 
-    public DynamicSqlContext(IDbConnection dbConnection, IMetaProvider metaProvider, ISqlDialect? sqlDialect = null)
+    public DynamicSqlContext(IDbConnection dbConnection, IMetadataProvider metaProvider, ISqlDialect? sqlDialect = null)
         : this(dbConnection, metaProvider, new FunctionProvider(), sqlDialect)
     {
     }
 
-    public DynamicSqlContext(IDbConnection dbConnection, IEnumerable<Entity> entities, IEnumerable<SqlFunctionDefintion>? functions = null, ISqlDialect? sqlDialect = null):
+    public DynamicSqlContext(IDbConnection dbConnection, IEnumerable<IEntity> entities, IEnumerable<SqlFunctionDefintion>? functions = null, ISqlDialect? sqlDialect = null):
         this(dbConnection, new MetaProvider(entities), new FunctionProvider(functions), sqlDialect)
     {
     }
@@ -61,28 +61,28 @@ public class DynamicSqlContext(
     }
 }
 
-public class DynamicSqlServerContext(IDbConnection dbConnection, IMetaProvider metaProvider, IFunctionProvider functionProvider)
+public class DynamicSqlServerContext(IDbConnection dbConnection, IMetadataProvider metaProvider, IFunctionProvider functionProvider)
     : DynamicSqlContext(dbConnection, metaProvider, functionProvider, new SqlServerDialect())
 {
-    public DynamicSqlServerContext(IDbConnection dbConnection, IMetaProvider metaProvider)
+    public DynamicSqlServerContext(IDbConnection dbConnection, IMetadataProvider metaProvider)
         : this(dbConnection, metaProvider, new FunctionProvider())
     {
     }
 }
 
-public class DynamicSqliteContext(IDbConnection dbConnection, IMetaProvider metaProvider, IFunctionProvider functionProvider)
+public class DynamicSqliteContext(IDbConnection dbConnection, IMetadataProvider metaProvider, IFunctionProvider functionProvider)
     : DynamicSqlContext(dbConnection, metaProvider, functionProvider, new SqliteDialect())
 {
-    public DynamicSqliteContext(IDbConnection dbConnection, IMetaProvider metaProvider)
+    public DynamicSqliteContext(IDbConnection dbConnection, IMetadataProvider metaProvider)
         : this(dbConnection, metaProvider, new FunctionProvider())
     {
     }
 }
 
-public class DynamicPostgresContext(IDbConnection dbConnection, IMetaProvider metaProvider, IFunctionProvider functionProvider)
+public class DynamicPostgresContext(IDbConnection dbConnection, IMetadataProvider metaProvider, IFunctionProvider functionProvider)
     : DynamicSqlContext(dbConnection, metaProvider, functionProvider, new PostgresDialect())
 {
-    public DynamicPostgresContext(IDbConnection dbConnection, IMetaProvider metaProvider)
+    public DynamicPostgresContext(IDbConnection dbConnection, IMetadataProvider metaProvider)
         : this(dbConnection, metaProvider, new FunctionProvider())
     {
     }

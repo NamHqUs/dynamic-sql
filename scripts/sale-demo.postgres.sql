@@ -1,9 +1,15 @@
+CREATE SCHEMA IF NOT EXISTS sa;
+
 DROP TABLE IF EXISTS public."InvoiceItems" CASCADE;
 DROP TABLE IF EXISTS public."Invoices" CASCADE;
 DROP TABLE IF EXISTS public."Products" CASCADE;
 DROP TABLE IF EXISTS public."Customers" CASCADE;
+DROP TABLE IF EXISTS sa."InvoiceItems" CASCADE;
+DROP TABLE IF EXISTS sa."Invoices" CASCADE;
+DROP TABLE IF EXISTS sa."Products" CASCADE;
+DROP TABLE IF EXISTS sa."Customers" CASCADE;
 
-CREATE TABLE public."Customers" (
+CREATE TABLE sa."Customers" (
     "Id" integer PRIMARY KEY,
     "Name" text NOT NULL,
     "Email" text NOT NULL,
@@ -16,7 +22,7 @@ CREATE TABLE public."Customers" (
     "UpdatedOn" date NOT NULL
 );
 
-CREATE TABLE public."Products" (
+CREATE TABLE sa."Products" (
     "Id" integer PRIMARY KEY,
     "Name" text NOT NULL,
     "Description" text NOT NULL,
@@ -29,7 +35,7 @@ CREATE TABLE public."Products" (
     "UpdatedOn" date NOT NULL
 );
 
-CREATE TABLE public."Invoices" (
+CREATE TABLE sa."Invoices" (
     "Id" integer PRIMARY KEY,
     "CustomerId" integer NOT NULL,
     "InvoiceNumber" text NOT NULL UNIQUE,
@@ -44,10 +50,10 @@ CREATE TABLE public."Invoices" (
     "TotalAmount" numeric(18, 2) NOT NULL,
     "CreatedOn" date NOT NULL,
     "UpdatedOn" date NOT NULL,
-    FOREIGN KEY ("CustomerId") REFERENCES public."Customers" ("Id")
+    FOREIGN KEY ("CustomerId") REFERENCES sa."Customers" ("Id")
 );
 
-CREATE TABLE public."InvoiceItems" (
+CREATE TABLE sa."InvoiceItems" (
     "Id" integer PRIMARY KEY,
     "InvoiceId" integer NOT NULL,
     "ProductId" integer NOT NULL,
@@ -57,11 +63,11 @@ CREATE TABLE public."InvoiceItems" (
     "LineTotal" numeric(18, 2) NOT NULL,
     "CreatedOn" date NOT NULL,
     "UpdatedOn" date NOT NULL,
-    FOREIGN KEY ("InvoiceId") REFERENCES public."Invoices" ("Id"),
-    FOREIGN KEY ("ProductId") REFERENCES public."Products" ("Id")
+    FOREIGN KEY ("InvoiceId") REFERENCES sa."Invoices" ("Id"),
+    FOREIGN KEY ("ProductId") REFERENCES sa."Products" ("Id")
 );
 
-INSERT INTO public."Customers"
+INSERT INTO sa."Customers"
     ("Id", "Name", "Email", "Phone", "Address", "Segment", "Region", "CustomerSince", "CreatedOn", "UpdatedOn")
 VALUES
     (1, 'Alice Johnson', 'alice.johnson@example.com', '555-0101', '101 Main Street', 'Enterprise', 'Northeast', '2023-04-12', '2025-01-01', '2025-01-01'),
@@ -75,7 +81,7 @@ VALUES
     (9, 'Ivy Taylor', 'ivy.taylor@example.com', '555-0109', '909 Spruce Court', 'Enterprise', 'Northeast', '2023-03-27', '2025-01-09', '2025-01-09'),
     (10, 'Jack Anderson', 'jack.anderson@example.com', '555-0110', '1010 Ash Place', 'Consumer', 'Midwest', '2025-02-01', '2025-01-10', '2025-01-10');
 
-INSERT INTO public."Products"
+INSERT INTO sa."Products"
     ("Id", "Name", "Description", "Category", "UnitPrice", "CostPrice", "StockQuantity", "ReorderLevel", "CreatedOn", "UpdatedOn")
 VALUES
     (1, 'Laptop', '15-inch everyday laptop', 'Computers', 899.00, 650.00, 25, 10, '2025-01-01', '2025-01-01'),
@@ -89,7 +95,7 @@ VALUES
     (9, 'Notebook', 'Hardcover ruled notebook', 'Office Accessories', 8.00, 2.50, 150, 40, '2025-01-01', '2025-01-01'),
     (10, 'Pen Set', 'Pack of five blue pens', 'Office Accessories', 6.00, 1.50, 300, 75, '2025-01-01', '2025-01-01');
 
-INSERT INTO public."Invoices"
+INSERT INTO sa."Invoices"
     ("Id", "CustomerId", "InvoiceNumber", "InvoiceDate", "DueDate", "Status", "SalesChannel", "PaymentMethod", "PaidOn", "DiscountAmount", "TaxAmount", "TotalAmount", "CreatedOn", "UpdatedOn")
 VALUES
     (1, 1, 'INV-1001', '2025-02-01', '2025-03-03', 'Paid', 'Online', 'Card', '2025-02-10', 0, 75.92, 949.00, '2025-02-01', '2025-02-10'),
@@ -113,7 +119,7 @@ VALUES
     (19, 10, 'INV-1019', '2025-03-12', '2025-04-11', 'Paid', 'Store', 'Cash', '2025-03-20', 0, 19.12, 239.00, '2025-03-12', '2025-03-20'),
     (20, 10, 'INV-1020', '2025-04-12', '2025-05-12', 'Sent', 'Online', 'Card', NULL, 0, 8.32, 104.00, '2025-04-12', '2025-04-12');
 
-INSERT INTO public."InvoiceItems"
+INSERT INTO sa."InvoiceItems"
     ("Id", "InvoiceId", "ProductId", "Quantity", "UnitPrice", "LineTotal", "CreatedOn", "UpdatedOn")
 VALUES
     (1, 1, 1, 1, 899.00, 899.00, '2025-02-01', '2025-02-01'),
@@ -175,8 +181,8 @@ VALUES
     (57, 20, 2, 1, 25.00, 25.00, '2025-04-12', '2025-04-12');
 
 CREATE INDEX IF NOT EXISTS "IX_Invoices_InvoiceDate_Status"
-    ON public."Invoices" ("InvoiceDate", "Status");
+    ON sa."Invoices" ("InvoiceDate", "Status");
 CREATE INDEX IF NOT EXISTS "IX_Invoices_CustomerId"
-    ON public."Invoices" ("CustomerId");
+    ON sa."Invoices" ("CustomerId");
 CREATE INDEX IF NOT EXISTS "IX_InvoiceItems_ProductId"
-    ON public."InvoiceItems" ("ProductId");
+    ON sa."InvoiceItems" ("ProductId");

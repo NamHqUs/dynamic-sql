@@ -86,7 +86,8 @@ var metaProvider = new MetaProvider(metadata);
 ```csharp
 new Entity(
     Name: "Student",
-    RawSql: "[User]",
+    DbSchema: "dbo",
+    DbTable: "User",
     Fields:
     [
         new DbField("Name", "Name"),
@@ -95,7 +96,23 @@ new Entity(
 ```
 
 `Name` is the logical entity name used by queries and relationships.
-`RawSql` is the physical database table expression used when generating SQL.
+`DbSchema` and `DbTable` identify a normal physical table and are quoted by the SQL dialect.
+For a view-like entity backed by a calculated or joined SQL statement, use
+`RawSqlEntity` instead:
+
+```csharp
+new RawSqlEntity(
+    Name: "Calculation",
+    RawSql: "(SELECT Id, Name, Amount * Quantity AS Total FROM OrderLines)",
+    Fields: [
+        new DbField("Id"),
+        new DbField("Name"),
+        new DbField("Total")
+    ]);
+```
+
+`RawSqlEntity.RawSql` is a trusted SQL source expression. Its fields and relations are
+available to the query compiler in the same way as table-backed entity metadata.
 If only one is provided, the missing value is copied from the provided value.
 When both are provided, they remain independent.
 

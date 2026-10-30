@@ -1,6 +1,12 @@
 SET NOCOUNT ON;
 
 -- NorthStar Health Group demo database (SQL Server). Sales + Health Care + Insurance + HR in one story.
+IF SCHEMA_ID(N'Main') IS NULL EXEC(N'CREATE SCHEMA [Main]');
+IF SCHEMA_ID(N'hr') IS NULL EXEC(N'CREATE SCHEMA [hr]');
+IF SCHEMA_ID(N'sa') IS NULL EXEC(N'CREATE SCHEMA [sa]');
+IF SCHEMA_ID(N'he') IS NULL EXEC(N'CREATE SCHEMA [he]');
+IF SCHEMA_ID(N'in') IS NULL EXEC(N'CREATE SCHEMA [in]');
+
 DECLARE @ForeignKeySchema sysname;
 DECLARE @ForeignKeyTable sysname;
 DECLARE @ForeignKeyName sysname;
@@ -13,7 +19,7 @@ WHILE EXISTS (
     INNER JOIN sys.tables AS t ON t.object_id = fk.parent_object_id
     INNER JOIN sys.tables AS referenced_table ON referenced_table.object_id = fk.referenced_object_id
     WHERE (
-        t.schema_id = SCHEMA_ID(N'dbo')
+        t.schema_id IN (SCHEMA_ID(N'dbo'), SCHEMA_ID(N'Main'), SCHEMA_ID(N'hr'), SCHEMA_ID(N'sa'), SCHEMA_ID(N'he'), SCHEMA_ID(N'in'))
         AND t.name IN (
             N'PremiumPayments', N'Claims', N'Policies', N'InsurancePlans',
             N'LabResults', N'Visits', N'Diagnoses', N'OrderItems', N'Orders',
@@ -21,7 +27,7 @@ WHILE EXISTS (
             N'Users', N'Departments', N'Locations'
         )
     ) OR (
-        referenced_table.schema_id = SCHEMA_ID(N'dbo')
+        referenced_table.schema_id IN (SCHEMA_ID(N'dbo'), SCHEMA_ID(N'Main'), SCHEMA_ID(N'hr'), SCHEMA_ID(N'sa'), SCHEMA_ID(N'he'), SCHEMA_ID(N'in'))
         AND referenced_table.name IN (
             N'PremiumPayments', N'Claims', N'Policies', N'InsurancePlans',
             N'LabResults', N'Visits', N'Diagnoses', N'OrderItems', N'Orders',
@@ -39,7 +45,7 @@ BEGIN
     INNER JOIN sys.tables AS t ON t.object_id = fk.parent_object_id
     INNER JOIN sys.tables AS referenced_table ON referenced_table.object_id = fk.referenced_object_id
     WHERE (
-        t.schema_id = SCHEMA_ID(N'dbo')
+        t.schema_id IN (SCHEMA_ID(N'dbo'), SCHEMA_ID(N'Main'), SCHEMA_ID(N'hr'), SCHEMA_ID(N'sa'), SCHEMA_ID(N'he'), SCHEMA_ID(N'in'))
         AND t.name IN (
             N'PremiumPayments', N'Claims', N'Policies', N'InsurancePlans',
             N'LabResults', N'Visits', N'Diagnoses', N'OrderItems', N'Orders',
@@ -47,7 +53,7 @@ BEGIN
             N'Users', N'Departments', N'Locations'
         )
     ) OR (
-        referenced_table.schema_id = SCHEMA_ID(N'dbo')
+        referenced_table.schema_id IN (SCHEMA_ID(N'dbo'), SCHEMA_ID(N'Main'), SCHEMA_ID(N'hr'), SCHEMA_ID(N'sa'), SCHEMA_ID(N'he'), SCHEMA_ID(N'in'))
         AND referenced_table.name IN (
             N'PremiumPayments', N'Claims', N'Policies', N'InsurancePlans',
             N'LabResults', N'Visits', N'Diagnoses', N'OrderItems', N'Orders',
@@ -80,87 +86,104 @@ IF OBJECT_ID(N'dbo.Users', N'U') IS NOT NULL DROP TABLE dbo.[Users];
 IF OBJECT_ID(N'dbo.Departments', N'U') IS NOT NULL DROP TABLE dbo.[Departments];
 IF OBJECT_ID(N'dbo.Locations', N'U') IS NOT NULL DROP TABLE dbo.[Locations];
 
+IF OBJECT_ID(N'in.PremiumPayments', N'U') IS NOT NULL DROP TABLE [in].[PremiumPayments];
+IF OBJECT_ID(N'in.Claims', N'U') IS NOT NULL DROP TABLE [in].[Claims];
+IF OBJECT_ID(N'in.Policies', N'U') IS NOT NULL DROP TABLE [in].[Policies];
+IF OBJECT_ID(N'in.InsurancePlans', N'U') IS NOT NULL DROP TABLE [in].[InsurancePlans];
+IF OBJECT_ID(N'he.LabResults', N'U') IS NOT NULL DROP TABLE [he].[LabResults];
+IF OBJECT_ID(N'he.Visits', N'U') IS NOT NULL DROP TABLE [he].[Visits];
+IF OBJECT_ID(N'he.Diagnoses', N'U') IS NOT NULL DROP TABLE [he].[Diagnoses];
+IF OBJECT_ID(N'sa.OrderItems', N'U') IS NOT NULL DROP TABLE [sa].[OrderItems];
+IF OBJECT_ID(N'sa.Orders', N'U') IS NOT NULL DROP TABLE [sa].[Orders];
+IF OBJECT_ID(N'sa.Products', N'U') IS NOT NULL DROP TABLE [sa].[Products];
+IF OBJECT_ID(N'hr.LeaveRequests', N'U') IS NOT NULL DROP TABLE [hr].[LeaveRequests];
+IF OBJECT_ID(N'hr.PerformanceReviews', N'U') IS NOT NULL DROP TABLE [hr].[PerformanceReviews];
+IF OBJECT_ID(N'Main.Employees', N'U') IS NOT NULL DROP TABLE [Main].[Employees];
+IF OBJECT_ID(N'Main.Users', N'U') IS NOT NULL DROP TABLE [Main].[Users];
+IF OBJECT_ID(N'hr.Departments', N'U') IS NOT NULL DROP TABLE [hr].[Departments];
+IF OBJECT_ID(N'Main.Locations', N'U') IS NOT NULL DROP TABLE [Main].[Locations];
+
 -- Shared
-CREATE TABLE dbo.[Locations] (Id int PRIMARY KEY, Name nvarchar(255) NOT NULL, City nvarchar(255) NOT NULL, State nvarchar(255) NOT NULL);
-CREATE TABLE dbo.[Users] (
+CREATE TABLE Main.[Locations] (Id int PRIMARY KEY, Name nvarchar(255) NOT NULL, City nvarchar(255) NOT NULL, State nvarchar(255) NOT NULL);
+CREATE TABLE Main.[Users] (
     Id int PRIMARY KEY, FirstName nvarchar(255) NOT NULL, LastName nvarchar(255) NOT NULL, BirthDate date NOT NULL,
     Gender nvarchar(255) NOT NULL, City nvarchar(255) NOT NULL, State nvarchar(255) NOT NULL);
 
 -- HR
-CREATE TABLE dbo.[Departments] (Id int PRIMARY KEY, Name nvarchar(255) NOT NULL);
-CREATE TABLE dbo.[Employees] (
+CREATE TABLE hr.[Departments] (Id int PRIMARY KEY, Name nvarchar(255) NOT NULL);
+CREATE TABLE Main.[Employees] (
     Id int PRIMARY KEY, FirstName nvarchar(255) NOT NULL, LastName nvarchar(255) NOT NULL,
     DepartmentId int NOT NULL, LocationId int NOT NULL, ManagerId int NULL,
     JobTitle nvarchar(255) NOT NULL, HireDate date NOT NULL, Salary decimal(18, 4) NOT NULL, EmploymentType nvarchar(255) NOT NULL,
-    FOREIGN KEY (DepartmentId) REFERENCES dbo.[Departments] (Id),
-    FOREIGN KEY (LocationId) REFERENCES dbo.[Locations] (Id),
-    FOREIGN KEY (ManagerId) REFERENCES dbo.[Employees] (Id));
-CREATE TABLE dbo.[PerformanceReviews] (
+    FOREIGN KEY (DepartmentId) REFERENCES hr.[Departments] (Id),
+    FOREIGN KEY (LocationId) REFERENCES Main.[Locations] (Id),
+    FOREIGN KEY (ManagerId) REFERENCES Main.[Employees] (Id));
+CREATE TABLE hr.[PerformanceReviews] (
     Id int PRIMARY KEY, EmployeeId int NOT NULL, ReviewYear int NOT NULL,
     Rating int NOT NULL, BonusAmount decimal(18, 4) NOT NULL,
-    FOREIGN KEY (EmployeeId) REFERENCES dbo.[Employees] (Id));
-CREATE TABLE dbo.[LeaveRequests] (
+    FOREIGN KEY (EmployeeId) REFERENCES Main.[Employees] (Id));
+CREATE TABLE hr.[LeaveRequests] (
     Id int PRIMARY KEY, EmployeeId int NOT NULL, LeaveType nvarchar(255) NOT NULL,
     StartDate date NOT NULL, Days int NOT NULL, Status nvarchar(255) NOT NULL,
-    FOREIGN KEY (EmployeeId) REFERENCES dbo.[Employees] (Id));
+    FOREIGN KEY (EmployeeId) REFERENCES Main.[Employees] (Id));
 
 -- Sales
-CREATE TABLE dbo.[Products] (
+CREATE TABLE sa.[Products] (
     Id int PRIMARY KEY, Name nvarchar(255) NOT NULL, Category nvarchar(255) NOT NULL,
     UnitPrice decimal(18, 4) NOT NULL, CostPrice decimal(18, 4) NOT NULL);
-CREATE TABLE dbo.[Orders] (
+CREATE TABLE sa.[Orders] (
     Id int PRIMARY KEY, UserId int NOT NULL, SalesRepId int NOT NULL, OrderDate date NOT NULL,
     Channel nvarchar(255) NOT NULL, Status nvarchar(255) NOT NULL,
-    FOREIGN KEY (UserId) REFERENCES dbo.[Users] (Id),
-    FOREIGN KEY (SalesRepId) REFERENCES dbo.[Employees] (Id));
-CREATE TABLE dbo.[OrderItems] (
+    FOREIGN KEY (UserId) REFERENCES Main.[Users] (Id),
+    FOREIGN KEY (SalesRepId) REFERENCES Main.[Employees] (Id));
+CREATE TABLE sa.[OrderItems] (
     Id int PRIMARY KEY, OrderId int NOT NULL, ProductId int NOT NULL,
     Quantity int NOT NULL, UnitPrice decimal(18, 4) NOT NULL, DiscountAmount decimal(18, 4) NOT NULL,
-    FOREIGN KEY (OrderId) REFERENCES dbo.[Orders] (Id),
-    FOREIGN KEY (ProductId) REFERENCES dbo.[Products] (Id));
+    FOREIGN KEY (OrderId) REFERENCES sa.[Orders] (Id),
+    FOREIGN KEY (ProductId) REFERENCES sa.[Products] (Id));
 
 -- Health care
-CREATE TABLE dbo.[Diagnoses] (
+CREATE TABLE he.[Diagnoses] (
     Id int PRIMARY KEY, Code nvarchar(255) NOT NULL, Name nvarchar(255) NOT NULL, Category nvarchar(255) NOT NULL, IsChronic bit NOT NULL);
-CREATE TABLE dbo.[Visits] (
+CREATE TABLE he.[Visits] (
     Id int PRIMARY KEY, UserId int NOT NULL, DoctorId int NOT NULL, LocationId int NOT NULL,
     VisitDate date NOT NULL, VisitType nvarchar(255) NOT NULL, DiagnosisId int NOT NULL,
     DurationMinutes int NOT NULL, Charge decimal(18, 4) NOT NULL, Status nvarchar(255) NOT NULL,
-    FOREIGN KEY (UserId) REFERENCES dbo.[Users] (Id),
-    FOREIGN KEY (DoctorId) REFERENCES dbo.[Employees] (Id),
-    FOREIGN KEY (LocationId) REFERENCES dbo.[Locations] (Id),
-    FOREIGN KEY (DiagnosisId) REFERENCES dbo.[Diagnoses] (Id));
-CREATE TABLE dbo.[LabResults] (
+    FOREIGN KEY (UserId) REFERENCES Main.[Users] (Id),
+    FOREIGN KEY (DoctorId) REFERENCES Main.[Employees] (Id),
+    FOREIGN KEY (LocationId) REFERENCES Main.[Locations] (Id),
+    FOREIGN KEY (DiagnosisId) REFERENCES he.[Diagnoses] (Id));
+CREATE TABLE he.[LabResults] (
     Id int PRIMARY KEY, VisitId int NOT NULL, TestName nvarchar(255) NOT NULL,
     ResultValue decimal(18, 4) NOT NULL, ReferenceMax decimal(18, 4) NOT NULL, IsAbnormal bit NOT NULL,
-    FOREIGN KEY (VisitId) REFERENCES dbo.[Visits] (Id));
+    FOREIGN KEY (VisitId) REFERENCES he.[Visits] (Id));
 
 -- Insurance
-CREATE TABLE dbo.[InsurancePlans] (
+CREATE TABLE [in].[InsurancePlans] (
     Id int PRIMARY KEY, Name nvarchar(255) NOT NULL, Tier nvarchar(255) NOT NULL, MonthlyPremium decimal(18, 4) NOT NULL,
     Deductible decimal(18, 4) NOT NULL, OutOfPocketMax decimal(18, 4) NOT NULL, CoinsuranceRate decimal(18, 4) NOT NULL);
-CREATE TABLE dbo.[Policies] (
+CREATE TABLE [in].[Policies] (
     Id int PRIMARY KEY, UserId int NOT NULL, PlanId int NOT NULL, AgentId int NOT NULL,
     StartDate date NOT NULL, EndDate date NULL, Status nvarchar(255) NOT NULL,
-    FOREIGN KEY (UserId) REFERENCES dbo.[Users] (Id),
-    FOREIGN KEY (PlanId) REFERENCES dbo.[InsurancePlans] (Id),
-    FOREIGN KEY (AgentId) REFERENCES dbo.[Employees] (Id));
-CREATE TABLE dbo.[PremiumPayments] (
+    FOREIGN KEY (UserId) REFERENCES Main.[Users] (Id),
+    FOREIGN KEY (PlanId) REFERENCES [in].[InsurancePlans] (Id),
+    FOREIGN KEY (AgentId) REFERENCES Main.[Employees] (Id));
+CREATE TABLE [in].[PremiumPayments] (
     Id int PRIMARY KEY, PolicyId int NOT NULL, PaymentDate date NOT NULL, Amount decimal(18, 4) NOT NULL, Status nvarchar(255) NOT NULL,
-    FOREIGN KEY (PolicyId) REFERENCES dbo.[Policies] (Id));
-CREATE TABLE dbo.[Claims] (
+    FOREIGN KEY (PolicyId) REFERENCES [in].[Policies] (Id));
+CREATE TABLE [in].[Claims] (
     Id int PRIMARY KEY, PolicyId int NOT NULL, VisitId int NOT NULL, ClaimDate date NOT NULL,
     BilledAmount decimal(18, 4) NOT NULL, AllowedAmount decimal(18, 4) NOT NULL, PaidAmount decimal(18, 4) NOT NULL,
     Status nvarchar(255) NOT NULL, DenialReason nvarchar(255) NULL, ProcessedDate date NULL,
-    FOREIGN KEY (PolicyId) REFERENCES dbo.[Policies] (Id),
-    FOREIGN KEY (VisitId) REFERENCES dbo.[Visits] (Id));
+    FOREIGN KEY (PolicyId) REFERENCES [in].[Policies] (Id),
+    FOREIGN KEY (VisitId) REFERENCES he.[Visits] (Id));
 
-CREATE INDEX IX_Visits_UserId ON dbo.[Visits] (UserId);
-CREATE INDEX IX_Claims_PolicyId ON dbo.[Claims] (PolicyId);
-CREATE INDEX IX_OrderItems_OrderId ON dbo.[OrderItems] (OrderId);
-CREATE INDEX IX_Orders_UserId ON dbo.[Orders] (UserId);
+CREATE INDEX IX_Visits_UserId ON he.[Visits] (UserId);
+CREATE INDEX IX_Claims_PolicyId ON [in].[Claims] (PolicyId);
+CREATE INDEX IX_OrderItems_OrderId ON sa.[OrderItems] (OrderId);
+CREATE INDEX IX_Orders_UserId ON sa.[Orders] (UserId);
 
-INSERT INTO dbo.[Locations] (Id, Name, City, State) VALUES
+INSERT INTO Main.[Locations] (Id, Name, City, State) VALUES
     (1, 'NorthStar Boston Center', 'Boston', 'MA'),
     (2, 'NorthStar New York Center', 'New York', 'NY'),
     (3, 'NorthStar Philadelphia Center', 'Philadelphia', 'PA'),
@@ -172,7 +195,7 @@ INSERT INTO dbo.[Locations] (Id, Name, City, State) VALUES
     (9, 'NorthStar Seattle Center', 'Seattle', 'WA'),
     (10, 'NorthStar San Diego Center', 'San Diego', 'CA');
 
-INSERT INTO dbo.[Departments] (Id, Name) VALUES
+INSERT INTO hr.[Departments] (Id, Name) VALUES
     (1, 'Retail Sales'),
     (2, 'Primary Care'),
     (3, 'Specialty Care'),
@@ -184,7 +207,7 @@ INSERT INTO dbo.[Departments] (Id, Name) VALUES
     (9, 'Human Resources'),
     (10, 'Finance & IT');
 
-INSERT INTO dbo.[Employees] (Id, FirstName, LastName, DepartmentId, LocationId, ManagerId, JobTitle, HireDate, Salary, EmploymentType) VALUES
+INSERT INTO Main.[Employees] (Id, FirstName, LastName, DepartmentId, LocationId, ManagerId, JobTitle, HireDate, Salary, EmploymentType) VALUES
     (1, 'Amber', 'Anderson', 1, 1, 10, 'Head of Retail Sales', '2015-01-31', 105000.0, 'Full-time'),
     (2, 'Justin', 'Lewis', 2, 1, 10, 'Chief of Primary Care', '2013-02-23', 324000.0, 'Full-time'),
     (3, 'Sophia', 'Patel', 3, 5, 10, 'Chief of Specialty Care', '2012-12-22', 513000.0, 'Full-time'),
@@ -277,7 +300,7 @@ INSERT INTO dbo.[Employees] (Id, FirstName, LastName, DepartmentId, LocationId, 
     (90, 'Katherine', 'Peterson', 10, 3, 10, 'Financial Analyst', '2017-02-24', 126700.0, 'Full-time'),
     (91, 'Sophia', 'Myers', 10, 3, 10, 'Financial Analyst', '2021-11-26', 97300.0, 'Full-time');
 
-INSERT INTO dbo.[Users] (Id, FirstName, LastName, BirthDate, Gender, City, State) VALUES
+INSERT INTO Main.[Users] (Id, FirstName, LastName, BirthDate, Gender, City, State) VALUES
     (1, 'Patricia', 'Ramirez', '2015-09-03', 'M', 'New York', 'NY'),
     (2, 'Philip', 'Cox', '1960-07-22', 'M', 'Atlanta', 'GA'),
     (3, 'Sara', 'Adams', '1980-11-28', 'F', 'Seattle', 'WA'),
@@ -479,7 +502,7 @@ INSERT INTO dbo.[Users] (Id, FirstName, LastName, BirthDate, Gender, City, State
     (199, 'Bobby', 'Brown', '1954-08-11', 'F', 'San Diego', 'CA'),
     (200, 'Betty', 'Nelson', '1988-04-07', 'F', 'Atlanta', 'GA');
 
-INSERT INTO dbo.[PerformanceReviews] (Id, EmployeeId, ReviewYear, Rating, BonusAmount) VALUES
+INSERT INTO hr.[PerformanceReviews] (Id, EmployeeId, ReviewYear, Rating, BonusAmount) VALUES
     (1, 1, 2024, 4, 6300.0),
     (2, 1, 2025, 3, 3150.0),
     (3, 2, 2024, 3, 9720.0),
@@ -637,7 +660,7 @@ INSERT INTO dbo.[PerformanceReviews] (Id, EmployeeId, ReviewYear, Rating, BonusA
     (155, 91, 2024, 5, 9730.0),
     (156, 91, 2025, 3, 2920.0);
 
-INSERT INTO dbo.[LeaveRequests] (Id, EmployeeId, LeaveType, StartDate, Days, Status) VALUES
+INSERT INTO hr.[LeaveRequests] (Id, EmployeeId, LeaveType, StartDate, Days, Status) VALUES
     (1, 76, 'Sick', '2025-03-08', 1, 'Approved'),
     (2, 73, 'Sick', '2025-02-10', 5, 'Approved'),
     (3, 44, 'Vacation', '2025-07-10', 8, 'Approved'),
@@ -859,7 +882,7 @@ INSERT INTO dbo.[LeaveRequests] (Id, EmployeeId, LeaveType, StartDate, Days, Sta
     (219, 25, 'Vacation', '2025-02-12', 8, 'Approved'),
     (220, 76, 'Sick', '2025-06-25', 2, 'Approved');
 
-INSERT INTO dbo.[Products] (Id, Name, Category, UnitPrice, CostPrice) VALUES
+INSERT INTO sa.[Products] (Id, Name, Category, UnitPrice, CostPrice) VALUES
     (1, 'Metformin 500mg 90ct', 'Medications', 24, 7),
     (2, 'Lisinopril 10mg 90ct', 'Medications', 19, 5),
     (3, 'Atorvastatin 20mg 90ct', 'Medications', 32, 9),
@@ -901,7 +924,7 @@ INSERT INTO dbo.[Products] (Id, Name, Category, UnitPrice, CostPrice) VALUES
     (39, 'Stress Relief Kit', 'Mental Wellness', 49, 19),
     (40, 'Meditation Light Therapy', 'Mental Wellness', 119, 53);
 
-INSERT INTO dbo.[Orders] (Id, UserId, SalesRepId, OrderDate, Channel, Status) VALUES
+INSERT INTO sa.[Orders] (Id, UserId, SalesRepId, OrderDate, Channel, Status) VALUES
     (1, 135, 18, '2025-10-07', 'Phone', 'Completed'),
     (2, 105, 11, '2025-07-13', 'Retail Store', 'Completed'),
     (3, 135, 15, '2025-10-19', 'Retail Store', 'Completed'),
@@ -1703,7 +1726,7 @@ INSERT INTO dbo.[Orders] (Id, UserId, SalesRepId, OrderDate, Channel, Status) VA
     (799, 40, 17, '2025-10-13', 'Phone', 'Completed'),
     (800, 84, 15, '2025-09-22', 'Online', 'Completed');
 
-INSERT INTO dbo.[OrderItems] (Id, OrderId, ProductId, Quantity, UnitPrice, DiscountAmount) VALUES
+INSERT INTO sa.[OrderItems] (Id, OrderId, ProductId, Quantity, UnitPrice, DiscountAmount) VALUES
     (1, 1, 24, 3, 29, 0),
     (2, 2, 24, 2, 29, 0),
     (3, 3, 6, 1, 22, 0),
@@ -2705,7 +2728,7 @@ INSERT INTO dbo.[OrderItems] (Id, OrderId, ProductId, Quantity, UnitPrice, Disco
     (999, 479, 28, 3, 27, 0),
     (1000, 479, 9, 2, 59, 0);
 
-INSERT INTO dbo.[OrderItems] (Id, OrderId, ProductId, Quantity, UnitPrice, DiscountAmount) VALUES
+INSERT INTO sa.[OrderItems] (Id, OrderId, ProductId, Quantity, UnitPrice, DiscountAmount) VALUES
     (1001, 480, 1, 3, 24, 0),
     (1002, 481, 39, 1, 49, 2.45),
     (1003, 481, 11, 3, 39, 11.7),
@@ -3365,7 +3388,7 @@ INSERT INTO dbo.[OrderItems] (Id, OrderId, ProductId, Quantity, UnitPrice, Disco
     (1657, 800, 1, 3, 24, 0),
     (1658, 800, 20, 2, 249, 0);
 
-INSERT INTO dbo.[Diagnoses] (Id, Code, Name, Category, IsChronic) VALUES
+INSERT INTO he.[Diagnoses] (Id, Code, Name, Category, IsChronic) VALUES
     (1, 'E11', 'Type 2 Diabetes', 'Endocrine', 1),
     (2, 'I10', 'Hypertension', 'Cardiovascular', 1),
     (3, 'J45', 'Asthma', 'Respiratory', 1),
@@ -3379,7 +3402,7 @@ INSERT INTO dbo.[Diagnoses] (Id, Code, Name, Category, IsChronic) VALUES
     (11, 'L20', 'Atopic Dermatitis', 'Dermatology', 1),
     (12, 'N39', 'Urinary Tract Infection', 'Urology', 0);
 
-INSERT INTO dbo.[Visits] (Id, UserId, DoctorId, LocationId, VisitDate, VisitType, DiagnosisId, DurationMinutes, Charge, Status) VALUES
+INSERT INTO he.[Visits] (Id, UserId, DoctorId, LocationId, VisitDate, VisitType, DiagnosisId, DurationMinutes, Charge, Status) VALUES
     (1, 164, 5, 8, '2025-01-12', 'Telehealth', 2, 24, 80.45, 'Completed'),
     (2, 154, 30, 7, '2025-01-29', 'Specialist', 7, 57, 323.4, 'Completed'),
     (3, 68, 23, 3, '2025-05-05', 'Telehealth', 3, 31, 94.09, 'Completed'),
@@ -4381,7 +4404,7 @@ INSERT INTO dbo.[Visits] (Id, UserId, DoctorId, LocationId, VisitDate, VisitType
     (999, 181, 50, 10, '2025-03-09', 'Emergency', 7, 88, 1628.31, 'Completed'),
     (1000, 176, 30, 7, '2025-01-25', 'Specialist', 5, 0, 0, 'No-Show');
 
-INSERT INTO dbo.[LabResults] (Id, VisitId, TestName, ResultValue, ReferenceMax, IsAbnormal) VALUES
+INSERT INTO he.[LabResults] (Id, VisitId, TestName, ResultValue, ReferenceMax, IsAbnormal) VALUES
     (1, 4, 'Fasting Glucose', 58.4, 99, 0),
     (2, 4, 'Blood Pressure Systolic', 155.2, 120, 1),
     (3, 4, 'Triglycerides', 125.3, 150, 0),
@@ -5383,7 +5406,7 @@ INSERT INTO dbo.[LabResults] (Id, VisitId, TestName, ResultValue, ReferenceMax, 
     (999, 851, 'Blood Pressure Systolic', 100.1, 120, 0),
     (1000, 852, 'Creatinine', 1.7, 1.3, 1);
 
-INSERT INTO dbo.[LabResults] (Id, VisitId, TestName, ResultValue, ReferenceMax, IsAbnormal) VALUES
+INSERT INTO he.[LabResults] (Id, VisitId, TestName, ResultValue, ReferenceMax, IsAbnormal) VALUES
     (1001, 852, 'Fasting Glucose', 133.3, 99, 1),
     (1002, 852, 'Vitamin D', 69.0, 100, 0),
     (1003, 855, 'Fasting Glucose', 105.8, 99, 1),
@@ -5540,7 +5563,7 @@ INSERT INTO dbo.[LabResults] (Id, VisitId, TestName, ResultValue, ReferenceMax, 
     (1154, 998, 'HbA1c', 3.9, 5.7, 0),
     (1155, 998, 'Hemoglobin', 13.5, 17.5, 0);
 
-INSERT INTO dbo.[InsurancePlans] (Id, Name, Tier, MonthlyPremium, Deductible, OutOfPocketMax, CoinsuranceRate) VALUES
+INSERT INTO [in].[InsurancePlans] (Id, Name, Tier, MonthlyPremium, Deductible, OutOfPocketMax, CoinsuranceRate) VALUES
     (1, 'Bronze Basic', 'Bronze', 210, 7500, 9000, 0.4),
     (2, 'Bronze Plus', 'Bronze', 260, 6500, 8500, 0.35),
     (3, 'Silver Standard', 'Silver', 340, 4000, 7500, 0.3),
@@ -5552,7 +5575,7 @@ INSERT INTO dbo.[InsurancePlans] (Id, Name, Tier, MonthlyPremium, Deductible, Ou
     (9, 'Young Adult Flex', 'Bronze', 180, 6000, 8000, 0.4),
     (10, 'Small Business Group', 'Silver', 390, 3000, 8000, 0.25);
 
-INSERT INTO dbo.[Policies] (Id, UserId, PlanId, AgentId, StartDate, EndDate, Status) VALUES
+INSERT INTO [in].[Policies] (Id, UserId, PlanId, AgentId, StartDate, EndDate, Status) VALUES
     (1, 161, 9, 74, '2024-12-18', NULL, 'Active'),
     (2, 154, 8, 79, '2024-07-05', NULL, 'Active'),
     (3, 121, 8, 79, '2023-07-23', NULL, 'Active'),
@@ -5714,7 +5737,7 @@ INSERT INTO dbo.[Policies] (Id, UserId, PlanId, AgentId, StartDate, EndDate, Sta
     (159, 141, 3, 75, '2025-03-22', '2025-08-10', 'Cancelled'),
     (160, 20, 8, 79, '2025-03-29', NULL, 'Active');
 
-INSERT INTO dbo.[PremiumPayments] (Id, PolicyId, PaymentDate, Amount, Status) VALUES
+INSERT INTO [in].[PremiumPayments] (Id, PolicyId, PaymentDate, Amount, Status) VALUES
     (1, 1, '2025-01-05', 180, 'Late'),
     (2, 1, '2025-02-05', 180, 'Paid'),
     (3, 1, '2025-03-05', 180, 'Paid'),
@@ -6716,7 +6739,7 @@ INSERT INTO dbo.[PremiumPayments] (Id, PolicyId, PaymentDate, Amount, Status) VA
     (999, 111, '2025-02-05', 290, 'Paid'),
     (1000, 111, '2025-03-05', 290, 'Paid');
 
-INSERT INTO dbo.[PremiumPayments] (Id, PolicyId, PaymentDate, Amount, Status) VALUES
+INSERT INTO [in].[PremiumPayments] (Id, PolicyId, PaymentDate, Amount, Status) VALUES
     (1001, 111, '2025-04-05', 290, 'Paid'),
     (1002, 111, '2025-05-05', 290, 'Late'),
     (1003, 111, '2025-06-05', 290, 'Paid'),
@@ -7171,7 +7194,7 @@ INSERT INTO dbo.[PremiumPayments] (Id, PolicyId, PaymentDate, Amount, Status) VA
     (1452, 160, '2025-09-05', 290, 'Paid'),
     (1453, 160, '2025-10-05', 290, 'Paid');
 
-INSERT INTO dbo.[Claims] (Id, PolicyId, VisitId, ClaimDate, BilledAmount, AllowedAmount, PaidAmount, Status, DenialReason, ProcessedDate) VALUES
+INSERT INTO [in].[Claims] (Id, PolicyId, VisitId, ClaimDate, BilledAmount, AllowedAmount, PaidAmount, Status, DenialReason, ProcessedDate) VALUES
     (1, 2, 2, '2025-02-02', 323.4, 208.93, 177.59, 'Paid', NULL, '2025-02-25'),
     (2, 138, 3, '2025-05-10', 94.09, 76.91, 0, 'Denied', 'Out of Network', '2025-06-01'),
     (3, 57, 5, '2025-01-08', 77.12, 63.12, 53.65, 'Paid', NULL, '2025-01-16'),

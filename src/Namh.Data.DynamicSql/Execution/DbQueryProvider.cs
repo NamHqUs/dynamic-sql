@@ -10,13 +10,13 @@ using DbConnection = System.Data.Common.DbConnection;
 namespace Namh.Data.DynamicSql.Execution;
 
 class DbQueryProvider(
-    IMetaProvider metaProvider,
+    IMetadataProvider metaProvider,
     IFunctionProvider functionProvider,
     IDbConnection dbConnection,
     ISqlDialect sqlDialect,
     string entityName) : IDbQueryProvider
 {
-    public readonly Entity Entity = metaProvider.GetEntity(entityName);
+    public readonly IEntity Entity = metaProvider.GetEntity(entityName);
 
     public IDbQueryable CreateQuery(Expression expression)
         => new DbQueryable(this, expression);

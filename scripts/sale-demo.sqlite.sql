@@ -1,11 +1,13 @@
 PRAGMA foreign_keys = ON;
 
-DROP TABLE IF EXISTS InvoiceItems;
-DROP TABLE IF EXISTS Invoices;
-DROP TABLE IF EXISTS Products;
-DROP TABLE IF EXISTS Customers;
+ATTACH DATABASE ':memory:' AS sa;
 
-CREATE TABLE Customers (
+DROP TABLE IF EXISTS sa.InvoiceItems;
+DROP TABLE IF EXISTS sa.Invoices;
+DROP TABLE IF EXISTS sa.Products;
+DROP TABLE IF EXISTS sa.Customers;
+
+CREATE TABLE sa.Customers (
     Id INTEGER PRIMARY KEY,
     Name TEXT NOT NULL,
     Email TEXT NOT NULL,
@@ -18,7 +20,7 @@ CREATE TABLE Customers (
     UpdatedOn TEXT NOT NULL
 );
 
-CREATE TABLE Products (
+CREATE TABLE sa.Products (
     Id INTEGER PRIMARY KEY,
     Name TEXT NOT NULL,
     Description TEXT NOT NULL,
@@ -31,7 +33,7 @@ CREATE TABLE Products (
     UpdatedOn TEXT NOT NULL
 );
 
-CREATE TABLE Invoices (
+CREATE TABLE sa.Invoices (
     Id INTEGER PRIMARY KEY,
     CustomerId INTEGER NOT NULL,
     InvoiceNumber TEXT NOT NULL UNIQUE,
@@ -49,7 +51,7 @@ CREATE TABLE Invoices (
     FOREIGN KEY (CustomerId) REFERENCES Customers (Id)
 );
 
-CREATE TABLE InvoiceItems (
+CREATE TABLE sa.InvoiceItems (
     Id INTEGER PRIMARY KEY,
     InvoiceId INTEGER NOT NULL,
     ProductId INTEGER NOT NULL,
@@ -63,7 +65,7 @@ CREATE TABLE InvoiceItems (
     FOREIGN KEY (ProductId) REFERENCES Products (Id)
 );
 
-INSERT INTO Customers
+INSERT INTO sa.Customers
     (Id, Name, Email, Phone, Address, Segment, Region, CustomerSince, CreatedOn, UpdatedOn)
 VALUES
     (1, 'Alice Johnson', 'alice.johnson@example.com', '555-0101', '101 Main Street', 'Enterprise', 'Northeast', '2023-04-12', '2025-01-01', '2025-01-01'),
@@ -77,7 +79,7 @@ VALUES
     (9, 'Ivy Taylor', 'ivy.taylor@example.com', '555-0109', '909 Spruce Court', 'Enterprise', 'Northeast', '2023-03-27', '2025-01-09', '2025-01-09'),
     (10, 'Jack Anderson', 'jack.anderson@example.com', '555-0110', '1010 Ash Place', 'Consumer', 'Midwest', '2025-02-01', '2025-01-10', '2025-01-10');
 
-INSERT INTO Products
+INSERT INTO sa.Products
     (Id, Name, Description, Category, UnitPrice, CostPrice, StockQuantity, ReorderLevel, CreatedOn, UpdatedOn)
 VALUES
     (1, 'Laptop', '15-inch everyday laptop', 'Computers', 899.00, 650.00, 25, 10, '2025-01-01', '2025-01-01'),
@@ -91,7 +93,7 @@ VALUES
     (9, 'Notebook', 'Hardcover ruled notebook', 'Office Accessories', 8.00, 2.50, 150, 40, '2025-01-01', '2025-01-01'),
     (10, 'Pen Set', 'Pack of five blue pens', 'Office Accessories', 6.00, 1.50, 300, 75, '2025-01-01', '2025-01-01');
 
-INSERT INTO Invoices
+INSERT INTO sa.Invoices
     (Id, CustomerId, InvoiceNumber, InvoiceDate, DueDate, Status, SalesChannel, PaymentMethod, PaidOn, DiscountAmount, TaxAmount, TotalAmount, CreatedOn, UpdatedOn)
 VALUES
     (1, 1, 'INV-1001', '2025-02-01', '2025-03-03', 'Paid', 'Online', 'Card', '2025-02-10', 0, 75.92, 949.00, '2025-02-01', '2025-02-10'),
@@ -115,7 +117,7 @@ VALUES
     (19, 10, 'INV-1019', '2025-03-12', '2025-04-11', 'Paid', 'Store', 'Cash', '2025-03-20', 0, 19.12, 239.00, '2025-03-12', '2025-03-20'),
     (20, 10, 'INV-1020', '2025-04-12', '2025-05-12', 'Sent', 'Online', 'Card', NULL, 0, 8.32, 104.00, '2025-04-12', '2025-04-12');
 
-INSERT INTO InvoiceItems
+INSERT INTO sa.InvoiceItems
     (Id, InvoiceId, ProductId, Quantity, UnitPrice, LineTotal, CreatedOn, UpdatedOn)
 VALUES
     (1, 1, 1, 1, 899.00, 899.00, '2025-02-01', '2025-02-01'),
@@ -176,9 +178,9 @@ VALUES
     (56, 20, 7, 1, 79.00, 79.00, '2025-04-12', '2025-04-12'),
     (57, 20, 2, 1, 25.00, 25.00, '2025-04-12', '2025-04-12');
 
-CREATE INDEX IF NOT EXISTS IX_Invoices_InvoiceDate_Status
+CREATE INDEX IF NOT EXISTS sa.IX_Invoices_InvoiceDate_Status
     ON Invoices (InvoiceDate, Status);
-CREATE INDEX IF NOT EXISTS IX_Invoices_CustomerId
+CREATE INDEX IF NOT EXISTS sa.IX_Invoices_CustomerId
     ON Invoices (CustomerId);
-CREATE INDEX IF NOT EXISTS IX_InvoiceItems_ProductId
+CREATE INDEX IF NOT EXISTS sa.IX_InvoiceItems_ProductId
     ON InvoiceItems (ProductId);

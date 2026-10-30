@@ -87,9 +87,9 @@ public class _50_QueryContextDefintion : TestBase
                     "WITH",
                     "[UserContext] AS (",
                     "    SELECT t2.[Id] [Id], t2.[Name] [Alias Name]",
-                    "    FROM dbo.[User] t2)",
+                    "    FROM [dbo].[User] t2)",
                     "SELECT t0.[Id] [Id], t0.[Name] [User Name], t1.[Alias Name] [Manager Name]",
-                    "FROM dbo.[User] t0",
+                    "FROM [dbo].[User] t0",
                     "\tLEFT JOIN [UserContext] t1 ON (t0.[ManagerId] = t1.[Id])")));
         Assert.That(sql.Parameters, Is.Empty);
     }

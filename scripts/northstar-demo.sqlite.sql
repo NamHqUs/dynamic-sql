@@ -1,104 +1,99 @@
 -- NorthStar Health Group demo database (SQLite). Sales + Health Care + Insurance + HR in one story.
 PRAGMA foreign_keys = ON;
 
-DROP TABLE IF EXISTS PremiumPayments;
-DROP TABLE IF EXISTS Claims;
-DROP TABLE IF EXISTS Policies;
-DROP TABLE IF EXISTS InsurancePlans;
-DROP TABLE IF EXISTS LabResults;
-DROP TABLE IF EXISTS Visits;
-DROP TABLE IF EXISTS Diagnoses;
-DROP TABLE IF EXISTS OrderItems;
-DROP TABLE IF EXISTS Orders;
-DROP TABLE IF EXISTS Products;
-DROP TABLE IF EXISTS LeaveRequests;
-DROP TABLE IF EXISTS PerformanceReviews;
-DROP TABLE IF EXISTS Employees;
-DROP TABLE IF EXISTS Users;
-DROP TABLE IF EXISTS Departments;
-DROP TABLE IF EXISTS Locations;
+ATTACH DATABASE ':memory:' AS hr;
+ATTACH DATABASE ':memory:' AS sa;
+ATTACH DATABASE ':memory:' AS he;
+ATTACH DATABASE ':memory:' AS "in";
 
--- Shared
-CREATE TABLE Locations (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL, City TEXT NOT NULL, State TEXT NOT NULL);
-CREATE TABLE Users (
+DROP TABLE IF EXISTS "in".PremiumPayments;
+DROP TABLE IF EXISTS "in".Claims;
+DROP TABLE IF EXISTS "in".Policies;
+DROP TABLE IF EXISTS "in".InsurancePlans;
+DROP TABLE IF EXISTS he.LabResults;
+DROP TABLE IF EXISTS he.Visits;
+DROP TABLE IF EXISTS he.Diagnoses;
+DROP TABLE IF EXISTS sa.OrderItems;
+DROP TABLE IF EXISTS sa.Orders;
+DROP TABLE IF EXISTS sa.Products;
+DROP TABLE IF EXISTS hr.LeaveRequests;
+DROP TABLE IF EXISTS hr.PerformanceReviews;
+DROP TABLE IF EXISTS Main.Employees;
+DROP TABLE IF EXISTS Main.Users;
+DROP TABLE IF EXISTS hr.Departments;
+DROP TABLE IF EXISTS Main.Locations;
+
+-- Tables shared by more than one business scope stay in Main.
+CREATE TABLE Main.Locations (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL, City TEXT NOT NULL, State TEXT NOT NULL);
+CREATE TABLE Main.Users (
     Id INTEGER PRIMARY KEY, FirstName TEXT NOT NULL, LastName TEXT NOT NULL, BirthDate TEXT NOT NULL,
     Gender TEXT NOT NULL, City TEXT NOT NULL, State TEXT NOT NULL);
 
+-- SQLite cannot enforce foreign keys across attached schemas.
 -- HR
-CREATE TABLE Departments (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL);
-CREATE TABLE Employees (
+CREATE TABLE hr.Departments (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL);
+CREATE TABLE Main.Employees (
     Id INTEGER PRIMARY KEY, FirstName TEXT NOT NULL, LastName TEXT NOT NULL,
     DepartmentId INTEGER NOT NULL, LocationId INTEGER NOT NULL, ManagerId INTEGER NULL,
     JobTitle TEXT NOT NULL, HireDate TEXT NOT NULL, Salary NUMERIC NOT NULL, EmploymentType TEXT NOT NULL,
-    FOREIGN KEY (DepartmentId) REFERENCES Departments (Id),
     FOREIGN KEY (LocationId) REFERENCES Locations (Id),
     FOREIGN KEY (ManagerId) REFERENCES Employees (Id));
-CREATE TABLE PerformanceReviews (
+CREATE TABLE hr.PerformanceReviews (
     Id INTEGER PRIMARY KEY, EmployeeId INTEGER NOT NULL, ReviewYear INTEGER NOT NULL,
-    Rating INTEGER NOT NULL, BonusAmount NUMERIC NOT NULL,
-    FOREIGN KEY (EmployeeId) REFERENCES Employees (Id));
-CREATE TABLE LeaveRequests (
+    Rating INTEGER NOT NULL, BonusAmount NUMERIC NOT NULL);
+CREATE TABLE hr.LeaveRequests (
     Id INTEGER PRIMARY KEY, EmployeeId INTEGER NOT NULL, LeaveType TEXT NOT NULL,
-    StartDate TEXT NOT NULL, Days INTEGER NOT NULL, Status TEXT NOT NULL,
-    FOREIGN KEY (EmployeeId) REFERENCES Employees (Id));
+    StartDate TEXT NOT NULL, Days INTEGER NOT NULL, Status TEXT NOT NULL);
 
 -- Sales
-CREATE TABLE Products (
+CREATE TABLE sa.Products (
     Id INTEGER PRIMARY KEY, Name TEXT NOT NULL, Category TEXT NOT NULL,
     UnitPrice NUMERIC NOT NULL, CostPrice NUMERIC NOT NULL);
-CREATE TABLE Orders (
+CREATE TABLE sa.Orders (
     Id INTEGER PRIMARY KEY, UserId INTEGER NOT NULL, SalesRepId INTEGER NOT NULL, OrderDate TEXT NOT NULL,
-    Channel TEXT NOT NULL, Status TEXT NOT NULL,
-    FOREIGN KEY (UserId) REFERENCES Users (Id),
-    FOREIGN KEY (SalesRepId) REFERENCES Employees (Id));
-CREATE TABLE OrderItems (
+    Channel TEXT NOT NULL, Status TEXT NOT NULL);
+CREATE TABLE sa.OrderItems (
     Id INTEGER PRIMARY KEY, OrderId INTEGER NOT NULL, ProductId INTEGER NOT NULL,
     Quantity INTEGER NOT NULL, UnitPrice NUMERIC NOT NULL, DiscountAmount NUMERIC NOT NULL,
     FOREIGN KEY (OrderId) REFERENCES Orders (Id),
     FOREIGN KEY (ProductId) REFERENCES Products (Id));
 
 -- Health care
-CREATE TABLE Diagnoses (
+CREATE TABLE he.Diagnoses (
     Id INTEGER PRIMARY KEY, Code TEXT NOT NULL, Name TEXT NOT NULL, Category TEXT NOT NULL, IsChronic INTEGER NOT NULL);
-CREATE TABLE Visits (
+CREATE TABLE he.Visits (
     Id INTEGER PRIMARY KEY, UserId INTEGER NOT NULL, DoctorId INTEGER NOT NULL, LocationId INTEGER NOT NULL,
     VisitDate TEXT NOT NULL, VisitType TEXT NOT NULL, DiagnosisId INTEGER NOT NULL,
     DurationMinutes INTEGER NOT NULL, Charge NUMERIC NOT NULL, Status TEXT NOT NULL,
-    FOREIGN KEY (UserId) REFERENCES Users (Id),
-    FOREIGN KEY (DoctorId) REFERENCES Employees (Id),
-    FOREIGN KEY (LocationId) REFERENCES Locations (Id),
     FOREIGN KEY (DiagnosisId) REFERENCES Diagnoses (Id));
-CREATE TABLE LabResults (
+CREATE TABLE he.LabResults (
     Id INTEGER PRIMARY KEY, VisitId INTEGER NOT NULL, TestName TEXT NOT NULL,
     ResultValue NUMERIC NOT NULL, ReferenceMax NUMERIC NOT NULL, IsAbnormal INTEGER NOT NULL,
     FOREIGN KEY (VisitId) REFERENCES Visits (Id));
 
 -- Insurance
-CREATE TABLE InsurancePlans (
+CREATE TABLE "in".InsurancePlans (
     Id INTEGER PRIMARY KEY, Name TEXT NOT NULL, Tier TEXT NOT NULL, MonthlyPremium NUMERIC NOT NULL,
     Deductible NUMERIC NOT NULL, OutOfPocketMax NUMERIC NOT NULL, CoinsuranceRate NUMERIC NOT NULL);
-CREATE TABLE Policies (
+CREATE TABLE "in".Policies (
     Id INTEGER PRIMARY KEY, UserId INTEGER NOT NULL, PlanId INTEGER NOT NULL, AgentId INTEGER NOT NULL,
     StartDate TEXT NOT NULL, EndDate TEXT NULL, Status TEXT NOT NULL,
-    FOREIGN KEY (UserId) REFERENCES Users (Id),
-    FOREIGN KEY (PlanId) REFERENCES InsurancePlans (Id),
-    FOREIGN KEY (AgentId) REFERENCES Employees (Id));
-CREATE TABLE PremiumPayments (
+    FOREIGN KEY (PlanId) REFERENCES InsurancePlans (Id));
+CREATE TABLE "in".PremiumPayments (
     Id INTEGER PRIMARY KEY, PolicyId INTEGER NOT NULL, PaymentDate TEXT NOT NULL, Amount NUMERIC NOT NULL, Status TEXT NOT NULL,
     FOREIGN KEY (PolicyId) REFERENCES Policies (Id));
-CREATE TABLE Claims (
+CREATE TABLE "in".Claims (
     Id INTEGER PRIMARY KEY, PolicyId INTEGER NOT NULL, VisitId INTEGER NOT NULL, ClaimDate TEXT NOT NULL,
     BilledAmount NUMERIC NOT NULL, AllowedAmount NUMERIC NOT NULL, PaidAmount NUMERIC NOT NULL,
     Status TEXT NOT NULL, DenialReason TEXT NULL, ProcessedDate TEXT NULL,
-    FOREIGN KEY (PolicyId) REFERENCES Policies (Id),
-    FOREIGN KEY (VisitId) REFERENCES Visits (Id));
+    FOREIGN KEY (PolicyId) REFERENCES Policies (Id));
 
-CREATE INDEX IX_Visits_UserId ON Visits (UserId);
-CREATE INDEX IX_Claims_PolicyId ON Claims (PolicyId);
-CREATE INDEX IX_OrderItems_OrderId ON OrderItems (OrderId);
-CREATE INDEX IX_Orders_UserId ON Orders (UserId);
+CREATE INDEX he.IX_Visits_UserId ON Visits (UserId);
+CREATE INDEX "in".IX_Claims_PolicyId ON Claims (PolicyId);
+CREATE INDEX sa.IX_OrderItems_OrderId ON OrderItems (OrderId);
+CREATE INDEX sa.IX_Orders_UserId ON Orders (UserId);
 
-INSERT INTO Locations (Id, Name, City, State) VALUES
+INSERT INTO Main.Locations (Id, Name, City, State) VALUES
     (1, 'NorthStar Boston Center', 'Boston', 'MA'),
     (2, 'NorthStar New York Center', 'New York', 'NY'),
     (3, 'NorthStar Philadelphia Center', 'Philadelphia', 'PA'),
@@ -110,7 +105,7 @@ INSERT INTO Locations (Id, Name, City, State) VALUES
     (9, 'NorthStar Seattle Center', 'Seattle', 'WA'),
     (10, 'NorthStar San Diego Center', 'San Diego', 'CA');
 
-INSERT INTO Departments (Id, Name) VALUES
+INSERT INTO hr.Departments (Id, Name) VALUES
     (1, 'Retail Sales'),
     (2, 'Primary Care'),
     (3, 'Specialty Care'),
@@ -122,7 +117,7 @@ INSERT INTO Departments (Id, Name) VALUES
     (9, 'Human Resources'),
     (10, 'Finance & IT');
 
-INSERT INTO Employees (Id, FirstName, LastName, DepartmentId, LocationId, ManagerId, JobTitle, HireDate, Salary, EmploymentType) VALUES
+INSERT INTO Main.Employees (Id, FirstName, LastName, DepartmentId, LocationId, ManagerId, JobTitle, HireDate, Salary, EmploymentType) VALUES
     (1, 'Amber', 'Anderson', 1, 1, 10, 'Head of Retail Sales', '2015-01-31', 105000.0, 'Full-time'),
     (2, 'Justin', 'Lewis', 2, 1, 10, 'Chief of Primary Care', '2013-02-23', 324000.0, 'Full-time'),
     (3, 'Sophia', 'Patel', 3, 5, 10, 'Chief of Specialty Care', '2012-12-22', 513000.0, 'Full-time'),
@@ -215,7 +210,7 @@ INSERT INTO Employees (Id, FirstName, LastName, DepartmentId, LocationId, Manage
     (90, 'Katherine', 'Peterson', 10, 3, 10, 'Financial Analyst', '2017-02-24', 126700.0, 'Full-time'),
     (91, 'Sophia', 'Myers', 10, 3, 10, 'Financial Analyst', '2021-11-26', 97300.0, 'Full-time');
 
-INSERT INTO Users (Id, FirstName, LastName, BirthDate, Gender, City, State) VALUES
+INSERT INTO Main.Users (Id, FirstName, LastName, BirthDate, Gender, City, State) VALUES
     (1, 'Patricia', 'Ramirez', '2015-09-03', 'M', 'New York', 'NY'),
     (2, 'Philip', 'Cox', '1960-07-22', 'M', 'Atlanta', 'GA'),
     (3, 'Sara', 'Adams', '1980-11-28', 'F', 'Seattle', 'WA'),
@@ -417,7 +412,7 @@ INSERT INTO Users (Id, FirstName, LastName, BirthDate, Gender, City, State) VALU
     (199, 'Bobby', 'Brown', '1954-08-11', 'F', 'San Diego', 'CA'),
     (200, 'Betty', 'Nelson', '1988-04-07', 'F', 'Atlanta', 'GA');
 
-INSERT INTO PerformanceReviews (Id, EmployeeId, ReviewYear, Rating, BonusAmount) VALUES
+INSERT INTO hr.PerformanceReviews (Id, EmployeeId, ReviewYear, Rating, BonusAmount) VALUES
     (1, 1, 2024, 4, 6300.0),
     (2, 1, 2025, 3, 3150.0),
     (3, 2, 2024, 3, 9720.0),
@@ -575,7 +570,7 @@ INSERT INTO PerformanceReviews (Id, EmployeeId, ReviewYear, Rating, BonusAmount)
     (155, 91, 2024, 5, 9730.0),
     (156, 91, 2025, 3, 2920.0);
 
-INSERT INTO LeaveRequests (Id, EmployeeId, LeaveType, StartDate, Days, Status) VALUES
+INSERT INTO hr.LeaveRequests (Id, EmployeeId, LeaveType, StartDate, Days, Status) VALUES
     (1, 76, 'Sick', '2025-03-08', 1, 'Approved'),
     (2, 73, 'Sick', '2025-02-10', 5, 'Approved'),
     (3, 44, 'Vacation', '2025-07-10', 8, 'Approved'),
@@ -797,7 +792,7 @@ INSERT INTO LeaveRequests (Id, EmployeeId, LeaveType, StartDate, Days, Status) V
     (219, 25, 'Vacation', '2025-02-12', 8, 'Approved'),
     (220, 76, 'Sick', '2025-06-25', 2, 'Approved');
 
-INSERT INTO Products (Id, Name, Category, UnitPrice, CostPrice) VALUES
+INSERT INTO sa.Products (Id, Name, Category, UnitPrice, CostPrice) VALUES
     (1, 'Metformin 500mg 90ct', 'Medications', 24, 7),
     (2, 'Lisinopril 10mg 90ct', 'Medications', 19, 5),
     (3, 'Atorvastatin 20mg 90ct', 'Medications', 32, 9),
@@ -839,7 +834,7 @@ INSERT INTO Products (Id, Name, Category, UnitPrice, CostPrice) VALUES
     (39, 'Stress Relief Kit', 'Mental Wellness', 49, 19),
     (40, 'Meditation Light Therapy', 'Mental Wellness', 119, 53);
 
-INSERT INTO Orders (Id, UserId, SalesRepId, OrderDate, Channel, Status) VALUES
+INSERT INTO sa.Orders (Id, UserId, SalesRepId, OrderDate, Channel, Status) VALUES
     (1, 135, 18, '2025-10-07', 'Phone', 'Completed'),
     (2, 105, 11, '2025-07-13', 'Retail Store', 'Completed'),
     (3, 135, 15, '2025-10-19', 'Retail Store', 'Completed'),
@@ -1641,7 +1636,7 @@ INSERT INTO Orders (Id, UserId, SalesRepId, OrderDate, Channel, Status) VALUES
     (799, 40, 17, '2025-10-13', 'Phone', 'Completed'),
     (800, 84, 15, '2025-09-22', 'Online', 'Completed');
 
-INSERT INTO OrderItems (Id, OrderId, ProductId, Quantity, UnitPrice, DiscountAmount) VALUES
+INSERT INTO sa.OrderItems (Id, OrderId, ProductId, Quantity, UnitPrice, DiscountAmount) VALUES
     (1, 1, 24, 3, 29, 0),
     (2, 2, 24, 2, 29, 0),
     (3, 3, 6, 1, 22, 0),
@@ -3301,7 +3296,7 @@ INSERT INTO OrderItems (Id, OrderId, ProductId, Quantity, UnitPrice, DiscountAmo
     (1657, 800, 1, 3, 24, 0),
     (1658, 800, 20, 2, 249, 0);
 
-INSERT INTO Diagnoses (Id, Code, Name, Category, IsChronic) VALUES
+INSERT INTO he.Diagnoses (Id, Code, Name, Category, IsChronic) VALUES
     (1, 'E11', 'Type 2 Diabetes', 'Endocrine', 1),
     (2, 'I10', 'Hypertension', 'Cardiovascular', 1),
     (3, 'J45', 'Asthma', 'Respiratory', 1),
@@ -3315,7 +3310,7 @@ INSERT INTO Diagnoses (Id, Code, Name, Category, IsChronic) VALUES
     (11, 'L20', 'Atopic Dermatitis', 'Dermatology', 1),
     (12, 'N39', 'Urinary Tract Infection', 'Urology', 0);
 
-INSERT INTO Visits (Id, UserId, DoctorId, LocationId, VisitDate, VisitType, DiagnosisId, DurationMinutes, Charge, Status) VALUES
+INSERT INTO he.Visits (Id, UserId, DoctorId, LocationId, VisitDate, VisitType, DiagnosisId, DurationMinutes, Charge, Status) VALUES
     (1, 164, 5, 8, '2025-01-12', 'Telehealth', 2, 24, 80.45, 'Completed'),
     (2, 154, 30, 7, '2025-01-29', 'Specialist', 7, 57, 323.4, 'Completed'),
     (3, 68, 23, 3, '2025-05-05', 'Telehealth', 3, 31, 94.09, 'Completed'),
@@ -4317,7 +4312,7 @@ INSERT INTO Visits (Id, UserId, DoctorId, LocationId, VisitDate, VisitType, Diag
     (999, 181, 50, 10, '2025-03-09', 'Emergency', 7, 88, 1628.31, 'Completed'),
     (1000, 176, 30, 7, '2025-01-25', 'Specialist', 5, 0, 0, 'No-Show');
 
-INSERT INTO LabResults (Id, VisitId, TestName, ResultValue, ReferenceMax, IsAbnormal) VALUES
+INSERT INTO he.LabResults (Id, VisitId, TestName, ResultValue, ReferenceMax, IsAbnormal) VALUES
     (1, 4, 'Fasting Glucose', 58.4, 99, 0),
     (2, 4, 'Blood Pressure Systolic', 155.2, 120, 1),
     (3, 4, 'Triglycerides', 125.3, 150, 0),
@@ -5474,7 +5469,7 @@ INSERT INTO LabResults (Id, VisitId, TestName, ResultValue, ReferenceMax, IsAbno
     (1154, 998, 'HbA1c', 3.9, 5.7, 0),
     (1155, 998, 'Hemoglobin', 13.5, 17.5, 0);
 
-INSERT INTO InsurancePlans (Id, Name, Tier, MonthlyPremium, Deductible, OutOfPocketMax, CoinsuranceRate) VALUES
+INSERT INTO "in".InsurancePlans (Id, Name, Tier, MonthlyPremium, Deductible, OutOfPocketMax, CoinsuranceRate) VALUES
     (1, 'Bronze Basic', 'Bronze', 210, 7500, 9000, 0.4),
     (2, 'Bronze Plus', 'Bronze', 260, 6500, 8500, 0.35),
     (3, 'Silver Standard', 'Silver', 340, 4000, 7500, 0.3),
@@ -5486,7 +5481,7 @@ INSERT INTO InsurancePlans (Id, Name, Tier, MonthlyPremium, Deductible, OutOfPoc
     (9, 'Young Adult Flex', 'Bronze', 180, 6000, 8000, 0.4),
     (10, 'Small Business Group', 'Silver', 390, 3000, 8000, 0.25);
 
-INSERT INTO Policies (Id, UserId, PlanId, AgentId, StartDate, EndDate, Status) VALUES
+INSERT INTO "in".Policies (Id, UserId, PlanId, AgentId, StartDate, EndDate, Status) VALUES
     (1, 161, 9, 74, '2024-12-18', NULL, 'Active'),
     (2, 154, 8, 79, '2024-07-05', NULL, 'Active'),
     (3, 121, 8, 79, '2023-07-23', NULL, 'Active'),
@@ -5648,7 +5643,7 @@ INSERT INTO Policies (Id, UserId, PlanId, AgentId, StartDate, EndDate, Status) V
     (159, 141, 3, 75, '2025-03-22', '2025-08-10', 'Cancelled'),
     (160, 20, 8, 79, '2025-03-29', NULL, 'Active');
 
-INSERT INTO PremiumPayments (Id, PolicyId, PaymentDate, Amount, Status) VALUES
+INSERT INTO "in".PremiumPayments (Id, PolicyId, PaymentDate, Amount, Status) VALUES
     (1, 1, '2025-01-05', 180, 'Late'),
     (2, 1, '2025-02-05', 180, 'Paid'),
     (3, 1, '2025-03-05', 180, 'Paid'),
@@ -7103,7 +7098,7 @@ INSERT INTO PremiumPayments (Id, PolicyId, PaymentDate, Amount, Status) VALUES
     (1452, 160, '2025-09-05', 290, 'Paid'),
     (1453, 160, '2025-10-05', 290, 'Paid');
 
-INSERT INTO Claims (Id, PolicyId, VisitId, ClaimDate, BilledAmount, AllowedAmount, PaidAmount, Status, DenialReason, ProcessedDate) VALUES
+INSERT INTO "in".Claims (Id, PolicyId, VisitId, ClaimDate, BilledAmount, AllowedAmount, PaidAmount, Status, DenialReason, ProcessedDate) VALUES
     (1, 2, 2, '2025-02-02', 323.4, 208.93, 177.59, 'Paid', NULL, '2025-02-25'),
     (2, 138, 3, '2025-05-10', 94.09, 76.91, 0, 'Denied', 'Out of Network', '2025-06-01'),
     (3, 57, 5, '2025-01-08', 77.12, 63.12, 53.65, 'Paid', NULL, '2025-01-16'),

@@ -1,10 +1,16 @@
+IF SCHEMA_ID(N'sa') IS NULL EXEC(N'CREATE SCHEMA [sa]');
+
 IF OBJECT_ID(N'dbo.InvoiceItems', N'U') IS NOT NULL DROP TABLE dbo.[InvoiceItems];
 IF OBJECT_ID(N'dbo.Invoices', N'U') IS NOT NULL DROP TABLE dbo.[Invoices];
 IF OBJECT_ID(N'dbo.Products', N'U') IS NOT NULL DROP TABLE dbo.[Products];
 IF OBJECT_ID(N'dbo.Customers', N'U') IS NOT NULL DROP TABLE dbo.[Customers];
+IF OBJECT_ID(N'sa.InvoiceItems', N'U') IS NOT NULL DROP TABLE sa.[InvoiceItems];
+IF OBJECT_ID(N'sa.Invoices', N'U') IS NOT NULL DROP TABLE sa.[Invoices];
+IF OBJECT_ID(N'sa.Products', N'U') IS NOT NULL DROP TABLE sa.[Products];
+IF OBJECT_ID(N'sa.Customers', N'U') IS NOT NULL DROP TABLE sa.[Customers];
 
 
-CREATE TABLE dbo.[Customers] (
+CREATE TABLE sa.[Customers] (
     Id int PRIMARY KEY,
     Name nvarchar(255) NOT NULL,
     Email nvarchar(255) NOT NULL,
@@ -17,7 +23,7 @@ CREATE TABLE dbo.[Customers] (
     UpdatedOn date NOT NULL
 );
 
-CREATE TABLE dbo.[Products] (
+CREATE TABLE sa.[Products] (
     Id int PRIMARY KEY,
     Name nvarchar(255) NOT NULL,
     Description nvarchar(255) NOT NULL,
@@ -30,7 +36,7 @@ CREATE TABLE dbo.[Products] (
     UpdatedOn date NOT NULL
 );
 
-CREATE TABLE dbo.[Invoices] (
+CREATE TABLE sa.[Invoices] (
     Id int PRIMARY KEY,
     CustomerId int NOT NULL,
     InvoiceNumber nvarchar(255) NOT NULL UNIQUE,
@@ -45,10 +51,10 @@ CREATE TABLE dbo.[Invoices] (
     TotalAmount decimal(18, 2) NOT NULL,
     CreatedOn date NOT NULL,
     UpdatedOn date NOT NULL,
-    FOREIGN KEY (CustomerId) REFERENCES dbo.[Customers] (Id)
+    FOREIGN KEY (CustomerId) REFERENCES sa.[Customers] (Id)
 );
 
-CREATE TABLE dbo.[InvoiceItems] (
+CREATE TABLE sa.[InvoiceItems] (
     Id int PRIMARY KEY,
     InvoiceId int NOT NULL,
     ProductId int NOT NULL,
@@ -58,11 +64,11 @@ CREATE TABLE dbo.[InvoiceItems] (
     LineTotal decimal(18, 2) NOT NULL,
     CreatedOn date NOT NULL,
     UpdatedOn date NOT NULL,
-    FOREIGN KEY (InvoiceId) REFERENCES dbo.[Invoices] (Id),
-    FOREIGN KEY (ProductId) REFERENCES dbo.[Products] (Id)
+    FOREIGN KEY (InvoiceId) REFERENCES sa.[Invoices] (Id),
+    FOREIGN KEY (ProductId) REFERENCES sa.[Products] (Id)
 );
 
-INSERT INTO dbo.[Customers]
+INSERT INTO sa.[Customers]
     (Id, Name, Email, Phone, Address, Segment, Region, CustomerSince, CreatedOn, UpdatedOn)
 VALUES
     (1, 'Alice Johnson', 'alice.johnson@example.com', '555-0101', '101 Main Street', 'Enterprise', 'Northeast', '2023-04-12', '2025-01-01', '2025-01-01'),
@@ -76,7 +82,7 @@ VALUES
     (9, 'Ivy Taylor', 'ivy.taylor@example.com', '555-0109', '909 Spruce Court', 'Enterprise', 'Northeast', '2023-03-27', '2025-01-09', '2025-01-09'),
     (10, 'Jack Anderson', 'jack.anderson@example.com', '555-0110', '1010 Ash Place', 'Consumer', 'Midwest', '2025-02-01', '2025-01-10', '2025-01-10');
 
-INSERT INTO dbo.[Products]
+INSERT INTO sa.[Products]
     (Id, Name, Description, Category, UnitPrice, CostPrice, StockQuantity, ReorderLevel, CreatedOn, UpdatedOn)
 VALUES
     (1, 'Laptop', '15-inch everyday laptop', 'Computers', 899.00, 650.00, 25, 10, '2025-01-01', '2025-01-01'),
@@ -90,7 +96,7 @@ VALUES
     (9, 'Notebook', 'Hardcover ruled notebook', 'Office Accessories', 8.00, 2.50, 150, 40, '2025-01-01', '2025-01-01'),
     (10, 'Pen Set', 'Pack of five blue pens', 'Office Accessories', 6.00, 1.50, 300, 75, '2025-01-01', '2025-01-01');
 
-INSERT INTO dbo.[Invoices]
+INSERT INTO sa.[Invoices]
     (Id, CustomerId, InvoiceNumber, InvoiceDate, DueDate, Status, SalesChannel, PaymentMethod, PaidOn, DiscountAmount, TaxAmount, TotalAmount, CreatedOn, UpdatedOn)
 VALUES
     (1, 1, 'INV-1001', '2025-02-01', '2025-03-03', 'Paid', 'Online', 'Card', '2025-02-10', 0, 75.92, 949.00, '2025-02-01', '2025-02-10'),
@@ -114,7 +120,7 @@ VALUES
     (19, 10, 'INV-1019', '2025-03-12', '2025-04-11', 'Paid', 'Store', 'Cash', '2025-03-20', 0, 19.12, 239.00, '2025-03-12', '2025-03-20'),
     (20, 10, 'INV-1020', '2025-04-12', '2025-05-12', 'Sent', 'Online', 'Card', NULL, 0, 8.32, 104.00, '2025-04-12', '2025-04-12');
 
-INSERT INTO dbo.[InvoiceItems]
+INSERT INTO sa.[InvoiceItems]
     (Id, InvoiceId, ProductId, Quantity, UnitPrice, LineTotal, CreatedOn, UpdatedOn)
 VALUES
     (1, 1, 1, 1, 899.00, 899.00, '2025-02-01', '2025-02-01'),
@@ -175,12 +181,12 @@ VALUES
     (56, 20, 7, 1, 79.00, 79.00, '2025-04-12', '2025-04-12'),
     (57, 20, 2, 1, 25.00, 25.00, '2025-04-12', '2025-04-12');
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Invoices_InvoiceDate_Status' AND object_id = OBJECT_ID(N'dbo.Invoices'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Invoices_InvoiceDate_Status' AND object_id = OBJECT_ID(N'sa.Invoices'))
     CREATE INDEX IX_Invoices_InvoiceDate_Status
-    ON dbo.[Invoices] (InvoiceDate, Status);
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Invoices_CustomerId' AND object_id = OBJECT_ID(N'dbo.Invoices'))
+    ON sa.[Invoices] (InvoiceDate, Status);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Invoices_CustomerId' AND object_id = OBJECT_ID(N'sa.Invoices'))
     CREATE INDEX IX_Invoices_CustomerId
-    ON dbo.[Invoices] (CustomerId);
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_InvoiceItems_ProductId' AND object_id = OBJECT_ID(N'dbo.InvoiceItems'))
+    ON sa.[Invoices] (CustomerId);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_InvoiceItems_ProductId' AND object_id = OBJECT_ID(N'sa.InvoiceItems'))
     CREATE INDEX IX_InvoiceItems_ProductId
-    ON dbo.[InvoiceItems] (ProductId);
+    ON sa.[InvoiceItems] (ProductId);

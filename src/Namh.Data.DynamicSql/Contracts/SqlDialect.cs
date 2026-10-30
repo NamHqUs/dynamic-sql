@@ -9,7 +9,7 @@ public interface ISqlDialect
     string Key
         => throw new NotSupportedException("A custom SQL dialect must provide a dialect identifier.");
     string QuoteIdentifier(string identifier);
-    string RenderTable(Entity entity);
+    string RenderTable(IEntity entity);
     string RenderBoolean(bool value);
     string RenderStringLiteral(string value);
     string RenderStringConcatenation(string left, string right);
@@ -39,10 +39,10 @@ public sealed class SqlServerDialect : ISqlDialect
     public string QuoteIdentifier(string identifier)
         => $"[{identifier.Replace("]", "]]")}]";
 
-    public string RenderTable(Entity entity)
-        => string.IsNullOrEmpty(entity.RawSql) || string.Equals(entity.RawSql, entity.Name, StringComparison.Ordinal)
-            ? $"dbo.{QuoteIdentifier(entity.Name)}"
-            : entity.RawSql;
+    public string RenderTable(IEntity entity)
+        => entity is RawSqlEntity rawSqlEntity
+            ? rawSqlEntity.RawSql
+            : $"{QuoteIdentifier(entity.DbSchema ?? "dbo")}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public string RenderBoolean(bool value) => value ? "1" : "0";
     public string RenderStringLiteral(string value) => $"N'{value.Replace("'", "''")}'";
@@ -107,12 +107,12 @@ public sealed class SqliteDialect(string? schema = null) : ISqlDialect
     public string QuoteIdentifier(string identifier)
         => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
-    public string RenderTable(Entity entity)
-        => string.IsNullOrEmpty(entity.RawSql) || string.Equals(entity.RawSql, entity.Name, StringComparison.Ordinal)
-            ? string.IsNullOrEmpty(schema)
-                ? QuoteIdentifier(entity.Name)
-                : $"{QuoteIdentifier(schema)}.{QuoteIdentifier(entity.Name)}"
-            : entity.RawSql;
+    public string RenderTable(IEntity entity)
+        => entity is RawSqlEntity rawSqlEntity
+            ? rawSqlEntity.RawSql
+            : string.IsNullOrEmpty(entity.DbSchema ?? schema)
+                ? QuoteIdentifier(entity.DbTable ?? entity.Name)
+                : $"{QuoteIdentifier(entity.DbSchema ?? schema!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public string RenderBoolean(bool value) => value ? "1" : "0";
     public string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";
@@ -142,10 +142,10 @@ public sealed class PostgresDialect(string schema = "public") : ISqlDialect
     public string QuoteIdentifier(string identifier)
         => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
-    public string RenderTable(Entity entity)
-        => string.IsNullOrEmpty(entity.RawSql) || string.Equals(entity.RawSql, entity.Name, StringComparison.Ordinal)
-            ? $"{QuoteIdentifier(schema)}.{QuoteIdentifier(entity.Name)}"
-            : entity.RawSql;
+    public string RenderTable(IEntity entity)
+        => entity is RawSqlEntity rawSqlEntity
+            ? rawSqlEntity.RawSql
+            : $"{QuoteIdentifier(entity.DbSchema ?? schema)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public string RenderBoolean(bool value) => value ? "TRUE" : "FALSE";
     public string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";
