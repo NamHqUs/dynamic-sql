@@ -4,6 +4,17 @@ import Icon from "../../icon/icon";
 import { fetchDbTableData, selectDbTable, setPreviewDbTable } from "../database-slice";
 import "./diagram-view.css";
 
+export type DiagramTable = {
+  schema: string;
+  name: string;
+  columns: { name: string; dataType: string; isPrimaryKey: boolean }[];
+};
+
+type DiagramViewProps = {
+  tables?: DiagramTable[];
+  onOpenTable?: (table: DiagramTable) => void;
+};
+
 const CARD_WIDTH = 210;
 const CARD_HEIGHT = 112;
 const BOARD_MARGIN = 20;
@@ -307,9 +318,10 @@ function getDiagramRelationships(activeGroup, schemaRelationships) {
   return edges;
 }
 
-export default function DiagramView() {
+export default function DiagramView({ tables: suppliedTables, onOpenTable }: DiagramViewProps) {
   const dispatch = useDispatch();
   const { schema, schemaStatus, schemaError, debugUiEnabled } = useSelector((state) => state.database);
+  const diagramTables = suppliedTables || schema.tables;
   const [positions, setPositions] = useState({});
   const [expandedTables, setExpandedTables] = useState({});
   const [selectedGroup, setSelectedGroup] = useState("");
@@ -348,8 +360,12 @@ export default function DiagramView() {
 
   const groups = useMemo(() => {
     const grouped = new Map(DOMAIN_ORDER.map((name) => [name, []]));
-    grouped.get("All").push(...schema.tables);
-    for (const table of schema.tables) {
+    if (suppliedTables) {
+      grouped.set("All", diagramTables);
+    } else {
+      grouped.get("All").push(...diagramTables);
+    }
+    for (const table of diagramTables) {
       const domains = TABLE_DOMAINS[table.name] || ["Others"];
       for (const domain of domains) grouped.get(domain).push(table);
     }
@@ -359,9 +375,11 @@ export default function DiagramView() {
         name,
         tables: tables.sort((left, right) => left.name.localeCompare(right.name)),
       }));
-  }, [schema.tables]);
+  }, [diagramTables, suppliedTables]);
 
-  const activeGroup = groups.find((group) => group.name === selectedGroup) || groups[0];
+  const activeGroup = suppliedTables
+    ? groups.find((group) => group.name === "All")
+    : groups.find((group) => group.name === selectedGroup) || groups[0];
 
   const relationships = useMemo(
     () => getDiagramRelationships(activeGroup, schema.relationships),
@@ -420,19 +438,19 @@ export default function DiagramView() {
   if (schemaStatus === "failed") {
     return <p className="diagram-state error" role="alert">{schemaError || "Unable to load database relationships."}</p>;
   }
-  if (schema.tables.length === 0) {
+  if (diagramTables.length === 0) {
     return <div className="diagram-state"><Icon name="table" size={20} /><span>No database tables are available.</span></div>;
   }
 
   return (
     <section className="database-diagram" aria-label="Database relationship diagram">
-      <div className="diagram-toolbar">
+      {!suppliedTables && <div className="diagram-toolbar">
         <div>
           <span className="section-kicker">DATABASE SCHEMA</span>
           <p>Choose a domain to explore its relationships. Drag tables to adjust the layout; expand a table to inspect its columns. Double-click a table header to preview its first 10 rows.</p>
         </div>
-      </div>
-      <div className="diagram-group-toolbar">
+      </div>}
+      {!suppliedTables && <div className="diagram-group-toolbar">
         <nav className="diagram-group-switch" aria-label="Diagram table groups">
           {groups.map((group) => (
             <button
@@ -500,7 +518,7 @@ export default function DiagramView() {
             <Icon name="reset" size={14} /> Arrange
           </button>
         </div>
-      </div>
+      </div>}
       <div className="diagram-scroll" ref={setScrollElement}>
         <div className="diagram-board" style={boardSize}>
           <div className="diagram-board-tools">
@@ -550,7 +568,10 @@ export default function DiagramView() {
                 <button
                   type="button"
                   className="diagram-table-header"
-                  onClick={() => dispatch(selectDbTable({ name: table.name, schema: table.schema }))}
+                  onClick={() => {
+                    dispatch(selectDbTable({ name: table.name, schema: table.schema }));
+                    onOpenTable?.(table);
+                  }}
                   onDoubleClick={() => previewTable(table)}
                   onPointerDown={(event) => startDrag(event, key)}
                   onPointerMove={moveDrag}

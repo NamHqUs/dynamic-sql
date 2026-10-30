@@ -229,7 +229,7 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
     setMessage("");
   };
 
-  const openTableAsEntity = (table: { name: string; schema: string; columns: { name: string; dataType: string; isPrimaryKey: boolean }[] }) => {
+  const openTableAsEntity = (table: { name: string; schema: string; columns: { name: string; dataType: string; isPrimaryKey: boolean }[] }, navigateToEditor = true) => {
     const existing = entities.find((entity) => entity.name === table.name);
     if (existing) {
       setSelectedName(existing.name);
@@ -252,9 +252,11 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
     }
     setDirty(false);
     setMessage("");
-    const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.set("section", "entities");
-    setSearchParams(nextSearchParams);
+    if (navigateToEditor) {
+      const nextSearchParams = new URLSearchParams(searchParams);
+      nextSearchParams.set("section", "entities");
+      setSearchParams(nextSearchParams);
+    }
   };
 
   const entityActionAdapter: DefinitionActionAdapter = {
@@ -299,7 +301,22 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
         </nav>}
       </section>}
       {!entityOnly && <div className="metadata-workspace-panel" hidden={activeSection !== "diagram"}>
-        <EntityDiagram entities={entities} onOpenEntity={openTableAsEntity} />
+        <EntityDiagram
+          entities={entities}
+          onOpenEntity={(table) => openTableAsEntity(table, false)}
+          entityEditor={
+            <EntityBuilder
+              draft={draft}
+              selectedName={selectedName}
+              canEdit={!selectedName || Boolean(draft?.canDelete)}
+              message={message}
+              allEntities={entities}
+              actionAdapter={entityActionAdapter}
+              onDraftChange={updateDraft}
+              compact
+            />
+          }
+        />
       </div>}
       <div className="metadata-workspace-panel" hidden={activeSection !== "entities"}>
         <section className={`metadata-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>

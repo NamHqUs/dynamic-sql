@@ -15,6 +15,7 @@ type EntityBuilderProps = {
   allEntities: MetadataEntity[];
   actionAdapter: DefinitionActionAdapter;
   onDraftChange: (updater: (draft: EditableEntity) => EditableEntity) => void;
+  compact?: boolean;
 };
 
 export default function EntityBuilder({
@@ -25,9 +26,10 @@ export default function EntityBuilder({
   allEntities,
   actionAdapter,
   onDraftChange,
+  compact = false,
 }: EntityBuilderProps) {
   return (
-    <div className="metadata-editor">
+    <div className={`metadata-editor${compact ? " metadata-editor-compact" : ""}`}>
       <div className="table-details-heading metadata-editor-heading">
         <div className="table-details-title">
           <span className="section-kicker">METADATA DEFINITION</span>
