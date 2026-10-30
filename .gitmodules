@@ -1,0 +1,3 @@
+[submodule "src/template-config"]
+	path = src/template-config
+	url = https://github.com/NamHqUs/template-config.git
