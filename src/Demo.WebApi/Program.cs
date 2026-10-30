@@ -14,6 +14,7 @@ var configuration = new ConfigurationBuilder()
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddConfiguration(configuration);
+builder.Services.AddSingleton<IConfiguration>(configuration);
 
 builder.Services
     .AddControllers()
@@ -31,9 +32,9 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDemoRepositories(builder.Configuration);
+builder.Services.AddDemoRepositories(configuration);
 builder.Services.AddDemoServices();
-builder.Services.AddDemoDbServices(builder.Configuration);
+builder.Services.AddDemoDbServices(configuration);
 builder.Services.AddSingleton<IUserSectionManager, UserSectionManager>();
 
 var app = builder.Build();

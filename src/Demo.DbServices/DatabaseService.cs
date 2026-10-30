@@ -17,12 +17,9 @@ public class DatabaseService(IConfiguration configuration) : IDatabaseService, I
         {
             if (_currentDbInstance is null)
             {
-                var optonIndex = configuration.Get<int?>("DbProvider:DefaultDbOptionIndex");
-                if (optonIndex.HasValue)
-                {
-                    var section = configuration.GetSection($"DbOptions:{optonIndex.Value}");
-                    _currentDbInstance = CreateDbInstance(section["Provider"]!, section["ConnectionString"]!);
-                }
+                var defaultOption = configuration.GetSection("DbProvider:DefaultDbOption");
+                if (defaultOption.Exists())
+                    _currentDbInstance = CreateDbInstance(defaultOption["Provider"]!, defaultOption["ConnectionString"]!);
             }
 
             return _currentDbInstance;
