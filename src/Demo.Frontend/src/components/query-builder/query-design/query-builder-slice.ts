@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { apiUrls } from "../../../const/api-urls";
-import type { FunctionDefinition } from "../../metadata-builder/function-definition/types";
+import type { FunctionDefinition } from "../../function-definition/types";
 
 export type MetadataField = {
   name: string;
@@ -28,6 +28,7 @@ export type RelationKey = { fromDbColumn: string; toDbColumn: string };
 
 export type MetadataEntity = {
   name: string;
+  schema?: string | null;
   fields: MetadataField[];
   relations?: MetadataRelation[];
   canDelete?: boolean;

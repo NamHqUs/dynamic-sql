@@ -10,7 +10,7 @@ import { MetadataEntity, invalidateQueryMetadata } from "../query-builder/query-
 import EntityList from "./entity-definition/entity-list/entity-list";
 import EntityBuilder from "./entity-definition/entity-builder/entity-builder";
 import { EditableEntity, emptyEntity, toEditable } from "./types";
-import FunctionDefinitionsWorkspace from "./function-definition/function-definition";
+import FunctionDefinitionsWorkspace from "../function-definition/function-definition";
 import OperatorDefinition from "./operator-definition/operator-definition";
 import { resolveDefinitionChanges, useDefinitionUnsavedWarning } from "./definition-actions/definition-actions";
 import type { DefinitionActionAdapter } from "./definition-actions/definition-actions";
@@ -32,9 +32,11 @@ async function request(url: string, options?: RequestInit) {
 
 type MetadataBuilderProps = {
   onNavigationGuardChange?: (guard: ((continueNavigation: () => void, cancelNavigation?: () => void) => void) | null) => void;
+  entityOnly?: boolean;
+  embedded?: boolean;
 };
 
-export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBuilderProps) {
+export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = false, embedded = false }: MetadataBuilderProps) {
   const dispatch = useDispatch();
   const showMessageBox = useMessageBox();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -59,7 +61,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
   const [dirty, setDirty] = useState(false);
   useEffect(() => { selectedNameRef.current = selectedName; }, [selectedName]);
   const requestedSection = searchParams.get("section");
-  const activeSection: MetadataSection = requestedSection === "functions" || requestedSection === "operators"
+  const activeSection: MetadataSection = entityOnly ? "entities" : requestedSection === "functions" || requestedSection === "operators"
     ? requestedSection
     : "entities";
   const selectSection = async (section: MetadataSection) => {
@@ -124,6 +126,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
     }
     const payload = {
       name: draft.name.trim(),
+      schema: draft.schema.trim(),
       rawSql: draft.rawSql.trim() || draft.name.trim(),
       fields: draft.fields.map((field) => ({
         name: field.name.trim(),
@@ -237,7 +240,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
 
   return (
     <>
-      <section className="page-heading metadata-page-heading">
+      {!embedded && <section className="page-heading metadata-page-heading">
         <div className="metadata-heading-main">
           <span className="metadata-heading-mark" aria-hidden="true"><Icon name="schema" size={21} /></span>
           <div className="metadata-heading-copy">
@@ -252,7 +255,7 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
             </div>
           </div>
         </div>
-        <nav className="metadata-section-tabs" role="tablist" aria-label="Metadata definition types">
+        {!entityOnly && <nav className="metadata-section-tabs" role="tablist" aria-label="Metadata definition types">
           <button type="button" role="tab" aria-selected={activeSection === "entities"} className={activeSection === "entities" ? "active" : ""} onClick={() => selectSection("entities")}>
             <Icon name="table" size={14} /> Entity definitions
           </button>
@@ -262,8 +265,8 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
           {/* <button type="button" role="tab" aria-selected={activeSection === "operators"} className={activeSection === "operators" ? "active" : ""} onClick={() => selectSection("operators")}>
             <Icon name="operator" size={14} /> Operator definitions
           </button> */}
-        </nav>
-      </section>
+        </nav>}
+      </section>}
       <div className="metadata-workspace-panel" hidden={activeSection !== "entities"}>
         <section className={`metadata-workspace split-workspace${panel.collapsed ? " panel-collapsed" : ""}`} style={panel.style}>
           <EntityList
@@ -286,12 +289,12 @@ export default function MetadataBuilder({ onNavigationGuardChange }: MetadataBui
           />
         </section>
       </div>
-      <div className="metadata-workspace-panel" hidden={activeSection !== "functions"}>
+      {!entityOnly && <div className="metadata-workspace-panel" hidden={activeSection !== "functions"}>
         <FunctionDefinitionsWorkspace onNavigationGuardChange={updateFunctionNavigationGuard} />
-      </div>
-      <div className="metadata-workspace-panel" hidden={activeSection !== "operators"}>
+      </div>}
+      {!entityOnly && <div className="metadata-workspace-panel" hidden={activeSection !== "operators"}>
         <OperatorDefinition onNavigationGuardChange={updateOperatorNavigationGuard} />
-      </div>
+      </div>}
     </>
   );
 }

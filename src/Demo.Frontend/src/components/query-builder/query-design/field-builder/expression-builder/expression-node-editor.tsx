@@ -9,7 +9,7 @@ import FieldBuilder from "../field-builder";
 import ExpressionDebugTooltip from "../expression-debug-tooltip/expression-debug-tooltip";
 import ExpressionAddNextItem from "./expression-add-next-item";
 import Icon from "../../../../icon/icon";
-import type { FunctionDefinition } from "../../../../metadata-builder/function-definition/types";
+import type { FunctionDefinition } from "../../../../function-definition/types";
 import FunctionBuilder from "../function-builder/function-builder";
 import {
   getGroupArgumentOperator,

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import Icon from "../../../icon/icon";
+import Icon from "../../icon/icon";
 import { FunctionDefinition } from "../types";
-import MetadataSidebar, { type MetadataSidebarGroup } from "../../metadata-sidebar/metadata-sidebar";
+import MetadataSidebar, { type MetadataSidebarGroup } from "../../metadata-builder/metadata-sidebar/metadata-sidebar";
 import "./function-list.css";
 
 type FunctionListProps = {

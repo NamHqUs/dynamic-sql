@@ -1,4 +1,4 @@
-import Icon from "../../../icon/icon";
+import Icon from "../../icon/icon";
 import {
   EditableFunctionArgument,
   EditableFunctionDefinition,
@@ -11,8 +11,8 @@ import {
   FunctionDatabaseType,
   FunctionResultDataType,
 } from "../types";
-import DefinitionActions from "../../definition-actions/definition-actions";
-import type { DefinitionActionAdapter } from "../../definition-actions/definition-actions";
+import DefinitionActions from "../../metadata-builder/definition-actions/definition-actions";
+import type { DefinitionActionAdapter } from "../../metadata-builder/definition-actions/definition-actions";
 import "./function-detail.css";
 
 type FunctionDetailProps = {

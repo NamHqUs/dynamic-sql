@@ -60,7 +60,17 @@ export default function EntityBuilder({
             />
           </label>
           <label>
-            Database table / SQL
+            Schema
+            <input
+              value={draft.schema}
+              onChange={(event) =>
+                onDraftChange((entity) => ({ ...entity, schema: event.target.value }))
+              }
+              placeholder="e.g. dbo"
+            />
+          </label>
+          <label>
+            Raw SQL source
             <input
               value={draft.rawSql}
               onChange={(event) =>

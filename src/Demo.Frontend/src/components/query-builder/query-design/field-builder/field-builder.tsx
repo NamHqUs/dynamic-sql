@@ -3,7 +3,7 @@ import FieldBox from "./field-box/field-box";
 import { ApiQueryContextDefinition, IFieldDefinition, MatchOperation, MetadataEntity } from "../query-builder-slice";
 import Icon from "../../../icon/icon";
 import ExpressionBuilder from "./expression-builder";
-import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
+import { FunctionDefinition } from "../../../function-definition/types";
 import { FunctionTemplateBuilder } from "./function-builder/function-builder";
 import ExpressionDebugTooltip from "./expression-debug-tooltip/expression-debug-tooltip";
 import "./field-builder.css";

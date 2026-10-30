@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { ApiQueryContextDefinition, FilterOperatorDefinition, hasApiQueryCondition, MetadataEntity, QueryDefinition } from "./query-builder-slice";
-import { FunctionDefinition } from "../../metadata-builder/function-definition/types";
+import { FunctionDefinition } from "../../function-definition/types";
 import Icon from "../../icon/icon";
 import ProjectionBuilder from "./projection-builder/projection-builder";
 import SortBuilder from "./sort-builder/sort-builder";
@@ -100,7 +100,7 @@ function EntityMenu({ entities, value, disabled, onChange }: EntityMenuProps) {
           setOpen((isOpen) => !isOpen);
         }}
       >
-        <span>{selectedEntity?.name ?? (value || "Select an entity")}</span>
+        <span>{selectedEntity?.name ?? (value || "Select an entity...")}</span>
       </button>
       {open && createPortal(
         <div

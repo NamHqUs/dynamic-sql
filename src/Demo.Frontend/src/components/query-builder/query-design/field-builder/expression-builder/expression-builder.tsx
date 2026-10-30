@@ -9,7 +9,7 @@ import type {
 import { FieldBoxPopupContext } from "../field-box/field-box-popup-context";
 import Icon from "../../../../icon/icon";
 import { useMessageBox } from "../../../../message-box/message-box";
-import type { FunctionDefinition } from "../../../../metadata-builder/function-definition/types";
+import type { FunctionDefinition } from "../../../../function-definition/types";
 import type { RootState } from "../../../../../store/store";
 import NodeEditor from "./expression-node-editor";
 import {

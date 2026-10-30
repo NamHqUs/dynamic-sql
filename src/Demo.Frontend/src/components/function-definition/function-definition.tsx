@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { apiUrls } from "../../../const/api-urls";
-import PanelSplitter from "../../panel-splitter/panel-splitter";
-import { useResizablePanel } from "../../../utils/use-resizable-panel";
-import { useMessageBox } from "../../message-box/message-box";
+import { apiUrls } from "../../const/api-urls";
+import PanelSplitter from "../panel-splitter/panel-splitter";
+import { useResizablePanel } from "../../utils/use-resizable-panel";
+import { useMessageBox } from "../message-box/message-box";
 import FunctionDetail from "./function-detail/function-detail";
 import FunctionList from "./function-list/function-list";
 import {
   resolveDefinitionChanges,
   useDefinitionUnsavedWarning,
-} from "../definition-actions/definition-actions";
-import type { DefinitionActionAdapter } from "../definition-actions/definition-actions";
+} from "../metadata-builder/definition-actions/definition-actions";
+import type { DefinitionActionAdapter } from "../metadata-builder/definition-actions/definition-actions";
 import {
   EditableFunctionDefinition,
   FunctionDefinition,

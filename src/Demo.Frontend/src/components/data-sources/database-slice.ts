@@ -255,7 +255,7 @@ const databaseSlice = createSlice({
     selectedTable: "",
     selectedSchema: "",
     previewTable: null as { name: string; schema: string } | null,
-    viewMode: "diagram",
+    viewMode: "diagram" as "diagram" | "entities",
     tableStatus: "idle",
     tableError: "",
     schemaStatus: "idle",

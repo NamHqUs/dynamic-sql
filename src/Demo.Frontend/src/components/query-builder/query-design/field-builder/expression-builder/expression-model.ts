@@ -2,7 +2,7 @@ import type {
   IFieldDefinition,
   MatchOperation,
 } from "../../query-builder-slice";
-import type { FunctionDefinition } from "../../../../metadata-builder/function-definition/types";
+import type { FunctionDefinition } from "../../../../function-definition/types";
 
 export type ExpressionPath = number[];
 

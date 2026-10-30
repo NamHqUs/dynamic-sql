@@ -4,7 +4,7 @@ import type { IFieldDefinition } from "../../query-builder-slice";
 import type {
   FunctionArgumentDefinition,
   FunctionDefinition,
-} from "../../../../metadata-builder/function-definition/types";
+} from "../../../../function-definition/types";
 import Icon from "../../../../icon/icon";
 import ExpressionAddNextItem from "../expression-builder/expression-add-next-item";
 import { updateFunction } from "../expression-builder/expression-model";

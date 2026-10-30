@@ -3,7 +3,7 @@ import Icon from "../../../icon/icon";
 import { ApiQueryContextDefinition, IFieldDefinition, MetadataEntity, QueryColumn, QueryDefinition } from "../query-builder-slice";
 import FieldBuilder, { FieldBuilderExpressionOptions } from "../field-builder/field-builder";
 import { formatExpression } from "../field-builder/expression-builder";
-import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
+import { FunctionDefinition } from "../../../function-definition/types";
 
 type ProjectionBuilderProps = {
   metadata: MetadataEntity[];

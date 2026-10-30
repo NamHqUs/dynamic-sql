@@ -6,7 +6,7 @@ import { ApiQueryContextDefinition, FilterOperatorDefinition, IFieldDefinition, 
 import FieldBuilder from "../field-builder/field-builder";
 import { resolveEntity } from "../field-builder/field-box/field-box";
 import { formatExpression } from "../field-builder/expression-builder";
-import { FunctionDefinition } from "../../../metadata-builder/function-definition/types";
+import { FunctionDefinition } from "../../../function-definition/types";
 
 const fallbackOperators = [
   [0, "="],

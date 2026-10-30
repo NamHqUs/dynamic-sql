@@ -424,13 +424,6 @@ export default function QueryBuilder({ onBackToReports, onRequestConnection }: Q
   }, [dispatch, queryRequestsStatus]);
 
   useEffect(() => {
-    const isContextEntity = definition.contextCatalog?.some((context) => context.name === definition.entity);
-    if (metadata.length && !metadata.some((item) => item.name === definition.entity)
-      && !isContextEntity
-      && !definition.contexts?.length) {
-      updateDefinition(createDefinition(metadata[0].name, metadata[0].fields));
-      return;
-    }
     const selectedEntity = entity;
     if (!selectedEntity || definition.contexts?.length) return;
     const reconciled = reconcileDefinition(definition, selectedEntity, metadata);

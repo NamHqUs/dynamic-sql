@@ -9,6 +9,7 @@ import DatabaseConnection from "./components/data-sources/database-connection/da
 import { fetchDbProvider, fetchDbTables } from "./components/data-sources/database-slice";
 import QueryBuilder, { setQueryBuilderDefinition } from "./components/query-builder/query-builder";
 import MetadataBuilder from "./components/metadata-builder/metadata-builder";
+import FunctionDefinitionsWorkspace from "./components/function-definition/function-definition";
 import Reports from "./components/reports/reports";
 import { MessageBoxProvider } from "./components/message-box/message-box";
 import type { QueryDefinition } from "./components/query-builder/query-design/query-builder-slice";
@@ -20,6 +21,7 @@ const PAGE_PATHS = {
   builder: "/query-builder",
   metadata: "/metadata",
   sources: "/data-sources",
+  functions: "/function-definitions",
 } as const;
 
 const LEGACY_FUNCTIONS_PATH = "/functions";
@@ -41,13 +43,18 @@ function App() {
   const [queryBuilderInstance, setQueryBuilderInstance] = useState(0);
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
   const metadataNavigationGuard = useRef<NavigationGuard | null>(null);
+  const functionNavigationGuard = useRef<NavigationGuard | null>(null);
   const approvedNavigation = useRef<string | null>(null);
   const handledBlockedLocation = useRef<string | null>(null);
   const updateMetadataNavigationGuard = useCallback((guard: NavigationGuard | null) => {
     metadataNavigationGuard.current = guard;
   }, []);
+  const updateFunctionNavigationGuard = useCallback((guard: NavigationGuard | null) => {
+    functionNavigationGuard.current = guard;
+  }, []);
   const guardForPage = (targetPage: Page | null) => {
     if (targetPage === "metadata") return metadataNavigationGuard.current;
+    if (targetPage === "functions") return functionNavigationGuard.current;
     return null;
   };
 
@@ -131,7 +138,7 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         <button className="brand" type="button" aria-label="DynamicSQL Studio home" onClick={() => navigateToPage("reports")}><img className="brand-logo" src="/brand-concepts/dynamicsql-studio.svg" alt="" /></button>
-        <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="query" /> Query builder</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="schema" /> Metadata</button></nav>
+        <nav className="topnav"><button className={page === "builder" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("builder")}><Icon name="query" /> Query builder</button><button className={page === "sources" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("sources")}><Icon name="database" /> Data sources</button><button className={page === "metadata" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("metadata")}><Icon name="schema" /> Metadata</button><button className={page === "functions" ? "nav-item active" : "nav-item"} onClick={() => navigateToPage("functions")}><Icon name="function" /> Function definitions</button></nav>
         <div className="top-actions">
           {database.providerCheckStatus === "loading" ? (
             <button className="database-status connecting" type="button" onClick={() => setConnectionDialogOpen(true)} aria-live="polite">
@@ -176,7 +183,8 @@ function App() {
         }} /></div>} />
         <Route path={PAGE_PATHS.builder} element={null} />
         <Route path={PAGE_PATHS.metadata} element={null} />
-        <Route path={LEGACY_FUNCTIONS_PATH} element={<Navigate to={`${PAGE_PATHS.metadata}?section=functions`} replace />} />
+        <Route path={PAGE_PATHS.functions} element={null} />
+        <Route path={LEGACY_FUNCTIONS_PATH} element={<Navigate to={PAGE_PATHS.functions} replace />} />
         <Route path={PAGE_PATHS.sources} element={<div className="page-transition page-transition-no-slide"><DataSources onRequestConnection={requestDatabaseConnection} /></div>} />
         <Route path="*" element={<Navigate to={PAGE_PATHS.reports} replace />} />
       </Routes>
@@ -210,6 +218,23 @@ function App() {
           : undefined}
       /></div>}
       {metadataVisited && <div hidden={page !== "metadata"} className={page === "metadata" ? "page-transition page-transition-no-slide" : undefined}><MetadataBuilder onNavigationGuardChange={updateMetadataNavigationGuard} /></div>}
+      {page === "functions" && <div className="page-transition page-transition-no-slide">
+        <section className="page-heading metadata-page-heading function-page-heading">
+          <div className="metadata-heading-main">
+            <span className="metadata-heading-mark" aria-hidden="true"><Icon name="function" size={21} /></span>
+            <div className="metadata-heading-copy">
+              <span className="metadata-heading-eyebrow">QUERY METADATA <i /> FUNCTIONS · ARGUMENTS · SQL TEMPLATES</span>
+              <h2>Define query functions</h2>
+              <p>Manage reusable function definitions and provider-specific raw SQL templates.</p>
+              <div className="metadata-heading-summary" aria-label="Function definition summary">
+                <span><strong>Reusable</strong> functions</span>
+                <span><strong>Provider-specific</strong> SQL templates</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <FunctionDefinitionsWorkspace onNavigationGuardChange={updateFunctionNavigationGuard} />
+      </div>}
       <footer><span><span className="footer-mark">✦</span> DynamicSQL engine</span><span>Metadata-driven queries · Client preview</span></footer>
     </main>
   );
