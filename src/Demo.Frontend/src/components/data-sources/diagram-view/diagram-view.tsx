@@ -318,6 +318,7 @@ export default function DiagramView({ tables: suppliedTables, onOpenTable }: Dia
   useEffect(() => {
     if (!scrollElement) return undefined;
     const updateSize = (width, height) => {
+      if (width <= 0 || height <= 0) return;
       const nextWidth = Math.max(320, Math.floor(width));
       const nextHeight = Math.max(220, Math.floor(height));
       if (!hasInitialLayoutSize.current) {
