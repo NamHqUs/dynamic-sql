@@ -3,6 +3,8 @@ using Microsoft.Data.Sqlite;
 using Npgsql;
 using FirebirdSql.Data.FirebirdClient;
 using Oracle.ManagedDataAccess.Client;
+using MySqlConnector;
+using Sap.Data.Hana;
 using System.Data;
 using System.Text;
 
@@ -94,6 +96,22 @@ internal sealed class DefinedData
     {
         var connection = new OracleConnection(
             "User Id=NORTHSTAR;Password=NoPassword123!;Data Source=localhost:1521/FREEPDB1");
+        connection.Open();
+        return connection;
+    }
+
+    public static IDbConnection GetNorthStarMariaConnection()
+    {
+        var connection = new MySqlConnection(
+            "Server=localhost;Port=3306;Database=northstar;User ID=root;Password=NoPassword123!;");
+        connection.Open();
+        return connection;
+    }
+
+    public static IDbConnection GetNorthStarSapHanaConnection()
+    {
+        var connection = new HanaConnection(
+            "Server=localhost:39017;UserID=SYSTEM;Password=NoPassword123!;CurrentSchema=NORTHSTAR;");
         connection.Open();
         return connection;
     }

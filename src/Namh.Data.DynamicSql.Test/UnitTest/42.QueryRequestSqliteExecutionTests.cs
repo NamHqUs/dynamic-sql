@@ -9,7 +9,6 @@ internal sealed class QueryRequestSqliteExecutionTests
 {
     private static readonly string[] LegacyRequests =
     [
-        "Sales 1. Category and channel profitability.json",
         "Test-Check Context Calculation Fields.json",
         "Test-Multiple Contexts.json",
         "Test-Query directly on REF CONTEXT.json",
@@ -56,7 +55,7 @@ internal sealed class QueryRequestSqliteExecutionTests
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToList();
 
-        Assert.That(requests, Has.Count.EqualTo(25));
+        Assert.That(requests, Has.Count.EqualTo(26));
         foreach (var requestPath in requests)
         {
             var query = SavedQueryDefinitionLoader.Load(requestPath);

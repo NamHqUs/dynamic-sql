@@ -37,6 +37,14 @@ public static class SqlDialect
             connectionType?.Contains("Oracle", StringComparison.OrdinalIgnoreCase) == true)
             return new OracleDialect();
 
+        if (connectionType?.Contains("MySql", StringComparison.OrdinalIgnoreCase) == true ||
+            connectionType?.Contains("Maria", StringComparison.OrdinalIgnoreCase) == true)
+            return new MariaDialect();
+
+        if (connectionType?.Contains("Hana", StringComparison.OrdinalIgnoreCase) == true ||
+            connectionType?.Contains("Hdb", StringComparison.OrdinalIgnoreCase) == true)
+            return new SapHanaDialect();
+
         return new SqlServerDialect();
     }
 }

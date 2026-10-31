@@ -127,7 +127,14 @@
     "Page": 1,
     "PageSize": 10,
     "Id": "Sales 1. Category and channel profitability",
-    "ExtraRelations": []
+    "ExtraRelations": [
+      {
+        "RefContextId": "legacy-OrderCategory",
+        "Alias": "OrderCategory",
+        "Condition": null,
+        "JoinType": "Inner"
+      }
+    ]
   },
   "Contexts": [
     {

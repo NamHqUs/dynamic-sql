@@ -26,6 +26,35 @@ services:
     networks:
       - dbnet
 
+  mariadb:
+    image: mariadb:11
+    container_name: mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: "NoPassword123!"
+      MARIADB_DATABASE: northstar
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ../scripts/northstar-demo.mariadb.sql:/docker-entrypoint-initdb.d/northstar-demo.mariadb.sql:ro
+    networks:
+      - dbnet
+
+  saphana:
+    image: saplabs/hanaexpress:latest
+    container_name: saphana
+    environment:
+      AGREE_TO_HANA_LICENSE: "Y"
+      HANA_PASSWORD: "NoPassword123!"
+    ports:
+      - "39013:39013"
+      - "39017:39017"
+    volumes:
+      - saphana_data:/hana/mounts
+      - ../scripts:/scripts:ro
+    networks:
+      - dbnet
+
   sqlite:
     image: alpine:3.20
     container_name: sqlite
@@ -86,6 +115,8 @@ volumes:
   sqlite_data:
   firebird_data:
   oracle_data:
+  mariadb_data:
+  saphana_data:
 
 networks:
   dbnet:

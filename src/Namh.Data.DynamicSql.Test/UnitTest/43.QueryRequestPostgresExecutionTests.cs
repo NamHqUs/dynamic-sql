@@ -53,9 +53,6 @@ internal sealed class QueryRequestPostgresExecutionTests
         var requests = Directory
             .EnumerateFiles(root, "*.json")
             .Where(path => !Path.GetFileName(path).Equals(
-                "Sales 1. Category and channel profitability.json",
-                StringComparison.Ordinal))
-            .Where(path => !Path.GetFileName(path).Equals(
                 "Test-Check Context Calculation Fields.json",
                 StringComparison.Ordinal))
             .Where(path => !Path.GetFileName(path).Equals(
@@ -70,7 +67,7 @@ internal sealed class QueryRequestPostgresExecutionTests
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToList();
 
-        Assert.That(requests, Has.Count.EqualTo(25));
+        Assert.That(requests, Has.Count.EqualTo(26));
         foreach (var requestPath in requests)
         {
             var query = SavedQueryDefinitionLoader.Load(requestPath);
