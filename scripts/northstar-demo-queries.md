@@ -4,8 +4,9 @@ NorthStar is a fictional, nationwide health company: it sells health and wellnes
 products, provides care through clinics, underwrites its own health plans, and
 employs the clinicians, sales teams, agents, and support staff behind those
 services. `northstar-demo.sqlite.sql` creates the shared SQLite database and
-loads its demo data. `northstar-demo.mariadb.sql` creates the equivalent MariaDB
-schema and seed. The seed is realistic **synthetic data**, not a dump of
+loads its demo data. The provider-specific scripts, including
+`northstar-demo.postgres.sql` and `northstar-demo.cockroach.sql`, create the
+equivalent schema and seed. The seed is realistic **synthetic data**, not a dump of
 actual patient, employee, or customer records. Every report below returns 10
 rows against the included seed and uses `LIMIT 10` for a compact demo.
 
@@ -4141,4 +4142,3 @@ department and review year.
         FETCH FIRST 10 ROWS ONLY;
 
     ```
-

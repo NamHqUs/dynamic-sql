@@ -66,6 +66,7 @@ export type IconName = keyof typeof paths;
 export function getDatabaseIconName(provider: string): IconName {
   const normalized = provider.toLowerCase().replace(/[^a-z]/g, "");
   if (normalized.includes("postgres")) return "postgres";
+  if (normalized.includes("cockroach")) return "postgres";
   if (normalized.includes("sqlserver")) return "sqlserver";
   if (normalized.includes("sqlite")) return "sqlite";
   if (normalized.includes("firebird")) return "firebird";

@@ -179,8 +179,9 @@ using var db = new DynamicSqlContext(
 ```
 
 Built-in dialects are `SqlServerDialect`, `SqliteDialect`, `PostgresDialect`,
-`FirebirdDialect`, `MariaDialect`, `OracleDialect`, `SapHanaDialect`, and
-`Db2Dialect`. PostgreSQL uses the `public` schema by default.
+`CockroachDialect`, `FirebirdDialect`, `MariaDialect`, `OracleDialect`,
+`SapHanaDialect`, and `Db2Dialect`. PostgreSQL and CockroachDB use the
+`public` schema by default.
 
 Dialects control identifier quoting, booleans, string concatenation, and
 paging. Raw SQL and aggregate expressions must use syntax supported by the
@@ -501,7 +502,8 @@ var today = new FunctionDefinition(
     {
         ["SqlServer"] = "CAST({1} AS DATE)",
         ["Sqlite"] = "CAST({1} AS DATE)",
-        ["Postgres"] = "CAST({1} AS DATE)"
+        ["Postgres"] = "CAST({1} AS DATE)",
+        ["Cockroach"] = "CAST({1} AS DATE)"
     });
 
 var metadata = new MetaProvider(entities);
@@ -655,8 +657,8 @@ dotnet test .\src\Namh.Data.DynamicSql.Test\Namh.Data.DynamicSql.Test.csproj
 dotnet build .\src\Namh.Data.DynamicSql.ConsoleTest\Namh.Data.DynamicSql.ConsoleTest.csproj
 ```
 
-SQL Server tests expect a local `DynamicSqlTest` database. SQLite and
-PostgreSQL scripts are included in `scripts`.
+SQL Server tests expect a local `DynamicSqlTest` database. SQLite, PostgreSQL,
+and CockroachDB scripts are included in `scripts`.
 
 ## License
 
