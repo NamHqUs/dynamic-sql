@@ -1,22 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 import { apiUrls } from "../../const/api-urls";
 import { useMessageBox } from "../message-box/message-box";
 import Icon from "../icon/icon";
 import PanelSplitter from "../panel-splitter/panel-splitter";
 import { useResizablePanel } from "../../utils/use-resizable-panel";
+import { fetchDbSchema } from "../data-sources/database-slice";
 import { MetadataEntity, invalidateQueryMetadata } from "../query-builder/query-design/query-builder-slice";
 import EntityList from "./entity-definition/entity-list/entity-list";
-import EntityBuilder from "./entity-definition/entity-builder/entity-builder";
+import EntityBuilder, { type DatabaseTableOption } from "./entity-definition/entity-builder/entity-builder";
 import EntityDiagram from "./entity-diagram/entity-diagram";
-import { EditableEntity, emptyEntity, toEditable } from "./types";
+import { EditableEntity, emptyEntity, toAbstractDataType, toEditable } from "./types";
 import FunctionDefinitionsWorkspace from "../function-definition/function-definition";
 import OperatorDefinition from "./operator-definition/operator-definition";
 import { resolveDefinitionChanges, useDefinitionUnsavedWarning } from "./definition-actions/definition-actions";
 import DefinitionActions from "./definition-actions/definition-actions";
 import type { DefinitionActionAdapter } from "./definition-actions/definition-actions";
 import "./metadata-builder.css";
+import type { RootState } from "../../store/store";
 
 export * from "./types";
 
@@ -40,6 +42,7 @@ type MetadataBuilderProps = {
 
 export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = false, embedded = false }: MetadataBuilderProps) {
   const dispatch = useDispatch();
+  const databaseState = useSelector((state: RootState) => state.database);
   const showMessageBox = useMessageBox();
   const [searchParams, setSearchParams] = useSearchParams();
   const [functionNavigationGuard, setFunctionNavigationGuard] = useState<NavigationGuard | null>(null);
@@ -110,6 +113,11 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
   };
 
   useEffect(() => { loadEntities(true); }, []);
+  useEffect(() => {
+    if (databaseState.connectionStatus === "succeeded" && databaseState.schemaStatus === "idle") {
+      dispatch(fetchDbSchema());
+    }
+  }, [databaseState.connectionStatus, databaseState.schemaStatus, dispatch]);
 
   const discardChanges = () => {
     const original = entities.find((entity) => entity.name === selectedName);
@@ -123,11 +131,35 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
       setMessage("Built-in metadata is read-only.");
       return false;
     }
+    const tablesWithMatchingName = databaseTables.filter((table) =>
+      table.name.toLowerCase() === (draft?.name || "").toLowerCase(),
+    );
+    const selectedTable = databaseTables.find((table) =>
+      (table.schema || "dbo").toLowerCase() === (draft?.schema || "dbo").toLowerCase()
+        && table.name.toLowerCase() === (draft?.name || "").toLowerCase(),
+    ) || (tablesWithMatchingName.length === 1 ? tablesWithMatchingName[0] : undefined);
+    const selectedTableColumns = new Set(
+      selectedTable?.columns.map((column) => column.name.trim().toLowerCase()),
+    );
+    const fieldIsRawSql = (field: EditableEntity["fields"][number]) => {
+      if (!selectedTable) {
+        return field.isRawSql ?? false;
+      }
+      const column = (field.dbColumn?.trim() || field.name.trim()).toLowerCase();
+      return Boolean(column) && !selectedTableColumns.has(column);
+    };
+    const fieldDataType = (field: EditableEntity["fields"][number]) => {
+      const fieldColumn = (field.dbColumn?.trim() || field.name.trim()).toLowerCase();
+      const column = selectedTable?.columns.find((item) =>
+        item.name.trim().toLowerCase() === fieldColumn,
+      );
+      return column ? toAbstractDataType(column.dataType, field.name) : field.dataType || "String";
+    };
     if (!draft?.name.trim() || draft.fields.some((field) => !field.name.trim())) {
       setMessage("Entity and field names are required.");
       return false;
     }
-    if (draft.fields.some((field) => field.isRawSql && !field.dbColumn?.trim())) {
+    if (draft.fields.some((field) => fieldIsRawSql(field) && !field.dbColumn?.trim())) {
       setMessage("Raw SQL expressions are required.");
       return false;
     }
@@ -138,8 +170,8 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
       fields: draft.fields.map((field) => ({
         name: field.name.trim(),
         dbColumn: field.dbColumn?.trim() || field.name.trim(),
-        dataType: field.dataType || "String",
-        isRawSql: field.isRawSql ?? false,
+        dataType: fieldDataType(field),
+        isRawSql: fieldIsRawSql(field),
       })),
       relations: draft.relations.map(({ name, relatedEntity, type, relatedKeys }) => ({ name: name.trim(), relatedEntity: relatedEntity.trim(), type, relatedKeys })),
     };
@@ -230,17 +262,24 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
     setMessage("");
   };
 
-  const openTableAsEntity = (table: { name: string; schema: string; columns: { name: string; dataType: string; isPrimaryKey: boolean }[] }, navigateToEditor = true) => {
-    const existing = entities.find((entity) => entity.name === table.name);
+  const openTableAsEntity = (
+    table: { name: string; schema: string; columns: { name: string; dataType: string; isPrimaryKey: boolean }[] },
+    navigateToEditor = true,
+    rawSqlOverride?: string,
+  ) => {
+    const existing = entities.find((entity) =>
+      entity.name === table.name && (entity.schema || "dbo") === (table.schema || "dbo"),
+    );
     if (existing) {
       setSelectedName(existing.name);
-      setDraft(toEditable(existing));
+      const nextDraft = toEditable(existing);
+      setDraft({ ...nextDraft, rawSql: rawSqlOverride ?? nextDraft.rawSql });
     } else {
       setSelectedName("");
       setDraft({
         name: table.name,
         schema: table.schema,
-        rawSql: table.name,
+        rawSql: rawSqlOverride ?? "",
         fields: table.columns.map((column) => ({
           id: `diagram_${column.name}`,
           name: column.name,
@@ -273,6 +312,19 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
     onDiscard: discardChanges,
     onDelete: remove,
     onNew: () => void addEntity(),
+  };
+  const databaseOptions = Array.from(new Set(entities.map((entity) => entity.schema).filter(Boolean)));
+  const databaseTables = databaseState.schema.tables as DatabaseTableOption[];
+  const selectDatabaseTable = (table: DatabaseTableOption) => {
+    const rawSql = draft?.rawSql || "";
+    openTableAsEntity({
+      ...table,
+      columns: table.columns.map((column) => ({
+        ...column,
+        dataType: column.dataType || "String",
+        isPrimaryKey: Boolean(column.isPrimaryKey),
+      })),
+    }, false, rawSql);
   };
 
   return (
@@ -321,6 +373,9 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
               message={message}
               allEntities={entities}
               onDraftChange={updateDraft}
+              databaseOptions={databaseOptions}
+              databaseTables={databaseTables}
+              onSelectTable={selectDatabaseTable}
               compact
             />
           }
@@ -351,6 +406,9 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
               message={message}
               allEntities={entities}
               onDraftChange={updateDraft}
+              databaseOptions={databaseOptions}
+              databaseTables={databaseTables}
+              onSelectTable={selectDatabaseTable}
             />
           </div>
         </section>
