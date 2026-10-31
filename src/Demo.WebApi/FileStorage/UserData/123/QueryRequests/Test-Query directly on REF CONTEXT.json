@@ -1,6 +1,6 @@
 {
   "MainQuery": {
-    "Name": "Check Context Calculation Fields",
+    "Name": "Test - Query directly on REF CONTEXT",
     "Entity": "User Context",
     "Projection": [
       {
@@ -25,19 +25,9 @@
     "Filters": null,
     "Sorts": null,
     "Page": 1,
-    "PageSize": 50,
-    "Id": "Check Context Calculation Fields",
-    "ExtraRelations": [
-      {
-        "RefContextId": "context-04aea06d-ae76-4075-9f41-8032dace5e6b",
-        "Alias": "User Context",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": []
-        },
-        "JoinType": "Left"
-      }
-    ]
+    "PageSize": null,
+    "Id": "Test-Query directly on REF CONTEXT",
+    "ExtraRelations": []
   },
   "Contexts": [
     {

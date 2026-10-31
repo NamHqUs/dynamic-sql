@@ -1,6 +1,6 @@
 {
   "MainQuery": {
-    "Name": "Multiple Contexts",
+    "Name": "Test - Multiple Contexts",
     "Entity": "User",
     "Projection": [
       {
@@ -53,7 +53,7 @@
     "Sorts": null,
     "Page": null,
     "PageSize": null,
-    "Id": "Multiple Contexts",
+    "Id": "Test-Multiple Contexts",
     "ExtraRelations": [
       {
         "RefContextId": "context-04364f3b-b860-4c94-9d6f-b14238ac60d7",
