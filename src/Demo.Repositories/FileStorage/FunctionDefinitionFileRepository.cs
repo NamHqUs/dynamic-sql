@@ -60,8 +60,29 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
     }
 
     private static IReadOnlyCollection<SqlFunctionDefintion> GetBuiltInDefinitions()
-        => new FunctionProvider(new SqlServerDialect())
-            .GetFunctions();
+        => new ISqlDialect[]
+            {
+                new SqliteDialect(),
+                new SqlServerDialect(),
+                new PostgresDialect(),
+                new FirebirdDialect(),
+                new OracleDialect()
+            }
+            .SelectMany(dialect => new FunctionProvider(dialect).GetFunctions())
+            .GroupBy(function => function.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(group =>
+            {
+                var first = group.First();
+                return new SqlFunctionDefintion(
+                    first.Name,
+                    first.Arguments,
+                    first.ResultType,
+                    first.Description,
+                    group.SelectMany(function => function.SqlTemplates)
+                        .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase),
+                    first.IsAggregate);
+            })
+            .ToArray();
 
     private static string GetFileId(string id)
     {
