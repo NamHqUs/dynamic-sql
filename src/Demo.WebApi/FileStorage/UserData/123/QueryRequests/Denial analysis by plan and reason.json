@@ -1,0 +1,134 @@
+{
+  "entity": "Claims",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policy.Plan.Tier"
+        }
+      ],
+      "alias": "Tier"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Policy.Plan.Name"
+        }
+      ],
+      "alias": "Plan"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "DenialReason"
+        }
+      ]
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
+        }
+      ],
+      "alias": "DeniedClaims"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "BilledAmount"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "BilledAmount"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "AllowedAmount"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "AllowedAmount"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "BilledAmount"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "AverageBilledAmount"
+    }
+  ],
+  "filter": "Status = 'Denied'",
+  "sorts": [
+    {
+      "field": "DeniedClaims",
+      "direction": "Descending"
+    },
+    {
+      "field": "BilledAmount",
+      "direction": "Descending"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10
+}

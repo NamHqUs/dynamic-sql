@@ -1,0 +1,63 @@
+{
+  "entity": "Employees",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "DepartmentId"
+        }
+      ]
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
+      "alias": "EmployeeId"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Salary"
+        }
+      ]
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "Rank",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "DepartmentId"
+            },
+            {
+              "kind": "field",
+              "field": "Salary"
+            }
+          ]
+        }
+      ],
+      "alias": "DepartmentRank"
+    }
+  ],
+  "sorts": [
+    {
+      "field": "DepartmentId",
+      "direction": "Ascending"
+    },
+    {
+      "field": "DepartmentRank",
+      "direction": "Ascending"
+    },
+    {
+      "field": "EmployeeId",
+      "direction": "Ascending"
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "entity": "LabResults",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "TestName"
+        }
+      ]
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Visit.Diagnosis.Category"
+        }
+      ],
+      "alias": "DiagnosisCategory"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
+        }
+      ],
+      "alias": "TestCount"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CountIf",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "IsAbnormal = true"
+            }
+          ]
+        }
+      ],
+      "alias": "AbnormalCount"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "group",
+              "fields": [
+                {
+                  "kind": "value",
+                  "value": 100.0
+                },
+                {
+                  "oper": "*",
+                  "kind": "function",
+                  "function": "CountIf",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "IsAbnormal = true"
+                    }
+                  ]
+                },
+                {
+                  "oper": "/",
+                  "kind": "function",
+                  "function": "COUNT",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "Id"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "AbnormalPercent"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "ResultValue"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "AverageResult"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "ReferenceMax"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "AverageReferenceMaximum"
+    }
+  ],
+  "filter": "Visit.Status = 'Completed' AND COUNT(*) >= 5",
+  "sorts": [
+    {
+      "field": "AbnormalPercent",
+      "direction": "Descending"
+    },
+    {
+      "field": "TestCount",
+      "direction": "Descending"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10
+}

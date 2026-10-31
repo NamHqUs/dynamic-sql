@@ -1,0 +1,124 @@
+{
+  "entity": "LeaveRequests",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employee.Department.Name"
+        }
+      ],
+      "alias": "Department"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "LeaveType"
+        }
+      ]
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Status"
+        }
+      ]
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
+        }
+      ],
+      "alias": "Requests"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Days"
+            }
+          ]
+        }
+      ],
+      "alias": "DaysRequested"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Days"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "alias": "AverageRequestDays"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Employee.Id"
+            }
+          ]
+        }
+      ],
+      "alias": "EmployeesRequesting"
+    }
+  ],
+  "sorts": [
+    {
+      "field": "DaysRequested",
+      "direction": "Descending"
+    },
+    {
+      "field": "Requests",
+      "direction": "Descending"
+    },
+    {
+      "field": "Department",
+      "direction": "Ascending"
+    },
+    {
+      "field": "LeaveType",
+      "direction": "Ascending"
+    },
+    {
+      "field": "Status",
+      "direction": "Ascending"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10
+}

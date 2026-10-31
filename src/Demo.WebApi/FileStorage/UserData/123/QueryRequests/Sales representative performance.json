@@ -1,0 +1,184 @@
+{
+  "entity": "Employees",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
+      "alias": "SalesRepId"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        }
+      ],
+      "alias": "SalesRep"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Location.City"
+        }
+      ],
+      "alias": "HomeCity"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Department.Name"
+        }
+      ],
+      "alias": "Department"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "SalesOrders.Id"
+            }
+          ]
+        }
+      ],
+      "alias": "CompletedOrders"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "SalesOrders.Items.Quantity"
+            }
+          ]
+        }
+      ],
+      "alias": "UnitsSold"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "SalesOrders.Items.Quantity"
+                    },
+                    {
+                      "oper": "*",
+                      "kind": "field",
+                      "field": "SalesOrders.Items.UnitPrice"
+                    },
+                    {
+                      "oper": "-",
+                      "kind": "field",
+                      "field": "SalesOrders.Items.DiscountAmount"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "NetSales"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "SalesOrders.Items.Quantity"
+                    },
+                    {
+                      "oper": "*",
+                      "kind": "group",
+                      "fields": [
+                        {
+                          "kind": "field",
+                          "field": "SalesOrders.Items.UnitPrice"
+                        },
+                        {
+                          "oper": "-",
+                          "kind": "field",
+                          "field": "SalesOrders.Items.Product.CostPrice"
+                        }
+                      ]
+                    },
+                    {
+                      "oper": "-",
+                      "kind": "field",
+                      "field": "SalesOrders.Items.DiscountAmount"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "GrossProfit"
+    }
+  ],
+  "filter": "Department.Name = 'Retail Sales' AND SalesOrders.Status = 'Completed'",
+  "sorts": [
+    {
+      "field": "NetSales",
+      "direction": "Descending"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10
+}

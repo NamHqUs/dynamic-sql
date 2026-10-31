@@ -1,0 +1,135 @@
+{
+  "entity": "Users",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
+      "alias": "UserId"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        }
+      ],
+      "alias": "Customer"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Orders.Id"
+            }
+          ]
+        }
+      ],
+      "alias": "OrderCount"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "Orders.Items.Quantity"
+                    },
+                    {
+                      "oper": "*",
+                      "kind": "field",
+                      "field": "Orders.Items.UnitPrice"
+                    },
+                    {
+                      "oper": "-",
+                      "kind": "field",
+                      "field": "Orders.Items.DiscountAmount"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "LifetimeValue"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "MAX",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Orders.OrderDate"
+            }
+          ]
+        }
+      ],
+      "alias": "LastOrderDate"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Orders.Channel"
+            }
+          ]
+        }
+      ],
+      "alias": "ChannelsUsed"
+    }
+  ],
+  "filter": "Orders.Status = 'Completed'",
+  "sorts": [
+    {
+      "field": "LifetimeValue",
+      "direction": "Descending"
+    },
+    {
+      "field": "LastOrderDate",
+      "direction": "Descending"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10
+}

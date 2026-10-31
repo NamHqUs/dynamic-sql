@@ -1,0 +1,105 @@
+{
+  "entity": "Employees",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
+      "alias": "Id"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "ManagerId"
+        }
+      ],
+      "alias": "ManagerId"
+    },
+    {
+      "fields": [
+        {
+          "kind": "value",
+          "value": 0
+        }
+      ],
+      "alias": "Level"
+    }
+  ],
+  "filter": "Id = 1",
+  "contexts": [
+    {
+      "name": "EmployeeTree",
+      "alias": "EmployeeTree",
+      "joinType": "Inner",
+      "condition": "ManagerId = EmployeeTree.Id",
+      "query": {
+        "entity": "Employees",
+        "projection": [
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ],
+            "alias": "Id"
+          },
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "ManagerId"
+              }
+            ],
+            "alias": "ManagerId"
+          },
+          {
+            "fields": [
+              {
+                "kind": "function",
+                "function": "Difference",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "EmployeeTree.Level"
+                  },
+                  {
+                    "kind": "value",
+                    "value": -1
+                  }
+                ]
+              }
+            ],
+            "alias": "Level"
+          }
+        ],
+        "contexts": [
+          {
+            "name": "EmployeeTree",
+            "alias": "EmployeeTree",
+            "joinType": "Inner",
+            "condition": "ManagerId = EmployeeTree.Id",
+            "query": {
+              "entity": "Employees",
+              "projection": [
+                {
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "Id"
+                    }
+                  ],
+                  "alias": "Id"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

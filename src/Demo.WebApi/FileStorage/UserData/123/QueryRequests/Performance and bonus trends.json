@@ -1,0 +1,193 @@
+{
+  "entity": "PerformanceReviews",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Employee.Department.Name"
+        }
+      ],
+      "alias": "Department"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "ReviewYear"
+        }
+      ]
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
+        }
+      ],
+      "alias": "Reviews"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Rating"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "AverageRating"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CountIf",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Rating >= 4"
+            }
+          ]
+        }
+      ],
+      "alias": "HighRatings"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "group",
+              "fields": [
+                {
+                  "kind": "value",
+                  "value": 100.0
+                },
+                {
+                  "oper": "*",
+                  "kind": "function",
+                  "function": "CountIf",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "Rating >= 4"
+                    }
+                  ]
+                },
+                {
+                  "oper": "/",
+                  "kind": "function",
+                  "function": "COUNT",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "Id"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "HighRatingPercent"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Employee.Salary"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "AverageSalary"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "BonusAmount"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "TotalBonus"
+    }
+  ],
+  "sorts": [
+    {
+      "field": "ReviewYear",
+      "direction": "Descending"
+    },
+    {
+      "field": "AverageRating",
+      "direction": "Descending"
+    },
+    {
+      "field": "TotalBonus",
+      "direction": "Descending"
+    },
+    {
+      "field": "Department",
+      "direction": "Ascending"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10
+}

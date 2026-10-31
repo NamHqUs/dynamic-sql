@@ -1,0 +1,224 @@
+{
+  "entity": "Users",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
+      "alias": "CustomerId"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        }
+      ],
+      "alias": "Customer"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "RecentOrders.Id"
+        }
+      ],
+      "alias": "OrderId"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "RecentOrders.OrderDate"
+        }
+      ],
+      "alias": "OrderDate"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "RecentOrders.OrderAmount"
+        }
+      ],
+      "alias": "OrderAmount"
+    }
+  ],
+  "filter": "RecentOrders.OrderRank <= 3",
+  "sorts": [
+    {
+      "field": "CustomerId",
+      "direction": "Ascending"
+    },
+    {
+      "field": "RecentOrders.OrderDate",
+      "direction": "Descending"
+    },
+    {
+      "field": "OrderId",
+      "direction": "Ascending"
+    }
+  ],
+  "contexts": [
+    {
+      "name": "RankedOrders",
+      "alias": "RankedOrders",
+      "joinType": "Inner",
+      "query": {
+        "entity": "Orders",
+        "projection": [
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "UserId"
+              }
+            ],
+            "alias": "UserId"
+          },
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ],
+            "alias": "Id"
+          },
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "OrderDate"
+              }
+            ],
+            "alias": "OrderDate"
+          },
+          {
+            "fields": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "group",
+                    "fields": [
+                      {
+                        "kind": "field",
+                        "field": "Items.Quantity"
+                      },
+                      {
+                        "oper": "*",
+                        "kind": "field",
+                        "field": "Items.UnitPrice"
+                      },
+                      {
+                        "oper": "-",
+                        "kind": "field",
+                        "field": "Items.DiscountAmount"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "alias": "OrderAmount"
+          },
+          {
+            "fields": [
+              {
+                "kind": "function",
+                "function": "RowNumber",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "UserId"
+                  },
+                  {
+                    "kind": "field",
+                    "field": "OrderDate"
+                  }
+                ]
+              }
+            ],
+            "alias": "OrderRank"
+          }
+        ],
+        "filter": "Status = 'Completed'"
+      }
+    },
+    {
+      "name": "RecentOrders",
+      "alias": "RecentOrders",
+      "joinType": "Left",
+      "condition": "Id = RecentOrders.UserId",
+      "query": {
+        "entity": "RankedOrders",
+        "projection": [
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "UserId"
+              }
+            ],
+            "alias": "UserId"
+          },
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ],
+            "alias": "Id"
+          },
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "OrderDate"
+              }
+            ],
+            "alias": "OrderDate"
+          },
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "OrderAmount"
+              }
+            ],
+            "alias": "OrderAmount"
+          },
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "OrderRank"
+              }
+            ],
+            "alias": "OrderRank"
+          }
+        ]
+      }
+    }
+  ]
+}

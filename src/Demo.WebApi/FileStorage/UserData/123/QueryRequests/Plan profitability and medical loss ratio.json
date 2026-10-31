@@ -1,0 +1,298 @@
+{
+  "entity": "InsurancePlans",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Name"
+        }
+      ],
+      "alias": "Plan"
+    },
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Tier"
+        }
+      ]
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Policies.Id"
+            }
+          ]
+        }
+      ],
+      "alias": "PolicyCount"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "Coalesce",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "PremiumTotals.PremiumRevenue"
+                },
+                {
+                  "kind": "value",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "PremiumRevenue"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "Coalesce",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "ClaimTotals.ClaimCount"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "alias": "ClaimCount"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "Coalesce",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "ClaimTotals.ClaimsPaid"
+                },
+                {
+                  "kind": "value",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "ClaimsPaid"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "group",
+              "fields": [
+                {
+                  "kind": "value",
+                  "value": 100.0
+                },
+                {
+                  "oper": "*",
+                  "kind": "function",
+                  "function": "Coalesce",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "ClaimTotals.ClaimsPaid"
+                    },
+                    {
+                      "kind": "value",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "oper": "/",
+                  "kind": "function",
+                  "function": "NULLIF",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "PremiumTotals.PremiumRevenue"
+                    },
+                    {
+                      "kind": "value",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "alias": "MedicalLossRatioPercent"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "Coalesce",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "ClaimTotals.DeniedClaims"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "alias": "DeniedClaims"
+    }
+  ],
+  "sorts": [
+    {
+      "field": "MedicalLossRatioPercent",
+      "direction": "Descending"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10,
+  "contexts": [
+    {
+      "name": "PremiumTotals",
+      "alias": "PremiumTotals",
+      "joinType": "Left",
+      "condition": "Id = PremiumTotals.PlanId",
+      "query": {
+        "entity": "PremiumPayments",
+        "projection": [
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "Policy.PlanId"
+              }
+            ],
+            "alias": "PlanId"
+          },
+          {
+            "fields": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Amount"
+                  }
+                ]
+              }
+            ],
+            "alias": "PremiumRevenue"
+          }
+        ],
+        "filter": "Status = 'Paid'"
+      }
+    },
+    {
+      "name": "ClaimTotals",
+      "alias": "ClaimTotals",
+      "joinType": "Left",
+      "condition": "Id = ClaimTotals.PlanId",
+      "query": {
+        "entity": "Claims",
+        "projection": [
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "Policy.PlanId"
+              }
+            ],
+            "alias": "PlanId"
+          },
+          {
+            "fields": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "PaidAmount"
+                  }
+                ]
+              }
+            ],
+            "alias": "ClaimsPaid"
+          },
+          {
+            "fields": [
+              {
+                "kind": "function",
+                "function": "COUNT",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Id"
+                  }
+                ]
+              }
+            ],
+            "alias": "ClaimCount"
+          },
+          {
+            "fields": [
+              {
+                "kind": "function",
+                "function": "CountIf",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Status = 'Denied'"
+                  }
+                ]
+              }
+            ],
+            "alias": "DeniedClaims"
+          }
+        ]
+      }
+    }
+  ]
+}

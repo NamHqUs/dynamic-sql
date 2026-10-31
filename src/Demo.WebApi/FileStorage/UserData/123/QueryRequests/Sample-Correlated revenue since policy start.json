@@ -1,0 +1,100 @@
+{
+  "entity": "Policies",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
+      "alias": "PolicyId"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "User.FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "User.LastName"
+            }
+          ]
+        }
+      ],
+      "alias": "Member"
+    },
+    {
+      "fields": [
+        {
+          "kind": "function",
+          "function": "Coalesce",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "RevenueSinceStart.PremiumRevenue"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "alias": "RevenueSinceSignup"
+    }
+  ],
+  "sorts": [
+    {
+      "field": "PolicyId",
+      "direction": "Ascending"
+    }
+  ],
+  "contexts": [
+    {
+      "name": "RevenueSinceStart",
+      "alias": "RevenueSinceStart",
+      "joinType": "Left",
+      "condition": "Id = RevenueSinceStart.PolicyId",
+      "query": {
+        "entity": "PremiumPayments",
+        "projection": [
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "PolicyId"
+              }
+            ],
+            "alias": "PolicyId"
+          },
+          {
+            "fields": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Amount"
+                  }
+                ]
+              }
+            ],
+            "alias": "PremiumRevenue"
+          }
+        ],
+        "filter": "Status = 'Paid' AND PaymentDate >= Policy.StartDate"
+      }
+    }
+  ]
+}

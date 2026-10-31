@@ -1,0 +1,89 @@
+{
+  "entity": "Users",
+  "projection": [
+    {
+      "fields": [
+        {
+          "kind": "field",
+          "field": "Id"
+        }
+      ],
+      "alias": "UserId"
+    }
+  ],
+  "filter": "CompletedOrders.UserId IS NOT NULL OR ActivePolicies.UserId IS NOT NULL",
+  "contexts": [
+    {
+      "name": "CompletedOrders",
+      "alias": "CompletedOrders",
+      "joinType": "Left",
+      "condition": "Id = CompletedOrders.UserId",
+      "query": {
+        "entity": "Orders",
+        "projection": [
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "UserId"
+              }
+            ],
+            "alias": "UserId"
+          },
+          {
+            "fields": [
+              {
+                "kind": "function",
+                "function": "CountDistinct",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Id"
+                  }
+                ]
+              }
+            ],
+            "alias": "MatchCount"
+          }
+        ],
+        "filter": "Status = 'Completed'"
+      }
+    },
+    {
+      "name": "ActivePolicies",
+      "alias": "ActivePolicies",
+      "joinType": "Left",
+      "condition": "Id = ActivePolicies.UserId",
+      "query": {
+        "entity": "Policies",
+        "projection": [
+          {
+            "fields": [
+              {
+                "kind": "field",
+                "field": "UserId"
+              }
+            ],
+            "alias": "UserId"
+          },
+          {
+            "fields": [
+              {
+                "kind": "function",
+                "function": "CountDistinct",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Id"
+                  }
+                ]
+              }
+            ],
+            "alias": "MatchCount"
+          }
+        ],
+        "filter": "Status = 'Active'"
+      }
+    }
+  ]
+}

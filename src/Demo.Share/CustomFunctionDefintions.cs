@@ -59,6 +59,33 @@ public class CustomFunctionDefintions
             "COUNT(DISTINCT {1})",
             "Counts distinct non-null values in a related collection.",
             isAggregate: true),
+        new(
+            "CountIf",
+            [new("predicate", DataType.Boolean)],
+            DataType.Number,
+            "Counts related rows matching a predicate.",
+            new Dictionary<string, string>
+            {
+                ["SqlServer"] = "COUNT(CASE WHEN {1} THEN 1 END)",
+                ["Sqlite"] = "COUNT(CASE WHEN {1} THEN 1 END)",
+                ["Postgres"] = "COUNT(CASE WHEN {1} THEN 1 END)"
+            },
+            isAggregate: true),
+        new(
+            "AvgIf",
+            [
+                new("expression", DataType.Number),
+                new("predicate", DataType.Boolean)
+            ],
+            DataType.Number,
+            "Averages related values matching a predicate.",
+            new Dictionary<string, string>
+            {
+                ["SqlServer"] = "AVG(CASE WHEN {2} THEN {1} END)",
+                ["Sqlite"] = "AVG(CASE WHEN {2} THEN {1} END)",
+                ["Postgres"] = "AVG(CASE WHEN {2} THEN {1} END)"
+            },
+            isAggregate: true),
         CreateStandardFunction(
             "Coalesce",
             [
@@ -141,6 +168,30 @@ public class CustomFunctionDefintions
             DataType.Number,
             "SUM({1}) OVER (ORDER BY {2} ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)",
             "Returns a running total in ascending order."),
+        CreateStandardFunction(
+            "Rank",
+            [
+                new("partitionBy", DataType.Number),
+                new("orderBy", DataType.Number)
+            ],
+            DataType.Number,
+            "RANK() OVER (PARTITION BY {1} ORDER BY {2} DESC)",
+            "Ranks rows within each partition in descending order.",
+            sqliteTemplate: "RANK() OVER (PARTITION BY {1} ORDER BY {2} DESC)",
+            postgresTemplate: "RANK() OVER (PARTITION BY {1} ORDER BY {2} DESC)",
+            isAggregate: true),
+        CreateStandardFunction(
+            "RowNumber",
+            [
+                new("partitionBy", DataType.Number),
+                new("orderBy", DataType.Datetime)
+            ],
+            DataType.Number,
+            "ROW_NUMBER() OVER (PARTITION BY {1} ORDER BY {2} DESC)",
+            "Numbers rows independently within each partition in descending order.",
+            sqliteTemplate: "ROW_NUMBER() OVER (PARTITION BY {1} ORDER BY {2} DESC)",
+            postgresTemplate: "ROW_NUMBER() OVER (PARTITION BY {1} ORDER BY {2} DESC)",
+            isAggregate: true),
     ];
 
     private static SqlFunctionDefintion CreateDateDifference(

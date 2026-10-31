@@ -218,7 +218,7 @@ public sealed class _24_FunctionMetadataTests
         Assert.That(functions.Keys, Does.Contain("COUNT").And.Contain("SUM").And.Contain("AVG")
             .And.Not.Contain("Average").And.Not.Contain("COUNT_DISTINCT"));
         Assert.That(functions.Keys, Does.Contain("CountDistinct").And.Contain("Coalesce").And.Contain("Concat")
-            .And.Contain("Lag").And.Contain("WindowSum"));
+            .And.Contain("CountIf").And.Contain("Lag").And.Contain("WindowSum"));
         Assert.That(functions.Values.All(function => !string.IsNullOrWhiteSpace(function.Description)), Is.True);
         Assert.That(functions["COUNT"].ResultType, Is.EqualTo(DataType.Number));
         Assert.That(functions["DateAdd"].ResultType, Is.EqualTo(DataType.Datetime));
@@ -243,6 +243,19 @@ public sealed class _24_FunctionMetadataTests
         Assert.That(dateFormat.CommandText,
             Does.Match(@"STRFTIME\s*\(\s*@p0,\s*t0\.""InvoiceDate""\s*\)"));
         Assert.That(dateFormat.Parameters.Single().Value, Is.EqualTo("%Y-%m"));
+    }
+
+    [Test]
+    public void CountIfUsesTypedPredicateArgument()
+    {
+        var sqlServerSql = GenerateSql(
+            new FunctionFieldDefinition(
+                "CountIf",
+                [new FieldDefinition("Amount > 0")]),
+            dialect: new SqlServerDialect());
+
+        Assert.That(sqlServerSql.CommandText,
+            Does.Match(@"COUNT\s*\(\s*CASE\s+WHEN\s+.*\[Amount\].*>.*THEN\s+1\s+END\s*\)"));
     }
 
     [Test]
