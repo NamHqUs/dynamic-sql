@@ -18,13 +18,14 @@ internal static class SavedQueryDefinitionLoader
             JsonOptions)
             ?? throw new InvalidDataException($"Query request '{path}' is empty.");
         var contexts = request.Contexts.ToDictionary(context => context.Id, StringComparer.OrdinalIgnoreCase);
-        return BuildQuery(request.MainQuery, contexts, []);
+        return BuildQuery(request.MainQuery, contexts, [], allowDirectContext: true);
     }
 
     private static QueryDefinition BuildQuery(
         StoredQueryNode node,
         IReadOnlyDictionary<string, StoredQueryNode> contexts,
-        HashSet<string> visited)
+        HashSet<string> visited,
+        bool allowDirectContext)
     {
         if (!visited.Add(node.Id))
             throw new InvalidDataException($"Query request context [{node.Name}] is recursive.");
@@ -37,20 +38,57 @@ internal static class SavedQueryDefinitionLoader
             Sorts = node.Sorts?.SelectMany(sorts => sorts).ToList() ?? [],
             Page = node.Page,
             PageSize = node.PageSize,
-            Contexts = node.ExtraRelations?.Select(relation =>
+            Contexts = BuildContexts(node, contexts, visited, allowDirectContext)
+        };
+    }
+
+    private static List<QueryContextDefintion>? BuildContexts(
+        StoredQueryNode node,
+        IReadOnlyDictionary<string, StoredQueryNode> contexts,
+        HashSet<string> visited,
+        bool allowDirectContext)
+    {
+        if (node.ExtraRelations is { Count: > 0 })
+        {
+            return node.ExtraRelations.Select(relation =>
             {
                 if (!contexts.TryGetValue(relation.RefContextId, out var context))
                     throw new InvalidDataException($"Unknown query context [{relation.RefContextId}].");
                 return new QueryContextDefintion(
                     context.Name,
-                    BuildQuery(context, contexts, new HashSet<string>(visited, StringComparer.OrdinalIgnoreCase)),
+                    BuildQuery(
+                        context,
+                        contexts,
+                        new HashSet<string>(visited, StringComparer.OrdinalIgnoreCase),
+                        allowDirectContext: false),
                     relation.Condition,
                     relation.JoinType)
                 {
                     Alias = relation.Alias
                 };
-            }).ToList()
-        };
+            }).ToList();
+        }
+
+        var directContext = contexts.Values.FirstOrDefault(context =>
+            string.Equals(context.Name, node.Entity, StringComparison.OrdinalIgnoreCase));
+        if (!allowDirectContext ||
+            directContext is null ||
+            string.Equals(directContext.Id, node.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return
+        [
+            new QueryContextDefintion(
+                directContext.Name,
+                BuildQuery(
+                    directContext,
+                    contexts,
+                    new HashSet<string>(visited, StringComparer.OrdinalIgnoreCase),
+                    allowDirectContext: false),
+                Condition: null)
+        ];
     }
 
     private sealed class StoredQueryRequest

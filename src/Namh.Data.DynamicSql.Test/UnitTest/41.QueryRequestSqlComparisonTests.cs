@@ -2,6 +2,7 @@ using System.Data;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Demo.Share;
 using Microsoft.Data.SqlClient;
 using Namh.Data.DynamicSql.Test.TestData;
@@ -327,6 +328,101 @@ internal sealed class QueryRequestSqlComparisonTests
                     $"Row {rowIndex}, column '{column}'");
             }
         }
+    }
+
+    [Test]
+    public void DiagnosisBurdenByClinicYamlGeneratesTheSameSqlAsJson()
+    {
+        var requestRoot = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Demo.WebApi",
+            "FileStorage",
+            "UserData",
+            "123",
+            "QueryRequests");
+        var jsonQuery = SavedQueryDefinitionLoader.Load(
+            Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.json"));
+        var yamlPath = Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.yml");
+        var yamlQuery = QueryDefinition.FromYml(File.ReadAllText(yamlPath));
+
+        var jsonSql = _db.Query(jsonQuery).ToSql();
+        var yamlSql = _db.Query(yamlQuery).ToSql();
+
+        Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(yamlSql)));
+    }
+
+    [Test]
+    public void AllYamlQueryRequestsGenerateTheSameSqlAsJson()
+    {
+        var requestRoot = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Demo.WebApi",
+            "FileStorage",
+            "UserData",
+            "123",
+            "QueryRequests");
+
+        foreach (var jsonPath in Directory.EnumerateFiles(requestRoot, "*.json").Order())
+        {
+            var fileName = Path.GetFileName(jsonPath);
+            if (fileName.Equals("Sample-Recursive employee hierarchy.json", StringComparison.Ordinal) ||
+                fileName.Equals("Test-Check Context Calculation Fields.json", StringComparison.Ordinal) ||
+                fileName.Equals("Test-Query directly on REF CONTEXT.json", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
+            Assert.That(File.Exists(yamlPath), Is.True, $"Missing YAML query request for '{jsonPath}'.");
+
+            var jsonSql = _db.Query(SavedQueryDefinitionLoader.Load(jsonPath)).ToSql();
+            var yamlSql = _db.Query(QueryDefinition.FromYml(File.ReadAllText(yamlPath))).ToSql();
+
+            Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(yamlSql)), jsonPath);
+        }
+    }
+
+    [Test]
+    public void RecursiveEmployeeHierarchyYamlMatchesJsonDefinition()
+    {
+        var requestRoot = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Demo.WebApi",
+            "FileStorage",
+            "UserData",
+            "123",
+            "QueryRequests");
+        var jsonPath = Path.Combine(requestRoot, "Sample-Recursive employee hierarchy.json");
+        var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
+
+        var jsonDefinition = SavedQueryDefinitionLoader.Load(jsonPath);
+        var yamlDefinition = QueryDefinition.FromYml(File.ReadAllText(yamlPath));
+
+        Assert.That(yamlDefinition.ToYml(), Is.EqualTo(jsonDefinition.ToYml()));
+    }
+
+    [TestCase("Test-Check Context Calculation Fields.json")]
+    [TestCase("Test-Query directly on REF CONTEXT.json")]
+    public void RefContextYamlMatchesJsonDefinition(string fileName)
+    {
+        var requestRoot = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Demo.WebApi",
+            "FileStorage",
+            "UserData",
+            "123",
+            "QueryRequests");
+        var jsonPath = Path.Combine(requestRoot, fileName);
+        var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
+
+        var jsonDefinition = SavedQueryDefinitionLoader.Load(jsonPath);
+        var yamlDefinition = QueryDefinition.FromYml(File.ReadAllText(yamlPath));
+
+        Assert.That(yamlDefinition.ToYml(), Is.EqualTo(jsonDefinition.ToYml()), fileName);
     }
 
     [Test]
@@ -1314,6 +1410,35 @@ internal sealed class QueryRequestSqlComparisonTests
 
     private static string GetRepositoryRoot()
         => new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "../../../../../")).FullName;
+
+    private static string NormalizeSql(SqlQuery query)
+    {
+        var commandText = Regex.Replace(
+            query.CommandText,
+            @"^DECLARE [^\r\n]+;\r?\n",
+            string.Empty,
+            RegexOptions.Multiline);
+
+        foreach (var parameter in query.Parameters)
+        {
+            commandText = commandText.Replace(
+                parameter.Name,
+                FormatSqlLiteral(parameter.Value),
+                StringComparison.Ordinal);
+        }
+
+        return commandText;
+    }
+
+    private static string FormatSqlLiteral(object? value)
+        => value switch
+        {
+            null => "NULL",
+            bool boolean => boolean ? "1" : "0",
+            string text => $"'{text.Replace("'", "''", StringComparison.Ordinal)}'",
+            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+            _ => value.ToString() ?? string.Empty
+        };
 
     private sealed class StoredQueryRequest
     {

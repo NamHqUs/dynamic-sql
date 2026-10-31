@@ -82,19 +82,67 @@ internal static class FieldDefinitionParser
     }
 
     private static bool LooksLikePredicateExpression(string text)
-        => text.Contains('=') ||
-            text.Contains("<>") ||
-            text.Contains(" < ", StringComparison.Ordinal) ||
-            text.Contains(" > ", StringComparison.Ordinal) ||
+        => ContainsTopLevel(text, "=") ||
+            ContainsTopLevel(text, "<>") ||
+            ContainsTopLevel(text, " < ") ||
+            ContainsTopLevel(text, " > ") ||
             ContainsKeyword(text, "IS") ||
             ContainsKeyword(text, "LIKE") ||
             ContainsKeyword(text, "IN");
+
+    private static bool ContainsTopLevel(string text, string token)
+    {
+        var parentheses = 0;
+        var brackets = 0;
+        var constraints = 0;
+
+        for (var index = 0; index <= text.Length - token.Length; index++)
+        {
+            if (parentheses == 0 &&
+                brackets == 0 &&
+                constraints == 0 &&
+                text.AsSpan(index, token.Length).SequenceEqual(token))
+            {
+                return true;
+            }
+
+            switch (text[index])
+            {
+                case '(':
+                    parentheses++;
+                    break;
+                case ')':
+                    parentheses--;
+                    break;
+                case '[':
+                    brackets++;
+                    break;
+                case ']':
+                    brackets--;
+                    break;
+                case '<' when parentheses == 0 && brackets == 0:
+                    constraints++;
+                    break;
+                case '>' when parentheses == 0 && brackets == 0 && constraints > 0:
+                    constraints--;
+                    break;
+            }
+        }
+
+        return false;
+    }
 
     private static bool ContainsKeyword(string text, string keyword)
     {
         var start = 0;
         while ((start = text.IndexOf(keyword, start, StringComparison.OrdinalIgnoreCase)) >= 0)
         {
+            if (!IsTopLevelAt(text, start))
+            {
+                start += keyword.Length;
+                continue;
+            }
+
             var beforeIsBoundary = start == 0 || !char.IsLetterOrDigit(text[start - 1]);
             var afterIndex = start + keyword.Length;
             var afterIsBoundary = afterIndex == text.Length || !char.IsLetterOrDigit(text[afterIndex]);
@@ -104,6 +152,40 @@ internal static class FieldDefinitionParser
         }
 
         return false;
+    }
+
+    private static bool IsTopLevelAt(string text, int index)
+    {
+        var parentheses = 0;
+        var brackets = 0;
+        var constraints = 0;
+
+        for (var position = 0; position < index; position++)
+        {
+            switch (text[position])
+            {
+                case '(':
+                    parentheses++;
+                    break;
+                case ')':
+                    parentheses--;
+                    break;
+                case '[':
+                    brackets++;
+                    break;
+                case ']':
+                    brackets--;
+                    break;
+                case '<' when parentheses == 0 && brackets == 0:
+                    constraints++;
+                    break;
+                case '>' when parentheses == 0 && brackets == 0 && constraints > 0:
+                    constraints--;
+                    break;
+            }
+        }
+
+        return parentheses == 0 && brackets == 0 && constraints == 0;
     }
 
     private static object? ParseConstant(string value)
