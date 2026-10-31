@@ -246,7 +246,7 @@ function reconcileDefinition(definition: QueryDefinition, entity: MetadataEntity
     ? isExpressionAvailable(sort.expression, entity, metadata)
     : isProjectionColumnAvailable(sort.field, entity, metadata)
       || isAvailableFieldPath(entity, metadata, sort.field)
-      || columns.some((column) => column.expression && column.alias === sort.field));
+      || columns.some((column) => column.alias === sort.field));
   const filters = pruneFilters(definition.filters, entity, metadata);
   const filtersChanged = JSON.stringify(filters) !== JSON.stringify(definition.filters);
   const unchanged = columns.length === definition.columns.length

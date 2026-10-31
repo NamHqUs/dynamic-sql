@@ -188,8 +188,20 @@
                     ]
                   },
                   {
-                    "kind": "field",
-                    "field": "ProcessedDate IS NOT NULL"
+                    "kind": "condition",
+                    "condition": {
+                      "logicalOperation": 0,
+                      "filters": [
+                        {
+                          "logicalOperator": 0,
+                          "left": {
+                            "kind": "field",
+                            "field": "ProcessedDate"
+                          },
+                          "operation": 13
+                        }
+                      ]
+                    }
                   }
                 ]
               },
