@@ -333,6 +333,35 @@ export function updateFunction(
   };
 }
 
+function formatCondition(condition: Extract<IFieldDefinition, { kind: "condition" }>["condition"]): string {
+  const operators = ["=", "<>", "LIKE", "NOT LIKE", ">", "<", ">=", "<=", "BETWEEN", "NOT BETWEEN", "IN", "NOT IN", "IS NULL", "IS NOT NULL"];
+  const formatOperand = (operand: unknown): string => {
+    if (typeof operand === "string") return operand;
+    if (operand && typeof operand === "object" && "kind" in operand)
+      return formatExpression(operand as IFieldDefinition);
+    return `<${String(operand ?? "")}>`;
+  };
+  const formatGroup = (group: unknown): string => {
+    if (!group || typeof group !== "object" || !("filters" in group) || !Array.isArray(group.filters)) return "";
+    return group.filters.map((filter: unknown, index: number) => {
+      if (!filter || typeof filter !== "object") return "";
+      if ("filters" in filter) return `(${formatGroup(filter)})`;
+      const left = "left" in filter ? formatOperand(filter.left) : "";
+      const operation = "operation" in filter && typeof filter.operation === "number"
+        ? operators[filter.operation] ?? String(filter.operation)
+        : "operation" in filter ? String(filter.operation) : "=";
+      const right = "right" in filter && filter.right !== null && filter.right !== undefined
+        ? ` ${operation} ${formatOperand(filter.right)}`
+        : ` ${operation}`;
+      const logical = index > 0 && "logicalOperator" in filter
+        ? Number(filter.logicalOperator) === 1 ? " OR " : " AND "
+        : "";
+      return `${logical}${left}${right}`;
+    }).join("");
+  };
+  return formatGroup(condition);
+}
+
 export function formatExpression(expression: IFieldDefinition): string {
   const formatOperand = (operand: IFieldDefinition) => {
     const text = formatExpression({ ...operand, oper: undefined });
@@ -354,6 +383,9 @@ export function formatExpression(expression: IFieldDefinition): string {
       break;
     case "function":
       text = `${expression.function || "Choose function"}(${expression.arguments.map(formatExpression).join(", ")})`;
+      break;
+    case "condition":
+      text = formatCondition(expression.condition);
       break;
   }
   return expression.oper && expression.oper !== "+" ? `${expression.oper} ${text}` : text;
@@ -378,6 +410,8 @@ export function getExpressionError(expression: IFieldDefinition): string | null 
         const error = getExpressionError(argument);
         if (error) return error;
       }
+      return null;
+    case "condition":
       return null;
   }
 }

@@ -329,6 +329,10 @@ function normalizeMatchOperation(value: unknown): MatchOperation | undefined {
     : undefined;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 function normalizeFieldDefinition(value: unknown): IFieldDefinition | undefined {
   if (!value || typeof value !== "object" || !("kind" in value)) return undefined;
 
