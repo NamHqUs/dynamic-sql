@@ -42,6 +42,11 @@ public abstract class SqlDialectBase : ISqlDialect
         IReadOnlyList<(string Name, object? Value)> parameters)
         => commandText;
 
+    public virtual PreparedSqlCommand PrepareCommand(
+        string commandText,
+        IReadOnlyList<(string Name, object? Value)> parameters)
+        => new(PrepareCommandText(commandText, parameters), parameters);
+
     protected virtual IReadOnlyList<string> ForbiddenKeywords => [];
     protected virtual bool SupportsBracketIdentifiers => false;
     protected virtual bool SupportsBacktickIdentifiers => false;

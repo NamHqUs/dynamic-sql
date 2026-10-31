@@ -130,6 +130,9 @@ internal sealed class DefinedData
         return connection;
     }
 
+    public static IDbConnection GetNorthStarSqlServerConnection()
+        => CreateSqlServerDbConnection();
+
     private static IDbConnection CreateSqliteDbConnection()
     {
         var cn = new SqliteConnection("Data Source=:memory:");

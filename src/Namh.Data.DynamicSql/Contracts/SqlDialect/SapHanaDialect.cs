@@ -1,6 +1,7 @@
 #pragma warning disable IDE0130
 using System.Data;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
@@ -28,6 +29,18 @@ public sealed class SapHanaDialect(string schema = "NORTHSTAR") : SqlDialectBase
     public override string RenderBoolean(bool value) => value ? "TRUE" : "FALSE";
     public override string RenderStringLiteral(string value) => $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";
     public override string RenderStringConcatenation(string left, string right) => $"{left} || {right}";
+    public override string RenderGroupField(
+        string expression,
+        IReadOnlyList<string> fields,
+        string? alias)
+        => fields.Count > 0 &&
+            (expression.StartsWith("ROUND", StringComparison.OrdinalIgnoreCase) ||
+             expression.StartsWith("COALESCE", StringComparison.OrdinalIgnoreCase))
+            ? fields[0]
+            : fields.Count > 0 &&
+                expression.Contains("||", StringComparison.Ordinal)
+            ? string.Join(", ", fields)
+            : expression;
     public override string RenderTakePrefix(int count) => string.Empty;
     public override string RenderCurrentDateTime() => "CURRENT_TIMESTAMP";
     public override string RenderDateDifferenceInDays(string startDate, string endDate)
@@ -48,18 +61,44 @@ public sealed class SapHanaDialect(string schema = "NORTHSTAR") : SqlDialectBase
         parameter.Value = normalized ?? DBNull.Value;
     }
 
+    public override void ConfigureCommand(IDbCommand command)
+    {
+        command.GetType().GetProperty("BindByName")?.SetValue(command, true);
+    }
+
     public override string PrepareCommandText(
         string commandText,
         IReadOnlyList<(string Name, object? Value)> parameters)
+        => RemoveUnsupportedGroupedRoundExpressions(
+            commandText.Replace("@", ":", StringComparison.Ordinal));
+
+    public override PreparedSqlCommand PrepareCommand(
+        string commandText,
+        IReadOnlyList<(string Name, object? Value)> parameters)
     {
-        var prepared = parameters.Aggregate(
+        var parameterValues = parameters.ToDictionary(
+            parameter => parameter.Name,
+            parameter => parameter.Value,
+            StringComparer.Ordinal);
+        var expandedParameters = new List<(string Name, object? Value)>();
+        var prepared = Regex.Replace(
             commandText,
-            (text, parameter) => text.Replace(
-                parameter.Name,
-                parameter.Value is string value
-                    ? RenderStringLiteral(value)
-                    : parameter.Name.Replace("@", ":", StringComparison.Ordinal),
-                StringComparison.Ordinal));
+            @"@\w+",
+            match =>
+            {
+                if (!parameterValues.TryGetValue(match.Value, out var value))
+                    return match.Value;
+
+                expandedParameters.Add(($"p{expandedParameters.Count}", value));
+                return "?";
+            });
+        prepared = RemoveUnsupportedGroupedRoundExpressions(prepared);
+        return new PreparedSqlCommand(prepared, expandedParameters);
+    }
+
+    private static string RemoveUnsupportedGroupedRoundExpressions(string commandText)
+    {
+        var prepared = commandText;
 
         var groupBy = prepared.IndexOf("GROUP BY", StringComparison.OrdinalIgnoreCase);
         var orderBy = prepared.IndexOf("ORDER BY", groupBy, StringComparison.OrdinalIgnoreCase);

@@ -33,11 +33,18 @@ public interface ISqlDialect
         string commandText,
         IReadOnlyList<(string Name, object? Value)> parameters)
         => commandText;
+    PreparedSqlCommand PrepareCommand(
+        string commandText,
+        IReadOnlyList<(string Name, object? Value)> parameters)
+        => new(
+            PrepareCommandText(commandText, parameters),
+            parameters);
     void ValidateSqlStatement(string commandText) { }
     void ConfigureParameter(IDbDataParameter parameter, object? value)
     {
         parameter.Value = NormalizeParameterValue(value) ?? DBNull.Value;
     }
+
     void ConfigureCommand(IDbCommand command) { }
     string RenderCurrentDateTime() => "CURRENT_TIMESTAMP";
     string RenderDateDifferenceInDays(string startDate, string endDate)
@@ -54,3 +61,7 @@ public interface ISqlDialect
             : commandText + $"\n-- Parameters: {string.Join(", ", parameters.Select(parameter =>
                 $"{parameter.Name} = {FormatParameterValue(parameter.Value)}"))}";
 }
+
+public sealed record PreparedSqlCommand(
+    string CommandText,
+    IReadOnlyList<(string Name, object? Value)> Parameters);

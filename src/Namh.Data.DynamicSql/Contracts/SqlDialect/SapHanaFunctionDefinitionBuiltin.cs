@@ -17,6 +17,11 @@ internal sealed class SapHanaFunctionDefinitionBuiltin : SqlFunctionDefinitionBu
             DataType.Number, "Rounds a number to the specified number of decimal places.",
         "ROUND({1}, CAST({2} AS INTEGER))");
 
+    protected override SqlFunctionDefintion Concat() =>
+        Create("CONCAT",
+            [new("first", DataType.String), new("separator", DataType.String), new("last", DataType.String)],
+            DataType.String, "Concatenates three text values.", "({1} || {2} || {3})");
+
     protected override SqlFunctionDefintion Day() => CreateDatePart("DAYOFMONTH");
     protected override SqlFunctionDefintion Month() => CreateDatePart("MONTH");
     protected override SqlFunctionDefintion Year() => CreateDatePart("YEAR");

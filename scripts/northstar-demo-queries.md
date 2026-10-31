@@ -1025,7 +1025,7 @@ laboratory results by diagnosis and clinic.
 
     ```sql
     WITH visit_labs AS (
-        SELECT VisitId, COUNT(*) AS LabCount, SUM(CASE WHEN IsAbnormal THEN 1 ELSE 0 END) AS AbnormalCount
+        SELECT VisitId, COUNT(*) AS LabCount, SUM(CASE WHEN IsAbnormal = 1 THEN 1 ELSE 0 END) AS AbnormalCount
         FROM LabResults
         GROUP BY VisitId
     )
@@ -1235,7 +1235,7 @@ abnormal lab percentage without losing doctors who have no sampled visits.
 
     ```sql
     WITH visit_labs AS (
-        SELECT VisitId, COUNT(*) AS LabCount, SUM(CASE WHEN IsAbnormal THEN 1 ELSE 0 END) AS AbnormalCount
+        SELECT VisitId, COUNT(*) AS LabCount, SUM(CASE WHEN IsAbnormal = 1 THEN 1 ELSE 0 END) AS AbnormalCount
         FROM LabResults
         GROUP BY VisitId
     )
@@ -1448,13 +1448,13 @@ utilization, total charges, and most recent care date.
 
     ```sql
     WITH visit_labs AS (
-        SELECT VisitId, COUNT(*) AS LabCount, SUM(CASE WHEN IsAbnormal THEN 1 ELSE 0 END) AS AbnormalCount
+        SELECT VisitId, COUNT(*) AS LabCount, SUM(CASE WHEN IsAbnormal = 1 THEN 1 ELSE 0 END) AS AbnormalCount
         FROM LabResults
         GROUP BY VisitId
     )
     SELECT pe.Id AS PatientId, pe.FirstName || ' ' || pe.LastName AS Patient,
            YEARS_BETWEEN(pe.BirthDate, '2025-10-31') AS Age,
-           COUNT(DISTINCT CASE WHEN d.IsChronic THEN v.Id END) AS ChronicVisits,
+           COUNT(DISTINCT CASE WHEN d.IsChronic = 1 THEN v.Id END) AS ChronicVisits,
            COUNT(DISTINCT v.Id) AS CompletedVisits,
            SUM(COALESCE(vl.AbnormalCount, 0)) AS AbnormalResults,
            ROUND(SUM(v.Charge), 2) AS TotalCharges,
@@ -1464,7 +1464,7 @@ utilization, total charges, and most recent care date.
     JOIN Diagnoses d ON d.Id = v.DiagnosisId
     LEFT JOIN visit_labs vl ON vl.VisitId = v.Id
     GROUP BY pe.Id, pe.FirstName, pe.LastName, pe.BirthDate
-    HAVING COUNT(DISTINCT CASE WHEN d.IsChronic THEN v.Id END) > 0
+    HAVING COUNT(DISTINCT CASE WHEN d.IsChronic = 1 THEN v.Id END) > 0
        AND SUM(COALESCE(vl.AbnormalCount, 0)) > 0
     ORDER BY AbnormalResults DESC, ChronicVisits DESC, TotalCharges DESC
     LIMIT 10;
@@ -1631,8 +1631,8 @@ rates, including average observed value and sample size.
     ```sql
     SELECT lr.TestName, d.Category AS DiagnosisCategory,
            COUNT(*) AS TestCount,
-           SUM(CASE WHEN lr.IsAbnormal THEN 1 ELSE 0 END) AS AbnormalCount,
-           ROUND(100.0 * SUM(CASE WHEN lr.IsAbnormal THEN 1 ELSE 0 END) / COUNT(*), 2) AS AbnormalPercent,
+           SUM(CASE WHEN lr.IsAbnormal = 1 THEN 1 ELSE 0 END) AS AbnormalCount,
+           ROUND(100.0 * SUM(CASE WHEN lr.IsAbnormal = 1 THEN 1 ELSE 0 END) / COUNT(*), 2) AS AbnormalPercent,
            ROUND(AVG(lr.ResultValue), 2) AS AverageResult,
            ROUND(AVG(lr.ReferenceMax), 2) AS AverageReferenceMaximum
     FROM LabResults lr
@@ -1779,7 +1779,7 @@ operations.
            ROUND(AVG(CASE WHEN Status = 'Completed' THEN DurationMinutes END), 1) AS AverageMinutes,
            ROUND(SUM(Charge), 2) AS Charges
     FROM Visits
-    GROUP BY VisitMonth, VisitType
+    GROUP BY TO_VARCHAR(VisitDate, 'YYYY-MM'), VisitType
     ORDER BY ScheduledVisits DESC
     LIMIT 10;
     ```
