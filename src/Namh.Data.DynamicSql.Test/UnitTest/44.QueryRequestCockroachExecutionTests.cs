@@ -68,6 +68,17 @@ internal sealed class QueryRequestCockroachExecutionTests
         }
     }
 
+    [Test]
+    public void SkipWithoutTakeExecutesOnCockroach()
+    {
+        var query = _db.Query("Users").Select("Id").Skip(1);
+        var commandText = query.ToSql().CommandText;
+
+        Assert.That(commandText, Does.Contain(" OFFSET 1"));
+        Assert.That(commandText, Does.Not.Contain("LIMIT"));
+        Assert.DoesNotThrow(() => query.ToList());
+    }
+
     private IReadOnlyList<string[]> ExecuteRaw(string sql)
     {
         using var command = _connection.CreateCommand();

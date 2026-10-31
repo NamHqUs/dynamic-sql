@@ -183,6 +183,21 @@ Built-in dialects are `SqlServerDialect`, `SqliteDialect`, `PostgresDialect`,
 `SapHanaDialect`, and `Db2Dialect`. PostgreSQL and CockroachDB use the
 `public` schema by default.
 
+CockroachDB uses the Npgsql connection type, like PostgreSQL, so a generic
+`DynamicSqlContext(connection, metaProvider)` cannot distinguish the two and
+selects the PostgreSQL dialect. When connecting to CockroachDB directly,
+provide the dialect explicitly or use `DynamicCockroachContext`:
+
+```csharp
+using var db = new DynamicSqlContext(
+    connection,
+    metaProvider,
+    new CockroachDialect());
+
+// Equivalent:
+using var db = new DynamicCockroachContext(connection, metaProvider);
+```
+
 Dialects control identifier quoting, booleans, string concatenation, and
 paging. Raw SQL and aggregate expressions must use syntax supported by the
 configured provider.

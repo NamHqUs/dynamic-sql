@@ -14,6 +14,8 @@ public interface ISqlDialect
     string RenderBoolean(bool value);
     string RenderStringLiteral(string value);
     string RenderStringConcatenation(string left, string right);
+    string RenderArithmetic(string left, string @operator, string right)
+        => $"{left} {@operator} {right}";
     string RenderTakePrefix(int count);
     string RenderPaging(int? skip, int? take);
     string RenderOrderField(
@@ -27,6 +29,8 @@ public interface ISqlDialect
         IReadOnlyList<string> fields,
         string? alias)
         => expression;
+    string RenderOrder(string expression, bool descending)
+        => $"{expression}{(descending ? " DESC" : " ASC")}";
     string FormatParameterValue(object? value);
     object? NormalizeParameterValue(object? value) => value;
     string PrepareCommandText(

@@ -12,5 +12,5 @@ public interface IMetadataService
     void Delete(string entityName);
     IReadOnlyList<Entity> Reset();
     IMetaProvider GetMetaProvider();
-    IFunctionProvider GetFunctionProvider();
+    IFunctionProvider GetFunctionProvider(ISqlDialect dialect);
 }

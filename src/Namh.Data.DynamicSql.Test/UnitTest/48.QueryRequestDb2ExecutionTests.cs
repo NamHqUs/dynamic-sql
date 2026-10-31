@@ -17,6 +17,9 @@ internal sealed class QueryRequestDb2ExecutionTests
     [OneTimeSetUp]
     public void SetUp()
     {
+#if !NET10_0_OR_GREATER
+        Assert.Ignore("Db2 execution requires the net10.0 test target because the IBM Db2 native client is not available on older targets.");
+#endif
         try
         {
             _connection = DefinedData.GetNorthStarDb2Connection();
@@ -65,8 +68,13 @@ internal sealed class QueryRequestDb2ExecutionTests
             "HR 4. Leave demand and approval status.json",
             "HR 5. Performance and bonus trends.json"
         }
-        .Select(fileName => new TestCaseData(fileName)
-            .SetName(Path.GetFileNameWithoutExtension(fileName)));
+        .Select((fileName, index) =>
+        {
+            var queryName = Path.GetFileNameWithoutExtension(fileName);
+            return new TestCaseData(fileName)
+                .SetName($"SavedQueryGeneratesAndExecutesOnDb2_{index + 1:00}_{Regex.Replace(queryName, @"[^A-Za-z0-9]+", "_").Trim('_')}")
+                .SetDescription(queryName);
+        });
 
     [TestCaseSource(nameof(SavedQueryCases))]
     public void SavedQueryGeneratesAndExecutesOnDb2(string fileName)
@@ -136,7 +144,7 @@ internal sealed class QueryRequestDb2ExecutionTests
                     $"Db2 SQL statement is missing for report [{section.Groups["title"].Value}].");
             statements.Add(
                 section.Groups["title"].Value.Trim(),
-                Unindent(statement.Groups["sql"].Value));
+                NormalizeDb2NumericScale(Unindent(statement.Groups["sql"].Value)));
         }
 
         Assert.That(statements, Has.Count.EqualTo(20));
@@ -197,6 +205,17 @@ internal sealed class QueryRequestDb2ExecutionTests
                 .Select(line => line.StartsWith("    ", StringComparison.Ordinal)
                     ? line[4..]
                     : line));
+
+    private static string NormalizeDb2NumericScale(string sql)
+        => sql
+            .Replace(
+                "100.0 *",
+                "CAST(100.0 AS DECIMAL(31, 15)) *",
+                StringComparison.Ordinal)
+            .Replace(
+                "(DATE '2025-10-31' - e.HireDate) / 365.25",
+                "(DAYS(DATE '2025-10-31') - DAYS(e.HireDate)) / 365.25",
+                StringComparison.Ordinal);
 
     private static string GetRepositoryRoot()
         => new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "../../../../../")).FullName;

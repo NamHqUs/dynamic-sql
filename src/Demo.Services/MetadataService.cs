@@ -97,9 +97,9 @@ public sealed class MetadataService : IMetadataService
     public IMetaProvider GetMetaProvider()
         => new MetaProvider(GetAllEntities(_userSectionManager.GetSectionId()));
 
-    public IFunctionProvider GetFunctionProvider()
+    public IFunctionProvider GetFunctionProvider(ISqlDialect dialect)
         => new FunctionProvider(
-            new SqlServerDialect(),
+            dialect,
             _functionDefinitionService.GetAll().Select(definition => definition.ToFunctionDefinition()));
 
     private IReadOnlyList<Entity> GetAllEntities(string userSectionId)

@@ -11,6 +11,13 @@ internal sealed class Db2FunctionDefinition : SqlFunctionDefinitionBuiltinBase
     internal override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
         base.CreateAllFunctions().Append(Round());
 
+    protected override SqlFunctionDefintion MedicalLossRatio() =>
+        Create("MEDICALLOSSRATIO",
+            [new("claimsPaid", DataType.Number), new("premiumRevenue", DataType.Number)],
+            DataType.Number, "Calculates paid claims as a percentage of premium revenue.",
+            "ROUND(CAST(100.0 AS DECIMAL(31, 15)) * COALESCE(MAX({1}), 0) " +
+            "/ NULLIF(MAX({2}), 0), 2)", isAggregate: true);
+
     private SqlFunctionDefintion Round() =>
         Create("ROUND", [new("value", DataType.Number), new("digits", DataType.Number)],
             DataType.Number, "Rounds a number to the specified number of decimal places.",

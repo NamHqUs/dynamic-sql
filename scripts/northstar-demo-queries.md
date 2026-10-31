@@ -3721,7 +3721,7 @@ Show staffing mix and tenure by office, with payroll and department diversity.
            SUM(CASE WHEN e.EmploymentType = 'Full-time' THEN 1 ELSE 0 END) AS FullTime,
            SUM(CASE WHEN e.EmploymentType = 'Part-time' THEN 1 ELSE 0 END) AS PartTime,
            SUM(CASE WHEN e.EmploymentType = 'Contract' THEN 1 ELSE 0 END) AS Contractors,
-           ROUND(AVG((DATE '2025-10-31' - e.HireDate) / 365.25), 1) AS AverageTenureYears,
+           ROUND(AVG((DAYS(DATE '2025-10-31') - DAYS(e.HireDate)) / 365.25), 1) AS AverageTenureYears,
            ROUND(SUM(e.Salary), 2) AS AnnualPayroll
     FROM Locations l
     JOIN Employees e ON e.LocationId = l.Id

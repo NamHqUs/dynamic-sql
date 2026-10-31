@@ -83,6 +83,12 @@ public abstract class SqlDialectBase : ISqlDialect
     public virtual string RenderPaging(int? skip, int? take, bool hasOrderBy)
         => RenderPaging(skip, take);
 
+    public virtual string RenderOrder(string expression, bool descending)
+        => $"{expression}{(descending ? " DESC" : " ASC")}";
+
+    public virtual string RenderArithmetic(string left, string @operator, string right)
+        => $"{left} {@operator} {right}";
+
     public virtual string RenderQueryWithParameters(
         string commandText,
         IReadOnlyList<(string Name, object? Value)> parameters)

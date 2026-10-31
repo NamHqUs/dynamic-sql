@@ -41,8 +41,8 @@ public sealed class CockroachDialect(string schema = "public") : SqlDialectBase
         => $"CAST({endDate} AS DATE) - CAST({startDate} AS DATE)";
 
     public override string RenderPaging(int? skip, int? take)
-        => skip is null && take is null
-            ? string.Empty
-            : $" LIMIT {(take?.ToString() ?? "-1")}" +
+        => take is null
+            ? (skip is null ? string.Empty : $" OFFSET {skip}")
+            : $" LIMIT {take}" +
               (skip is null ? string.Empty : $" OFFSET {skip}");
 }

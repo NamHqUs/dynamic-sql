@@ -51,4 +51,26 @@ public static class SqlDialect
 
         return new SqlServerDialect();
     }
+
+    public static ISqlDialect ForProvider(string? provider, IDbConnection? connection = null)
+    {
+        if (string.IsNullOrWhiteSpace(provider))
+            return connection is null
+                ? throw new ArgumentException("A database provider is required.", nameof(provider))
+                : ForConnection(connection);
+
+        return provider.Trim().ToLowerInvariant() switch
+        {
+            "sqlite" => new SqliteDialect(),
+            "sqlserver" => new SqlServerDialect(),
+            "postgres" or "postgresql" => new PostgresDialect(),
+            "cockroach" or "cockroachdb" => new CockroachDialect(),
+            "firebird" => new FirebirdDialect(),
+            "maria" or "mariadb" or "mysql" => new MariaDialect(),
+            "oracle" => new OracleDialect(),
+            "saphana" or "hana" => new SapHanaDialect(),
+            "db2" => new Db2Dialect(),
+            _ => throw new ArgumentException($"Unsupported database provider '{provider}'.", nameof(provider))
+        };
+    }
 }

@@ -166,7 +166,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 ? RenderAggregateSelect(aggregate)
                 : RenderExpression(order.Expression);
 
-        return $"{expression}{(order.Descending ? " DESC" : " ASC")}";
+        return dialect.RenderOrder(expression, order.Descending);
     }
 
     private static FieldExpression? FindFirstFieldExpression(SqlExpression expression)
@@ -205,9 +205,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             ValueExpression value => RenderValue(value.Value),
 
-            BinarySqlExpression binary => $"({(binary.StringConcat
-                ? dialect.RenderStringConcatenation(RenderExpression(binary.Left), RenderExpression(binary.Right))
-                : $"{RenderExpression(binary.Left)} {binary.Operator} {RenderExpression(binary.Right)}")})",
+            BinarySqlExpression binary => RenderBinaryExpression(binary),
 
             TemplateCompareSqlExpression compare => RenderTemplateComparison(compare),
 
@@ -238,6 +236,16 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             _ => throw new NotSupportedException($"Unsupported SQL expression {expression.GetType().Name}")
         };
+
+    private string RenderBinaryExpression(BinarySqlExpression binary)
+    {
+        var left = RenderExpression(binary.Left);
+        var right = RenderExpression(binary.Right);
+        var value = binary.StringConcat
+            ? dialect.RenderStringConcatenation(left, right)
+            : dialect.RenderArithmetic(left, binary.Operator, right);
+        return $"({value})";
+    }
 
     private string RenderField(FieldExpression field)
     {

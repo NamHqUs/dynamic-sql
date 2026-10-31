@@ -13,11 +13,13 @@ public sealed class DynamicQueryService(
     public string GetSqlQueryString(QueryDefinition query)
     {
         using var connection = dbConnectionService.CreateConnection();
+        var dialect = SqlDialect.ForProvider(dbConnectionService.GetCurrentProvider(), connection);
         using var context = new DynamicSqlContext(
             connection,
             metadataService.GetMetaProvider(),
-            metadataService.GetFunctionProvider());
-        return context.Query(PrepareQuery(query, connection)).ToSql().CommandText;
+            metadataService.GetFunctionProvider(dialect),
+            dialect);
+        return context.Query(PrepareQuery(query, dialect)).ToSql().CommandText;
     }
 
     public async Task<TableDataDto> ExecuteQueryAsync(
@@ -28,11 +30,13 @@ public sealed class DynamicQueryService(
         logger.LogInformation("\n{query}\n", query);
 
         using var connection = dbConnectionService.CreateConnection();
+        var dialect = SqlDialect.ForProvider(dbConnectionService.GetCurrentProvider(), connection);
         using var context = new DynamicSqlContext(
             connection,
             metadataService.GetMetaProvider(),
-            metadataService.GetFunctionProvider());
-        var result = await context.Query(PrepareQuery(query, connection))
+            metadataService.GetFunctionProvider(dialect),
+            dialect);
+        var result = await context.Query(PrepareQuery(query, dialect))
             .ToListWithTotalRecordsAsync(cancellationToken);
        
         logger.LogInformation("Dynamic query returned {TotalRecords} total records.", result.TotalRecords);
@@ -46,7 +50,7 @@ public sealed class DynamicQueryService(
             TotalRecords: result.TotalRecords);
     }
 
-    private QueryDefinition PrepareQuery(QueryDefinition query, System.Data.IDbConnection connection)
+    private QueryDefinition PrepareQuery(QueryDefinition query, ISqlDialect dialect)
     {
         ArgumentNullException.ThrowIfNull(query);
         if (query.Filter is null && query.Contexts is not { Count: > 0 })
@@ -55,7 +59,7 @@ public sealed class DynamicQueryService(
         var customOperators = operatorDefinitionService.GetAll()
             .Where(definition => !definition.IsBuiltin)
             .ToDictionary(definition => definition.Id, StringComparer.OrdinalIgnoreCase);
-        var provider = SqlDialect.ForConnection(connection).Key;
+        var provider = dialect.Key;
 
         ConditionDefinition PrepareGroup(ConditionDefinition group)
             => new(group.LogicalOperation, System.Linq.Enumerable.Select<IConditionDefintion, IConditionDefintion>(
@@ -87,7 +91,7 @@ public sealed class DynamicQueryService(
             Contexts = query.Contexts?
                 .Select(context => context with
                 {
-                    Query = PrepareQuery(context.Query, connection),
+                    Query = PrepareQuery(context.Query, dialect),
                     Condition = context.Condition is null ? null : PrepareCondition(context.Condition)
                 })
                 .ToList()

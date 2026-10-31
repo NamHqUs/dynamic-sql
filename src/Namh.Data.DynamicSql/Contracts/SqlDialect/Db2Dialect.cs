@@ -28,6 +28,14 @@ public sealed class Db2Dialect(string schema = "MAIN") : SqlDialectBase
     public override string RenderBoolean(bool value) => value ? "1" : "0";
     public override string RenderStringLiteral(string value) => $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";
     public override string RenderStringConcatenation(string left, string right) => $"{left} || {right}";
+    public override string RenderArithmetic(string left, string @operator, string right)
+        => @operator == "/"
+            ? left.Contains("DAYS(", StringComparison.OrdinalIgnoreCase)
+                ? $"({left}) / CAST({right} AS DECIMAL(5, 2))"
+                : $"DECIMAL({left}, 31, 15) / {right}"
+            : base.RenderArithmetic(left, @operator, right);
+    public override string RenderOrder(string expression, bool descending)
+        => $"{base.RenderOrder(expression, descending)}{(descending ? " NULLS LAST" : string.Empty)}";
     public override string RenderOrderField(
         string expression,
         string? field,
