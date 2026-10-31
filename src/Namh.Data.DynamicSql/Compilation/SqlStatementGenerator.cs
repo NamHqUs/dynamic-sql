@@ -37,13 +37,31 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         var hasGroupedAggregate = query.ProjectionItems
             .Any(item => item.Item.ContainsGroupedAggregate());
 
-        var select = exists ? "1" : query.SqlSelect?.ToString();
+        var select = exists
+            ? "1"
+            : query.ProjectionItems.Any()
+                ? null
+                : query.SqlSelect?.ToString();
 
         if (!exists && query is AggregateExpression aggregate && select is not null)
             select = RenderAggregateSelect(aggregate);
 
         if (select is null)
-            select = string.Join(", ", query.ProjectionItems.Select(item => RenderProjection(item, hasGroupedAggregate)));
+        {
+            var projectionItems = query.ProjectionItems.ToArray();
+            select = string.Join(
+                string.Empty,
+                projectionItems.Select((item, index) =>
+                {
+                    var separator = index == 0
+                        ? string.Empty
+                        : projectionItems[index - 1].Item is FieldExpression
+                            && item.Item is FieldExpression
+                            ? ", "
+                            : ",\n";
+                    return $"{separator}{RenderProjection(item, hasGroupedAggregate)}";
+                }));
+        }
 
         var takePrefix = query.IsTake ? dialect.RenderTakePrefix(query.Take!.Value) : string.Empty;
         if (takePrefix.Length != 0)

@@ -41,7 +41,7 @@ internal static class SqlFormatter
         var inCteList = false;
         var afterWith = false;
 
-        void NewLine()
+        void NewLine(int additionalIndent = 0)
         {
             while (result.Length > 0 && result[^1] == ' ')
                 result.Length--;
@@ -49,7 +49,7 @@ internal static class SqlFormatter
             if (lineHasContent)
                 result.AppendLine();
 
-            result.Append(' ', indent * 4);
+            result.Append(' ', (indent + additionalIndent) * 4);
             lineHasContent = false;
         }
 
@@ -182,6 +182,13 @@ internal static class SqlFormatter
             else if (char.IsWhiteSpace(character))
             {
                 FlushToken();
+                var commaBeforeWhitespace = result.Length > 0
+                    && (result[^1] == ','
+                        || result[^1] == ' '
+                        && result.Length > 1
+                        && result[^2] == ',');
+                if (character == '\n' && commaBeforeWhitespace)
+                    NewLine(1);
             }
             else if (character == '(')
             {
