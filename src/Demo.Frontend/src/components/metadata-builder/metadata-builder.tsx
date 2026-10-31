@@ -57,6 +57,7 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
   );
   const [entities, setEntities] = useState<MetadataEntity[]>([]);
   const [selectedName, setSelectedName] = useState("");
+  const [selectedTableKey, setSelectedTableKey] = useState("");
   const selectedNameRef = useRef(selectedName);
   const [draft, setDraft] = useState<EditableEntity | null>(null);
   const [filter, setFilter] = useState("");
@@ -98,6 +99,7 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
         const next = selectFirst ? payload[0] : preferred;
         setSelectedName(next?.name || "");
         setDraft(next ? toEditable(next) : null);
+        setSelectedTableKey((current) => current || (next ? tableKey(next) : ""));
       } else {
         setSelectedName(preferred.name);
         setDraft(toEditable(preferred));
@@ -131,13 +133,6 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
       setMessage("Built-in metadata is read-only.");
       return false;
     }
-    const tablesWithMatchingName = databaseTables.filter((table) =>
-      table.name.toLowerCase() === (draft?.name || "").toLowerCase(),
-    );
-    const selectedTable = databaseTables.find((table) =>
-      (table.schema || "dbo").toLowerCase() === (draft?.schema || "dbo").toLowerCase()
-        && table.name.toLowerCase() === (draft?.name || "").toLowerCase(),
-    ) || (tablesWithMatchingName.length === 1 ? tablesWithMatchingName[0] : undefined);
     const selectedTableColumns = new Set(
       selectedTable?.columns.map((column) => column.name.trim().toLowerCase()),
     );
@@ -230,6 +225,7 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
     if (entity.name === selectedName || !(await resolveEntityDirtyChanges())) return;
     setSelectedName(entity.name);
     setDraft(toEditable(entity));
+    setSelectedTableKey(tableKey(entity));
     setDirty(false);
     setMessage("");
   };
@@ -257,6 +253,7 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
 
   const addEntity = async () => {
     setSelectedName("");
+    setSelectedTableKey("");
     setDraft(emptyEntity());
     setDirty(true);
     setMessage("");
@@ -267,6 +264,7 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
     navigateToEditor = true,
     rawSqlOverride?: string,
   ) => {
+    setSelectedTableKey(tableKey(table));
     const existing = entities.find((entity) =>
       entity.name === table.name && (entity.schema || "dbo") === (table.schema || "dbo"),
     );
@@ -315,8 +313,12 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
   };
   const databaseOptions = Array.from(new Set(entities.map((entity) => entity.schema).filter(Boolean)));
   const databaseTables = databaseState.schema.tables as DatabaseTableOption[];
+  const tableKey = (table: { schema: string; name: string }) =>
+    `${(table.schema || "dbo").trim().toLowerCase()}.${table.name.trim().toLowerCase()}`;
+  const selectedTable = databaseTables.find((table) => tableKey(table) === selectedTableKey);
   const selectDatabaseTable = (table: DatabaseTableOption) => {
     const rawSql = draft?.rawSql || "";
+    setSelectedTableKey(tableKey(table));
     openTableAsEntity({
       ...table,
       columns: table.columns.map((column) => ({
@@ -375,6 +377,7 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
               onDraftChange={updateDraft}
               databaseOptions={databaseOptions}
               databaseTables={databaseTables}
+              selectedTable={selectedTable}
               onSelectTable={selectDatabaseTable}
               compact
             />

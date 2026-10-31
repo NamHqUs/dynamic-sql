@@ -14,6 +14,7 @@ type EntityBuilderProps = {
   onDraftChange: (updater: (draft: EditableEntity) => EditableEntity) => void;
   databaseOptions?: string[];
   databaseTables?: DatabaseTableOption[];
+  selectedTable?: DatabaseTableOption;
   onSelectTable?: (table: DatabaseTableOption) => void;
   compact?: boolean;
 };
@@ -32,6 +33,7 @@ export default function EntityBuilder({
   onDraftChange,
   databaseOptions = [],
   databaseTables = [],
+  selectedTable,
   onSelectTable,
   compact = false,
 }: EntityBuilderProps) {
@@ -45,13 +47,6 @@ export default function EntityBuilder({
       `${table.schema} ${table.name}`.toLowerCase().includes(query),
     );
   }, [databaseTables, tableSearch]);
-  const tablesWithMatchingName = databaseTables.filter((table) =>
-    table.name.toLowerCase() === (draft?.name || "").toLowerCase(),
-  );
-  const selectedTable = databaseTables.find((table) =>
-    (table.schema || "dbo").toLowerCase() === (draft?.schema || "dbo").toLowerCase()
-      && table.name.toLowerCase() === (draft?.name || "").toLowerCase(),
-  ) || (tablesWithMatchingName.length === 1 ? tablesWithMatchingName[0] : undefined);
   const selectedTableColumns = selectedTable?.columns ?? [];
   useEffect(() => {
     function handleOutsidePointerDown(event: PointerEvent) {
@@ -93,7 +88,11 @@ export default function EntityBuilder({
                 onClick={() => setTablePickerOpen((open) => !open)}
                 aria-expanded={tablePickerOpen}
               >
-                <span>{draft.schema && draft.name ? `${draft.schema}.${draft.rawSql || draft.name}` : "Select a table"}</span>
+                <span>
+                  {selectedTable
+                    ? `${selectedTable.schema || "dbo"}.${selectedTable.name}`
+                    : "Select a table"}
+                </span>
                 <Icon name="chevron" size={14} />
               </button>
             </label>
