@@ -11,7 +11,7 @@ import { MetadataEntity, invalidateQueryMetadata } from "../query-builder/query-
 import EntityList from "./entity-definition/entity-list/entity-list";
 import EntityBuilder, { type DatabaseTableOption } from "./entity-definition/entity-builder/entity-builder";
 import EntityDiagram from "./entity-diagram/entity-diagram";
-import { EditableEntity, emptyEntity, toAbstractDataType, toEditable } from "./types";
+import { EditableEntity, EditableRelation, emptyEntity, toAbstractDataType, toEditable } from "./types";
 import FunctionDefinitionsWorkspace from "../function-definition/function-definition";
 import OperatorDefinition from "./operator-definition/operator-definition";
 import { resolveDefinitionChanges, useDefinitionUnsavedWarning } from "./definition-actions/definition-actions";
@@ -24,6 +24,31 @@ export * from "./types";
 
 type NavigationGuard = (continueNavigation: () => void, cancelNavigation?: () => void) => void;
 type MetadataSection = "diagram" | "entities" | "functions" | "operators";
+type DatabaseRelationship = {
+  name: string;
+  sourceSchema: string;
+  sourceTable: string;
+  sourceColumns: string[];
+  targetSchema: string;
+  targetTable: string;
+  targetColumns: string[];
+  isUnique: boolean;
+};
+
+function normalizeTablePart(value: string) {
+  return value.trim().replace(/[\[\]"`]/g, "").toLowerCase();
+}
+
+function entityUsesTable(entity: MetadataEntity, table: { schema: string; name: string }) {
+  const tableName = normalizeTablePart(table.name);
+  const qualifiedName = `${normalizeTablePart(table.schema || "dbo")}.${tableName}`;
+  return [entity.name, entity.rawSql || ""].some((value) => {
+    const normalized = value.trim().toLowerCase();
+    return normalized === tableName
+      || normalized === qualifiedName
+      || normalized.endsWith(`.${tableName}`);
+  });
+}
 
 async function request(url: string, options?: RequestInit) {
   const response = await fetch(url, options);
@@ -31,6 +56,7 @@ async function request(url: string, options?: RequestInit) {
     const detail = await response.text();
     throw new Error(detail || `Metadata request failed (${response.status}).`);
   }
+
   return response.status === 204 ? null : response.json();
 }
 
@@ -265,13 +291,41 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
     rawSqlOverride?: string,
   ) => {
     setSelectedTableKey(tableKey(table));
+    const discoveredRelations = (databaseState.schema.relationships as DatabaseRelationship[])
+      .filter((relation) =>
+        normalizeTablePart(relation.sourceSchema || "dbo") === normalizeTablePart(table.schema || "dbo")
+        && normalizeTablePart(relation.sourceTable) === normalizeTablePart(table.name),
+      )
+      .flatMap((relation) => {
+        const relatedEntities = entities.filter((entity) =>
+          entityUsesTable(entity, { schema: relation.targetSchema, name: relation.targetTable })
+          && !entityUsesTable(entity, table),
+        );
+        return relatedEntities.map((entity): EditableRelation => ({
+          id: `schema_${relation.name}_${entity.name}`,
+          name: relation.targetTable,
+          relatedEntity: entity.name,
+          type: "Lookup",
+          relatedKeys: relation.sourceColumns.map((fromDbColumn, index) => ({
+            fromDbColumn,
+            toDbColumn: relation.targetColumns[index] || "",
+          })),
+        }));
+      });
     const existing = entities.find((entity) =>
       entity.name === table.name && (entity.schema || "dbo") === (table.schema || "dbo"),
     );
     if (existing) {
       setSelectedName(existing.name);
       const nextDraft = toEditable(existing);
-      setDraft({ ...nextDraft, rawSql: rawSqlOverride ?? nextDraft.rawSql });
+      const existingRelationKeys = new Set(nextDraft.relations.map((relation) =>
+        `${relation.relatedEntity}|${relation.relatedKeys.map((key) => `${key.fromDbColumn}:${key.toDbColumn}`).join(",")}`,
+      ));
+      const relations = discoveredRelations.filter((relation) =>
+        !existingRelationKeys.has(`${relation.relatedEntity}|${relation.relatedKeys.map((key) => `${key.fromDbColumn}:${key.toDbColumn}`).join(",")}`),
+      );
+      setDraft({ ...nextDraft, rawSql: rawSqlOverride ?? nextDraft.rawSql, relations: [...nextDraft.relations, ...relations] });
+      setDirty(relations.length > 0);
     } else {
       setSelectedName("");
       setDraft({
@@ -285,10 +339,10 @@ export default function MetadataBuilder({ onNavigationGuardChange, entityOnly = 
           dataType: column.dataType,
           isRawSql: false,
         })),
-        relations: [],
+        relations: discoveredRelations,
       });
+      setDirty(false);
     }
-    setDirty(false);
     setMessage("");
     if (navigateToEditor) {
       const nextSearchParams = new URLSearchParams(searchParams);
