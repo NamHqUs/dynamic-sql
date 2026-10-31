@@ -25,6 +25,61 @@ internal sealed class DefinedData
             _ => throw new ArgumentOutOfRangeException(nameof(dbServerType), dbServerType, null)
         };
 
+    public static IDbConnection GetNorthStarSqliteConnection()
+    {
+        var cn = new SqliteConnection("Data Source=:memory:");
+        cn.Open();
+
+        var isExisted = ExecuteScalar<long>(
+            cn,
+            "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'dbo.User')");
+        if (isExisted != 1)
+        {
+            var script = new StringBuilder("ATTACH DATABASE ':memory:' AS dbo;");
+            script.Append(LoadScript("unit-test.sqlite.sql", "northstar-demo.sqlite.sql"));
+            ExecuteNonQuery(cn, script.ToString());
+        }
+
+        return cn;
+    }
+
+    public static IDbConnection GetNorthStarPostgresConnection()
+    {
+        var cn = new NpgsqlConnection(
+            "Host=localhost;Port=5432;Database=dynamicsqltest;Username=postgres;Password=NoPassword123!");
+        cn.Open();
+
+        lock (oLock)
+        {
+            var isExisted = ExecuteScalar<bool>(
+                cn,
+                "SELECT EXISTS (SELECT 1 FROM information_schema.tables " +
+                "WHERE table_schema = 'main' AND table_name = 'Users');");
+            if (!isExisted)
+                ExecuteNonQuery(cn, LoadScript("northstar-demo.postgres.sql"));
+        }
+
+        return cn;
+    }
+
+    public static IDbConnection GetNorthStarSqliteDockerConnection()
+    {
+        var root = new DirectoryInfo("../../../../../").FullName;
+        var cn = new SqliteConnection(
+            $"Data Source={Path.Combine(root, "docker", "sqlite-data", "main.db")}");
+        cn.Open();
+
+        var dataPath = Path.Combine(root, "docker", "sqlite-data").Replace("\\", "/", StringComparison.Ordinal);
+        using var command = cn.CreateCommand();
+        command.CommandText =
+            $"ATTACH DATABASE '{dataPath}/hr.db' AS hr;" +
+            $"ATTACH DATABASE '{dataPath}/sa.db' AS sa;" +
+            $"ATTACH DATABASE '{dataPath}/he.db' AS he;" +
+            $"ATTACH DATABASE '{dataPath}/in.db' AS \"in\";";
+        command.ExecuteNonQuery();
+        return cn;
+    }
+
     private static IDbConnection CreateSqliteDbConnection()
     {
         var cn = new SqliteConnection("Data Source=:memory:");

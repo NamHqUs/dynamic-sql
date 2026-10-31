@@ -128,7 +128,7 @@ public class CustomFunctionDefintions
             "(DATEDIFF(year, {1}, {2}) - CASE WHEN DATEPART(month, {2}) * 100 + DATEPART(day, {2}) < DATEPART(month, {1}) * 100 + DATEPART(day, {1}) THEN 1 ELSE 0 END)",
             "Returns completed years between a start date and an as-of date.",
             sqliteTemplate: "(CAST(STRFTIME('%Y', {2}) AS INTEGER) - CAST(STRFTIME('%Y', {1}) AS INTEGER) - CASE WHEN STRFTIME('%m%d', {2}) < STRFTIME('%m%d', {1}) THEN 1 ELSE 0 END)",
-            postgresTemplate: "(EXTRACT(YEAR FROM {2}) - EXTRACT(YEAR FROM {1}) - CASE WHEN EXTRACT(MONTH FROM {2}) * 100 + EXTRACT(DAY FROM {2}) < EXTRACT(MONTH FROM {1}) * 100 + EXTRACT(DAY FROM {1}) THEN 1 ELSE 0 END)"),
+            postgresTemplate: "(EXTRACT(YEAR FROM CAST({2} AS DATE)) - EXTRACT(YEAR FROM CAST({1} AS DATE)) - CASE WHEN EXTRACT(MONTH FROM CAST({2} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({2} AS DATE)) < EXTRACT(MONTH FROM CAST({1} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({1} AS DATE)) THEN 1 ELSE 0 END)"),
         CreateStandardFunction(
             "ElapsedYears",
             [
@@ -158,7 +158,8 @@ public class CustomFunctionDefintions
             ],
             DataType.Number,
             "LAG({1}, {2}) OVER (ORDER BY {3} ASC)",
-            "Returns the previous row's value in ascending order."),
+            "Returns the previous row's value in ascending order.",
+            postgresTemplate: "LAG({1}, CAST({2} AS INTEGER)) OVER (ORDER BY {3} ASC)"),
         CreateStandardFunction(
             "WindowSum",
             [

@@ -12,19 +12,44 @@ services:
     networks:
       - dbnet
 
-  # postgres:
-  #   image: postgres:17
-  #   container_name: postgres
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: "NoPassword123!"
-  #     POSTGRES_DB: DynamicSqlTest
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - dbnet
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "NoPassword123!"
+      POSTGRES_DB: DynamicSqlTest
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dbnet
+
+  sqlite:
+    image: alpine:3.20
+    container_name: sqlite
+    working_dir: /data
+    volumes:
+      - ./sqlite-data:/data
+      - ../scripts:/scripts:ro
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache sqlite
+        sed '/^PRAGMA foreign_keys/d;/^ATTACH DATABASE/d' /scripts/northstar-demo.sqlite.sql > /tmp/northstar-demo.sqlite.sql
+        cat > /tmp/sqlite-init.sql <<'EOF'
+        ATTACH DATABASE '/data/hr.db' AS hr;
+        ATTACH DATABASE '/data/sa.db' AS sa;
+        ATTACH DATABASE '/data/he.db' AS he;
+        ATTACH DATABASE '/data/in.db' AS "in";
+        .read /tmp/northstar-demo.sqlite.sql
+        EOF
+        sqlite3 /data/main.db < /tmp/sqlite-init.sql
+        tail -f /dev/null
+    networks:
+      - dbnet
 
   # cloudbeaver:
   #   image: dbeaver/cloudbeaver:latest

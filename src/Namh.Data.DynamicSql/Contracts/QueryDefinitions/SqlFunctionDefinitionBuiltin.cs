@@ -36,13 +36,19 @@ internal static class SqlFunctionDefinitionBuiltin
                 DataType.Number, "MAX({1})", "Returns the maximum value.", isAggregate: true),
             CreateStandardSql("MIN", [new("expression", DataType.Number)],
                 DataType.Number, "MIN({1})", "Returns the minimum value.", isAggregate: true),
-            CreateStandardSql("ROUND",
+            Create("ROUND",
                 [
                     new("value", DataType.Number),
                     new("digits", DataType.Number)
                 ],
-                DataType.Number, "ROUND({1}, {2})",
-                "Rounds a number to the specified number of decimal places."),
+                DataType.Number,
+                "Rounds a number to the specified number of decimal places.",
+                new Dictionary<string, string>
+                {
+                    ["SqlServer"] = "ROUND({1}, {2})",
+                    ["Sqlite"] = "ROUND({1}, {2})",
+                    ["Postgres"] = "ROUND({1}, CAST({2} AS INTEGER))"
+                }),
             CreateStandardSql("NULLIF",
                 [
                     new("value", DataType.Number),

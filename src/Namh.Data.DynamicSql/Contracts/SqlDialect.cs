@@ -140,14 +140,14 @@ public sealed class PostgresDialect(string schema = "public") : ISqlDialect
     public string Key => "Postgres";
 
     public string QuoteIdentifier(string identifier)
-        => $"\"{identifier.Replace("\"", "\"\"")}\"";
+        => $"\"{identifier.ToLowerInvariant().Replace("\"", "\"\"")}\"";
 
     public string RenderTable(Entity entity)
         => entity.IsRawSql
             ? RawSqlEntitySqlGuard.ValidateAndReturn(entity.DbTable, RawSqlEntityDialect.Postgres)
             : $"{QuoteIdentifier(entity.DbSchema ?? schema)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
-    public string RenderBoolean(bool value) => value ? "TRUE" : "FALSE";
+    public string RenderBoolean(bool value) => value ? "1" : "0";
     public string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";
 
     public string RenderStringConcatenation(string left, string right) => $"{left} || {right}";

@@ -44,7 +44,7 @@ public sealed class _24_FunctionMetadataTests
 
         Assert.That(sqlServerSql.CommandText, Does.Match(@"SUB\s*\(\s*t0\.\[Amount\],\s*@p0\s*\)"));
         Assert.That(sqliteSql.CommandText, Does.Match(@"\(\s*t0\.""Amount""\s*-\s*@p0\s*\)"));
-        Assert.That(postgresSql.CommandText, Does.Match(@"\(\s*@p0\s*-\s*t0\.""Amount""\s*\)"));
+        Assert.That(postgresSql.CommandText, Does.Match(@"(?i)\(\s*@p0\s*-\s*t0\.""Amount""\s*\)"));
         Assert.That(sqlServerSql.Parameters.Single().Value, Is.EqualTo(2m));
         Assert.That(sqliteSql.Parameters.Single().Value, Is.EqualTo(2m));
         Assert.That(postgresSql.Parameters.Single().Value, Is.EqualTo(2m));
@@ -234,7 +234,7 @@ public sealed class _24_FunctionMetadataTests
         Assert.That(sqliteSql.CommandText,
             Does.Match(@"datetime\s*\(\s*t0\.""InvoiceDate"",\s*printf\s*\(\s*'%\+d days',\s*@p0\s*\)\s*\)"));
         Assert.That(postgresSql.CommandText,
-            Does.Match(@"t0\.""InvoiceDate""\s*\+\s*\(\s*@p0\s*\*\s*INTERVAL '1 day'\s*\)"));
+            Does.Match(@"(?i)t0\.""InvoiceDate""\s*\+\s*\(\s*@p0\s*\*\s*INTERVAL '1 day'\s*\)"));
 
         var dateFormat = GenerateSql(
             new FunctionFieldDefinition("DateFormat",
