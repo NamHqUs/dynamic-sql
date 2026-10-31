@@ -3,10 +3,38 @@ using Oracle.ManagedDataAccess.Client;
 
 namespace Demo.DbServices.DbInstances;
 
-public sealed class OracleDbInstance(string connectionString, string[] scriptFiles) : DbInstance( DbServerType.Oracle, connectionString, scriptFiles)
+public sealed class OracleDbInstance(string connectionString, string[] scriptFiles, string dbVersion) : DbInstance(DbServerType.Oracle, connectionString, scriptFiles, dbVersion)
 {
-    protected override string? SqlScriptCheckIfDbExists
-        => "SELECT CASE WHEN EXISTS (SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = 'CUSTOMERS') THEN 1 ELSE 0 END FROM DUAL";
+    protected override string SqlCreateVersionsTable
+        => """
+BEGIN
+    EXECUTE IMMEDIATE 'CREATE TABLE "scripts"."Versions" ("Version" VARCHAR2(255) NOT NULL PRIMARY KEY, "CreateOn" TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL)';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+""";
+
+    protected override string SqlVersionExists
+        => """SELECT CASE WHEN EXISTS (SELECT 1 FROM "scripts"."Versions" WHERE "Version" = :DbVersion) THEN 1 ELSE 0 END FROM DUAL""";
+
+    protected override string SqlInsertVersion
+        => """INSERT INTO "scripts"."Versions" ("Version") VALUES (:DbVersion)""";
+
+    protected override string SqlVersionParameterName => ":DbVersion";
+    protected override string SqlTableNameParameterName => ":TableName";
+
+    protected override string SqlCreateTrackedTablesTable
+        => """CREATE TABLE "scripts"."TrackedTables" ("TableName" VARCHAR2(1024) NOT NULL)""";
+
+    protected override string SqlReadTrackedTables
+        => """SELECT "TableName" FROM "scripts"."TrackedTables";""";
+
+    protected override string SqlTruncateTrackedTables
+        => """TRUNCATE TABLE "scripts"."TrackedTables";""";
+
+    protected override string SqlInsertTrackedTable
+        => """INSERT INTO "scripts"."TrackedTables" ("TableName") VALUES (:TableName)""";
 
     protected override string SqlGetTableNames
         => "SELECT TABLE_NAME FROM ALL_TABLES ORDER BY OWNER, TABLE_NAME";

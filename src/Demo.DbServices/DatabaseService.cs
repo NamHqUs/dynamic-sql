@@ -82,14 +82,16 @@ public class DatabaseService(IConfiguration configuration) : IDatabaseService, I
             throw new ArgumentException("A connection string is required.", nameof(connectionString));
 
         var scriptFiles = GetInitializationScripts(provider);
+        var dbVersion = configuration["DbProvider:DBVersion"]
+            ?? throw new InvalidOperationException("DBVersion is required in the configuration.");
         return providerType switch
         {
-            DbServerType.Sqlite => new SqliteDbInstance(connectionString, scriptFiles),
-            DbServerType.SqlServer => new SqlServerDbInstance(connectionString, scriptFiles),
-            DbServerType.Firebird => new FirebirdDbInstance(connectionString, scriptFiles),
-            DbServerType.Postgres => new PostgresDbInstance(connectionString, scriptFiles),
-            DbServerType.MySql => new MySqlDbInstance(connectionString, scriptFiles),
-            DbServerType.Oracle => new OracleDbInstance(connectionString, scriptFiles),
+            DbServerType.Sqlite => new SqliteDbInstance(connectionString, scriptFiles, dbVersion),
+            DbServerType.SqlServer => new SqlServerDbInstance(connectionString, scriptFiles, dbVersion),
+            DbServerType.Firebird => new FirebirdDbInstance(connectionString, scriptFiles, dbVersion),
+            DbServerType.Postgres => new PostgresDbInstance(connectionString, scriptFiles, dbVersion),
+            DbServerType.MySql => new MySqlDbInstance(connectionString, scriptFiles, dbVersion),
+            DbServerType.Oracle => new OracleDbInstance(connectionString, scriptFiles, dbVersion),
             _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, null)
         };
     }

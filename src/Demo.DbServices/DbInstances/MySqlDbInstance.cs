@@ -3,11 +3,29 @@ using MySqlConnector;
 
 namespace Demo.DbServices.DbInstances;
 
-public sealed class MySqlDbInstance(string connectionString, string[] scriptFiles) 
-    : DbInstance( DbServerType.MySql, connectionString, scriptFiles)
+public sealed class MySqlDbInstance(string connectionString, string[] scriptFiles, string dbVersion)
+    : DbInstance(DbServerType.MySql, connectionString, scriptFiles, dbVersion)
 {
-    protected override string? SqlScriptCheckIfDbExists
-        => "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'Customers') THEN 1 ELSE 0 END;";
+    protected override string SqlCreateVersionsTable
+        => "CREATE DATABASE IF NOT EXISTS `scripts`; CREATE TABLE IF NOT EXISTS `scripts`.`Versions` (`Version` varchar(255) NOT NULL PRIMARY KEY, `CreateOn` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP);";
+
+    protected override string SqlVersionExists
+        => "SELECT CASE WHEN EXISTS (SELECT 1 FROM `scripts`.`Versions` WHERE `Version` = @DbVersion) THEN 1 ELSE 0 END;";
+
+    protected override string SqlInsertVersion
+        => "INSERT INTO `scripts`.`Versions` (`Version`) VALUES (@DbVersion);";
+
+    protected override string SqlCreateTrackedTablesTable
+        => "CREATE TABLE IF NOT EXISTS `scripts`.`TrackedTables` (`TableName` varchar(1024) NOT NULL);";
+
+    protected override string SqlReadTrackedTables
+        => "SELECT `TableName` FROM `scripts`.`TrackedTables`;";
+
+    protected override string SqlTruncateTrackedTables
+        => "TRUNCATE TABLE `scripts`.`TrackedTables`;";
+
+    protected override string SqlInsertTrackedTable
+        => "INSERT INTO `scripts`.`TrackedTables` (`TableName`) VALUES (@TableName);";
 
     protected override string SqlGetTableNames
         => "SELECT TABLE_NAME FROM information_schema.tables WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;";

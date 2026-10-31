@@ -22,13 +22,31 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
     private bool InMemory => _inMemory ??= ConnectionString.Contains(":memory:");
     private SqliteConnection? _keepAliveConnection;
 
-    public SqliteDbInstance(string connectionString, string[] scriptFiles)
-        : base( DbServerType.Sqlite, NormalizeConnectionString(connectionString), scriptFiles)
+    public SqliteDbInstance(string connectionString, string[] scriptFiles, string dbVersion)
+        : base(DbServerType.Sqlite, NormalizeConnectionString(connectionString), scriptFiles, dbVersion)
     {
     }
 
-    protected override string? SqlScriptCheckIfDbExists
-        => "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'Customers')";
+    protected override string SqlCreateVersionsTable
+        => """CREATE TABLE IF NOT EXISTS "scripts"."Versions" ("Version" TEXT PRIMARY KEY NOT NULL, "CreateOn" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);""";
+
+    protected override string SqlVersionExists
+        => """SELECT EXISTS (SELECT 1 FROM "scripts"."Versions" WHERE "Version" = @DbVersion);""";
+
+    protected override string SqlInsertVersion
+        => """INSERT INTO "scripts"."Versions" ("Version") VALUES (@DbVersion);""";
+
+    protected override string SqlCreateTrackedTablesTable
+        => """CREATE TABLE IF NOT EXISTS "scripts"."TrackedTables" ("TableName" TEXT NOT NULL);""";
+
+    protected override string SqlReadTrackedTables
+        => """SELECT "TableName" FROM "scripts"."TrackedTables";""";
+
+    protected override string SqlTruncateTrackedTables
+        => """DELETE FROM "scripts"."TrackedTables";""";
+
+    protected override string SqlInsertTrackedTable
+        => """INSERT INTO "scripts"."TrackedTables" ("TableName") VALUES (@TableName);""";
 
     protected override string SqlGetTableNames
         => "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name;";
@@ -239,8 +257,17 @@ public sealed class SqliteDbInstance : DbInstance, IDisposable
                 var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{dataSource}|{schema}")));
                 return (Schema: schema, DataSource: $"file:DynamicSql-{key}?mode=memory&cache=shared");
             })
+            .Append((Schema: "scripts", DataSource: GetScriptsDataSource(dataSource)))
             .DistinctBy(database => database.Schema, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+
+    private static string GetScriptsDataSource(string dataSource)
+    {
+        var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{dataSource}|scripts")));
+        return dataSource.StartsWith("DynamicSql-", StringComparison.Ordinal)
+            ? $"file:DynamicSql-{key}?mode=memory&cache=shared"
+            : $"{dataSource}.scripts";
+    }
 
     private static void AttachDatabases(
         SqliteConnection connection,

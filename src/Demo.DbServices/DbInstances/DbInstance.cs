@@ -2,6 +2,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Demo.DbServices.DbInstances;
 
@@ -13,18 +14,30 @@ public abstract class DbInstance
     public readonly DbServerType Provider;
     protected readonly string ConnectionString;
     protected readonly string[] InitializationScripts;
-    protected abstract string? SqlScriptCheckIfDbExists { get; }
+    protected readonly string DbVersion;
+    protected abstract string SqlCreateVersionsTable { get; }
+    protected abstract string SqlVersionExists { get; }
+    protected abstract string SqlInsertVersion { get; }
+    protected abstract string SqlCreateTrackedTablesTable { get; }
+    protected abstract string SqlReadTrackedTables { get; }
+    protected abstract string SqlTruncateTrackedTables { get; }
+    protected abstract string SqlInsertTrackedTable { get; }
+    protected virtual string SqlVersionParameterName => "@DbVersion";
+    protected virtual string SqlTableNameParameterName => "@TableName";
     protected abstract string SqlGetTableNames { get; }
     protected abstract string SqlGetColumns { get; }
     protected abstract string SqlGetRelationships { get; }
     protected virtual string IdentifierQuotePrefix => "\"";
     protected virtual string IdentifierQuoteSuffix => "\"";
 
-    protected DbInstance(DbServerType provider, string connectionString, string[] scriptFields)
+    protected DbInstance(DbServerType provider, string connectionString, string[] scriptFields, string dbVersion)
     {
         Provider = provider;
         ConnectionString = connectionString;
         InitializationScripts = scriptFields;
+        DbVersion = string.IsNullOrWhiteSpace(dbVersion)
+            ? throw new ArgumentException("A database version is required.", nameof(dbVersion))
+            : dbVersion;
         lock (_initializationLock)
         {
             TestConnection();
@@ -42,14 +55,14 @@ public abstract class DbInstance
         if (connection.State != ConnectionState.Open)
             connection.Open();
 
-        using var command = connection.CreateCommand();
-        command.CommandText = SqlGetTableNames;
-        using var reader = command.ExecuteReader();
-        var tableNames = new List<string>();
-        while (reader.Read())
-            tableNames.Add(reader.GetString(0));
-
-        return tableNames.ToArray();
+        return ExecuteRawSql(connection, SqlGetTableNames, command =>
+        {
+            using var reader = command.ExecuteReader();
+            var tableNames = new List<string>();
+            while (reader.Read())
+                tableNames.Add(reader.GetString(0));
+            return tableNames.ToArray();
+        });
     }
 
     public virtual bool TestConnection()
@@ -163,31 +176,38 @@ public abstract class DbInstance
 
     protected virtual void EnsureDatabaseExists(string[] scriptFiles)
     {
-        if (scriptFiles.Length == 0 || string.IsNullOrEmpty(SqlScriptCheckIfDbExists))
+        using var cn = CreateDbConnection();
+        ExecuteNonQuery(cn, SqlCreateVersionsTable);
+        ExecuteNonQuery(cn, SqlCreateTrackedTablesTable);
+        if (VersionExists(cn))
+            return;
+        if (scriptFiles.Length == 0)
             return;
 
-        using var cn = CreateDbConnection();
-        if (ExecuteScalar<long>(cn, SqlScriptCheckIfDbExists) != 1)
+        DropTrackedTables(cn);
+        ExecuteNonQuery(cn, SqlTruncateTrackedTables);
+        foreach (var fileName in scriptFiles)
         {
-            foreach (var fileName in scriptFiles)
-            {
-                var filePath = Path.Combine(Environment.CurrentDirectory, fileName);
-                var scripts = File.ReadAllText(filePath);
-                ExecuteNonQuery(cn, PrepareInitializationScript(scripts));
-            }
+            var filePath = Path.Combine(Environment.CurrentDirectory, fileName);
+            var scripts = File.ReadAllText(filePath);
+            ExecuteNonQuery(cn, PrepareInitializationScript(scripts));
+            InsertTrackedTables(cn, scripts);
         }
+
+        InsertVersion(cn);
     }
 
     protected virtual string PrepareInitializationScript(string script) => script;
 
     protected virtual DataTable ReadSchemaRows(DbConnection connection, string sql)
     {
-        using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        using var reader = command.ExecuteReader();
-        var rows = new DataTable();
-        rows.Load(reader);
-        return rows;
+        return ExecuteRawSql(connection, sql, command =>
+        {
+            using var reader = command.ExecuteReader();
+            var rows = new DataTable();
+            rows.Load(reader);
+            return rows;
+        });
     }
 
     private static string Value(DataRow row, string columnName)
@@ -197,21 +217,115 @@ public abstract class DbInstance
         => $"{IdentifierQuotePrefix}{identifier.Replace(IdentifierQuoteSuffix, IdentifierQuoteSuffix + IdentifierQuoteSuffix, StringComparison.Ordinal)}{IdentifierQuoteSuffix}";
 
     private static T ExecuteScalar<T>(IDbConnection cn, string sql)
-    {
-        using var cmd = cn.CreateCommand();
-        cmd.CommandText = sql;
+        => ExecuteRawSql(cn, sql,
+            command => (T)Convert.ChangeType(command.ExecuteScalar()!, typeof(T)));
 
-        if (cn.State != ConnectionState.Open)
-            cn.Open();
-        return (T)Convert.ChangeType(cmd.ExecuteScalar()!, typeof(T));
-    }
-    private static void ExecuteNonQuery(IDbConnection cn, string sql)
+    private bool VersionExists(IDbConnection cn)
+        => ExecuteRawSql(cn, SqlVersionExists, command =>
+        {
+            AddVersionParameter(command);
+            return Convert.ToInt64(command.ExecuteScalar(), CultureInfo.InvariantCulture) == 1;
+        });
+
+    private void InsertVersion(IDbConnection cn)
+        => ExecuteRawSql(cn, SqlInsertVersion, command =>
+        {
+            AddVersionParameter(command);
+            command.ExecuteNonQuery();
+        });
+
+    private void AddVersionParameter(IDbCommand command)
     {
-        using var cmd = cn.CreateCommand();
-        if (cn.State != ConnectionState.Open)
-            cn.Open();
-        cmd.CommandText = sql;
-        cmd.ExecuteNonQuery();
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = SqlVersionParameterName;
+        parameter.DbType = DbType.String;
+        parameter.Value = DbVersion;
+        command.Parameters.Add(parameter);
     }
+
+    private void DropTrackedTables(IDbConnection cn)
+    {
+        var tableNames = ExecuteRawSql(cn, SqlReadTrackedTables, command =>
+        {
+            using var reader = command.ExecuteReader();
+            var names = new List<string>();
+            while (reader.Read())
+                names.Add(reader.GetString(0));
+            return names;
+        });
+
+        foreach (var tableName in tableNames.Distinct(StringComparer.OrdinalIgnoreCase).Reverse())
+            ExecuteNonQuery(cn, BuildDropTableSql(tableName));
+    }
+
+    private void InsertTrackedTables(IDbConnection cn, string script)
+    {
+        var tableNames = Regex.Matches(
+                script,
+                @"\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<name>(?:(?:""[^""]+""|\[[^\]]+\]|`[^`]+`|[A-Za-z_][\w$]*)\s*\.\s*)?(?:""[^""]+""|\[[^\]]+\]|`[^`]+`|[A-Za-z_][\w$]*))",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
+            .Select(match => match.Groups["name"].Value.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var tableName in tableNames)
+            ExecuteNonQuery(cn, SqlInsertTrackedTable, SqlTableNameParameterName, tableName);
+    }
+
+    protected virtual string BuildDropTableSql(string tableName)
+    {
+        var parts = tableName.Split('.', StringSplitOptions.TrimEntries);
+        var qualifiedName = string.Join(".", parts.Select(UnquoteIdentifier).Select(QuoteIdentifier));
+        return $"DROP TABLE IF EXISTS {qualifiedName};";
+    }
+
+    private static string UnquoteIdentifier(string identifier)
+    {
+        if (identifier.Length >= 2
+            && ((identifier[0] == '"' && identifier[^1] == '"')
+                || (identifier[0] == '[' && identifier[^1] == ']')
+                || (identifier[0] == '`' && identifier[^1] == '`')))
+            return identifier[1..^1];
+        return identifier;
+    }
+
+    private static void ExecuteNonQuery(IDbConnection cn, string sql)
+        => ExecuteRawSql(cn, sql, command => command.ExecuteNonQuery());
+
+    private static void ExecuteNonQuery(
+        IDbConnection cn,
+        string sql,
+        string parameterName,
+        string parameterValue)
+        => ExecuteRawSql(cn, sql, command =>
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = parameterName;
+            parameter.DbType = DbType.String;
+            parameter.Value = parameterValue;
+            command.Parameters.Add(parameter);
+            command.ExecuteNonQuery();
+        });
+
+    private static T ExecuteRawSql<T>(
+        IDbConnection connection,
+        string sql,
+        Func<IDbCommand, T> execute)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        if (connection.State != ConnectionState.Open)
+            connection.Open();
+        return execute(command);
+    }
+
+    private static void ExecuteRawSql(
+        IDbConnection connection,
+        string sql,
+        Action<IDbCommand> execute)
+        => ExecuteRawSql<object?>(connection, sql, command =>
+        {
+            execute(command);
+            return null;
+        });
 
 }
