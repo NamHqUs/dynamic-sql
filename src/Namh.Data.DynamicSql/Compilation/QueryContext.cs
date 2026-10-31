@@ -198,6 +198,10 @@ class QueryContext(
         if (expression is FieldDefinition { FieldName: "*" })
             return new FunctionSqlTokenArgument("*");
 
+        if (expression is ConditionFieldDefinition condition)
+            return new FunctionSqlExpressionArgument(
+                ParsePredicateExpression(tableContext, condition.Condition, depth));
+
         if (definition.DataType == DataType.Boolean &&
             expression is FieldDefinition predicate &&
             LooksLikePredicate(predicate.FieldName))

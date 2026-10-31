@@ -14,7 +14,8 @@ public sealed class _24_FunctionMetadataTests
         [
             new Field("Id", "Id"),
             new Field("Amount", "Amount"),
-            new Field("InvoiceDate", "InvoiceDate")
+            new Field("InvoiceDate", "InvoiceDate"),
+            new Field("IsAbnormal", "IsAbnormal")
         ])
     ];
 
@@ -124,6 +125,51 @@ public sealed class _24_FunctionMetadataTests
         Assert.That(countWithoutArgument.CommandText, Does.Match(@"COUNT\s*\(\s*\*\s*\)"));
         Assert.That(countWildcard.CommandText, Does.Match(@"COUNT\s*\(\s*\*\s*\)"));
         Assert.That(countField.CommandText, Does.Match(@"COUNT\s*\(\s*t0\.""Id""\s*\)"));
+    }
+
+    [Test]
+    public void ConditionalAggregateUsesStructuredConditionArgument()
+    {
+        var condition = new ConditionDefinition(
+            LogicalOperator.And,
+            new ConditionStatementDefinition(
+                new FieldDefinition("IsAbnormal"),
+                BinaryOperator.Equals,
+                new ConstFieldDefinition(true))
+            {
+                Parameterized = true
+            });
+
+        var sql = GenerateSql(
+            new FunctionFieldDefinition("CountIf", [new ConditionFieldDefinition(condition)]),
+            dialect: new SqliteDialect());
+
+        Assert.That(sql.CommandText, Does.Match(
+            @"COUNT\s*\(\s*CASE\s+WHEN\s+\(\s*t0\.""IsAbnormal""\s*=\s*@p0\s*\)\s+THEN\s+1\s+END\s*\)"));
+        Assert.That(sql.Parameters.Single().Value, Is.EqualTo(true));
+    }
+
+    [Test]
+    public void ConditionalAggregateConditionUsesCanonicalProjectionJson()
+    {
+        var condition = new ConditionDefinition(
+            LogicalOperator.And,
+            new ConditionStatementDefinition(
+                new FieldDefinition("Status"),
+                BinaryOperator.Equals,
+                new ConstFieldDefinition("Completed")));
+        var projection = new ProjectionDefinition(
+            [new FunctionFieldDefinition("CountIf", [new ConditionFieldDefinition(condition)])],
+            "CompletedCount");
+        var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(projection, options);
+        var restored = System.Text.Json.JsonSerializer.Deserialize<ProjectionDefinition>(json, options);
+
+        Assert.That(restored?.ToText(), Is.EqualTo(projection.ToText()));
+        Assert.That(json, Does.Contain("\"kind\":\"condition\""));
+        Assert.That(json, Does.Contain("\"field\":\"Status\""));
+        Assert.That(json, Does.Not.Contain("Status ="));
     }
 
     [Test]

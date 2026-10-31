@@ -68,8 +68,25 @@
             "function": "CountIf",
             "arguments": [
               {
-                "kind": "field",
-                "field": "Rating \u003E= 4"
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "Rating"
+                      },
+                      "operation": 6,
+                      "right": {
+                        "kind": "value",
+                        "value": 4
+                      },
+                      "parameterized": true
+                    }
+                  ]
+                }
               }
             ]
           }
@@ -95,8 +112,25 @@
                     "function": "CountIf",
                     "arguments": [
                       {
-                        "kind": "field",
-                        "field": "Rating \u003E= 4"
+                        "kind": "condition",
+                        "condition": {
+                          "logicalOperation": 0,
+                          "filters": [
+                            {
+                              "logicalOperator": 0,
+                              "left": {
+                                "kind": "field",
+                                "field": "Rating"
+                              },
+                              "operation": 6,
+                              "right": {
+                                "kind": "value",
+                                "value": 4
+                              },
+                              "parameterized": true
+                            }
+                          ]
+                        }
                       }
                     ]
                   },

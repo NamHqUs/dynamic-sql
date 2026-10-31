@@ -320,8 +320,25 @@
               "function": "CountIf",
               "arguments": [
                 {
-                  "kind": "field",
-                  "field": "Status = \u0027Denied\u0027"
+                  "kind": "condition",
+                  "condition": {
+                    "logicalOperation": 0,
+                    "filters": [
+                      {
+                        "logicalOperator": 0,
+                        "left": {
+                          "kind": "field",
+                          "field": "Status"
+                        },
+                        "operation": 0,
+                        "right": {
+                          "kind": "value",
+                          "value": "Denied"
+                        },
+                        "parameterized": true
+                      }
+                    ]
+                  }
                 }
               ]
             }

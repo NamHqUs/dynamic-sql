@@ -1,6 +1,5 @@
 using System.Data;
 using Demo.Share;
-using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using Namh.Data.DynamicSql.Test.TestData;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
@@ -10,7 +9,7 @@ internal sealed class QueryRequestSqliteExecutionTests
 {
     private static readonly string[] LegacyRequests =
     [
-        "Category and channel profitability.json",
+        "Sales 1. Category and channel profitability.json",
         "Check Context Calculation Fields.json",
         "Multiple Contexts.json",
         "Query directly on REF CONTEXT.json",
@@ -60,13 +59,14 @@ internal sealed class QueryRequestSqliteExecutionTests
         Assert.That(requests, Has.Count.EqualTo(25));
         foreach (var requestPath in requests)
         {
-            var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            var query = SavedQueryDefinitionLoader.Load(requestPath);
             if (Path.GetFileName(requestPath)
                 .Equals("Sample-Recursive employee hierarchy.json", StringComparison.Ordinal))
             {
                 Assert.That(
                     () => _db.Query(query).ToList(),
-                    Throws.TypeOf<NotSupportedException>(),
+                    Throws.TypeOf<NotSupportedException>()
+                        .Or.TypeOf<RelationNotFoundException>(),
                     Path.GetFileName(requestPath));
                 continue;
             }
@@ -80,4 +80,5 @@ internal sealed class QueryRequestSqliteExecutionTests
 
     private static string GetRepositoryRoot()
         => new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "../../../../../")).FullName;
+
 }

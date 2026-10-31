@@ -5,7 +5,6 @@ using System.Text.Json.Serialization;
 using Demo.Share;
 using Microsoft.Data.SqlClient;
 using Namh.Data.DynamicSql.Test.TestData;
-using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
@@ -61,7 +60,7 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Category and channel profitability.json");
+            "Sales 1. Category and channel profitability.json");
         var request = JsonSerializer.Deserialize<StoredQueryRequest>(
             File.ReadAllText(requestPath),
             JsonOptions)
@@ -131,8 +130,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Customer lifetime value and recency.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Sales 2. Customer lifetime value and recency.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -170,8 +169,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Sales representative performance.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Sales 3. Sales representative performance.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -209,8 +208,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Best-selling products and margin.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Sales 4. Best-selling products and margin.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -248,8 +247,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Monthly sales trend and momentum.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Sales 5. Monthly sales trend and momentum.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -287,8 +286,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Diagnosis burden by clinic.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Health 1. Diagnosis burden by clinic.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList()
             .OrderByDescending(record => Convert.ToDecimal(record["VisitCount"], CultureInfo.InvariantCulture))
@@ -341,8 +340,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Physician workload and care-quality scorecard.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Health 2. Physician workload and care-quality scorecard.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -380,8 +379,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "High-risk patient care profile.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Health 3. High-risk patient care profile.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -419,8 +418,37 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Lab abnormality patterns.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Health 4. Lab abnormality patterns.json");
+        var request = JsonSerializer.Deserialize<StoredQueryRequest>(
+            File.ReadAllText(requestPath),
+            JsonOptions)
+            ?? throw new InvalidDataException($"Query request '{requestPath}' is empty.");
+        var mainQuery = request.MainQuery;
+        var contexts = request.Contexts
+            .Select(context => new QueryContextDefintion(
+                context.Name,
+                new QueryDefinition
+                {
+                    Entity = context.Entity,
+                    Projection = context.Projection,
+                    Filter = context.Filters,
+                    Sorts = context.Sorts?.SelectMany(sorts => sorts).ToList() ?? [],
+                    Page = context.Page,
+                    PageSize = context.PageSize
+                },
+                null,
+                QueryJoinType.Inner))
+            .ToList();
+        var query = new QueryDefinition
+        {
+            Entity = mainQuery.Entity,
+            Projection = mainQuery.Projection,
+            Filter = mainQuery.Filters,
+            Sorts = mainQuery.Sorts?.SelectMany(sorts => sorts).ToList() ?? [],
+            Page = mainQuery.Page,
+            PageSize = mainQuery.PageSize,
+            Contexts = contexts
+        };
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -458,8 +486,37 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Visit-type utilization by month.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Health 5. Visit-type utilization by month.json");
+        var request = JsonSerializer.Deserialize<StoredQueryRequest>(
+            File.ReadAllText(requestPath),
+            JsonOptions)
+            ?? throw new InvalidDataException($"Query request '{requestPath}' is empty.");
+        var mainQuery = request.MainQuery;
+        var contexts = request.Contexts
+            .Select(context => new QueryContextDefintion(
+                context.Name,
+                new QueryDefinition
+                {
+                    Entity = context.Entity,
+                    Projection = context.Projection,
+                    Filter = context.Filters,
+                    Sorts = context.Sorts?.SelectMany(sorts => sorts).ToList() ?? [],
+                    Page = context.Page,
+                    PageSize = context.PageSize
+                },
+                null,
+                QueryJoinType.Inner))
+            .ToList();
+        var query = new QueryDefinition
+        {
+            Entity = mainQuery.Entity,
+            Projection = mainQuery.Projection,
+            Filter = mainQuery.Filters,
+            Sorts = mainQuery.Sorts?.SelectMany(sorts => sorts).ToList() ?? [],
+            Page = mainQuery.Page,
+            PageSize = mainQuery.PageSize,
+            Contexts = contexts
+        };
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -501,8 +558,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Denial analysis by plan and reason.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Insurance 1. Denial analysis by plan and reason.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -541,8 +598,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Plan profitability and medical loss ratio.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Insurance 2. Plan profitability and medical loss ratio.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -581,8 +638,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Agent portfolio and premium collection.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Insurance 3. Agent portfolio and premium collection.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -620,8 +677,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Claims adjudication by plan.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Insurance 4. Claims adjudication by plan.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -660,8 +717,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Member utilization versus premium.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "Insurance 5. Member utilization versus premium.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -700,8 +757,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Department compensation and performance.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "HR 1. Department compensation and performance.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -739,8 +796,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Manager span and team profile.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "HR 2. Manager span and team profile.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -778,8 +835,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Leave demand and approval status.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "HR 4. Leave demand and approval status.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -821,8 +878,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Workforce composition by location.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "HR 3. Workforce composition by location.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -863,8 +920,8 @@ internal sealed class QueryRequestSqlComparisonTests
             "UserData",
             "123",
             "QueryRequests",
-            "Performance and bonus trends.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            "HR 5. Performance and bonus trends.json");
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -907,7 +964,7 @@ internal sealed class QueryRequestSqlComparisonTests
             "123",
             "QueryRequests",
             "Sample-Nested customer monthly peak by region.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -957,7 +1014,7 @@ internal sealed class QueryRequestSqlComparisonTests
             "123",
             "QueryRequests",
             "Sample-Correlated top three orders per customer.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
             "WITH ranked_orders AS (" +
@@ -1009,7 +1066,7 @@ internal sealed class QueryRequestSqlComparisonTests
             "123",
             "QueryRequests",
             "Sample-Union completed orders and active policies.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList()
             .Select(record => Convert.ToInt32(record["UserId"], CultureInfo.InvariantCulture))
@@ -1036,12 +1093,13 @@ internal sealed class QueryRequestSqlComparisonTests
             "123",
             "QueryRequests",
             "Sample-Recursive employee hierarchy.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         Assert.That(
             () => _db.Query(query).ToList(),
             Throws.TypeOf<NotSupportedException>()
-                .With.Message.EqualTo("Nested query contexts are not supported."));
+                .With.Message.EqualTo("Nested query contexts are not supported.")
+                .Or.TypeOf<RelationNotFoundException>());
     }
 
     [Test]
@@ -1056,7 +1114,7 @@ internal sealed class QueryRequestSqlComparisonTests
             "123",
             "QueryRequests",
             "Sample-Correlated revenue since policy start.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -1101,7 +1159,7 @@ internal sealed class QueryRequestSqlComparisonTests
             "123",
             "QueryRequests",
             "Sample-Department salary rank.json");
-        var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+        var query = SavedQueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(

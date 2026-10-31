@@ -83,6 +83,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
             "math" => ParseMathField(element),
             "group" => ParseGroup(element),
             "function" => ParseFunction(element),
+            "condition" => ParseCondition(element),
             _ => throw new JsonException($"Invalid projection expression kind [{kindElement.GetString()}].")
         };
         return TryGetProperty(element, "oper", out var operationElement)
@@ -116,6 +117,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
             ConstFieldDefinition value => value with { Oper = operation },
             FunctionFieldDefinition value => value with { Oper = operation },
             GroupFieldDefintion value => value with { Oper = operation },
+            ConditionFieldDefinition value => value with { Oper = operation },
             _ => throw new JsonException("A projection operator requires a supported field expression.")
         };
 
@@ -210,6 +212,16 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
     private static IFieldDefinition ParseFunction(JsonElement element)
         => new FunctionFieldDefinition(ReadString(element, "function"), ReadArguments(element));
 
+    private static IFieldDefinition ParseCondition(JsonElement element)
+    {
+        if (!TryGetProperty(element, "condition", out var condition))
+            throw new JsonException("A condition expression requires a condition.");
+
+        var parsed = JsonSerializer.Deserialize<IConditionDefintion>(condition.GetRawText())
+            ?? throw new JsonException("A condition expression cannot be null.");
+        return new ConditionFieldDefinition(parsed);
+    }
+
     private static IFieldDefinition[] ReadArguments(JsonElement element)
     {
         if (!TryGetProperty(element, "arguments", out var arguments) ||
@@ -288,6 +300,11 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
                 foreach (var item in group.Fields)
                     WriteField(writer, item, options);
                 writer.WriteEndArray();
+                return;
+            case ConditionFieldDefinition condition:
+                writer.WriteString("kind", "condition");
+                writer.WritePropertyName("condition");
+                JsonSerializer.Serialize<IConditionDefintion>(writer, condition.Condition, options);
                 return;
             default:
                 throw new JsonException("Unsupported grouped projection expression.");

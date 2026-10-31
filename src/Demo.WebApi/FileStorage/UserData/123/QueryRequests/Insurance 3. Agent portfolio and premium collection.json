@@ -66,8 +66,25 @@
             "function": "CountIf",
             "arguments": [
               {
-                "kind": "field",
-                "field": "AgentPolicies.Status = \u0027Active\u0027"
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "AgentPolicies.Status"
+                      },
+                      "operation": 0,
+                      "right": {
+                        "kind": "value",
+                        "value": "Active"
+                      },
+                      "parameterized": true
+                    }
+                  ]
+                }
               }
             ]
           }

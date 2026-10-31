@@ -39,6 +39,16 @@ public record GroupFieldDefintion(MatchOperation Oper, IFieldDefinition[] Fields
         => FieldDefinitionHelper.Format(Fields);
 }
 
+public record ConditionFieldDefinition(MatchOperation Oper, IConditionDefintion Condition) : IFieldDefinition
+{
+    public ConditionFieldDefinition(IConditionDefintion condition)
+        : this(MatchOperation.Add, condition)
+    {
+    }
+
+    public string ToText() => Condition.ToText();
+}
+
 public enum MatchOperation
 {
     Add,

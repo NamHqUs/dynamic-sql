@@ -198,8 +198,25 @@
               "function": "CountIf",
               "arguments": [
                 {
-                  "kind": "field",
-                  "field": "EmploymentType = \u0027Full-time\u0027"
+                  "kind": "condition",
+                  "condition": {
+                    "logicalOperation": 0,
+                    "filters": [
+                      {
+                        "logicalOperator": 0,
+                        "left": {
+                          "kind": "field",
+                          "field": "EmploymentType"
+                        },
+                        "operation": 0,
+                        "right": {
+                          "kind": "value",
+                          "value": "Full-time"
+                        },
+                        "parameterized": true
+                      }
+                    ]
+                  }
                 }
               ]
             }
@@ -213,8 +230,25 @@
               "function": "CountIf",
               "arguments": [
                 {
-                  "kind": "field",
-                  "field": "EmploymentType = \u0027Part-time\u0027"
+                  "kind": "condition",
+                  "condition": {
+                    "logicalOperation": 0,
+                    "filters": [
+                      {
+                        "logicalOperator": 0,
+                        "left": {
+                          "kind": "field",
+                          "field": "EmploymentType"
+                        },
+                        "operation": 0,
+                        "right": {
+                          "kind": "value",
+                          "value": "Part-time"
+                        },
+                        "parameterized": true
+                      }
+                    ]
+                  }
                 }
               ]
             }
@@ -228,8 +262,25 @@
               "function": "CountIf",
               "arguments": [
                 {
-                  "kind": "field",
-                  "field": "EmploymentType = \u0027Contract\u0027"
+                  "kind": "condition",
+                  "condition": {
+                    "logicalOperation": 0,
+                    "filters": [
+                      {
+                        "logicalOperator": 0,
+                        "left": {
+                          "kind": "field",
+                          "field": "EmploymentType"
+                        },
+                        "operation": 0,
+                        "right": {
+                          "kind": "value",
+                          "value": "Contract"
+                        },
+                        "parameterized": true
+                      }
+                    ]
+                  }
                 }
               ]
             }

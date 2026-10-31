@@ -49,8 +49,25 @@
             "function": "CountIf",
             "arguments": [
               {
-                "kind": "field",
-                "field": "Status = \u0027No-Show\u0027"
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "Status"
+                      },
+                      "operation": 0,
+                      "right": {
+                        "kind": "value",
+                        "value": "No-Show"
+                      },
+                      "parameterized": true
+                    }
+                  ]
+                }
               }
             ]
           }
@@ -76,8 +93,25 @@
                     "function": "CountIf",
                     "arguments": [
                       {
-                        "kind": "field",
-                        "field": "Status = \u0027No-Show\u0027"
+                        "kind": "condition",
+                        "condition": {
+                          "logicalOperation": 0,
+                          "filters": [
+                            {
+                              "logicalOperator": 0,
+                              "left": {
+                                "kind": "field",
+                                "field": "Status"
+                              },
+                              "operation": 0,
+                              "right": {
+                                "kind": "value",
+                                "value": "No-Show"
+                              },
+                              "parameterized": true
+                            }
+                          ]
+                        }
                       }
                     ]
                   },
@@ -118,8 +152,25 @@
                     "field": "DurationMinutes"
                   },
                   {
-                    "kind": "field",
-                    "field": "Status = \u0027Completed\u0027"
+                    "kind": "condition",
+                    "condition": {
+                      "logicalOperation": 0,
+                      "filters": [
+                        {
+                          "logicalOperator": 0,
+                          "left": {
+                            "kind": "field",
+                            "field": "Status"
+                          },
+                          "operation": 0,
+                          "right": {
+                            "kind": "value",
+                            "value": "Completed"
+                          },
+                          "parameterized": true
+                        }
+                      ]
+                    }
                   }
                 ]
               },

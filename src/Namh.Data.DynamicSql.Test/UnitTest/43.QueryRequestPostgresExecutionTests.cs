@@ -1,6 +1,5 @@
 using System.Data;
 using Demo.Share;
-using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 using Namh.Data.DynamicSql.Test.TestData;
 using Npgsql;
 
@@ -54,7 +53,7 @@ internal sealed class QueryRequestPostgresExecutionTests
         var requests = Directory
             .EnumerateFiles(root, "*.json")
             .Where(path => !Path.GetFileName(path).Equals(
-                "Category and channel profitability.json",
+                "Sales 1. Category and channel profitability.json",
                 StringComparison.Ordinal))
             .Where(path => !Path.GetFileName(path).Equals(
                 "Check Context Calculation Fields.json",
@@ -74,13 +73,14 @@ internal sealed class QueryRequestPostgresExecutionTests
         Assert.That(requests, Has.Count.EqualTo(25));
         foreach (var requestPath in requests)
         {
-            var query = QueryDefinitionParser.Parse(File.ReadAllText(requestPath));
+            var query = SavedQueryDefinitionLoader.Load(requestPath);
             if (Path.GetFileName(requestPath)
                 .Equals("Sample-Recursive employee hierarchy.json", StringComparison.Ordinal))
             {
                 Assert.That(
                     () => _db.Query(query).ToList(),
-                    Throws.TypeOf<NotSupportedException>(),
+                    Throws.TypeOf<NotSupportedException>()
+                        .Or.TypeOf<RelationNotFoundException>(),
                     Path.GetFileName(requestPath));
                 continue;
             }

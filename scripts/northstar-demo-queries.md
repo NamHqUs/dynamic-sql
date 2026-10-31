@@ -829,14 +829,14 @@ rates, including average observed value and sample size.
 === "SQLite"
 
     ```sql
-    SELECT lr.TestName, d.Category AS DiagnosisCategory,
+    tIdSELECT lr.TestName, d.Category AS DiagnosisCategory,
            COUNT(*) AS TestCount,
            SUM(lr.IsAbnormal) AS AbnormalCount,
            ROUND(100.0 * SUM(lr.IsAbnormal) / COUNT(*), 2) AS AbnormalPercent,
            ROUND(AVG(lr.ResultValue), 2) AS AverageResult,
            ROUND(AVG(lr.ReferenceMax), 2) AS AverageReferenceMaximum
     FROM LabResults lr
-    JOIN Visits v ON v.Id = lr.VisitId
+    JOIN Visits v ON v.Id = lr.Visi
     JOIN Diagnoses d ON d.Id = v.DiagnosisId
     WHERE v.Status = 'Completed'
     GROUP BY lr.TestName, d.Category

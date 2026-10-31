@@ -21,6 +21,9 @@ The format is covered by
   containing expression, and a `fields` array for the group's contents.
 - Function arguments remain an array. An arithmetic argument is represented
   by a group; a single field or value is represented directly.
+- Conditional aggregate arguments use a `condition` node. The nested
+  condition uses the same filter model as query filters; field names remain
+  field names and comparisons are represented by `operation` and `right`.
 - Constants use `kind: "value"` and a scalar `value`.
 
 ## Flat expression
@@ -120,6 +123,43 @@ groups, each carrying its operator in the containing list:
   "alias": null
 }
 ```
+
+Conditional aggregates use a structured condition rather than embedding a
+predicate in a field name. This keeps `IsAbnormal` a normal field while
+allowing the SQL compiler to render the comparison for each dialect:
+
+```json
+{
+  "fields": [
+    {
+      "kind": "function",
+      "function": "CountIf",
+      "arguments": [
+        {
+          "kind": "condition",
+          "condition": {
+            "logicalOperation": 0,
+            "filters": [
+              {
+                "logicalOperator": 0,
+                "left": { "kind": "field", "field": "IsAbnormal" },
+                "operation": 0,
+                "right": { "kind": "value", "value": true },
+                "parameterized": true
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "alias": "AbnormalCount"
+}
+```
+
+The same shape supports string, numeric, compound, and range predicates.
+`CountIf` and `AvgIf` compile the condition as a conditional aggregate, so
+they do not require a separate filtered context and join.
 
 The reader continues to accept legacy projection objects that contain a
 singular `field` and legacy `math` nodes. Serialization always writes the

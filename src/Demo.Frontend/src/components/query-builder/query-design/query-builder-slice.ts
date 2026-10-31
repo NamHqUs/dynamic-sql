@@ -41,7 +41,8 @@ export type IFieldDefinition =
   | { kind: "field"; field: string; oper?: MatchOperation }
   | { kind: "value"; value: unknown; oper?: MatchOperation }
   | { kind: "group"; arguments: IFieldDefinition[]; oper?: MatchOperation }
-  | { kind: "function"; function: string; arguments: IFieldDefinition[]; oper?: MatchOperation };
+  | { kind: "function"; function: string; arguments: IFieldDefinition[]; oper?: MatchOperation }
+  | { kind: "condition"; condition: ApiQueryFilterGroup; oper?: MatchOperation };
 
 export type QueryColumn = {
   field: string;
@@ -110,7 +111,8 @@ export type ApiProjectionNode =
   | { kind: "field"; field: string; oper?: MatchOperation }
   | { kind: "value"; value: unknown; oper?: MatchOperation }
   | { kind: "group"; fields: ApiProjectionNode[]; oper?: MatchOperation }
-  | { kind: "function"; function: string; arguments: ApiProjectionNode[]; oper?: MatchOperation };
+  | { kind: "function"; function: string; arguments: ApiProjectionNode[]; oper?: MatchOperation }
+  | { kind: "condition"; condition: ApiQueryFilterGroup; oper?: MatchOperation };
 
 export type ApiProjectionDefinition =
   | { fields: ApiProjectionNode[]; alias: string | null }
@@ -380,6 +382,14 @@ function normalizeFieldDefinition(value: unknown): IFieldDefinition | undefined 
         value,
       );
     }
+    case "condition": {
+      if (!("condition" in value) || !isRecord(value.condition)
+        || !Array.isArray(value.condition.filters)) return undefined;
+      return applyApiOperator(
+        { kind: "condition", condition: value.condition as ApiQueryFilterGroup },
+        value,
+      );
+    }
     default:
       return undefined;
   }
@@ -438,6 +448,12 @@ function toApiProjectionNode(expression: IFieldDefinition): ApiProjectionNode {
         kind: "function",
         function: expression.function,
         arguments: expression.arguments.map((argument) => toApiProjectionNode(argument)),
+      };
+      break;
+    case "condition":
+      node = {
+        kind: "condition",
+        condition: expression.condition,
       };
       break;
   }

@@ -43,8 +43,25 @@
             "function": "CountIf",
             "arguments": [
               {
-                "kind": "field",
-                "field": "IsAbnormal = true"
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "IsAbnormal"
+                      },
+                      "operation": 0,
+                      "right": {
+                        "kind": "value",
+                        "value": true
+                      },
+                      "parameterized": true
+                    }
+                  ]
+                }
               }
             ]
           }
@@ -70,8 +87,25 @@
                     "function": "CountIf",
                     "arguments": [
                       {
-                        "kind": "field",
-                        "field": "IsAbnormal = true"
+                        "kind": "condition",
+                        "condition": {
+                          "logicalOperation": 0,
+                          "filters": [
+                            {
+                              "logicalOperator": 0,
+                              "left": {
+                                "kind": "field",
+                                "field": "IsAbnormal"
+                              },
+                              "operation": 0,
+                              "right": {
+                                "kind": "value",
+                                "value": true
+                              },
+                              "parameterized": true
+                            }
+                          ]
+                        }
                       }
                     ]
                   },

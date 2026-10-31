@@ -232,6 +232,8 @@ function isExpressionAvailable(expression: IFieldDefinition, entity: MetadataEnt
         argument.kind === "field" && argument.field === "*"
           ? expression.function.toLowerCase() === "count"
           : isExpressionAvailable(argument, entity, metadata));
+    case "condition":
+      return true;
   }
 }
 
