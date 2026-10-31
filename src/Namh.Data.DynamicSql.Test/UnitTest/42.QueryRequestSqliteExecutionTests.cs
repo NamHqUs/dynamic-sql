@@ -28,7 +28,7 @@ internal sealed class QueryRequestSqliteExecutionTests
         _db = new DynamicSqlContext(
             _connection,
             new MetaProvider(metadata),
-            new FunctionProvider(),
+            new FunctionProvider(new SqliteDialect()),
             SqlDialect.ForConnection(_connection));
     }
 

@@ -12,7 +12,7 @@
 //            StringComparer.OrdinalIgnoreCase);
 
 //    public IReadOnlyList<SqlFunctionDefintion> GetBuiltInDefinitions()
-//        => new FunctionProvider().GetFunctions().ToArray();
+//        => new FunctionProvider(new SqlServerDialect()).GetFunctions().ToArray();
 
 //    public IReadOnlyList<SqlFunctionDefintion> GetCustomDefinitions()
 //        => _definitions.Values.ToArray();

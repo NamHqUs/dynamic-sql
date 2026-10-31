@@ -8,6 +8,9 @@ namespace Namh.Data.DynamicSql;
 public sealed class FirebirdDialect : SqlDialectBase
 {
     public override string Key => "Firebird";
+    public override IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions()
+        => new FirebirdFunctionDefinitionBuiltin().CreateAllFunctions();
+
     protected override IReadOnlyList<string> ForbiddenKeywords =>
     [
         "ALTER", "CREATE", "DELETE", "DROP", "EXECUTE", "INSERT", "INTO",

@@ -243,7 +243,7 @@ public sealed class _24_FunctionMetadataTests
                 ["Postgres"] = "CAST({1} AS DATE)"
             },
             description: "Returns the date portion of a value.");
-        var functionProvider = new FunctionProvider([customFunction]);
+        var functionProvider = new FunctionProvider(new SqliteDialect(), [customFunction]);
 
         Assert.That(functionProvider.GetFunctions().Select(function => function.Name),
             Does.Contain("TODAY").And.Contain("SUM"));
@@ -254,7 +254,7 @@ public sealed class _24_FunctionMetadataTests
     [Test]
     public void BuiltInDateFunctionsHaveFriendlyNamesDescriptionsAndProviderSql()
     {
-        var functions = new FunctionProvider().GetFunctions().ToDictionary(
+        var functions = new FunctionProvider(new SqliteDialect()).GetFunctions().ToDictionary(
             function => function.Name,
             StringComparer.OrdinalIgnoreCase);
 
@@ -321,7 +321,7 @@ public sealed class _24_FunctionMetadataTests
         using var context = new DynamicSqlContext(
             connection,
             new MetaProvider(Metadata),
-            new FunctionProvider(),
+            new FunctionProvider(new SqliteDialect()),
             new SqliteDialect());
 
         var cases = new Dictionary<string, DateTime>
@@ -428,7 +428,7 @@ public sealed class _24_FunctionMetadataTests
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         var metadata = new MetaProvider(Metadata);
-        var functionProvider = new FunctionProvider(functions);
+        var functionProvider = new FunctionProvider(dialect ?? new SqliteDialect(), functions);
         using var context = new DynamicSqlContext(
             connection,
             metadata,

@@ -8,6 +8,9 @@ namespace Namh.Data.DynamicSql;
 public sealed class OracleDialect : SqlDialectBase
 {
     public override string Key => "Oracle";
+    public override IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions()
+        => new OracleFunctionDefinitionBuiltin().CreateAllFunctions();
+
     protected override IReadOnlyList<string> ForbiddenKeywords =>
     [
         "ALTER", "CREATE", "DELETE", "DROP", "EXECUTE", "INSERT", "INTO",

@@ -28,7 +28,7 @@ internal sealed class QueryRequestFirebirdExecutionTests
         _db = new DynamicSqlContext(
             _connection,
             new MetaProvider(metadata),
-            new FunctionProvider(),
+            new FunctionProvider(new FirebirdDialect()),
             SqlDialect.ForConnection(_connection));
     }
 

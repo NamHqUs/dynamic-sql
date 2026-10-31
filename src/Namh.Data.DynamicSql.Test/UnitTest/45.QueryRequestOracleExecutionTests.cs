@@ -26,7 +26,7 @@ internal sealed class QueryRequestOracleExecutionTests
         _db = new DynamicSqlContext(
             _connection,
             new MetaProvider(BuiltinMetadata.UnitTestData.Concat(BuiltinMetadata.NorthStarDemoData)),
-            new FunctionProvider(),
+            new FunctionProvider(new OracleDialect()),
             SqlDialect.ForConnection(_connection));
     }
 

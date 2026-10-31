@@ -8,6 +8,7 @@ public interface ISqlDialect
 {
     string Key
         => throw new NotSupportedException("A custom SQL dialect must provide a dialect identifier.");
+    IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions() => [];
     string QuoteIdentifier(string identifier);
     string RenderTable(Entity entity);
     string RenderBoolean(bool value);

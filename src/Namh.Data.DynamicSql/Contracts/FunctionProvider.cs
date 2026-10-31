@@ -13,11 +13,19 @@ public class FunctionProvider : IFunctionProvider
 {
     private readonly Dictionary<string, SqlFunctionDefintion> _functions;
 
-    public FunctionProvider(IEnumerable<SqlFunctionDefintion>? functions = null)
+    public FunctionProvider(ISqlDialect sqlDialect, IEnumerable<SqlFunctionDefintion>? functions = null)
     {
-        _functions = SqlFunctionDefinitionBuiltin.AllFunctions
+        ArgumentNullException.ThrowIfNull(sqlDialect);
+
+        var customFunctions = functions?.ToArray() ?? [];
+        _functions = sqlDialect.CreateBuiltinFunctions()
             .ToDictionary(function => function.Name, StringComparer.OrdinalIgnoreCase);
 
+        AddFunctions(customFunctions);
+    }
+
+    private void AddFunctions(IEnumerable<SqlFunctionDefintion>? functions)
+    {
         var customFunctions = functions?.ToArray() ?? [];
         if (customFunctions
             .GroupBy(function => function.Name, StringComparer.OrdinalIgnoreCase)

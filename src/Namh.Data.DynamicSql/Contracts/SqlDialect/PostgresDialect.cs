@@ -5,6 +5,9 @@ namespace Namh.Data.DynamicSql;
 public sealed class PostgresDialect(string schema = "public") : SqlDialectBase
 {
     public override string Key => "Postgres";
+    public override IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions()
+        => new PostgresFunctionDefinitionBuiltin().CreateAllFunctions();
+
     protected override IReadOnlyList<string> ForbiddenKeywords =>
     [
         "ALTER", "CALL", "COPY", "CREATE", "DELETE", "DO", "DROP", "GRANT",

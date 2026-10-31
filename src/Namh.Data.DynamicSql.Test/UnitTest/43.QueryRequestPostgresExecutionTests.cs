@@ -28,7 +28,7 @@ internal sealed class QueryRequestPostgresExecutionTests
         _db = new DynamicSqlContext(
             _connection,
             new MetaProvider(metadata),
-            new FunctionProvider(),
+            new FunctionProvider(new PostgresDialect()),
             SqlDialect.ForConnection(_connection));
     }
 

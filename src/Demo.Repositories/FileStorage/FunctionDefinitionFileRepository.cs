@@ -60,7 +60,7 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
     }
 
     private static IReadOnlyCollection<SqlFunctionDefintion> GetBuiltInDefinitions()
-        => new FunctionProvider()
+        => new FunctionProvider(new SqlServerDialect())
             .GetFunctions();
 
     private static string GetFileId(string id)

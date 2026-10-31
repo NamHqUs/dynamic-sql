@@ -5,6 +5,9 @@ namespace Namh.Data.DynamicSql;
 public sealed class SqlServerDialect : SqlDialectBase
 {
     public override string Key => "SqlServer";
+    public override IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions()
+        => new SqlServerFunctionDefinitionBuiltin().CreateAllFunctions();
+
     protected override IReadOnlyList<string> ForbiddenKeywords =>
     [
         "ALTER", "BACKUP", "BULK", "CREATE", "DBCC", "DELETE", "DENY", "DROP",

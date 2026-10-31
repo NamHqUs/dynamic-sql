@@ -15,12 +15,20 @@ public class DynamicSqlContext(
     private bool _disposed;
 
     public DynamicSqlContext(IDbConnection dbConnection, IMetadataProvider metaProvider, ISqlDialect? sqlDialect = null)
-        : this(dbConnection, metaProvider, new FunctionProvider(), sqlDialect)
+        : this(
+            dbConnection,
+            metaProvider,
+            new FunctionProvider(sqlDialect ?? SqlDialect.ForConnection(dbConnection)),
+            sqlDialect)
     {
     }
 
     public DynamicSqlContext(IDbConnection dbConnection, IEnumerable<Entity> entities, IEnumerable<SqlFunctionDefintion>? functions = null, ISqlDialect? sqlDialect = null):
-        this(dbConnection, new MetaProvider(entities), new FunctionProvider(functions), sqlDialect)
+        this(
+            dbConnection,
+            new MetaProvider(entities),
+            new FunctionProvider(sqlDialect ?? SqlDialect.ForConnection(dbConnection), functions),
+            sqlDialect)
     {
     }
 
@@ -65,7 +73,7 @@ public class DynamicSqlServerContext(IDbConnection dbConnection, IMetadataProvid
     : DynamicSqlContext(dbConnection, metaProvider, functionProvider, new SqlServerDialect())
 {
     public DynamicSqlServerContext(IDbConnection dbConnection, IMetadataProvider metaProvider)
-        : this(dbConnection, metaProvider, new FunctionProvider())
+        : this(dbConnection, metaProvider, new FunctionProvider(new SqlServerDialect()))
     {
     }
 }
@@ -74,7 +82,7 @@ public class DynamicSqliteContext(IDbConnection dbConnection, IMetadataProvider 
     : DynamicSqlContext(dbConnection, metaProvider, functionProvider, new SqliteDialect())
 {
     public DynamicSqliteContext(IDbConnection dbConnection, IMetadataProvider metaProvider)
-        : this(dbConnection, metaProvider, new FunctionProvider())
+        : this(dbConnection, metaProvider, new FunctionProvider(new SqliteDialect()))
     {
     }
 }
@@ -83,7 +91,7 @@ public class DynamicPostgresContext(IDbConnection dbConnection, IMetadataProvide
     : DynamicSqlContext(dbConnection, metaProvider, functionProvider, new PostgresDialect())
 {
     public DynamicPostgresContext(IDbConnection dbConnection, IMetadataProvider metaProvider)
-        : this(dbConnection, metaProvider, new FunctionProvider())
+        : this(dbConnection, metaProvider, new FunctionProvider(new PostgresDialect()))
     {
     }
 }

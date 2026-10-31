@@ -22,7 +22,7 @@ public class TestBase
 
         _sqlDialect = SqlDialect.ForConnection(_connection);
         IMetaProvider metaProvider = new MetaProvider(entities);
-        _functionProvider = new FunctionProvider();
+        _functionProvider = new FunctionProvider(_sqlDialect);
         _db = new DynamicSqlContext(_connection, metaProvider, _functionProvider, _sqlDialect);
     }
 

@@ -7,6 +7,8 @@ namespace Namh.Data.DynamicSql;
 
 public abstract class SqlDialectBase : ISqlDialect
 {
+    public virtual IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions() => [];
+
     public abstract string Key { get; }
     public abstract string QuoteIdentifier(string identifier);
     public abstract string RenderTable(Entity entity);

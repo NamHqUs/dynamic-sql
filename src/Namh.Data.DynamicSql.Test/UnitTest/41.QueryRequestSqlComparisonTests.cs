@@ -39,7 +39,7 @@ internal sealed class QueryRequestSqlComparisonTests
         _db = new DynamicSqlContext(
             _connection,
             new MetaProvider(metadata),
-            new FunctionProvider(),
+            new FunctionProvider(SqlDialect.ForConnection(_connection)),
             SqlDialect.ForConnection(_connection));
     }
 

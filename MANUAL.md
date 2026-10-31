@@ -484,7 +484,7 @@ var toDate = new FunctionDefinition(
     });
 
 var metadata = new MetaProvider(entities);
-var functionProvider = new FunctionProvider([toDate]);
+var functionProvider = new FunctionProvider(new SqlServerDialect(), [toDate]);
 ```
 
 For example, an application can expose a one-argument `TODAY(value)` wrapper
@@ -504,7 +504,7 @@ var today = new FunctionDefinition(
     });
 
 var metadata = new MetaProvider(entities);
-var functionProvider = new FunctionProvider([today]);
+var functionProvider = new FunctionProvider(new SqlServerDialect(), [today]);
 using var context = new DynamicSqlContext(connection, metadata, functionProvider, dialect);
 ```
 

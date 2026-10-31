@@ -5,6 +5,9 @@ namespace Namh.Data.DynamicSql;
 public sealed class SqliteDialect(string? schema = null) : SqlDialectBase
 {
     public override string Key => "Sqlite";
+    public override IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions()
+        => new SqliteFunctionDefinitionBuiltin().CreateAllFunctions();
+
     protected override IReadOnlyList<string> ForbiddenKeywords =>
     [
         "ALTER", "ANALYZE", "ATTACH", "CREATE", "DELETE", "DETACH", "DROP",

@@ -121,7 +121,7 @@ public sealed class FunctionDefinitionService(
             throw new ArgumentException("Function arguments cannot contain null definitions.");
 
         var definition = dto.ToFunctionDefinition();
-        _ = new FunctionProvider([definition]);
+        _ = new FunctionProvider(new SqlServerDialect(), [definition]);
         return definition;
     }
 }
