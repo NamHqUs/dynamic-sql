@@ -28,7 +28,7 @@ type OperatorDefinitionData = {
 type OperatorDraft = Omit<OperatorDefinitionData, "id"> & { id: string | null };
 
 const operandTypes = ["String", "Number", "Datetime", "Boolean"];
-const providers = ["Sqlite", "SqlServer", "Postgres"] as const;
+const providers = ["Sqlite", "SqlServer", "Postgres", "Firebird", "Maria", "Oracle", "SapHana", "Db2"] as const;
 const operatorTemplate = "{left} = {value}";
 type NavigationGuard = (continueNavigation: () => void, cancelNavigation?: () => void) => void;
 type OperatorDefinitionProps = {

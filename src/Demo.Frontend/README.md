@@ -11,7 +11,15 @@ This is the React/Vite front end for the DynamicSQL demo. It demonstrates a meta
 - URL-backed pages with browser back/forward support; Query Builder inputs remain in place while visiting other pages and its design is restored after a refresh
 - A Data Sources explorer with Data View and a draggable schema Diagram, including table columns, primary keys, foreign-key cardinalities, and a top-10 row preview
 
-The Data Sources page first loads configured connection profile names from `GET /db/connections`. It supports server-side configured profiles and direct connections to SqlServer, Sqlite, Firebird, Postgres, MySql, and Oracle. Direct connections are disabled by default and must be explicitly enabled by the server operator in a trusted environment. Connection strings are never returned to the frontend. The active database instance is shared by all clients; `POST /db/disconnect` does not release or dispose it, so one client's disconnect cannot interrupt other clients.
+The Data Sources page first loads configured connection profile names from
+`GET /db/connections`. It supports server-side configured profiles and direct
+connections to SqlServer, Sqlite, Firebird, Postgres, MySql/MariaDB, Oracle,
+and Db2. The core dialect/function-template UI also supports SAP HANA. Direct
+connections are disabled by default and must be
+explicitly enabled by the server operator in a trusted environment. Connection
+strings are never returned to the frontend. The active database instance is
+shared by all clients; `POST /db/disconnect` does not release or dispose it, so
+one client's disconnect cannot interrupt other clients.
 
 After connecting, the Data View groups tables by schema, displays column and relationship metadata, and previews up to 10 rows. Schema and relationship metadata come from `GET /db/schema`; preview data comes from `GET /db/data/{tableName}` with `schema` and `limit=10` query parameters. The schema Diagram remains available as the metadata-builder view.
 

@@ -39,7 +39,8 @@ var rows = db.Query("User")
 - One compiler for C# expressions and YAML queries.
 - Relationship paths such as `Manager.Name` and `Members.Name`.
 - Dynamic projections and aliases without CLR models.
-- SQL Server, SQLite, and PostgreSQL dialect support.
+- SQL Server, SQLite, PostgreSQL, Firebird, MySQL/MariaDB, Oracle, SAP HANA,
+  and IBM Db2 dialect support.
 - Parameterized filters and executable SQL diagnostics.
 - A dialect-independent SQL expression intermediate representation.
 

@@ -178,8 +178,9 @@ using var db = new DynamicSqlContext(
     new SqliteDialect(schema: "dbo"));
 ```
 
-Built-in dialects are `SqlServerDialect`, `SqliteDialect`, and
-`PostgresDialect`. PostgreSQL uses the `public` schema by default.
+Built-in dialects are `SqlServerDialect`, `SqliteDialect`, `PostgresDialect`,
+`FirebirdDialect`, `MariaDialect`, `OracleDialect`, `SapHanaDialect`, and
+`Db2Dialect`. PostgreSQL uses the `public` schema by default.
 
 Dialects control identifier quoting, booleans, string concatenation, and
 paging. Raw SQL and aggregate expressions must use syntax supported by the

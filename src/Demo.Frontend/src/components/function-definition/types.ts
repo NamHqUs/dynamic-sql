@@ -3,7 +3,7 @@ export type FunctionArgumentDataType = typeof functionArgumentDataTypes[number];
 export const functionResultDataTypes = functionArgumentDataTypes;
 export type FunctionResultDataType = typeof functionResultDataTypes[number];
 
-export const functionDatabaseTypes = ["Sqlite", "SqlServer", "Postgres", "Firebird", "Oracle", "Maria", "SapHana"] as const;
+export const functionDatabaseTypes = ["Sqlite", "SqlServer", "Postgres", "Firebird", "Oracle", "Maria", "SapHana", "Db2"] as const;
 export type FunctionDatabaseType = typeof functionDatabaseTypes[number];
 
 export type FunctionArgumentDefinition = {
@@ -72,6 +72,7 @@ export const emptyFunction = (): EditableFunctionDefinition => ({
     emptyFunctionTemplate("Oracle"),
     emptyFunctionTemplate("Maria"),
     emptyFunctionTemplate("SapHana"),
+    emptyFunctionTemplate("Db2"),
   ],
 });
 

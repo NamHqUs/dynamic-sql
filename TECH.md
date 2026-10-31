@@ -26,7 +26,7 @@ flowchart LR
         E --> G[SqlStatementGenerator]
     end
 
-    H[ISqlDialect<br/>SQL Server / SQLite / PostgreSQL] --> G
+    H[ISqlDialect<br/>SQL Server / SQLite / PostgreSQL / Firebird / MySQL-MariaDB / Oracle / SAP HANA / Db2] --> G
     G --> I[SQL command text + DbParameters]
     I --> J[DbQueryProvider]
     J --> K[ADO.NET IDbConnection / DbCommand]
@@ -65,7 +65,8 @@ wheel to zoom, drag to pan).
    replace parameterized execution.
 
 The visitors never own a dialect. They create an intermediate representation
-that can be rendered for SQL Server, SQLite, PostgreSQL, or another dialect.
+that can be rendered for SQL Server, SQLite, PostgreSQL, Firebird, MySQL/MariaDB,
+Oracle, SAP HANA, IBM Db2, or another dialect.
 
 ### JSON `QueryDto` compilation path
 
@@ -268,7 +269,7 @@ The IR must not depend on `ISqlDialect`.
 | JSON input | `QueryDto`, `FilterDto`, `SortDto` | Serializable query transport, including page and page size |
 | Metadata | `IMetadataProvider`, `IFunctionProvider`, `Entity`, `Field`, `Relation`, `FunctionDefinition` | Runtime schema, relationships, and function signatures |
 | Compiler IR | Internal `SqlExpression` hierarchy | Provider-independent query representation |
-| SQL target | `ISqlDialect` | SQL Server, SQLite, PostgreSQL, or a custom provider |
+| SQL target | `ISqlDialect` | SQL Server, SQLite, PostgreSQL, Firebird, MySQL/MariaDB, Oracle, SAP HANA, IBM Db2, or a custom provider |
 | Diagnostic output | `SqlQuery`, `SqlQueryParameter` | SQL text plus parameter values for `ToSql` |
 | Client result | `DataRecord`, `List<DataRecord>` | Case-insensitive dynamic row values and async materialization |
 
@@ -318,6 +319,11 @@ Built-in implementations:
 - `SqlServerDialect`
 - `SqliteDialect`
 - `PostgresDialect`
+- `FirebirdDialect`
+- `MariaDialect`
+- `OracleDialect`
+- `SapHanaDialect`
+- `Db2Dialect`
 
 When adding a provider, implement `ISqlDialect` and add SQL-generation tests
 for identifiers, booleans, concatenation, and paging.
