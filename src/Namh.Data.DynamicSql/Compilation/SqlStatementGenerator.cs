@@ -12,6 +12,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     public SqlStatement Generate(TableExpression query, IEnumerable<DbParameter> parameters)
     {
         var text = RenderQuery(query);
+        dialect.ValidateSqlStatement(text);
 
         return new SqlStatement(text, parameters.ToArray());
     }
@@ -25,6 +26,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         var limitedQuery = new TakeExpression(query.WithoutPaging(), maximumRecords);
         var alias = dialect.QuoteIdentifier("__bounded_count");
         var text = $"{RenderCommonTableExpressions(query)}SELECT COUNT(*)\nFROM ({RenderQuery(limitedQuery, includeCtes: false)}) AS {alias}";
+        dialect.ValidateSqlStatement(text);
 
         return new SqlStatement(text, parameters.ToArray());
     }

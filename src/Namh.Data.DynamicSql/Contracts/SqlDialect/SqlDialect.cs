@@ -21,10 +21,12 @@ public interface ISqlDialect
         string commandText,
         IReadOnlyList<(string Name, object? Value)> parameters)
         => commandText;
+    void ValidateSqlStatement(string commandText) { }
     void ConfigureParameter(IDbDataParameter parameter, object? value)
     {
         parameter.Value = NormalizeParameterValue(value) ?? DBNull.Value;
     }
+    void ConfigureCommand(IDbCommand command) { }
     string RenderCurrentDateTime() => "CURRENT_TIMESTAMP";
     string RenderDateDifferenceInDays(string startDate, string endDate)
         => $"DATEDIFF(day, {startDate}, {endDate})";

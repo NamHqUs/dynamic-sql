@@ -157,15 +157,19 @@ class DbQueryProvider(
 
     private IDbCommand CreateDbCommand(string sqlQuery, IEnumerable<DbParameter> parameters)
     {
+        var parameterList = parameters.ToArray();
+        var commandText = sqlDialect.PrepareCommandText(
+            sqlQuery,
+            parameterList.Select(parameter => (parameter.Name, parameter.Value)).ToArray());
+
         if (dbConnection.State != ConnectionState.Open)
             dbConnection.Open();
 
         var cmd = dbConnection.CreateCommand();
-        cmd.CommandText = sqlDialect.PrepareCommandText(
-            sqlQuery,
-            parameters.Select(parameter => (parameter.Name, parameter.Value)).ToArray());
+        sqlDialect.ConfigureCommand(cmd);
+        cmd.CommandText = commandText;
 
-        foreach (var e in parameters)
+        foreach (var e in parameterList)
         {
             var para = cmd.CreateParameter();
             para.ParameterName = e.Name;

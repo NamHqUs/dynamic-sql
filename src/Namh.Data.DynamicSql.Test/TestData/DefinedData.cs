@@ -2,6 +2,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Npgsql;
 using FirebirdSql.Data.FirebirdClient;
+using Oracle.ManagedDataAccess.Client;
 using System.Data;
 using System.Text;
 
@@ -85,6 +86,14 @@ internal sealed class DefinedData
     {
         var connection = new FbConnection(
             "User=SYSDBA;Password=NoPassword123!;Database=localhost:/firebird/data/northstar.fdb");
+        connection.Open();
+        return connection;
+    }
+
+    public static IDbConnection GetNorthStarOracleConnection()
+    {
+        var connection = new OracleConnection(
+            "User Id=NORTHSTAR;Password=NoPassword123!;Data Source=localhost:1521/FREEPDB1");
         connection.Open();
         return connection;
     }

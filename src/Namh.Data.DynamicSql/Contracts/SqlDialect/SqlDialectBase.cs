@@ -1,50 +1,77 @@
+using System.Data;
 using System.Text.RegularExpressions;
 
+#pragma warning disable IDE0130
 namespace Namh.Data.DynamicSql;
+#pragma warning restore IDE0130
 
-internal enum RawSqlEntityDialect
+public abstract class SqlDialectBase : ISqlDialect
 {
-    SqlServer,
-    Sqlite,
-    Postgres,
-    Firebird
-}
+    public abstract string Key { get; }
+    public abstract string QuoteIdentifier(string identifier);
+    public abstract string RenderTable(Entity entity);
+    public abstract string RenderBoolean(bool value);
+    public abstract string RenderStringLiteral(string value);
+    public abstract string RenderStringConcatenation(string left, string right);
+    public abstract string RenderTakePrefix(int count);
+    public abstract string RenderPaging(int? skip, int? take);
+    public virtual string RenderCurrentDateTime() => "CURRENT_TIMESTAMP";
+    public virtual string RenderDateDifferenceInDays(string startDate, string endDate)
+        => $"DATEDIFF(day, {startDate}, {endDate})";
 
-internal static class RawSqlEntitySqlGuard
-{
-    private static readonly IReadOnlyDictionary<RawSqlEntityDialect, Regex> ForbiddenKeywords =
-        new Dictionary<RawSqlEntityDialect, Regex>
-        {
-            [RawSqlEntityDialect.SqlServer] = CreateKeywordRegex(
-                "ALTER", "BACKUP", "BULK", "CREATE", "DBCC", "DELETE", "DENY", "DROP",
-                "EXEC", "EXECUTE", "GRANT", "INSERT", "INTO", "MERGE", "RESTORE",
-                "REVOKE", "TRUNCATE", "UPDATE"),
-            [RawSqlEntityDialect.Sqlite] = CreateKeywordRegex(
-                "ALTER", "ANALYZE", "ATTACH", "CREATE", "DELETE", "DETACH", "DROP",
-                "INSERT", "INTO", "PRAGMA", "REINDEX", "REPLACE", "TRUNCATE", "UPDATE",
-                "VACUUM"),
-            [RawSqlEntityDialect.Postgres] = CreateKeywordRegex(
-                "ALTER", "CALL", "COPY", "CREATE", "DELETE", "DO", "DROP", "GRANT",
-                "INSERT", "INTO", "MERGE", "REFRESH", "REVOKE", "TRUNCATE", "UPDATE",
-                "VACUUM"),
-            [RawSqlEntityDialect.Firebird] = CreateKeywordRegex(
-                "ALTER", "CREATE", "DELETE", "DROP", "EXECUTE", "INSERT", "INTO",
-                "MERGE", "UPDATE")
-        };
+    public string FormatParameterValue(object? value)
+        => SqlDialect.FormatParameterValue(value);
 
-    public static string ValidateAndReturn(string rawSql, RawSqlEntityDialect dialect)
+    public virtual object? NormalizeParameterValue(object? value) => value;
+
+    public virtual string PrepareCommandText(
+        string commandText,
+        IReadOnlyList<(string Name, object? Value)> parameters)
+        => commandText;
+
+    protected virtual IReadOnlyList<string> ForbiddenKeywords => [];
+    protected virtual bool SupportsBracketIdentifiers => false;
+    protected virtual bool SupportsBacktickIdentifiers => false;
+    protected virtual bool SupportsNestedBlockComments => false;
+    protected virtual bool SupportsDollarQuotedStrings => false;
+    protected virtual bool DoublesBracketIdentifierClosingEscape => false;
+    protected virtual bool HasBackslashEscapes(string sql, int quoteIndex) => false;
+
+    public virtual void ValidateSqlStatement(string commandText)
     {
-        var maskedSql = MaskLiteralsIdentifiersAndComments(rawSql, dialect);
-        var match = ForbiddenKeywords[dialect].Match(maskedSql);
+        var maskedSql = MaskLiteralsIdentifiersAndComments(commandText);
+        var match = CreateKeywordRegex(ForbiddenKeywords.ToArray()).Match(maskedSql);
         if (match.Success)
         {
             throw new ArgumentException(
-                $"Raw SQL entity source contains the disallowed keyword '{match.Value}'.",
-                nameof(rawSql));
+                $"SQL statement contains the disallowed keyword '{match.Value}'.",
+                nameof(commandText));
         }
+    }
 
+    protected string ValidateRawSqlEntity(string rawSql)
+    {
+        ValidateSqlStatement(rawSql);
         return rawSql;
     }
+
+    public virtual void ConfigureParameter(IDbDataParameter parameter, object? value)
+    {
+        parameter.Value = NormalizeParameterValue(value) ?? DBNull.Value;
+    }
+
+    public virtual void ConfigureCommand(IDbCommand command) { }
+
+    public virtual string RenderPaging(int? skip, int? take, bool hasOrderBy)
+        => RenderPaging(skip, take);
+
+    public virtual string RenderQueryWithParameters(
+        string commandText,
+        IReadOnlyList<(string Name, object? Value)> parameters)
+        => parameters.Count == 0
+            ? commandText
+            : commandText + $"\n-- Parameters: {string.Join(", ", parameters.Select(parameter =>
+                $"{parameter.Name} = {FormatParameterValue(parameter.Value)}"))}";
 
     private static Regex CreateKeywordRegex(params string[] keywords)
     {
@@ -54,14 +81,9 @@ internal static class RawSqlEntitySqlGuard
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
     }
 
-    private static string MaskLiteralsIdentifiersAndComments(
-        string sql,
-        RawSqlEntityDialect dialect)
+    private string MaskLiteralsIdentifiersAndComments(string sql)
     {
         var masked = sql.ToCharArray();
-        var supportsBracketIdentifiers = dialect is RawSqlEntityDialect.SqlServer or RawSqlEntityDialect.Sqlite;
-        var supportsBacktickIdentifiers = dialect == RawSqlEntityDialect.Sqlite;
-        var supportsNestedBlockComments = dialect is RawSqlEntityDialect.SqlServer or RawSqlEntityDialect.Postgres;
 
         for (var index = 0; index < sql.Length;)
         {
@@ -78,17 +100,17 @@ internal static class RawSqlEntitySqlGuard
 
             if (sql[index] == '/' && HasNext(sql, index, '*'))
             {
-                index = MaskBlockComment(sql, masked, index, supportsNestedBlockComments);
+                index = MaskBlockComment(sql, masked, index, SupportsNestedBlockComments);
                 continue;
             }
 
-            if (dialect == RawSqlEntityDialect.Postgres &&
+            if (SupportsDollarQuotedStrings &&
                 sql[index] == '$' &&
                 TryGetDollarQuoteDelimiter(sql, index, out var delimiter, out var contentStart))
             {
                 var closingStart = sql.IndexOf(delimiter, contentStart, StringComparison.Ordinal);
                 if (closingStart < 0)
-                    throw UnterminatedRawSqlPart("dollar-quoted string");
+                    throw UnterminatedSqlPart("dollar-quoted string");
 
                 var end = closingStart + delimiter.Length;
                 MaskRange(masked, index, end);
@@ -98,8 +120,7 @@ internal static class RawSqlEntitySqlGuard
 
             if (sql[index] == '\'')
             {
-                var backslashEscapes = dialect == RawSqlEntityDialect.Postgres &&
-                    IsPostgresEscapeString(sql, index);
+                var backslashEscapes = HasBackslashEscapes(sql, index);
                 index = MaskDelimited(sql, masked, index, '\'', backslashEscapes);
                 continue;
             }
@@ -110,7 +131,7 @@ internal static class RawSqlEntitySqlGuard
                 continue;
             }
 
-            if (supportsBracketIdentifiers && sql[index] == '[')
+            if (SupportsBracketIdentifiers && sql[index] == '[')
             {
                 index = MaskDelimited(
                     sql,
@@ -118,11 +139,11 @@ internal static class RawSqlEntitySqlGuard
                     index,
                     ']',
                     backslashEscapes: false,
-                    doubledClosingEscape: dialect == RawSqlEntityDialect.SqlServer);
+                    doubledClosingEscape: DoublesBracketIdentifierClosingEscape);
                 continue;
             }
 
-            if (supportsBacktickIdentifiers && sql[index] == '`')
+            if (SupportsBacktickIdentifiers && sql[index] == '`')
             {
                 index = MaskDelimited(sql, masked, index, '`', backslashEscapes: false);
                 continue;
@@ -168,7 +189,7 @@ internal static class RawSqlEntitySqlGuard
             index++;
         }
 
-        throw UnterminatedRawSqlPart("block comment");
+        throw UnterminatedSqlPart("block comment");
     }
 
     private static int MaskDelimited(
@@ -205,7 +226,7 @@ internal static class RawSqlEntitySqlGuard
             index++;
         }
 
-        throw UnterminatedRawSqlPart("quoted value or identifier");
+        throw UnterminatedSqlPart("quoted value or identifier");
     }
 
     private static bool TryGetDollarQuoteDelimiter(
@@ -248,14 +269,6 @@ internal static class RawSqlEntitySqlGuard
         return true;
     }
 
-    private static bool IsPostgresEscapeString(string sql, int quoteIndex)
-        => quoteIndex > 0 &&
-            sql[quoteIndex - 1] is 'e' or 'E' &&
-            (quoteIndex == 1 || !IsIdentifierCharacter(sql[quoteIndex - 2]));
-
-    private static bool IsIdentifierCharacter(char value)
-        => char.IsLetterOrDigit(value) || value is '_' or '$';
-
     private static bool IsAsciiLetter(char value)
         => value is >= 'A' and <= 'Z' or >= 'a' and <= 'z';
 
@@ -271,6 +284,6 @@ internal static class RawSqlEntitySqlGuard
         }
     }
 
-    private static ArgumentException UnterminatedRawSqlPart(string part)
-        => new($"Raw SQL entity source contains an unterminated {part}.", "rawSql");
+    private static ArgumentException UnterminatedSqlPart(string part)
+        => new($"SQL statement contains an unterminated {part}.", "sql");
 }

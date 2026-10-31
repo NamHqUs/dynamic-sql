@@ -5,33 +5,37 @@ using System.Globalization;
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
-public sealed class FirebirdDialect : ISqlDialect
+public sealed class FirebirdDialect : SqlDialectBase
 {
-    public string Key => "Firebird";
+    public override string Key => "Firebird";
+    protected override IReadOnlyList<string> ForbiddenKeywords =>
+    [
+        "ALTER", "CREATE", "DELETE", "DROP", "EXECUTE", "INSERT", "INTO",
+        "MERGE", "UPDATE"
+    ];
 
-    public string QuoteIdentifier(string identifier)
+    public override string QuoteIdentifier(string identifier)
         => $"\"{identifier.ToUpperInvariant().Replace("\"", "\"\"")}\"";
 
-    public string RenderTable(Entity entity)
+    public override string RenderTable(Entity entity)
         => entity.IsRawSql
-            ? RawSqlEntitySqlGuard.ValidateAndReturn(entity.DbTable, RawSqlEntityDialect.Firebird)
+            ? ValidateRawSqlEntity(entity.DbTable)
             : QuoteIdentifier(entity.DbTable ?? entity.Name);
 
-    public string RenderBoolean(bool value) => value ? "TRUE" : "FALSE";
-    public string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";
-    public string RenderStringConcatenation(string left, string right) => $"{left} || {right}";
-    public string RenderTakePrefix(int count) => $"FIRST {count} ";
-    public string FormatParameterValue(object? value) => SqlDialect.FormatParameterValue(value);
-    public object? NormalizeParameterValue(object? value)
+    public override string RenderBoolean(bool value) => value ? "TRUE" : "FALSE";
+    public override string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";
+    public override string RenderStringConcatenation(string left, string right) => $"{left} || {right}";
+    public override string RenderTakePrefix(int count) => $"FIRST {count} ";
+    public override object? NormalizeParameterValue(object? value)
         => value is decimal decimalValue ? Convert.ToDouble(decimalValue, CultureInfo.InvariantCulture) : value;
-    public void ConfigureParameter(IDbDataParameter parameter, object? value)
+    public override void ConfigureParameter(IDbDataParameter parameter, object? value)
     {
         var normalized = NormalizeParameterValue(value);
         if (normalized is double or float)
             parameter.DbType = DbType.Double;
         parameter.Value = normalized ?? DBNull.Value;
     }
-    public string PrepareCommandText(
+    public override string PrepareCommandText(
         string commandText,
         IReadOnlyList<(string Name, object? Value)> parameters)
     {
@@ -46,11 +50,11 @@ public sealed class FirebirdDialect : ISqlDialect
 
         return commandText;
     }
-    public string RenderCurrentDateTime() => "CURRENT_TIMESTAMP";
-    public string RenderDateDifferenceInDays(string startDate, string endDate)
+    public override string RenderCurrentDateTime() => "CURRENT_TIMESTAMP";
+    public override string RenderDateDifferenceInDays(string startDate, string endDate)
         => $"DATEDIFF(DAY FROM {startDate} TO {endDate})";
 
-    public string RenderPaging(int? skip, int? take)
+    public override string RenderPaging(int? skip, int? take)
         => skip is null
             ? string.Empty
             : $" ROWS {skip + 1}" + (take is null ? string.Empty : $" TO {skip + take}");

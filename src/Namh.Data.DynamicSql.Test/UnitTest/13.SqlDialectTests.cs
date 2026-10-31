@@ -164,6 +164,42 @@ public class _13_SqlDialectTests
     }
 
     [Test]
+    public void SqlDialectValidatesTheEntireStatement()
+    {
+        Assert.That(
+            () => new SqliteDialect().ValidateSqlStatement(
+                "SELECT Id FROM Users; DELETE FROM Users"),
+            Throws.ArgumentException);
+    }
+
+    [Test]
+    public void SqlDialectValidatesGeneratedStatementsBeforeExecution()
+    {
+        var metadata = new MetaProvider(
+        [
+            new Entity(
+                "User",
+                [
+                    new Field("Id", "Id"),
+                    new Field("Injected", "Id, DELETE FROM User", IsRawSql: true)
+                ])
+        ]);
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "CREATE TABLE \"User\" (\"Id\" INTEGER);";
+            command.ExecuteNonQuery();
+        }
+
+        using var db = new DynamicSqlContext(connection, metadata, new SqliteDialect());
+
+        Assert.That(
+            () => db.Query("User").Select("Injected").ToList(),
+            Throws.ArgumentException);
+    }
+
+    [Test]
     public void EntityKeepsLogicalAndPhysicalNamesIndependentWhenBothAreProvided()
     {
         var entity = new Entity(Name: "Student", Fields: [], IsRawSql: true, DbTable: "[User]");

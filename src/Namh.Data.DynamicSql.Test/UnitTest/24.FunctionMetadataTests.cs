@@ -332,7 +332,7 @@ public sealed class _24_FunctionMetadataTests
             description: "Parses a date value.",
             sqlTemplates: new Dictionary<string, string>
             {
-                ["Oracle"] = "TO_DATE({1}, 'YYYY-MM-DD')"
+                ["Plugin"] = "TO_DATE({1}, 'YYYY-MM-DD')"
             });
         var oracle = new OraclePluginDialect();
 
@@ -398,7 +398,7 @@ public sealed class _24_FunctionMetadataTests
 
     private sealed class OraclePluginDialect : ISqlDialect
     {
-        public string Key => "Oracle";
+        public string Key => "Plugin";
 
         public string QuoteIdentifier(string identifier)
             => $"\"{identifier.Replace("\"", "\"\"")}\"";

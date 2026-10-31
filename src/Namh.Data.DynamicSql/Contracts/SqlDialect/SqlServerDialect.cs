@@ -1,45 +1,50 @@
-using System.Data;
-using System.Globalization;
-
 #pragma warning disable IDE0130
 namespace Namh.Data.DynamicSql;
 #pragma warning restore IDE0130
 
-public sealed class SqlServerDialect : ISqlDialect
+public sealed class SqlServerDialect : SqlDialectBase
 {
-    public string Key => "SqlServer";
+    public override string Key => "SqlServer";
+    protected override IReadOnlyList<string> ForbiddenKeywords =>
+    [
+        "ALTER", "BACKUP", "BULK", "CREATE", "DBCC", "DELETE", "DENY", "DROP",
+        "EXEC", "EXECUTE", "GRANT", "INSERT", "INTO", "MERGE", "RESTORE",
+        "REVOKE", "TRUNCATE", "UPDATE"
+    ];
+    protected override bool SupportsBracketIdentifiers => true;
+    protected override bool SupportsNestedBlockComments => true;
+    protected override bool DoublesBracketIdentifierClosingEscape => true;
 
-    public string QuoteIdentifier(string identifier)
+    public override string QuoteIdentifier(string identifier)
         => $"[{identifier.Replace("]", "]]")}]";
 
-    public string RenderTable(Entity entity)
+    public override string RenderTable(Entity entity)
         => entity.IsRawSql
-            ? RawSqlEntitySqlGuard.ValidateAndReturn(entity.DbTable, RawSqlEntityDialect.SqlServer)
+            ? ValidateRawSqlEntity(entity.DbTable)
             : $"{QuoteIdentifier(entity.DbSchema ?? "dbo")}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
-    public string RenderBoolean(bool value) => value ? "1" : "0";
-    public string RenderStringLiteral(string value) => $"N'{value.Replace("'", "''")}'";
+    public override string RenderBoolean(bool value) => value ? "1" : "0";
+    public override string RenderStringLiteral(string value) => $"N'{value.Replace("'", "''")}'";
 
-    public string RenderStringConcatenation(string left, string right) => $"{left} + {right}";
+    public override string RenderStringConcatenation(string left, string right) => $"{left} + {right}";
 
-    public string RenderTakePrefix(int count) => $"TOP {count} ";
-    public string FormatParameterValue(object? value) => SqlDialect.FormatParameterValue(value);
-    public string RenderCurrentDateTime() => "GETDATE()";
+    public override string RenderTakePrefix(int count) => $"TOP {count} ";
+    public override string RenderCurrentDateTime() => "GETDATE()";
 
-    public string RenderPaging(int? skip, int? take)
+    public override string RenderPaging(int? skip, int? take)
         => skip is null
             ? string.Empty
             : $" OFFSET {skip} ROWS" +
               (take is null ? string.Empty : $" FETCH NEXT {take} ROWS ONLY");
 
-    public string RenderPaging(int? skip, int? take, bool hasOrderBy)
+    public override string RenderPaging(int? skip, int? take, bool hasOrderBy)
         => skip is null
             ? RenderPaging(skip, take)
             : (hasOrderBy ? string.Empty : " ORDER BY (SELECT 1)") +
               $" OFFSET {skip} ROWS" +
               (take is null ? string.Empty : $" FETCH NEXT {take} ROWS ONLY");
 
-    public string RenderQueryWithParameters(
+    public override string RenderQueryWithParameters(
         string commandText,
         IReadOnlyList<(string Name, object? Value)> parameters)
     {
@@ -72,4 +77,3 @@ public sealed class SqlServerDialect : ISqlDialect
             _ => "nvarchar(4000)"
         };
 }
-

@@ -136,7 +136,8 @@ public class CustomFunctionDefintions
             "Formats a date as a year-month key.",
             sqliteTemplate: "STRFTIME('%Y-%m', {1})",
             postgresTemplate: "TO_CHAR({1}, 'YYYY-MM')",
-            firebirdTemplate: "SUBSTRING(CAST({1} AS VARCHAR(10)) FROM 1 FOR 7)"),
+            firebirdTemplate: "SUBSTRING(CAST({1} AS VARCHAR(10)) FROM 1 FOR 7)",
+            oracleTemplate: "TO_CHAR(CAST({1} AS DATE), 'YYYY-MM')"),
         CreateStandardFunction(
             "AgeOn",
             [
@@ -147,7 +148,8 @@ public class CustomFunctionDefintions
             "(DATEDIFF(year, {1}, {2}) - CASE WHEN DATEPART(month, {2}) * 100 + DATEPART(day, {2}) < DATEPART(month, {1}) * 100 + DATEPART(day, {1}) THEN 1 ELSE 0 END)",
             "Returns completed years between a start date and an as-of date.",
             sqliteTemplate: "(CAST(STRFTIME('%Y', {2}) AS INTEGER) - CAST(STRFTIME('%Y', {1}) AS INTEGER) - CASE WHEN STRFTIME('%m%d', {2}) < STRFTIME('%m%d', {1}) THEN 1 ELSE 0 END)",
-            postgresTemplate: "(EXTRACT(YEAR FROM CAST({2} AS DATE)) - EXTRACT(YEAR FROM CAST({1} AS DATE)) - CASE WHEN EXTRACT(MONTH FROM CAST({2} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({2} AS DATE)) < EXTRACT(MONTH FROM CAST({1} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({1} AS DATE)) THEN 1 ELSE 0 END)"),
+            postgresTemplate: "(EXTRACT(YEAR FROM CAST({2} AS DATE)) - EXTRACT(YEAR FROM CAST({1} AS DATE)) - CASE WHEN EXTRACT(MONTH FROM CAST({2} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({2} AS DATE)) < EXTRACT(MONTH FROM CAST({1} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({1} AS DATE)) THEN 1 ELSE 0 END)",
+            oracleTemplate: "(EXTRACT(YEAR FROM TO_DATE({2}, 'YYYY-MM-DD')) - EXTRACT(YEAR FROM CAST({1} AS DATE)) - CASE WHEN EXTRACT(MONTH FROM TO_DATE({2}, 'YYYY-MM-DD')) * 100 + EXTRACT(DAY FROM TO_DATE({2}, 'YYYY-MM-DD')) < EXTRACT(MONTH FROM CAST({1} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({1} AS DATE)) THEN 1 ELSE 0 END)"),
         CreateStandardFunction(
             "ElapsedYears",
             [
@@ -242,7 +244,12 @@ public class CustomFunctionDefintions
             {
                 ["SqlServer"] = $"DATEDIFF({datePart}, {{1}}, {{2}})",
                 ["Sqlite"] = sqliteTemplate,
-                ["Postgres"] = postgresTemplate
+                ["Postgres"] = postgresTemplate,
+                ["Oracle"] = datePart == "day"
+                    ? "TRUNC(TO_DATE({2}, 'YYYY-MM-DD') - TO_DATE({1}, 'YYYY-MM-DD'))"
+                    : datePart == "month"
+                        ? "((EXTRACT(YEAR FROM TO_DATE({2}, 'YYYY-MM-DD')) - EXTRACT(YEAR FROM TO_DATE({1}, 'YYYY-MM-DD'))) * 12 + EXTRACT(MONTH FROM TO_DATE({2}, 'YYYY-MM-DD')) - EXTRACT(MONTH FROM TO_DATE({1}, 'YYYY-MM-DD')))"
+                        : "(EXTRACT(YEAR FROM TO_DATE({2}, 'YYYY-MM-DD')) - EXTRACT(YEAR FROM TO_DATE({1}, 'YYYY-MM-DD')))"
             });
     }
 
@@ -277,7 +284,8 @@ public class CustomFunctionDefintions
         bool isAggregate = false,
         string? sqliteTemplate = null,
         string? postgresTemplate = null,
-        string? firebirdTemplate = null)
+        string? firebirdTemplate = null,
+        string? oracleTemplate = null)
         => new(
             name,
             arguments,
@@ -288,7 +296,8 @@ public class CustomFunctionDefintions
                 ["SqlServer"] = sqlServerTemplate,
                 ["Sqlite"] = sqliteTemplate ?? sqlServerTemplate,
                 ["Postgres"] = postgresTemplate ?? sqlServerTemplate,
-                ["Firebird"] = firebirdTemplate ?? postgresTemplate ?? sqlServerTemplate
+                ["Firebird"] = firebirdTemplate ?? postgresTemplate ?? sqlServerTemplate,
+                ["Oracle"] = oracleTemplate ?? postgresTemplate ?? sqlServerTemplate
             },
             isAggregate);
 }

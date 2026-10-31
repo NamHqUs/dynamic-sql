@@ -33,6 +33,10 @@ public static class SqlDialect
             connectionType?.Contains("Firebird", StringComparison.OrdinalIgnoreCase) == true)
             return new FirebirdDialect();
 
+        if (connectionType?.Contains("OracleConnection", StringComparison.OrdinalIgnoreCase) == true ||
+            connectionType?.Contains("Oracle", StringComparison.OrdinalIgnoreCase) == true)
+            return new OracleDialect();
+
         return new SqlServerDialect();
     }
 }
