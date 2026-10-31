@@ -36,11 +36,11 @@
 .metadata-diagram-editor .metadata-editor-compact .metadata-table-picker > label,
 .metadata-diagram-editor .metadata-editor-compact .metadata-form-grid > label,
 .metadata-diagram-editor .metadata-editor-compact .editor-section-head h3 {
-  color: #858c9d;
+  color: #8f7fca;
   font-size: 12px;
   font-weight: 600;
 }
-.metadata-diagram-editor .metadata-form label { color: #858c9d; }
+.metadata-diagram-editor .metadata-form label { color: #8f7fca; }
 .metadata-diagram-editor .metadata-form input,
 .metadata-diagram-editor .metadata-form select,
 .metadata-diagram-editor .metadata-table-picker-trigger { color: #f0edfb; }

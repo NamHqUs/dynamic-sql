@@ -142,6 +142,8 @@ export default function FieldsBuilder({ fields, selectedTableColumns, onChange }
                 ref={schemaButtonRef}
                 className="button secondary compact add-field-button"
                 type="button"
+                aria-label="Add fields from schema"
+                title="Add fields from schema"
                 aria-haspopup="dialog"
                 aria-expanded={columnPickerOpen}
                 onClick={() => {
@@ -153,7 +155,7 @@ export default function FieldsBuilder({ fields, selectedTableColumns, onChange }
                   setColumnPickerOpen((open) => !open);
                 }}
               >
-                <Icon name="database" size={13} /><span>From schema</span>
+                <Icon name="database" size={15} />
               </button>
               {columnPickerOpen && createPortal(
                 <div
@@ -216,8 +218,14 @@ export default function FieldsBuilder({ fields, selectedTableColumns, onChange }
               )}
             </div>
           )}
-          <button className="button secondary compact add-field-button" type="button" onClick={addRawSqlField}>
-            <Icon name="plus" size={13} /><span>Field</span>
+          <button
+            className="button secondary compact add-field-button"
+            type="button"
+            aria-label="Add raw SQL field"
+            title="Add raw SQL field"
+            onClick={addRawSqlField}
+          >
+            <Icon name="plus" size={15} />
           </button>
         </div>
       </div>

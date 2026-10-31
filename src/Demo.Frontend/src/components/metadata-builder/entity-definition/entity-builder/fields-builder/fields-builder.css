@@ -28,9 +28,9 @@
 .field-data-type-option { display: flex; align-items: center; gap: 6px; padding: 5px 8px; color: #c0c5d1; font-size: 11px; text-align: left; white-space: nowrap; }
 .field-data-type-option .icon { flex: 0 0 auto; color: #a78bfa; }
 .field-data-type-option:hover, .field-data-type-option[aria-selected="true"] { color: #fff; background: #211d32 !important; }
-.button.compact.add-field-button { margin-top: 16px; padding: 0; border: 0; color: var(--purple); background: none; font: 12px "Manrope", sans-serif; }
+.button.compact.add-field-button { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; margin-top: 16px; padding: 0; border: 1px solid #3b3d52; border-radius: 5px; color: #c9b8ff; background: #211d32; font: 12px "Manrope", sans-serif; }
 .editor-section-head .button.compact.add-field-button { margin-top: 0; }
-.button.compact.add-field-button:hover { border: 0; color: var(--purple); background: none; }
+.button.compact.add-field-button:hover { border-color: #8064e8; color: #fff; background: #30264d; }
 .field-actions { display: flex; align-items: center; gap: 10px; }
 .schema-column-picker { position: relative; }
 .schema-column-menu { position: fixed; z-index: 1000; display: grid; width: min(320px, calc(100vw - 32px)); max-height: 340px; padding: 9px; border: 1px solid #3b3d52; border-radius: 6px; background: #171923; box-shadow: 0 12px 24px #00000055; }
