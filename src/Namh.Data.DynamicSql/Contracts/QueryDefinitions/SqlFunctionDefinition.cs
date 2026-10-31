@@ -70,6 +70,9 @@ public sealed class SqlFunctionDefintion
     public string GetSqlTemplate(string dialect)
         => _sqlTemplates.TryGetValue(dialect, out var template)
             ? template
+            : dialect.Equals("Firebird", StringComparison.OrdinalIgnoreCase) &&
+              _sqlTemplates.TryGetValue("Postgres", out var postgresTemplate)
+                ? postgresTemplate
             : throw new FormatException($"Function [{Name}] has no SQL template for dialect [{dialect}].");
 
     private static void ValidateTemplate(

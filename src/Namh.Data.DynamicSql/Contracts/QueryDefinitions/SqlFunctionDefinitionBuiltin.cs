@@ -47,7 +47,8 @@ internal static class SqlFunctionDefinitionBuiltin
                 {
                     ["SqlServer"] = "ROUND({1}, {2})",
                     ["Sqlite"] = "ROUND({1}, {2})",
-                    ["Postgres"] = "ROUND({1}, CAST({2} AS INTEGER))"
+                    ["Postgres"] = "ROUND({1}, CAST({2} AS INTEGER))",
+                    ["Firebird"] = "ROUND({1}, 2)"
                 }),
             CreateStandardSql("NULLIF",
                 [

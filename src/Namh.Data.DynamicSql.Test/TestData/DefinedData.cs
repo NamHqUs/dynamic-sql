@@ -1,6 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Npgsql;
+using FirebirdSql.Data.FirebirdClient;
 using System.Data;
 using System.Text;
 
@@ -78,6 +79,14 @@ internal sealed class DefinedData
             $"ATTACH DATABASE '{dataPath}/in.db' AS \"in\";";
         command.ExecuteNonQuery();
         return cn;
+    }
+
+    public static IDbConnection GetNorthStarFirebirdConnection()
+    {
+        var connection = new FbConnection(
+            "User=SYSDBA;Password=NoPassword123!;Database=localhost:/firebird/data/northstar.fdb");
+        connection.Open();
+        return connection;
     }
 
     private static IDbConnection CreateSqliteDbConnection()

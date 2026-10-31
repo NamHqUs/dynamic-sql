@@ -161,13 +161,15 @@ class DbQueryProvider(
             dbConnection.Open();
 
         var cmd = dbConnection.CreateCommand();
-        cmd.CommandText = sqlQuery;
+        cmd.CommandText = sqlDialect.PrepareCommandText(
+            sqlQuery,
+            parameters.Select(parameter => (parameter.Name, parameter.Value)).ToArray());
 
         foreach (var e in parameters)
         {
             var para = cmd.CreateParameter();
             para.ParameterName = e.Name;
-            para.Value = e.Value;
+            sqlDialect.ConfigureParameter(para, e.Value);
             cmd.Parameters.Add(para);
         }
 

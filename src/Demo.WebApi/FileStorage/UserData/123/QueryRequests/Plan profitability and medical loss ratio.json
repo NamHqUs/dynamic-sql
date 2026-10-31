@@ -114,50 +114,15 @@
       "fields": [
         {
           "kind": "function",
-          "function": "ROUND",
+          "function": "MedicalLossRatio",
           "arguments": [
             {
-              "kind": "group",
-              "fields": [
-                {
-                  "kind": "value",
-                  "value": 100.0
-                },
-                {
-                  "oper": "*",
-                  "kind": "function",
-                  "function": "Coalesce",
-                  "arguments": [
-                    {
-                      "kind": "field",
-                      "field": "ClaimTotals.ClaimsPaid"
-                    },
-                    {
-                      "kind": "value",
-                      "value": 0
-                    }
-                  ]
-                },
-                {
-                  "oper": "/",
-                  "kind": "function",
-                  "function": "NULLIF",
-                  "arguments": [
-                    {
-                      "kind": "field",
-                      "field": "PremiumTotals.PremiumRevenue"
-                    },
-                    {
-                      "kind": "value",
-                      "value": 0
-                    }
-                  ]
-                }
-              ]
+              "kind": "field",
+              "field": "ClaimTotals.ClaimsPaid"
             },
             {
-              "kind": "value",
-              "value": 2
+              "kind": "field",
+              "field": "PremiumTotals.PremiumRevenue"
             }
           ]
         }

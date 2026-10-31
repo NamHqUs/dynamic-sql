@@ -6,7 +6,8 @@ internal enum RawSqlEntityDialect
 {
     SqlServer,
     Sqlite,
-    Postgres
+    Postgres,
+    Firebird
 }
 
 internal static class RawSqlEntitySqlGuard
@@ -25,7 +26,10 @@ internal static class RawSqlEntitySqlGuard
             [RawSqlEntityDialect.Postgres] = CreateKeywordRegex(
                 "ALTER", "CALL", "COPY", "CREATE", "DELETE", "DO", "DROP", "GRANT",
                 "INSERT", "INTO", "MERGE", "REFRESH", "REVOKE", "TRUNCATE", "UPDATE",
-                "VACUUM")
+                "VACUUM"),
+            [RawSqlEntityDialect.Firebird] = CreateKeywordRegex(
+                "ALTER", "CREATE", "DELETE", "DROP", "EXECUTE", "INSERT", "INTO",
+                "MERGE", "UPDATE")
         };
 
     public static string ValidateAndReturn(string rawSql, RawSqlEntityDialect dialect)

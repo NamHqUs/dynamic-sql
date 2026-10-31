@@ -9,7 +9,8 @@ namespace Namh.Data.DynamicSql.Compilation;
 
 class QueryContext(
     IMetadataProvider metaProvider,
-    IFunctionProvider functionProvider)
+    IFunctionProvider functionProvider,
+    ISqlDialect sqlDialect)
 {
     private int _aliasCount;
     public readonly Stack<(string ArgumentName, TableExpression TableContext)> Arguments = new();
@@ -488,7 +489,7 @@ class QueryContext(
         if (value is bool b)
         {
             var boolName = string.Format("@p{0}", _dbParameters.Count);
-            _dbParameters.Add(new DbParameter(boolName, b));
+            _dbParameters.Add(new DbParameter(boolName, sqlDialect.NormalizeParameterValue(b)));
             return boolName;
         }
 
@@ -496,7 +497,7 @@ class QueryContext(
             return $"'{st}'";
 
         var name = string.Format("@p{0}", _dbParameters.Count);
-        _dbParameters.Add(new DbParameter(name, value));
+        _dbParameters.Add(new DbParameter(name, sqlDialect.NormalizeParameterValue(value)));
 
         return name;
     }

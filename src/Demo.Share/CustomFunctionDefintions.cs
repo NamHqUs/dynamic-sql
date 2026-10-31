@@ -94,7 +94,24 @@ public class CustomFunctionDefintions
             ],
             DataType.Number,
             "COALESCE({1}, {2})",
-            "Returns the first non-null numeric value."),
+            "Returns the first non-null numeric value.",
+            firebirdTemplate: "COALESCE({1}, 0)"),
+        new(
+            "MedicalLossRatio",
+            [
+                new("claimsPaid", DataType.Number),
+                new("premiumRevenue", DataType.Number)
+            ],
+            DataType.Number,
+            "Calculates paid claims as a percentage of premium revenue.",
+            new Dictionary<string, string>
+            {
+                ["SqlServer"] = "ROUND(100.0 * COALESCE(MAX({1}), 0) / NULLIF(MAX({2}), 0), 2)",
+                ["Sqlite"] = "ROUND(100.0 * COALESCE(MAX({1}), 0) / NULLIF(MAX({2}), 0), 2)",
+                ["Postgres"] = "ROUND(100.0 * COALESCE(MAX({1}), 0) / NULLIF(MAX({2}), 0), 2)",
+                ["Firebird"] = "ROUND(100 * COALESCE(MAX({1}), 0) / NULLIF(MAX({2}), 0), 2)"
+            },
+            isAggregate: true),
         new(
             "Concat",
             [
@@ -108,7 +125,8 @@ public class CustomFunctionDefintions
             {
                 ["SqlServer"] = "CONCAT({1}, {2}, {3})",
                 ["Sqlite"] = "({1} || {2} || {3})",
-                ["Postgres"] = "({1} || {2} || {3})"
+                ["Postgres"] = "({1} || {2} || {3})",
+                ["Firebird"] = "({1} || ' ' || {3})"
             }),
         CreateStandardFunction(
             "MonthKey",
@@ -117,7 +135,8 @@ public class CustomFunctionDefintions
             "CONVERT(char(7), {1}, 126)",
             "Formats a date as a year-month key.",
             sqliteTemplate: "STRFTIME('%Y-%m', {1})",
-            postgresTemplate: "TO_CHAR({1}, 'YYYY-MM')"),
+            postgresTemplate: "TO_CHAR({1}, 'YYYY-MM')",
+            firebirdTemplate: "SUBSTRING(CAST({1} AS VARCHAR(10)) FROM 1 FOR 7)"),
         CreateStandardFunction(
             "AgeOn",
             [
@@ -257,7 +276,8 @@ public class CustomFunctionDefintions
         string description,
         bool isAggregate = false,
         string? sqliteTemplate = null,
-        string? postgresTemplate = null)
+        string? postgresTemplate = null,
+        string? firebirdTemplate = null)
         => new(
             name,
             arguments,
@@ -267,7 +287,8 @@ public class CustomFunctionDefintions
             {
                 ["SqlServer"] = sqlServerTemplate,
                 ["Sqlite"] = sqliteTemplate ?? sqlServerTemplate,
-                ["Postgres"] = postgresTemplate ?? sqlServerTemplate
+                ["Postgres"] = postgresTemplate ?? sqlServerTemplate,
+                ["Firebird"] = firebirdTemplate ?? postgresTemplate ?? sqlServerTemplate
             },
             isAggregate);
 }
