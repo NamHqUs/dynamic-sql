@@ -84,10 +84,17 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         if (hasGroupedAggregate)
         {
             var groupBy = query.GroupByExpressions
+                .Select(expression => (Sql: RenderExpression(expression), Fields: Array.Empty<string>(), Alias: (string?)null))
                 .Concat(query.ProjectionItems
                     .Where(item => !item.Item.ContainsGroupedAggregate())
-                    .Select(item => item.Item))
-                .Select(RenderExpression)
+                    .Select(item => (
+                        Sql: RenderExpression(item.Item),
+                        Fields: FindFieldExpressions(item.Item)
+                            .Select(RenderExpression)
+                            .Distinct(StringComparer.Ordinal)
+                            .ToArray(),
+                        Alias: (string?)item.Alias)))
+                .Select(group => dialect.RenderGroupField(group.Sql, group.Fields, group.Alias))
                 .Distinct(StringComparer.Ordinal)
                 .ToArray();
             if (groupBy.Length > 0)
@@ -103,7 +110,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         }
 
         if (query.Orders.Count != 0)
-            text += "\nORDER BY " + string.Join(", ", query.Orders.Select(RenderOrder));
+            text += "\nORDER BY " + string.Join(", ", query.Orders.Select(order => RenderOrder(order, query)));
 
         text += dialect.RenderPaging(
             query.Skip,
@@ -142,16 +149,52 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     private static string Indent(string text)
         => string.Join("\n", text.Split('\n').Select(line => "\t" + line));
 
-    private string RenderOrder(OrderExpression order)
+    private string RenderOrder(OrderExpression order, TableExpression query)
     {
         var expression = order.ProjectionAlias is not null
-            ? dialect.QuoteIdentifier(order.ProjectionAlias)
+            ? dialect.RenderOrderField(
+                RenderExpression(order.Expression),
+                FindFirstFieldExpression(order.Expression) is { } field
+                    ? RenderExpression(field)
+                    : null,
+                order.ProjectionAlias,
+                query.ProjectionItems
+                    .Select((item, index) => (item, index))
+                    .First(pair => string.Equals(pair.item.Alias, order.ProjectionAlias, StringComparison.OrdinalIgnoreCase))
+                    .index + 1)
             : order.Expression is AggregateExpression { GroupWithQuery: true } aggregate
                 ? RenderAggregateSelect(aggregate)
                 : RenderExpression(order.Expression);
 
         return $"{expression}{(order.Descending ? " DESC" : " ASC")}";
     }
+
+    private static FieldExpression? FindFirstFieldExpression(SqlExpression expression)
+        => expression switch
+        {
+            FieldExpression field => field,
+            FunctionSqlExpression function => function.Arguments
+                .OfType<FunctionSqlExpressionArgument>()
+                .Select(argument => FindFirstFieldExpression(argument.Expression))
+                .FirstOrDefault(field => field is not null),
+            BinarySqlExpression binary => FindFirstFieldExpression(binary.Left)
+                ?? FindFirstFieldExpression(binary.Right),
+            ProjectionExpression projection => FindFirstFieldExpression(projection.Expression),
+            _ => null
+        };
+
+    private static IEnumerable<FieldExpression> FindFieldExpressions(SqlExpression expression)
+        => expression switch
+        {
+            FieldExpression field => [field],
+            FunctionSqlExpression function => function.Arguments
+                .OfType<FunctionSqlExpressionArgument>()
+                .SelectMany(argument => FindFieldExpressions(argument.Expression)),
+            BinarySqlExpression binary => FindFieldExpressions(binary.Left)
+                .Concat(FindFieldExpressions(binary.Right)),
+            ProjectionExpression projection => FindFieldExpressions(projection.Expression),
+            _ => []
+        };
 
     private string RenderExpression(SqlExpression expression)
         => expression switch

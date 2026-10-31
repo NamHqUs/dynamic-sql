@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers;
 
 namespace Namh.Data.DynamicSql.Test.UnitTest;
 
@@ -54,6 +55,24 @@ public class _13_SqlDialectTests
 
         Assert.That(sql, Does.Contain("ORDER BY [Id] ASC"));
         Assert.That(sql, Does.Not.Contain("ORDER BY (SELECT 1)"));
+    }
+
+    [Test]
+    public void Db2DialectSortsProjectedAliasesByProjectionOrdinal()
+    {
+        using var connection = new Microsoft.Data.SqlClient.SqlConnection();
+        using var db = new DynamicSqlContext(connection, Metadata, new Db2Dialect());
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Projection = QueryDefinitionParser.ParseProjection("Name | DisplayName"),
+            Sorts = [new SortDefinition(new FieldDefinition("DisplayName"), QuerySortDirection.Descending)]
+        };
+
+        var sql = db.Query(definition).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("ORDER BY 1 DESC"));
+        Assert.That(sql, Does.Not.Contain("ORDER BY \"DISPLAYNAME\""));
     }
 
     [Test]

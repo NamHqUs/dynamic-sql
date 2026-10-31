@@ -44,14 +44,19 @@ services:
     image: saplabs/hanaexpress:latest
     container_name: saphana
     environment:
-      AGREE_TO_HANA_LICENSE: "Y"
-      HANA_PASSWORD: "NoPassword123!"
+      LOCAL_HANA_PASSWORD: "NoPassword123!"
     ports:
       - "39013:39013"
       - "39017:39017"
     volumes:
       - saphana_data:/hana/mounts
       - ../scripts:/scripts:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        printf '{"master_password":"%s"}' "$$LOCAL_HANA_PASSWORD" > /tmp/hana-password.json
+        exec /run_hana --agree-to-sap-license --passwords-url file:///tmp/hana-password.json
     networks:
       - dbnet
 
@@ -109,6 +114,23 @@ services:
     networks:
       - dbnet
 
+  db2:
+    image: icr.io/db2_community/db2:11.5.9.0
+    container_name: db2
+    privileged: true
+    environment:
+      LICENSE: accept
+      DBNAME: NORTHSTA
+      DB2INST1_PASSWORD: "NoPassword123!"
+    ports:
+      - "50000:50000"
+    volumes:
+      - db2_data:/database
+      - ../scripts/northstar-demo.db2.sh:/var/custom/northstar-demo.db2.sh:ro
+      - ../scripts/northstar-demo.db2.sql:/scripts/northstar-demo.db2.sql:ro
+    networks:
+      - dbnet
+
 volumes:
   sqlserver_data:
   postgres_data:
@@ -117,6 +139,7 @@ volumes:
   oracle_data:
   mariadb_data:
   saphana_data:
+  db2_data:
 
 networks:
   dbnet:

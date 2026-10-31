@@ -45,6 +45,10 @@ public static class SqlDialect
             connectionType?.Contains("Hdb", StringComparison.OrdinalIgnoreCase) == true)
             return new SapHanaDialect();
 
+        if (connectionType?.Contains("Db2", StringComparison.OrdinalIgnoreCase) == true ||
+            connectionType?.Contains("DB2", StringComparison.OrdinalIgnoreCase) == true)
+            return new Db2Dialect();
+
         return new SqlServerDialect();
     }
 }

@@ -11,7 +11,8 @@ public enum DbServerType
     Firebird,
     Postgres,
     MySql,
-    Oracle
+    Oracle,
+    Db2
 }
 
 public sealed class DbConnectionService(IConfiguration configuration, DatabaseService dbService) : IDbConnectionService

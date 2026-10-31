@@ -92,6 +92,7 @@ public class DatabaseService(IConfiguration configuration) : IDatabaseService, I
             DbServerType.Postgres => new PostgresDbInstance(connectionString, scriptFiles, dbVersion),
             DbServerType.MySql => new MySqlDbInstance(connectionString, scriptFiles, dbVersion),
             DbServerType.Oracle => new OracleDbInstance(connectionString, scriptFiles, dbVersion),
+            DbServerType.Db2 => new Db2DbInstance(connectionString, scriptFiles, dbVersion),
             _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, null)
         };
     }

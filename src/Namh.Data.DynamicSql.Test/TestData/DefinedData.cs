@@ -5,6 +5,7 @@ using FirebirdSql.Data.FirebirdClient;
 using Oracle.ManagedDataAccess.Client;
 using MySqlConnector;
 using Sap.Data.Hana;
+using IBM.Data.Db2;
 using System.Data;
 using System.Text;
 
@@ -14,7 +15,8 @@ public enum DbServerType
 {
     Sqlite,
     SqlServer,
-    Postgres
+    Postgres,
+    Db2
 }
 internal sealed class DefinedData 
 {
@@ -26,6 +28,7 @@ internal sealed class DefinedData
             DbServerType.Sqlite => CreateSqliteDbConnection(),
             DbServerType.SqlServer => CreateSqlServerDbConnection(),
             DbServerType.Postgres => CreatePostgresDbConnection(),
+            DbServerType.Db2 => CreateDb2DbConnection(),
             _ => throw new ArgumentOutOfRangeException(nameof(dbServerType), dbServerType, null)
         };
 
@@ -111,7 +114,18 @@ internal sealed class DefinedData
     public static IDbConnection GetNorthStarSapHanaConnection()
     {
         var connection = new HanaConnection(
-            "Server=localhost:39017;UserID=SYSTEM;Password=NoPassword123!;CurrentSchema=NORTHSTAR;");
+            "Server=localhost:39017;UserID=SYSTEM;Password=NoPassword123!;");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SET SCHEMA \"NORTHSTAR\"";
+        command.ExecuteNonQuery();
+        return connection;
+    }
+
+    public static IDbConnection GetNorthStarDb2Connection()
+    {
+        var connection = new DB2Connection(
+            "Server=localhost:50000;Database=NORTHSTA;UID=db2inst1;PWD=NoPassword123!;");
         connection.Open();
         return connection;
     }
@@ -163,6 +177,9 @@ internal sealed class DefinedData
 
         return cn;
     }
+
+    private static IDbConnection CreateDb2DbConnection()
+        => GetNorthStarDb2Connection();
 
     private static string LoadScript(params string[] fileNames)
     {

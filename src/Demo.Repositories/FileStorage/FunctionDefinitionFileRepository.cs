@@ -68,7 +68,8 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
                 new FirebirdDialect(),
                 new OracleDialect(),
                 new MariaDialect(),
-                new SapHanaDialect()
+                new SapHanaDialect(),
+                new Db2Dialect()
             }
             .SelectMany(dialect => new FunctionProvider(dialect).GetFunctions())
             .GroupBy(function => function.Name, StringComparer.OrdinalIgnoreCase)

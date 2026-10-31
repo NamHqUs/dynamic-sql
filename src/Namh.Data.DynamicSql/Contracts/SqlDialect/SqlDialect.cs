@@ -16,6 +16,17 @@ public interface ISqlDialect
     string RenderStringConcatenation(string left, string right);
     string RenderTakePrefix(int count);
     string RenderPaging(int? skip, int? take);
+    string RenderOrderField(
+        string expression,
+        string? field,
+        string? alias,
+        int ordinal)
+        => alias is null ? expression : QuoteIdentifier(alias);
+    string RenderGroupField(
+        string expression,
+        IReadOnlyList<string> fields,
+        string? alias)
+        => expression;
     string FormatParameterValue(object? value);
     object? NormalizeParameterValue(object? value) => value;
     string PrepareCommandText(

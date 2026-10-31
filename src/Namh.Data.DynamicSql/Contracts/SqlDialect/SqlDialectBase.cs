@@ -17,6 +17,17 @@ public abstract class SqlDialectBase : ISqlDialect
     public abstract string RenderStringConcatenation(string left, string right);
     public abstract string RenderTakePrefix(int count);
     public abstract string RenderPaging(int? skip, int? take);
+    public virtual string RenderOrderField(
+        string expression,
+        string? field,
+        string? alias,
+        int ordinal)
+        => alias is null ? expression : QuoteIdentifier(alias);
+    public virtual string RenderGroupField(
+        string expression,
+        IReadOnlyList<string> fields,
+        string? alias)
+        => expression;
     public virtual string RenderCurrentDateTime() => "CURRENT_TIMESTAMP";
     public virtual string RenderDateDifferenceInDays(string startDate, string endDate)
         => $"DATEDIFF(day, {startDate}, {endDate})";

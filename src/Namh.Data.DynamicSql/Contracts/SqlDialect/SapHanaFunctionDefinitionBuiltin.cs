@@ -15,7 +15,7 @@ internal sealed class SapHanaFunctionDefinitionBuiltin : SqlFunctionDefinitionBu
     private SqlFunctionDefintion Round() =>
         Create("ROUND", [new("value", DataType.Number), new("digits", DataType.Number)],
             DataType.Number, "Rounds a number to the specified number of decimal places.",
-            "ROUND({1}, {2})");
+        "ROUND({1}, CAST({2} AS INTEGER))");
 
     protected override SqlFunctionDefintion Day() => CreateDatePart("DAYOFMONTH");
     protected override SqlFunctionDefintion Month() => CreateDatePart("MONTH");
@@ -48,6 +48,12 @@ internal sealed class SapHanaFunctionDefinitionBuiltin : SqlFunctionDefinitionBu
     protected override SqlFunctionDefintion MonthKey() =>
         Create("MONTHKEY", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "TO_VARCHAR({1}, 'YYYY-MM')");
+
+    protected override SqlFunctionDefintion Coalesce() =>
+        Create("COALESCE",
+            [new("value", DataType.Number), new("fallback", DataType.Number)],
+            DataType.Number, "Returns the first non-null numeric value.",
+            "COALESCE(CAST({1} AS DECIMAL(34, 10)), 0)");
 
     protected override SqlFunctionDefintion AgeOn() =>
         Create("AGEON",

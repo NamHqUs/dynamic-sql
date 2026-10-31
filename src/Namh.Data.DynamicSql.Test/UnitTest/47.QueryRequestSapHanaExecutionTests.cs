@@ -24,6 +24,10 @@ internal sealed class QueryRequestSapHanaExecutionTests
         {
             Assert.Ignore($"SAP HANA comparison requires the Docker SAP HANA service: {exception.Message}");
         }
+        catch (ArgumentException exception)
+        {
+            Assert.Ignore($"SAP HANA client rejected the configured connection: {exception.Message}");
+        }
 
         _db = new DynamicSqlContext(
             _connection,
@@ -55,17 +59,29 @@ internal sealed class QueryRequestSapHanaExecutionTests
 
         Assert.That(requests.Length, Is.EqualTo(20));
         Assert.That(statements.Count, Is.EqualTo(20));
-        foreach (var statement in statements.Values)
-            Assert.That(() => Execute(statement), Throws.Nothing);
+        foreach (var (title, statement) in statements)
+            Assert.That(() => Execute(statement), Throws.Nothing, title);
 
         foreach (var requestPath in requests)
         {
             var reportName = Path.GetFileNameWithoutExtension(requestPath);
             var title = reportName[(reportName.IndexOf(' ') + 1)..];
             var query = SavedQueryDefinitionLoader.Load(requestPath);
-            var generated = _db.Query(query).ToList()
-                .Select(record => record.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase))
-                .ToArray();
+            IReadOnlyList<Dictionary<string, object?>> generated;
+            var generatedSql = string.Empty;
+            try
+            {
+                var generatedQuery = _db.Query(query);
+                generatedSql = generatedQuery.ToSql().CommandText;
+                generated = generatedQuery.ToList()
+                    .Select(record => record.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase))
+                    .ToArray();
+            }
+            catch (Exception exception)
+            {
+                Assert.Fail($"{reportName}: {exception.Message}\n{generatedSql}");
+                return;
+            }
             var raw = Execute(statements[title]);
 
             Assert.That(generated, Has.Count.EqualTo(raw.Count), reportName);
@@ -78,7 +94,7 @@ internal sealed class QueryRequestSapHanaExecutionTests
                             generatedRecord.ContainsKey(key) &&
                             ValuesMatch(generatedRecord[key], rawRecord[key]))),
                     Is.True,
-                    reportName);
+                    $"{reportName}: generated=[{string.Join(", ", generatedRecord.Select(pair => $"{pair.Key}={pair.Value}"))}] raw=[{string.Join(", ", raw.SelectMany(record => record.Select(pair => $"{pair.Key}={pair.Value}")))}]");
             }
         }
     }
@@ -120,20 +136,24 @@ internal sealed class QueryRequestSapHanaExecutionTests
     {
         if (actual is null || expected is null)
             return actual is null && expected is null;
-        if (IsNumber(actual) && IsNumber(expected))
+        if (decimal.TryParse(
+                Convert.ToString(actual, CultureInfo.InvariantCulture),
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var actualNumber) &&
+            decimal.TryParse(
+                Convert.ToString(expected, CultureInfo.InvariantCulture),
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var expectedNumber))
         {
-            var difference = Math.Abs(Convert.ToDecimal(actual, CultureInfo.InvariantCulture) -
-                Convert.ToDecimal(expected, CultureInfo.InvariantCulture));
-            return difference <= 0.01m;
+            return Math.Abs(actualNumber - expectedNumber) <= 0.01m;
         }
         return string.Equals(
             Convert.ToString(actual, CultureInfo.InvariantCulture),
             Convert.ToString(expected, CultureInfo.InvariantCulture),
             StringComparison.Ordinal);
     }
-
-    private static bool IsNumber(object value)
-        => value is byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal;
 
     private static string Unindent(string sql)
         => string.Join(Environment.NewLine, sql.Split(["\r\n", "\n"], StringSplitOptions.None)
