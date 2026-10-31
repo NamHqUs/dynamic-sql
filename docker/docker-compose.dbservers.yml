@@ -26,6 +26,19 @@ services:
     networks:
       - dbnet
 
+  cockroach:
+    image: cockroachdb/cockroach:v25.2.5
+    container_name: cockroach
+    command: start-single-node --insecure --http-addr=0.0.0.0:8080
+    ports:
+      - "26257:26257"
+      - "8080:8080"
+    volumes:
+      - cockroach_data:/cockroach/cockroach-data
+      - ../scripts:/scripts:ro
+    networks:
+      - dbnet
+
   mariadb:
     image: mariadb:11
     container_name: mariadb
@@ -134,6 +147,7 @@ services:
 volumes:
   sqlserver_data:
   postgres_data:
+  cockroach_data:
   sqlite_data:
   firebird_data:
   oracle_data:

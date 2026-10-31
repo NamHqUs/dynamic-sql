@@ -95,3 +95,12 @@ public class DynamicPostgresContext(IDbConnection dbConnection, IMetadataProvide
     {
     }
 }
+
+public class DynamicCockroachContext(IDbConnection dbConnection, IMetadataProvider metaProvider, IFunctionProvider functionProvider)
+    : DynamicSqlContext(dbConnection, metaProvider, functionProvider, new CockroachDialect())
+{
+    public DynamicCockroachContext(IDbConnection dbConnection, IMetadataProvider metaProvider)
+        : this(dbConnection, metaProvider, new FunctionProvider(new CockroachDialect()))
+    {
+    }
+}

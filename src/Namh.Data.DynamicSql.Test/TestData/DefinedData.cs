@@ -69,6 +69,26 @@ internal sealed class DefinedData
         return cn;
     }
 
+    public static IDbConnection GetNorthStarCockroachConnection()
+    {
+        var cn = new NpgsqlConnection(
+            "Host=localhost;Port=26257;Database=defaultdb;Username=root;Ssl Mode=Disable;");
+        cn.Open();
+        ExecuteNonQuery(cn, "SET search_path = main, hr, sa, he, \"in\", public;");
+
+        lock (oLock)
+        {
+            var isExisted = ExecuteScalar<bool>(
+                cn,
+                "SELECT EXISTS (SELECT 1 FROM information_schema.tables " +
+                "WHERE table_schema = 'main' AND table_name = 'Users');");
+            if (!isExisted)
+                ExecuteNonQuery(cn, LoadScript("northstar-demo.cockroach.sql"));
+        }
+
+        return cn;
+    }
+
     public static IDbConnection GetNorthStarSqliteDockerConnection()
     {
         var root = new DirectoryInfo("../../../../../").FullName;

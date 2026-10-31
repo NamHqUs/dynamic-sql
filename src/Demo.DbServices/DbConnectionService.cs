@@ -10,6 +10,7 @@ public enum DbServerType
     SqlServer,
     Firebird,
     Postgres,
+    Cockroach,
     MySql,
     Oracle,
     Db2

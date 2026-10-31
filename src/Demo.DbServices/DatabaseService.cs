@@ -90,6 +90,7 @@ public class DatabaseService(IConfiguration configuration) : IDatabaseService, I
             DbServerType.SqlServer => new SqlServerDbInstance(connectionString, scriptFiles, dbVersion),
             DbServerType.Firebird => new FirebirdDbInstance(connectionString, scriptFiles, dbVersion),
             DbServerType.Postgres => new PostgresDbInstance(connectionString, scriptFiles, dbVersion),
+            DbServerType.Cockroach => new CockroachDbInstance(connectionString, scriptFiles, dbVersion),
             DbServerType.MySql => new MySqlDbInstance(connectionString, scriptFiles, dbVersion),
             DbServerType.Oracle => new OracleDbInstance(connectionString, scriptFiles, dbVersion),
             DbServerType.Db2 => new Db2DbInstance(connectionString, scriptFiles, dbVersion),

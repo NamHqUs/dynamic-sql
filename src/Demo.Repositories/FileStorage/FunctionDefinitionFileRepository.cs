@@ -65,6 +65,7 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
                 new SqliteDialect(),
                 new SqlServerDialect(),
                 new PostgresDialect(),
+                new CockroachDialect(),
                 new FirebirdDialect(),
                 new OracleDialect(),
                 new MariaDialect(),

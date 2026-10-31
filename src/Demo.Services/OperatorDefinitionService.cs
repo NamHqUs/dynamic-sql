@@ -82,7 +82,7 @@ public sealed class OperatorDefinitionService(
             throw new ArgumentException("SQL templates are required.");
 
         var templates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var provider in new[] { "Sqlite", "SqlServer", "Postgres", "Firebird", "Maria", "Oracle", "SapHana", "Db2" })
+        foreach (var provider in new[] { "Sqlite", "SqlServer", "Postgres", "Cockroach", "Firebird", "Maria", "Oracle", "SapHana", "Db2" })
         {
             if (!dto.SqlTemplates.TryGetValue(provider, out var template) ||
                 !IsValidTemplate(template))
@@ -194,6 +194,7 @@ public sealed class OperatorDefinitionService(
                 ["Sqlite"] = sqlTemplate,
                 ["SqlServer"] = sqlTemplate,
                 ["Postgres"] = sqlTemplate,
+                ["Cockroach"] = sqlTemplate,
                 ["Firebird"] = sqlTemplate,
                 ["Maria"] = sqlTemplate,
                 ["Oracle"] = sqlTemplate,
