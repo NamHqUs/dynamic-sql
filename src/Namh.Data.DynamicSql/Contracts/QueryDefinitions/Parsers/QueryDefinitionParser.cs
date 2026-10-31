@@ -165,6 +165,8 @@ public static partial class QueryDefinitionParser
     public static IFieldDefinition[] ParseExpression(string plainText) => FieldDefinitionParser.ParseExpression(plainText);
     public static List<ProjectionDefinition> ParseProjection(string plainText) => ProjectionDefinitionParser.Parse(plainText);
     public static ConditionDefinition? ParseFilter(string plainText) => ConditionDefinitionParser.Parse(plainText);
+    public static IConditionDefintion? ParseJoinCondition(string plainText)
+        => ConditionDefinitionParser.ParseJoinCondition(plainText);
     public static List<SortDefinition> ParseSorts(string plainText) => SortDefinitionParser.Parse(plainText);
 
     private static SortDefinition ParseSort(JsonElement element)

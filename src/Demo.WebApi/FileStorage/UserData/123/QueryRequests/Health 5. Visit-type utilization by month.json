@@ -1,0 +1,180 @@
+{
+  "MainQuery": {
+    "Name": "Health 5. Visit-type utilization by month",
+    "Entity": "Visits",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "MonthKey",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "VisitDate"
+              }
+            ]
+          }
+        ],
+        "Alias": "VisitMonth"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "VisitType"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          }
+        ],
+        "Alias": "ScheduledVisits"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountIf",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Status = \u0027No-Show\u0027"
+              }
+            ]
+          }
+        ],
+        "Alias": "NoShows"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "value",
+                    "value": 100.0
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "function",
+                    "function": "CountIf",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "Status = \u0027No-Show\u0027"
+                      }
+                    ]
+                  },
+                  {
+                    "oper": "/",
+                    "kind": "function",
+                    "function": "COUNT",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "Id"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "NoShowPercent"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "AvgIf",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "DurationMinutes"
+                  },
+                  {
+                    "kind": "field",
+                    "field": "Status = \u0027Completed\u0027"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 1
+              }
+            ]
+          }
+        ],
+        "Alias": "AverageMinutes"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Charge"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "Charges"
+      }
+    ],
+    "Filters": null,
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "ScheduledVisits"
+          },
+          "Direction": "Descending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "Health 5. Visit-type utilization by month",
+    "ExtraRelations": null
+  },
+  "Contexts": [],
+  "IsBuiltin": false
+}

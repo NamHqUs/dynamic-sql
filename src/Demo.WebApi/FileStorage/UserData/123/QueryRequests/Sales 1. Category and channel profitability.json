@@ -1,6 +1,6 @@
 {
   "MainQuery": {
-    "Name": "Category and channel profitability",
+    "Name": "Sales 1. Category and channel profitability",
     "Entity": "OrderCategory",
     "Projection": [
       {
@@ -126,7 +126,7 @@
     ],
     "Page": 1,
     "PageSize": 10,
-    "Id": "Category and channel profitability",
+    "Id": "Sales 1. Category and channel profitability",
     "ExtraRelations": []
   },
   "Contexts": [

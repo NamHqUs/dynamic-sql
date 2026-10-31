@@ -96,7 +96,9 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
     private static QueryDto ReadQueryRequest(string path, bool isBuiltin)
     {
         var sourceJson = File.ReadAllText(path);
-        var json = NormalizeLegacyQueryRequest(sourceJson);
+        var json = NormalizeLegacyQueryRequest(
+            sourceJson,
+            Path.GetFileNameWithoutExtension(path));
         var query = JsonSerializer.Deserialize<QueryDto>(
             json,
             JSON_OPTIONS)
@@ -114,7 +116,7 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
         return query;
     }
 
-    private static string NormalizeLegacyQueryRequest(string json)
+    private static string NormalizeLegacyQueryRequest(string json, string fallbackName)
     {
         var root = JsonNode.Parse(json);
         if (root is not JsonObject queryRequest)
@@ -161,7 +163,9 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
             mainQuery.Remove("Contexts");
             mainQuery.Remove("IsBuiltin");
             mainQuery["Id"] = GetProperty(queryRequest, "Id")?.DeepClone()
-                ?? GetProperty(queryRequest, "Name")?.DeepClone();
+                ?? GetProperty(queryRequest, "Name")?.DeepClone()
+                ?? fallbackName;
+            mainQuery["Name"] = GetProperty(queryRequest, "Name")?.DeepClone() ?? fallbackName;
             mainQuery["ExtraRelations"] = extraRelations.Count > 0 ? extraRelations : null;
             queryRequest = new JsonObject
             {
@@ -172,7 +176,22 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
             wasNormalized = true;
         }
 
-        NormalizeQueryContext(queryRequest, ref wasNormalized);
+        if (GetProperty(queryRequest, "MainQuery") is JsonObject normalizedMainQuery)
+        {
+            if (GetProperty(normalizedMainQuery, "Name") is null)
+            {
+                normalizedMainQuery["Name"] = fallbackName;
+                wasNormalized = true;
+            }
+            if (GetProperty(normalizedMainQuery, "Id") is null)
+            {
+                normalizedMainQuery["Id"] = fallbackName;
+                wasNormalized = true;
+            }
+            NormalizeQueryContext(normalizedMainQuery, ref wasNormalized);
+        }
+        else
+            NormalizeQueryContext(queryRequest, ref wasNormalized);
         if (queryRequest["Contexts"] is JsonArray contextNodes)
         {
             foreach (var context in contextNodes.OfType<JsonObject>())
@@ -234,6 +253,18 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
                 wasNormalized = true;
             }
         }
+        if (filtersProperty.Value is JsonValue filterValue
+            && filterValue.TryGetValue<string>(out var filterText)
+            && !string.IsNullOrWhiteSpace(filterText))
+        {
+            var filter = Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers.QueryDefinitionParser
+                .ParseFilter(filterText);
+            query[filtersProperty.Key] = JsonSerializer.SerializeToNode(
+                filter,
+                filter?.GetType() ?? typeof(object),
+                JSON_OPTIONS);
+            wasNormalized = true;
+        }
         if (filtersProperty.Value is JsonArray filters)
         {
             query[filtersProperty.Key] = filters.Count switch
@@ -247,6 +278,47 @@ public sealed class QueryRequestFileRepository(FilePathResolver filePathResolver
                 }
             };
             wasNormalized = true;
+        }
+
+        var relationsProperty = query.FirstOrDefault(property =>
+            string.Equals(property.Key, "ExtraRelations", StringComparison.OrdinalIgnoreCase));
+        if (relationsProperty.Value is JsonArray relations)
+        {
+            foreach (var relationNode in relations.OfType<JsonObject>())
+            {
+                var conditionProperty = relationNode.FirstOrDefault(property =>
+                    string.Equals(property.Key, "Condition", StringComparison.OrdinalIgnoreCase));
+                if (conditionProperty.Value is not JsonValue conditionValue
+                    || !conditionValue.TryGetValue<string>(out var conditionText)
+                    || string.IsNullOrWhiteSpace(conditionText))
+                    continue;
+
+                var condition = Namh.Data.DynamicSql.Contracts.QueryDefinitions.Parsers.QueryDefinitionParser
+                    .ParseJoinCondition(conditionText);
+                relationNode[conditionProperty.Key] = JsonSerializer.SerializeToNode(
+                    condition,
+                    condition?.GetType() ?? typeof(object),
+                    JSON_OPTIONS);
+                wasNormalized = true;
+            }
+        }
+
+        var sortsProperty = query.FirstOrDefault(property =>
+            string.Equals(property.Key, "Sorts", StringComparison.OrdinalIgnoreCase));
+        if (sortsProperty.Value is JsonArray sorts && sorts.Count > 0)
+        {
+            var containsGroups = sorts.Any(sort => sort is JsonArray);
+            if (containsGroups && sorts.Any(sort => sort is not JsonArray))
+                throw new JsonException("A legacy sort list must contain only groups.");
+
+            if (!containsGroups)
+            {
+                var group = new JsonArray();
+                foreach (var sort in sorts)
+                    group.Add(sort?.DeepClone());
+                query[sortsProperty.Key] = new JsonArray(group);
+                wasNormalized = true;
+            }
         }
 
     }

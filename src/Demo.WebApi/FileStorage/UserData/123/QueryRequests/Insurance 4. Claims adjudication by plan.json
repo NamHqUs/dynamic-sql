@@ -1,0 +1,199 @@
+{
+  "MainQuery": {
+    "Name": "Insurance 4. Claims adjudication by plan",
+    "Entity": "Claims",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Policy.Plan.Name"
+          }
+        ],
+        "Alias": "Plan"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Policy.Plan.Tier"
+          }
+        ],
+        "Alias": "Tier"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          }
+        ],
+        "Alias": "ClaimsReceived"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountIf",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Status = \u0027Paid\u0027"
+              }
+            ]
+          }
+        ],
+        "Alias": "PaidClaims"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountIf",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Status = \u0027Denied\u0027"
+              }
+            ]
+          }
+        ],
+        "Alias": "DeniedClaims"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "value",
+                    "value": 100.0
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "function",
+                    "function": "CountIf",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "Status = \u0027Denied\u0027"
+                      }
+                    ]
+                  },
+                  {
+                    "oper": "/",
+                    "kind": "function",
+                    "function": "COUNT",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "Id"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "DenialPercent"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "AvgIf",
+                "arguments": [
+                  {
+                    "kind": "function",
+                    "function": "DateSub",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "ClaimDate"
+                      },
+                      {
+                        "kind": "field",
+                        "field": "ProcessedDate"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "field",
+                    "field": "ProcessedDate IS NOT NULL"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 1
+              }
+            ]
+          }
+        ],
+        "Alias": "AverageProcessingDays"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "PaidAmount"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "TotalPaid"
+      }
+    ],
+    "Filters": null,
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "ClaimsReceived"
+          },
+          "Direction": "Descending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "Insurance 4. Claims adjudication by plan",
+    "ExtraRelations": null
+  },
+  "Contexts": [],
+  "IsBuiltin": false
+}
