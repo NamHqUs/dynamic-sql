@@ -254,20 +254,20 @@ public sealed class _24_FunctionMetadataTests
     [Test]
     public void BuiltInDateFunctionsHaveFriendlyNamesDescriptionsAndProviderSql()
     {
-        var functions = new FunctionProvider(CustomFunctionDefintions.Functions).GetFunctions().ToDictionary(
+        var functions = new FunctionProvider().GetFunctions().ToDictionary(
             function => function.Name,
             StringComparer.OrdinalIgnoreCase);
 
-        Assert.That(functions.Keys, Does.Contain("DateSub").And.Contain("MonthSub").And.Contain("YearSub")
-            .And.Contain("DateAdd").And.Contain("MonthAdd").And.Contain("YearAdd").And.Contain("DateFormat"));
+        Assert.That(functions.Keys, Does.Contain("DATESUB").And.Contain("MONTHSUB").And.Contain("YEARSUB")
+            .And.Contain("DATEADD").And.Contain("MONTHADD").And.Contain("YEARADD").And.Contain("DATEFORMAT"));
         Assert.That(functions.Keys, Does.Not.Contain("DATEDIFF").And.Not.Contain("STRFTIME"));
         Assert.That(functions.Keys, Does.Contain("COUNT").And.Contain("SUM").And.Contain("AVG")
             .And.Not.Contain("Average").And.Not.Contain("COUNT_DISTINCT"));
-        Assert.That(functions.Keys, Does.Contain("CountDistinct").And.Contain("Coalesce").And.Contain("Concat")
-            .And.Contain("CountIf").And.Contain("Lag").And.Contain("WindowSum"));
+        Assert.That(functions.Keys, Does.Contain("COUNTDISTINCT").And.Contain("COALESCE").And.Contain("CONCAT")
+            .And.Contain("COUNTIF").And.Contain("LAG").And.Contain("WINDOWSUM"));
         Assert.That(functions.Values.All(function => !string.IsNullOrWhiteSpace(function.Description)), Is.True);
         Assert.That(functions["COUNT"].ResultType, Is.EqualTo(DataType.Number));
-        Assert.That(functions["DateAdd"].ResultType, Is.EqualTo(DataType.Datetime));
+        Assert.That(functions["DATEADD"].ResultType, Is.EqualTo(DataType.Datetime));
 
         var dateAdd = new FunctionFieldDefinition("DateAdd",
             [new FieldDefinition("InvoiceDate"), new ConstFieldDefinition(2)]);
@@ -321,7 +321,7 @@ public sealed class _24_FunctionMetadataTests
         using var context = new DynamicSqlContext(
             connection,
             new MetaProvider(Metadata),
-            new FunctionProvider(CustomFunctionDefintions.Functions),
+            new FunctionProvider(),
             new SqliteDialect());
 
         var cases = new Dictionary<string, DateTime>
@@ -428,7 +428,7 @@ public sealed class _24_FunctionMetadataTests
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         var metadata = new MetaProvider(Metadata);
-        var functionProvider = new FunctionProvider(functions ?? CustomFunctionDefintions.Functions);
+        var functionProvider = new FunctionProvider(functions);
         using var context = new DynamicSqlContext(
             connection,
             metadata,

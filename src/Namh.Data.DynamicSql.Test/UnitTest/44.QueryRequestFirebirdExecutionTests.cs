@@ -28,7 +28,7 @@ internal sealed class QueryRequestFirebirdExecutionTests
         _db = new DynamicSqlContext(
             _connection,
             new MetaProvider(metadata),
-            new FunctionProvider(CustomFunctionDefintions.Functions),
+            new FunctionProvider(),
             SqlDialect.ForConnection(_connection));
     }
 
@@ -56,13 +56,13 @@ internal sealed class QueryRequestFirebirdExecutionTests
                 "Sales 1. Category and channel profitability.json",
                 StringComparison.Ordinal))
             .Where(path => !Path.GetFileName(path).Equals(
-                "Check Context Calculation Fields.json",
+                "Test-Check Context Calculation Fields.json",
                 StringComparison.Ordinal))
             .Where(path => !Path.GetFileName(path).Equals(
-                "Multiple Contexts.json",
+                "Test-Multiple Contexts.json",
                 StringComparison.Ordinal))
             .Where(path => !Path.GetFileName(path).Equals(
-                "Query directly on REF CONTEXT.json",
+                "Test-Query directly on REF CONTEXT.json",
                 StringComparison.Ordinal))
             .Where(path => !Path.GetFileName(path).Equals(
                 "Shared Context.json",

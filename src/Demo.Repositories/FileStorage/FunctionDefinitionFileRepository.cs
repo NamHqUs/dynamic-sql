@@ -1,6 +1,5 @@
 using Demo.Contracts.Dto;
 using Demo.Contracts.Repositories;
-using Demo.Share;
 using Namh.Data.DynamicSql;
 using System.Security.Cryptography;
 using System.Text;
@@ -62,7 +61,6 @@ public sealed class FunctionDefinitionFileRepository(FilePathResolver filePathRe
 
     private static IReadOnlyCollection<SqlFunctionDefintion> GetBuiltInDefinitions()
         => new FunctionProvider()
-            .RegisterFunctions(CustomFunctionDefintions.Functions)
             .GetFunctions();
 
     private static string GetFileId(string id)

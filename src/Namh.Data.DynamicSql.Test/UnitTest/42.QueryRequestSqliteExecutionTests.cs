@@ -10,9 +10,9 @@ internal sealed class QueryRequestSqliteExecutionTests
     private static readonly string[] LegacyRequests =
     [
         "Sales 1. Category and channel profitability.json",
-        "Check Context Calculation Fields.json",
-        "Multiple Contexts.json",
-        "Query directly on REF CONTEXT.json",
+        "Test-Check Context Calculation Fields.json",
+        "Test-Multiple Contexts.json",
+        "Test-Query directly on REF CONTEXT.json",
         "Shared Context.json"
     ];
 
@@ -28,7 +28,7 @@ internal sealed class QueryRequestSqliteExecutionTests
         _db = new DynamicSqlContext(
             _connection,
             new MetaProvider(metadata),
-            new FunctionProvider(CustomFunctionDefintions.Functions),
+            new FunctionProvider(),
             SqlDialect.ForConnection(_connection));
     }
 

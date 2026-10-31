@@ -26,7 +26,7 @@ internal sealed class QueryRequestOracleExecutionTests
         _db = new DynamicSqlContext(
             _connection,
             new MetaProvider(BuiltinMetadata.UnitTestData.Concat(BuiltinMetadata.NorthStarDemoData)),
-            new FunctionProvider(CustomFunctionDefintions.Functions),
+            new FunctionProvider(),
             SqlDialect.ForConnection(_connection));
     }
 
@@ -41,9 +41,9 @@ internal sealed class QueryRequestOracleExecutionTests
             .Where(path => !new[]
             {
                 "Sales 1. Category and channel profitability.json",
-                "Check Context Calculation Fields.json",
-                "Multiple Contexts.json",
-                "Query directly on REF CONTEXT.json",
+                "Test-Check Context Calculation Fields.json",
+                "Test-Multiple Contexts.json",
+                "Test-Query directly on REF CONTEXT.json",
                 "Shared Context.json"
             }.Contains(Path.GetFileName(path), StringComparer.Ordinal))
             .OrderBy(path => path, StringComparer.Ordinal)

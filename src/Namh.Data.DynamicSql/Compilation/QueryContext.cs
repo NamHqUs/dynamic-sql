@@ -212,6 +212,19 @@ class QueryContext(
                 ParsePredicateExpression(tableContext, filter, depth));
         }
 
+        if (definition.DataType == DataType.Datetime &&
+            expression is ConstFieldDefinition { Value: string text })
+        {
+            if (!DateTime.TryParse(
+                text,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.RoundtripKind,
+                out var dateTime))
+                throw new FormatException($"Function argument [{definition.Name}] requires a valid date-time value.");
+
+            expression = new ConstFieldDefinition(dateTime);
+        }
+
         return new FunctionSqlExpressionArgument(ParseQueryExpression(tableContext, expression, depth));
     }
 
